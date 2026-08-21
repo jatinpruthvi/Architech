@@ -8,3 +8,13 @@
 - [ ] Generate or select Ahmedabad-specific visual assets and brand treatments.
 - [ ] Validate desktop/mobile visuals, motion, accessibility, and build output.
 - [ ] Save a new checkpoint after the redesign is complete.
+
+## UI/UX Motion Revision
+
+- [ ] Record which attached recommendations are accepted, adapted, or declined and why.
+- [ ] Define an Editorial Terracotta motion system with route transitions, reveal choreography, card interactions, header behavior, and reduced-motion fallbacks.
+- [ ] Inspect the existing pages and shared components for the highest-value interaction opportunities.
+- [ ] Implement motion without adding paid services or heavy visual dependencies.
+- [ ] Add advanced but lightweight behaviors such as scroll reveals, image treatment, saved-state feedback, and contextual filter transitions where appropriate.
+- [ ] Validate keyboard focus, screen-reader semantics, mobile layout, reduced motion, console errors, and production build.
+- [ ] Capture final desktop and mobile previews and save a recoverable checkpoint.

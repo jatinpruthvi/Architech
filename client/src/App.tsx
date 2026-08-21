@@ -37,9 +37,7 @@ function SiteHeader() {
     <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled || location !== "/" ? "bg-paper/95 text-ink shadow-[0_8px_30px_rgba(39,34,28,.08)] backdrop-blur-xl" : "bg-ink/20 text-paper backdrop-blur-sm"}`}>
       <div className="container flex h-[76px] items-center justify-between">
         <Link href="/" className="group flex items-center gap-3" aria-label="Architech home">
-          <span className="grid h-11 w-11 place-items-center bg-ink p-2 transition-transform duration-200 group-hover:-rotate-3"><span className="pointer-events-none absolute h-2 w-2 translate-x-2 translate-y-2 bg-clay" />
-            <img src="/manus-storage/architech-ahmedabad-mark_ce9283a3.png" alt="" className="h-full w-full object-contain" />
-          </span>
+          <span className="arch-mark grid h-11 w-11 place-items-center bg-ink transition-transform duration-200 group-hover:-rotate-3" aria-hidden="true"><span className="arch-mark-letter">A</span><span className="arch-mark-notch" /></span>
           <span className={`font-display text-[22px] font-semibold tracking-[-.055em] uppercase ${scrolled || location !== "/" ? "text-ink" : "text-paper"}`}>architech<span className="text-clay">.</span></span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex" aria-label="Primary navigation">
@@ -47,7 +45,7 @@ function SiteHeader() {
         </nav>
         <div className="hidden items-center gap-4 md:flex">
           <Link href="/saved" className={`inline-flex items-center gap-2 text-[13px] font-medium hover:text-clay ${scrolled || location !== "/" ? "text-ink/70" : "text-paper/80"}`}><Bookmark size={15} strokeWidth={1.7} /> Saved</Link>
-          <Link href="/search" className="inline-flex items-center gap-2 bg-[var(--clay)] px-4 py-2.5 text-[13px] font-semibold text-paper transition-transform duration-200 hover:-translate-y-0.5"><Search size={15} /> Start exploring <ArrowUpRight size={14} /></Link>
+          <Link href="/search" className="motion-press inline-flex items-center gap-2 bg-[var(--clay)] px-4 py-2.5 text-[13px] font-semibold text-paper transition-transform duration-200 hover:-translate-y-0.5"><Search size={15} /> Start exploring <ArrowUpRight size={14} /></Link>
         </div>
         <button className={`grid h-10 w-10 place-items-center md:hidden ${scrolled || location !== "/" ? "text-ink" : "text-paper"}`} onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>{open ? <X size={22} /> : <Menu size={22} />}</button>
       </div>
@@ -64,7 +62,7 @@ function SiteHeader() {
 function AppRoutes() {
   return <>
     <SiteHeader />
-    <main>
+    <main className="page-transition">
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/buy/ahmedabad/" component={CityPage} />
