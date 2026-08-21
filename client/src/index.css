@@ -94,6 +94,14 @@ a { color: inherit; text-decoration: none; }
 @media (min-width: 1024px) { .container { padding-inline: 2rem; } }
 .font-display { font-family: var(--font-display); }
 .text-ink { color: var(--ink); }
+.text-paper { color: var(--paper); }
+.text-paper\/55 { color: color-mix(in srgb, var(--paper) 55%, transparent); }
+.text-paper\/70 { color: color-mix(in srgb, var(--paper) 70%, transparent); }
+.text-paper\/75 { color: color-mix(in srgb, var(--paper) 75%, transparent); }
+.text-paper\/80 { color: color-mix(in srgb, var(--paper) 80%, transparent); }
+.bg-paper\/75 { background: color-mix(in srgb, var(--paper) 75%, transparent); }
+.bg-paper\/90 { background: color-mix(in srgb, var(--paper) 90%, transparent); }
+.bg-ink\/20 { background: color-mix(in srgb, var(--ink) 20%, transparent); }
 .text-clay { color: var(--clay); }
 .bg-paper { background: var(--paper); }
 .bg-limestone { background: var(--limestone); }
