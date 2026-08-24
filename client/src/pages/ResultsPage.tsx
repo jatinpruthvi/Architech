@@ -1,24 +1,21 @@
-/* ARCHITECH — Search results v3.
-   A11y: aria-live result announcements, aria-busy skeletons, 44px touch targets, keyboard-safe filters.
-   Mobile: bottom-sheet filter drawer, map toggle. Discovery: curated empty state, search-this-area affordance. */
-import { ArrowUpRight, Crosshair, LayoutList, Map as MapIcon, SlidersHorizontal } from "lucide-react";
+"use client";
+/* ARCHITECH — Search results v4.
+   Filters are multi-select (AND), synced to the URL for back-button + sharing.
+   Real sort control, honest counts, aria-live announcements, skeletons, bottom-sheet on mobile. */
+import { ArrowUpRight, Crosshair, LayoutList, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "wouter";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import PropertyCard, { properties } from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
+import useTitle from "../hooks/useTitle";
+import { applyFilters, applyQuery, applySort, makeFilters, parseFilterParam, serializeFilters, type SortId } from "@/lib/filters";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
+import { useLang } from "@/contexts/LangContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type Filter = { id: string; label: string; fn: (p: (typeof properties)[number]) => boolean };
-
-const filters: Filter[] = [
-  { id: "all", label: "All homes", fn: () => true },
-  { id: "2bhk", label: "2 BHK", fn: (p) => p.bhk === 2 },
-  { id: "3bhk", label: "3 BHK +", fn: (p) => p.bhk >= 3 },
-  { id: "under15", label: "Under ₹1.5 Cr", fn: (p) => p.price.includes("L") || parseFloat(p.price.replace(/[₹ Cr]/g, "")) < 1.5 },
-  { id: "rera", label: "RERA verified", fn: (p) => p.badge === "RERA verified" },
-];
-
+const filterDefs = makeFilters<(typeof properties)[number]>();
 const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
 
 function SkeletonCard() {
@@ -35,52 +32,73 @@ function SkeletonCard() {
   );
 }
 
-function FilterChips({ active, onSelect, vertical = false }: { active: string; onSelect: (id: string) => void; vertical?: boolean }) {
+function FilterChips({ active, onToggle, vertical = false }: { active: string[]; onToggle: (id: string) => void; vertical?: boolean }) {
+  const { t } = useLang();
   return (
-    <div className={vertical ? "flex flex-col gap-2" : "flex flex-wrap items-center gap-2"} role="group" aria-label="Filters">
-      {filters.map((f) => (
-        <button key={f.id} onClick={() => onSelect(f.id)} aria-pressed={active === f.id}
-          className={`touch-44 px-4 stamp !text-[11px] font-semibold transition-all duration-200 ${vertical ? "w-full text-left py-3.5" : "py-2.5"} ${active === f.id ? "bg-brick text-paper" : "border border-ink/20 text-ink/70 hover:border-brick hover:text-brick"}`}>
-          {f.label}
-        </button>
-      ))}
+    <div className={vertical ? "flex flex-col gap-2" : "flex flex-wrap items-center gap-2"} role="group" aria-label="Filters (combinable)">
+      {filterDefs.map((f) => {
+        const on = active.includes(f.id);
+        return (
+          <button key={f.id} onClick={() => onToggle(f.id)} aria-pressed={on}
+            className={`touch-44 px-4 stamp !text-[11px] font-semibold transition-all duration-200 ${vertical ? "w-full text-left py-3.5" : "py-2.5"} ${on ? "bg-brick text-cream" : "border border-ink/20 text-ink/70 hover:border-brick hover:text-brick"}`}>
+            {t.search.filters[f.id] ?? f.label}{on && <X size={12} className="ml-2 inline" aria-hidden="true" />}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 export default function ResultsPage() {
-  const [active, setActive] = useState("all");
+  useTitle("Search homes in Ahmedabad");
+  const { t } = useLang();
+  const sp = useSearchParams();
+  const router = useRouter();
+  const searchStr = sp.toString();
+  const params = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  const active = useMemo(() => parseFilterParam(params.get("filters")), [params]);
+  const sort = (params.get("sort") as SortId) || "fresh";
+  const query = params.get("q") ?? "";
+
   const [mapMode, setMapMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const filtered = useMemo(() => properties.filter(filters.find((f) => f.id === active)!.fn), [active]);
-  const activeLabel = filters.find((f) => f.id === active)!.label;
 
-  const selectFilter = (id: string) => {
-    setActive(id);
-    setDrawerOpen(false);
+  const filtered = useMemo(() => applySort(applyFilters(applyQuery(properties, query), active, filterDefs), sort), [active, sort, query]);
+
+  const updateUrl = (nextFilters: string[], nextSort: SortId = sort) => {
+    const p = new URLSearchParams();
+    if (query) p.set("q", query);
+    if (nextFilters.length) p.set("filters", serializeFilters(nextFilters));
+    if (nextSort !== "fresh") p.set("sort", nextSort);
+    router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false });
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     setLoading(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setLoading(false), 450);
   };
+
+  const toggleFilter = (id: string) => updateUrl(active.includes(id) ? active.filter((f) => f !== id) : [...active, id]);
+  const clearFilters = () => { setDrawerOpen(false); updateUrl([]); };
   useEffect(() => () => clearTimeout(timer.current), []);
+
+  const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => f.label).join(" + ") : "All homes";
 
   return (
     <div className="bg-paper pt-[78px] text-ink">
       {/* Header */}
       <section className="border-b border-ink/12 bg-sand/70 py-12 md:py-16">
         <div className="container">
-          <p className="kicker text-brick">Search · Ahmedabad</p>
+          <p className="kicker text-brick">Search · Ahmedabad{query ? ` · “${query}”` : ""}</p>
+          {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">Clear search “{query}” <X size={12} /></button>}
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
-            <h1 className="display text-[clamp(36px,5vw,68px)]">{filtered.length === properties.length ? "281 homes" : `${filtered.length} of 281 homes`} in <em className="text-brick">Ahmedabad.</em></h1>
+            <h1 className="display text-[clamp(36px,5vw,68px)]">{filtered.length} {filtered.length === 1 ? t.search.home : t.search.homes} {t.search.title1} <em className="text-brick">{t.search.cityName}</em></h1>
             <div className="flex gap-2">
-              {/* Mobile: bottom-sheet filters */}
               <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
                 <DrawerTrigger asChild>
                   <button className="touch-44 inline-flex items-center gap-2 border border-ink/20 px-4 stamp !text-[11px] font-semibold transition-colors hover:border-brick hover:text-brick md:hidden">
-                    <SlidersHorizontal size={14} /> Filters {active !== "all" && <span className="grid h-5 w-5 place-items-center rounded-full bg-brick text-[10px] text-paper">1</span>}
+                    <SlidersHorizontal size={14} /> Filters {active.length > 0 && <span className="grid h-5 w-5 place-items-center rounded-full bg-brick text-[10px] text-cream">{active.length}</span>}
                   </button>
                 </DrawerTrigger>
                 <DrawerContent className="border-t-2 border-brick bg-paper">
@@ -88,9 +106,10 @@ export default function ResultsPage() {
                     <DrawerTitle className="font-display text-2xl font-medium tracking-[-0.02em]">Filter homes</DrawerTitle>
                   </DrawerHeader>
                   <div className="px-4 pb-8">
-                    <FilterChips active={active} onSelect={selectFilter} vertical />
+                    <FilterChips active={active} onToggle={toggleFilter} vertical />
+                    {active.length > 0 && <button onClick={clearFilters} className="touch-44 mt-3 w-full border border-ink/20 py-3 stamp !text-[11px] font-semibold text-ink/70">Clear all</button>}
                     <DrawerClose asChild>
-                      <button className="touch-44 mt-5 w-full bg-ink py-3.5 stamp !text-[12px] font-semibold text-paper">Show {filtered.length} homes</button>
+                      <button className="touch-44 mt-4 w-full bg-night py-3.5 stamp !text-[12px] font-semibold text-cream">Show {filtered.length} homes</button>
                     </DrawerClose>
                   </div>
                 </DrawerContent>
@@ -100,10 +119,24 @@ export default function ResultsPage() {
               </button>
             </div>
           </div>
-          {/* Desktop filter chips */}
-          <div className="mt-8 hidden items-center gap-2 md:flex">
-            <span className="mr-2 flex items-center gap-1.5 stamp !text-[10px] text-ink/45"><SlidersHorizontal size={12} /> Filter</span>
-            <FilterChips active={active} onSelect={selectFilter} />
+          {/* Desktop: multi-select chips + sort */}
+          <div className="mt-8 hidden flex-wrap items-center gap-2 md:flex">
+            <span className="mr-2 flex items-center gap-1.5 stamp !text-[10px] text-ink/60"><SlidersHorizontal size={12} /> {t.search.filter}</span>
+            <FilterChips active={active} onToggle={toggleFilter} />
+            {active.length > 0 && <button onClick={clearFilters} className="touch-44 px-3 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">{t.search.clearAll}</button>}
+            <div className="ml-auto flex items-center gap-2">
+              <span className="stamp !text-[10px] text-ink/60">{t.search.sort}</span>
+              <Select value={sort} onValueChange={(v) => updateUrl(active, v as SortId)}>
+                <SelectTrigger className="h-11 w-[190px] rounded-none border-ink/20 bg-transparent stamp !text-[11px] font-semibold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-none border-ink/15 bg-paper">
+                  <SelectItem value="fresh">{t.search.sortFresh}</SelectItem>
+                  <SelectItem value="price-asc">{t.search.sortAsc}</SelectItem>
+                  <SelectItem value="price-desc">{t.search.sortDesc}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </section>
@@ -113,39 +146,37 @@ export default function ResultsPage() {
         <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
           <div className={mapMode ? "hidden lg:block" : ""}>
             <div className="mb-7 flex items-center justify-between border-b border-ink/10 pb-4">
-              {/* ARIA live region announces result changes to screen readers */}
-              <p className="stamp !text-[11px] text-ink/50" aria-live="polite" role="status">
-                {loading ? "Updating results…" : `Showing ${filtered.length} homes · ${activeLabel} · sorted by freshness`}
+              <p className="stamp !text-[11px] text-ink/60" aria-live="polite" role="status">
+                {loading ? "Updating results…" : `${filtered.length} ${filtered.length === 1 ? "home" : "homes"} · ${filterSummary}`}
               </p>
-              <p className="stamp hidden !text-[11px] text-trust sm:block">Updated throughout the day</p>
+              <p className="stamp hidden !text-[11px] text-trust sm:block">Demo fixtures · updated daily in production</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2" aria-busy={loading}>
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
                 : filtered.map((property, i) => (
-                    <Reveal key={`${active}-${property.id}`} delay={i * 60}><PropertyCard property={property} index={i} /></Reveal>
+                    <Reveal key={`${active.join()}-${sort}-${property.id}`} delay={i * 60}><PropertyCard property={property} index={i} /></Reveal>
                   ))}
             </div>
             {/* Curated empty state */}
             {!loading && filtered.length === 0 && (
               <div className="border border-dashed border-ink/25 p-10 text-center md:p-14">
-                <p className="font-display text-3xl tracking-[-0.02em]">Nothing here — <em className="text-brick">yet</em>.</p>
-                <p className="mx-auto mt-3 max-w-[380px] text-sm leading-6 text-ink/55">No homes match that combination today. Try one of these instead — or save this search and we'll tell you the moment something arrives.</p>
+                <p className="font-display text-3xl tracking-[-0.02em]">{query ? <>No homes match “{query}” {active.length > 0 ? "with those filters" : ""} — <em className="text-brick">yet</em>.</> : <>Nothing matches that combination — <em className="text-brick">yet</em>.</>}</p>
+                <p className="mx-auto mt-3 max-w-[380px] text-sm leading-6 text-ink/60">Loosen a filter, try a trending search, or save this search and we'll tell you the moment something arrives.</p>
                 <div className="mt-7 flex flex-wrap justify-center gap-2">
                   {trending.map((t) => (
-                    <button key={t} onClick={() => selectFilter("all")} className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick">{t}</button>
+                    <button key={t} onClick={clearFilters} className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick">{t}</button>
                   ))}
                 </div>
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <button onClick={() => toast("Search saved", { description: "We'll notify you when a matching home arrives." })} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-paper">Save this search</button>
+                  <button onClick={() => toast("Search saved", { description: "We'll notify you when a matching home arrives. (Demo)" })} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream">Save this search</button>
                   <Link href="/guide" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-brick">Read locality guides <ArrowUpRight size={13} /></Link>
                 </div>
               </div>
             )}
             {!loading && filtered.length > 0 && (
               <div className="mt-12 flex items-center justify-between border-t border-ink/10 pt-6">
-                <span className="stamp !text-[11px] text-ink/50">Page 1 of 43</span>
-                <button className="touch-44 group inline-flex items-center gap-2 px-2 stamp !text-[12px] font-semibold text-brick">Next page <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></button>
+                <span className="stamp !text-[11px] text-ink/60">Showing all {filtered.length} demo {filtered.length === 1 ? "home" : "homes"} — full inventory arrives with the live data build</span>
               </div>
             )}
           </div>
@@ -159,10 +190,9 @@ export default function ResultsPage() {
               loading="lazy"
             />
             <p className="stamp absolute right-3 top-3 z-10 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
-            {/* Search-this-area affordance */}
             <button
-              onClick={() => { selectFilter("all"); toast("Searching this area", { description: "Results updated for the visible map area." }); }}
-              className="touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-ink px-5 stamp !text-[11px] font-semibold text-paper shadow-lg transition-transform hover:-translate-y-0.5">
+              onClick={() => toast("Searching this area", { description: "Results refresh for the visible map area with the live data build. Filters kept." })}
+              className="touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp !text-[11px] font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
               <Crosshair size={14} className="text-ember" /> Search this area
             </button>
             <div className="pointer-events-none absolute inset-x-5 bottom-5 z-10 border border-ink/12 bg-paper/95 p-5 backdrop-blur">

@@ -1,3 +1,4 @@
+"use client";
 /* Magic-UI-style marquee: infinite horizontal scroll, either direction, pause on hover. */
 import type { ReactNode } from "react";
 

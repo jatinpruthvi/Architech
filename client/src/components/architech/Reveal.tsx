@@ -1,3 +1,4 @@
+"use client";
 /* Architech Editorial Terracotta: scroll reveals are quiet, interruptible, and disabled for reduced-motion users. */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 

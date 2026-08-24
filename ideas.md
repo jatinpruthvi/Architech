@@ -71,3 +71,15 @@ The mark is a bold geometric “A” formed from two offset architectural planes
 - No purple gradients, no generic glassmorphism, no over-rounded everything, and no default Inter-only typography.
 - The homepage, locality page, results page, and listing detail page must share one visual grammar before the design is considered ready.
 - Motion is real but subordinate to content, Google crawlability, accessibility, and low-end performance.
+
+
+---
+
+## Decision update — August 2026: Amdavad Modern
+
+Editorial Terracotta was superseded by **Amdavad Modern**, a direction rooted in Ahmedabad's own architecture: Louis Kahn's IIM-A brick geometry, Corbusier's plaster planes, and Adalaj stepwell layering.
+
+- **Palette:** Kahn brick red `#a8432a`, warm plaster `#f4eee2`, deep ink `#1b1612`, ember `#eeb195`, trust green `#2f6b5a` (reserved for verification states).
+- **Typography:** Fraunces (display, optical sizing), Archivo (UI), IBM Plex Mono (data stamps), Noto Sans Devanagari.
+- **Signature motifs:** arch-framed imagery, film grain, oversized index numerals, mono coordinate stamps, "trust in layers" stepwell storytelling.
+- **Motion:** token-driven (\`--dur-1..4\`, \`--ease-out-expo\`, \`--ease-spring\`), Magic-UI-style components (number ticker, border beam, shimmer, tilt, word reveal, marquee), full reduced-motion fallbacks.

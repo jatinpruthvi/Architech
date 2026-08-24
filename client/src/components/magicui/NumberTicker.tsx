@@ -1,10 +1,12 @@
-/* Magic-UI-style Number Ticker: counts up when scrolled into view. Respects reduced motion. */
+"use client";
+/* Magic-UI-style Number Ticker: counts up in view; screen readers get only the final value. */
 import { useEffect, useRef, useState } from "react";
 
 export default function NumberTicker({ value, suffix = "", prefix = "", duration = 1600, className = "" }: { value: number; suffix?: string; prefix?: string; duration?: number; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [display, setDisplay] = useState(0);
   const started = useRef(false);
+  const finalText = `${prefix}${value.toLocaleString("en-IN")}${suffix}`;
 
   useEffect(() => {
     const node = ref.current;
@@ -27,5 +29,9 @@ export default function NumberTicker({ value, suffix = "", prefix = "", duration
     return () => observer.disconnect();
   }, [value, duration]);
 
-  return <span ref={ref} className={className}>{prefix}{display.toLocaleString("en-IN")}{suffix}</span>;
+  return (
+    <span ref={ref} className={className} aria-label={finalText}>
+      <span aria-hidden="true">{prefix}{display.toLocaleString("en-IN")}{suffix}</span>
+    </span>
+  );
 }
