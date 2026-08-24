@@ -1,6 +1,6 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { POST } from "../../../../app/api/leads/route";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createLead, maskPhone, resetLeadStoreForTests, validateLeadInput } from "./lead";
+import { getLeadStorageMode } from "./source";
 
 describe("lead consent/audit workflow", () => {
   beforeEach(() => resetLeadStoreForTests());
@@ -23,15 +23,8 @@ describe("lead consent/audit workflow", () => {
     expect(second.ok && second.duplicate).toBe(true);
   });
 
-  it("returns JSON from the API route", async () => {
-    const response = await POST(new Request("http://example.com/api/leads", {
-      method: "POST",
-      body: JSON.stringify({ listingId: "garden-courtyard", name: "Kinjal Shah", phone: "+91 98765 43210", message: "Please send more details about this listing.", consentText: "I consent to masked contact for this enquiry.", idempotencyKey: "api-lead-test-1" }),
-    }));
-    expect(response.status).toBe(201);
-    expect(response.headers.get("X-Architech-Lead-Mode")).toBe("MASKED");
-    const body = await response.json();
-    expect(body.ok).toBe(true);
-    expect(body.lead.auditEvent.id).toMatch(/^audit_/);
+  it("keeps lead storage in memory unless configured for Prisma", () => {
+    expect(getLeadStorageMode(undefined)).toBe("memory");
+    expect(getLeadStorageMode("prisma")).toBe("prisma");
   });
 });

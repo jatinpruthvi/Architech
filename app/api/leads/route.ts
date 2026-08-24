@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createLead, type LeadInput } from "@/lib/leads/lead";
+import type { LeadInput } from "@/lib/leads/lead";
+import { createLeadForServer } from "@/lib/leads/server";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, errors: ["Request body must be JSON."] }, { status: 400 });
   }
 
-  const result = createLead(body as LeadInput);
+  const result = await createLeadForServer(body as LeadInput);
   if (!result.ok) return NextResponse.json(result, { status: result.status });
 
   return NextResponse.json(result, {
