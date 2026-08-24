@@ -38,7 +38,9 @@
 - [x] Implement later Phase 1 backlog: broker onboarding and listing moderation.
 - [x] Implement later Phase 1 backlog: media upload pipeline with moderation and derivatives.
 - [x] Implement later Phase 1 backlog: RERA adapter/provenance/correction workflow.
-- [ ] Implement later Phase 1 backlog: Sentry/logging/RUM/observability.
+- [x] Implement later Phase 1 backlog: Sentry/logging/RUM/observability.
+- [x] Implement later Phase 1 backlog: Google Search Console setup and SEO alerting.
+- [ ] Implement later Phase 1 backlog: security/privacy/legal gates.
 
 ## Status
 

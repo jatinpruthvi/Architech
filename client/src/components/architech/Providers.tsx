@@ -8,6 +8,7 @@ import { CompareProvider } from "@/contexts/CompareContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import CompareTray from "@/components/architech/CompareTray";
+import WebVitalsReporter from "@/components/architech/WebVitalsReporter";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
@@ -17,6 +18,7 @@ export default function Providers({ children }: { children: ReactNode }) {
           <CompareProvider>
             <TooltipProvider>
               <Toaster position="bottom-right" />
+              <WebVitalsReporter />
               {children}
               <CompareTray />
             </TooltipProvider>

@@ -147,7 +147,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | P1-SEO-001 | Canonical URL builder and `SeoPage` registry | validated | Central canonical URL builder plus formal `SeoPage` registry and tests exist; sitemap is registry-driven. | Continue expanding registry when production data, lifecycle states, and guide routes are added. |
 | P1-SEO-002 | Server-rendered public templates and metadata/JSON-LD | partial | Next.js SSR/SSG routes, metadata, Place/Residence/Breadcrumb JSON-LD, repository-fed route params, and raw HTML SEO smoke tests exist. | Snapshot drift tests and production entity snapshots. |
 | P1-SEO-003 | Links, facets, pagination, lifecycle, sitemaps, robots | partial | Crawlable links, registry-driven sitemap, robots, true 404s exist; search/saved excluded from indexable registry. | Lifecycle 301/404/410 rules, advanced faceted indexability gates, pagination policy, crawl simulation. |
-| P1-SEO-004 | Google Search Console ingestion and SEO alerting | pending | None. | Search Console setup, sitemap submission, API ingestion or manual monitoring workflow, alerts. |
+| P1-SEO-004 | Google Search Console ingestion and SEO alerting | partial | Search Console setup docs, config audit, sitemap submission workflow, URL inspection samples, threshold helpers, alert tests, and CI audit exist. | Add live Search Console API ingestion after production domain verification and credential provisioning. |
 | P1-CONT-001 | Focused city/locality/RERA/buying/renting guides | prototype | `/guide` page exists. | Real guide routes, author/reviewer/source/freshness fields, Article JSON-LD, editorial approval. |
 
 ## Search, maps, and discovery
@@ -172,7 +172,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-OBS-001 | Sentry, Pino, OpenTelemetry, RUM, dashboards, SLOs | pending | None. | Error tracking, structured logs, traces, Web Vitals/RUM, alerts, incident runbook. |
+| P1-OBS-001 | Sentry, Pino, OpenTelemetry, RUM, dashboards, SLOs | partial | Sentry init, Pino logger, Web Vitals/RUM endpoint, observability health endpoint, env docs, runbook docs, and tests exist. | Provision Sentry/log drains, add OpenTelemetry traces, dashboards, alerts, SLOs, and incident runbook exercises. |
 | P1-OFF-001 | Authority baseline, assets, relationship registry, outreach governance | partial | Google-first off-page authority strategy exists in docs. | Asset registry, outreach log, disclosure review, referral/reporting baseline. |
 | P1-TEST-001 | Full unit/integration/E2E/accessibility/performance/security/SEO suite | partial | TypeScript, ESLint, Vitest, production build, no-JavaScript SEO, Playwright/axe accessibility, Storybook smoke, and performance budget checks pass. | Broader Playwright E2E journeys, security checks, release report. |
 
@@ -484,8 +484,8 @@ These should follow after the data foundation is in place:
 5. Broker onboarding and listing moderation. ✅ First slice validated: onboarding shell, draft submission contract, moderation decisions, media-rights gate, audit trail, docs, and tests.
 6. Media upload pipeline with moderation and derivatives. ✅ First slice validated: signed upload contract, MIME/size/license validation, derivative plans, completion/moderation APIs, EXIF policy, docs, and tests.
 7. RERA adapter/provenance/correction workflow. ✅ First slice validated: adapter contract, provenance fields, stale/disputed states, correction workflow, APIs, docs, and tests.
-8. Sentry/logging/RUM/observability.
-9. Google Search Console setup and SEO alerting.
+8. Sentry/logging/RUM/observability. ✅ First slice validated: Sentry config, Pino redacted logger, Web Vitals RUM, health endpoint, docs, and tests.
+9. Google Search Console setup and SEO alerting. ✅ First slice validated: setup docs, config audit, sitemap submission/URL inspection workflow, thresholds, helpers, and tests.
 10. Security/privacy/legal gates.
 11. Backup/restore/cost operational readiness.
 12. Final Phase 1 release report.
@@ -494,6 +494,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Sentry/logging/RUM/observability.
+**Recommended next item:** Security/privacy/legal gates.
 
-Reason: RERA trust workflows now have provenance and correction contracts, so the next Phase 1 slice should add operational visibility: error capture, structured logs, Web Vitals/RUM hooks, and runbook documentation.
+Reason: SEO monitoring is now operationalized at the workflow/config level, so the next Phase 1 slice should add security headers, privacy/legal gate checklists, and release-blocking compliance checks.
