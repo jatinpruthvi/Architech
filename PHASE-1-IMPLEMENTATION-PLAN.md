@@ -174,7 +174,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 |---|---|---|---|---|
 | P1-OBS-001 | Sentry, Pino, OpenTelemetry, RUM, dashboards, SLOs | partial | Sentry init, Pino logger, Web Vitals/RUM endpoint, observability health endpoint, env docs, runbook docs, and tests exist. | Provision Sentry/log drains, add OpenTelemetry traces, dashboards, alerts, SLOs, and incident runbook exercises. |
 | P1-OFF-001 | Authority baseline, assets, relationship registry, outreach governance | partial | Google-first off-page authority strategy exists in docs. | Asset registry, outreach log, disclosure review, referral/reporting baseline. |
-| P1-TEST-001 | Full unit/integration/E2E/accessibility/performance/security/SEO suite | partial | TypeScript, ESLint, Vitest, production build, no-JavaScript SEO, Playwright/axe accessibility, Storybook smoke, and performance budget checks pass. | Broader Playwright E2E journeys, security checks, release report. |
+| P1-TEST-001 | Full unit/integration/E2E/accessibility/performance/security/SEO suite | partial | TypeScript, ESLint, Vitest, production build, no-JavaScript SEO, Playwright/axe accessibility, Storybook smoke, performance budget, security header, and legal gate checks pass. | Broader Playwright E2E journeys and final release report. |
 
 ---
 
@@ -486,14 +486,14 @@ These should follow after the data foundation is in place:
 7. RERA adapter/provenance/correction workflow. ✅ First slice validated: adapter contract, provenance fields, stale/disputed states, correction workflow, APIs, docs, and tests.
 8. Sentry/logging/RUM/observability. ✅ First slice validated: Sentry config, Pino redacted logger, Web Vitals RUM, health endpoint, docs, and tests.
 9. Google Search Console setup and SEO alerting. ✅ First slice validated: setup docs, config audit, sitemap submission/URL inspection workflow, thresholds, helpers, and tests.
-10. Security/privacy/legal gates.
-11. Backup/restore/cost operational readiness.
+10. Security/privacy/legal gates. ✅ First slice validated: security headers, privacy notice, terms/disclaimers, data-flow map, legal gate registry, CI audits, and docs.
+11. Backup/restore/cost operational readiness. ✅ First slice validated: RPO/RTO, backup retention, restore drill checklist, service owners, budgets, alerts, docs, and CI audit.
 12. Final Phase 1 release report.
 
 ---
 
 # Current selected next item
 
-**Recommended next item:** Security/privacy/legal gates.
+**Recommended next item:** Final Phase 1 release report.
 
-Reason: SEO monitoring is now operationalized at the workflow/config level, so the next Phase 1 slice should add security headers, privacy/legal gate checklists, and release-blocking compliance checks.
+Reason: backup/restore/cost readiness now has an auditable operations registry, so the next slice should produce the final Phase 1 release report across all gates and known limitations.

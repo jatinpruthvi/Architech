@@ -40,7 +40,9 @@
 - [x] Implement later Phase 1 backlog: RERA adapter/provenance/correction workflow.
 - [x] Implement later Phase 1 backlog: Sentry/logging/RUM/observability.
 - [x] Implement later Phase 1 backlog: Google Search Console setup and SEO alerting.
-- [ ] Implement later Phase 1 backlog: security/privacy/legal gates.
+- [x] Implement later Phase 1 backlog: security/privacy/legal gates.
+- [x] Implement later Phase 1 backlog: backup/restore/cost operational readiness.
+- [ ] Implement final Phase 1 release report.
 
 ## Status
 

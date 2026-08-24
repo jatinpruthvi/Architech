@@ -21,7 +21,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "seo:gsc:audit": "node scripts/seo/search-console-audit.mjs"
+    "seo:gsc:audit": "node scripts/seo/search-console-audit.mjs",
+    "security:headers": "node scripts/security/header-audit.mjs",
+    "legal:gates": "node scripts/security/legal-gate-audit.mjs",
+    "security:audit": "pnpm security:headers && pnpm legal:gates",
+    "ops:audit": "node scripts/operations/readiness-audit.mjs"
   },
   "dependencies": {
     "@prisma/client": "^7.9.1",
