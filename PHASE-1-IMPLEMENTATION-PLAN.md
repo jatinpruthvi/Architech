@@ -1,6 +1,6 @@
 # Architech — Phase 1 Implementation Tracker
 
-**Last updated:** 24 Aug 2026  
+**Last updated:** 24 Aug 2026
 **Purpose:** A step-by-step tracker for finishing Phase 1 one item at a time: pick one item, implement it, validate it, update this file, then move to the next item.
 
 This tracker is derived from:
@@ -108,8 +108,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | 4 | No-JavaScript SEO tests | UX-001, SEO-006, P1-TEST-001 | validated | `pnpm test:seo` builds, starts Next, and verifies raw HTML facts for key public pages. |
 | 5 | Accessibility automation | P1-UI-001, P1-TEST-001 | validated | Playwright + axe smoke tests cover main routes on desktop/mobile and keyboard checks. |
 | 6 | Complete Hindi UI foundation | P1-I18N-001, UX-004 | validated | Hindi dictionary expanded across search, saved, locality, listing, cards, CTAs, and trust UI. |
-| 7 | Storybook/component documentation | P1-UI-001 | pending | Documents UI states, dark mode, Hindi, and accessibility. |
-| 8 | Performance/bundle/Core Web Vitals budgets | PERF-001, PERF-002, P1-TEST-001 | pending | Prevents regressions before adding heavier features. |
+| 7 | Storybook/component documentation | P1-UI-001 | validated | Storybook 10 added with stories for header, footer, cards, compare flow, and UI states. |
+| 8 | Performance/bundle/Core Web Vitals budgets | PERF-001, PERF-002, P1-TEST-001 | validated | `pnpm test:perf` enforces route JS, gzip, HTML, chunk, image, and CWV target budgets. |
 | 9 | Prisma/PostgreSQL/PostGIS schema | P1-DATA-001 | pending | Starts the production data foundation. |
 | 10 | Data access layer/repositories | P1-DATA-001, P1-SEO-002 | pending | Lets app switch from fixtures to database-backed data. |
 
@@ -136,7 +136,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-UI-001 | Design tokens, typography, shadcn/Radix components, Storybook | partial | Amdavad Modern tokens, dark tokens, components, responsive pages, and automated accessibility smoke tests. | Storybook, component state coverage, visual regression, formal Devanagari layout tests. |
+| P1-UI-001 | Design tokens, typography, shadcn/Radix components, Storybook | partial | Amdavad Modern tokens, dark tokens, components, responsive pages, accessibility smoke tests, and Storybook documentation exist. | Visual regression and formal Devanagari layout tests. |
 | P1-UI-002 | Premium motion system and fallbacks | prototype | Reveal/card motion and reduced-motion CSS exist. | Motion benchmarks, no-WebGL/no-video fallback evidence, device performance validation. |
 | P1-I18N-001 | English/Hindi fields, aliases, transliteration, dictionaries, formatting | partial | Expanded Hindi UI dictionary, `<html lang>` switching, major-surface Hindi labels, partial-translation note, and dictionary coverage tests exist. | Entity locale fields, aliases/transliteration, mixed-language search tests, metadata tests, editorial review workflow. |
 
@@ -174,7 +174,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 |---|---|---|---|---|
 | P1-OBS-001 | Sentry, Pino, OpenTelemetry, RUM, dashboards, SLOs | pending | None. | Error tracking, structured logs, traces, Web Vitals/RUM, alerts, incident runbook. |
 | P1-OFF-001 | Authority baseline, assets, relationship registry, outreach governance | partial | Google-first off-page authority strategy exists in docs. | Asset registry, outreach log, disclosure review, referral/reporting baseline. |
-| P1-TEST-001 | Full unit/integration/E2E/accessibility/performance/security/SEO suite | partial | TypeScript, ESLint, Vitest, production build, no-JavaScript SEO smoke tests, and Playwright/axe accessibility smoke tests pass. | Broader Playwright E2E journeys, performance budgets, security checks, release report. |
+| P1-TEST-001 | Full unit/integration/E2E/accessibility/performance/security/SEO suite | partial | TypeScript, ESLint, Vitest, production build, no-JavaScript SEO, Playwright/axe accessibility, Storybook smoke, and performance budget checks pass. | Broader Playwright E2E journeys, security checks, release report. |
 
 ---
 
@@ -182,8 +182,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 2 — Central canonical URL builder
 
-**Status:** validated  
-**Workstream:** P1-SEO-001, SEO-001  
+**Status:** validated
+**Workstream:** P1-SEO-001, SEO-001
 **Goal:** Every route, metadata object, JSON-LD object, sitemap entry, and robots reference should use one canonical URL helper.
 
 ### Implementation tasks
@@ -217,8 +217,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 3 — Formal `SeoPage` registry
 
-**Status:** validated  
-**Workstream:** P1-SEO-001, SEO-002, SEO-003  
+**Status:** validated
+**Workstream:** P1-SEO-001, SEO-002, SEO-003
 **Goal:** Define which pages are indexable and why.
 
 ### Implementation tasks
@@ -254,8 +254,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 4 — No-JavaScript SEO tests
 
-**Status:** validated  
-**Workstream:** UX-001, SEO-006, P1-TEST-001  
+**Status:** validated
+**Workstream:** UX-001, SEO-006, P1-TEST-001
 **Goal:** Guarantee public page facts exist in raw server HTML.
 
 ### Implementation tasks
@@ -286,8 +286,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 5 — Accessibility automation
 
-**Status:** validated  
-**Workstream:** P1-UI-001, P1-TEST-001  
+**Status:** validated
+**Workstream:** P1-UI-001, P1-TEST-001
 **Goal:** Add automated accessibility checks for key flows.
 
 ### Implementation tasks
@@ -319,8 +319,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 6 — Complete Hindi UI foundation
 
-**Status:** validated  
-**Workstream:** P1-I18N-001, UX-004  
+**Status:** validated
+**Workstream:** P1-I18N-001, UX-004
 **Goal:** Expand Hindi toggle beyond the current hero/header foundation.
 
 ### Implementation tasks
@@ -348,8 +348,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 7 — Storybook/component documentation
 
-**Status:** pending  
-**Workstream:** P1-UI-001  
+**Status:** validated
+**Workstream:** P1-UI-001
 **Goal:** Make the design system inspectable and reusable.
 
 ### Implementation tasks
@@ -361,15 +361,25 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- `pnpm storybook` runs.
-- Core components have documented states.
+- `pnpm storybook` runs. ✅ (`pnpm storybook:smoke`)
+- Core components have documented states. ✅
+
+### Evidence
+
+- Added Storybook 10 with `@storybook/nextjs-vite` and `@storybook/addon-a11y`.
+- Added `.storybook/main.ts` and `.storybook/preview.tsx` with Tailwind/design CSS, static public assets, aliases, and preview-host allowlist.
+- Added reusable `StorySurface` provider wrapper for light/dark and English/Hindi variants.
+- Added stories for `Header`, `Footer`, `PropertyCard`, interactive compare flow, empty state, and filter states.
+- Added scripts: `pnpm storybook`, `pnpm storybook:smoke`, and `pnpm build-storybook`.
+- Updated CI to run the Storybook smoke test.
+- Validation: `pnpm storybook:smoke`, `pnpm build-storybook`, `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:a11y`, `pnpm test:seo`.
 
 ---
 
 ## Item 8 — Performance and Core Web Vitals budgets
 
-**Status:** pending  
-**Workstream:** PERF-001, PERF-002, P1-TEST-001  
+**Status:** validated
+**Workstream:** PERF-001, PERF-002, P1-TEST-001
 **Goal:** Establish budgets before adding heavy production features.
 
 ### Implementation tasks
@@ -381,15 +391,25 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- Performance command exists.
-- CI can detect major regressions.
+- Performance command exists. ✅
+- CI can detect major regressions. ✅
+
+### Evidence
+
+- Added `performance/budgets.json` with Phase 1 budgets for route first-load JS, gzip JS, HTML, static chunks, image assets, and Core Web Vitals targets.
+- Added `scripts/performance/budget.mjs`.
+- Added `docs/performance/phase-1-baseline.md`.
+- Added `pnpm test:perf`.
+- Updated CI to run the performance budget gate.
+- Current baseline: home first-load JS ~698 KiB raw / ~213 KiB gzip; total static JS ~899 KiB; largest JS chunk ~224 KiB raw / ~70 KiB gzip; largest sampled HTML ~97 KiB.
+- Validation: `pnpm test:perf`, plus full gate `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm storybook:smoke`, `pnpm build-storybook`, `pnpm test:a11y`, `pnpm test:seo`.
 
 ---
 
 ## Item 9 — Prisma/PostgreSQL/PostGIS schema
 
-**Status:** pending  
-**Workstream:** P1-DATA-001  
+**Status:** pending
+**Workstream:** P1-DATA-001
 **Goal:** Create the canonical production data model.
 
 ### Implementation tasks
@@ -409,8 +429,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 10 — Data access layer
 
-**Status:** pending  
-**Workstream:** P1-DATA-001, P1-SEO-002  
+**Status:** pending
+**Workstream:** P1-DATA-001, P1-SEO-002
 **Goal:** Stop importing fixtures directly from pages/components.
 
 ### Implementation tasks
@@ -454,6 +474,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Item 7 — Storybook/component documentation.
+**Recommended next item:** Item 9 — Prisma/PostgreSQL/PostGIS schema.
 
-Reason: the major UI foundations now have SEO, accessibility, and Hindi coverage gates, so the next step is documenting reusable component states, themes, and language variants for design-system maturity.
+Reason: the UI/SEO/accessibility/performance foundation is now guarded by automated checks, so the next Phase 1 step is the production data model.
