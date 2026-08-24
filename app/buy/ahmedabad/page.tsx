@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { localities } from "@/lib/localities";
+import { getLocalities } from "@/lib/repositories";
 import { cityUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default function CityHub() {
       </section>
       <section className="container py-14 md:py-20">
         <div className="border-t border-ink/15">
-          {localities.map((place, i) => (
+          {getLocalities().map((place, i) => (
             <Link key={place.slug} href={`/buy/ahmedabad/${place.slug}/`} className="group grid grid-cols-[48px_1fr_auto] items-center gap-4 border-b border-ink/15 py-6 transition-colors hover:bg-sand/50 md:grid-cols-[90px_1.1fr_0.9fr_auto] md:gap-8 md:py-7">
               <span className="index-num text-[28px] text-ink/25 transition-colors group-hover:text-brick md:text-[44px]">{String(i + 1).padStart(2, "0")}</span>
               <div>

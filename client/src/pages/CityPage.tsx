@@ -3,23 +3,23 @@
    Real OSM coordinates & maps per locality; unknown slugs render 404. */
 import { ArrowUpRight, Check, Clock3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import PropertyCard, { properties } from "../components/architech/PropertyCard";
+import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
-import { findLocality, localities } from "@/lib/localities";
+import { getListings, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
 import { useLang } from "@/contexts/LangContext";
 
 export default function CityPage({ localitySlug }: { localitySlug: string }) {
-  const locality = findLocality(localitySlug);
+  const locality = getLocalityBySlug(localitySlug);
   const { t } = useLang();
   useTitle(locality ? `${locality.name}, ${t.common.ahmedabad} — homes & locality context` : "Not found");
   if (!locality) return null;
 
   const isPaldi = locality.slug === "paldi";
-  const localHomes = properties.filter((p) => p.localitySlug === locality.slug);
-  const showcase = localHomes.length ? [...localHomes, ...properties.filter((p) => p.localitySlug !== locality.slug)].slice(0, 4) : properties;
-  const nearby = localities.filter((l) => l.slug !== locality.slug).slice(0, 4);
+  const localHomes = getListingsByLocality(locality.slug);
+  const showcase = localHomes.length ? [...localHomes, ...getListings().filter((p) => p.localitySlug !== locality.slug)].slice(0, 4) : getListings();
+  const nearby = getLocalities().filter((l) => l.slug !== locality.slug).slice(0, 4);
 
   return (
     <div className="bg-paper pt-[78px] text-ink">

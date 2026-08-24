@@ -30,7 +30,8 @@
 - [x] Implement Item 7 from the tracker: Storybook/component documentation.
 - [x] Implement Item 8 from the tracker: performance and Core Web Vitals budgets.
 - [x] Implement Item 9 from the tracker: Prisma/PostgreSQL/PostGIS schema.
-- [ ] Implement Item 10 from the tracker: Data access layer/repositories.
+- [x] Implement Item 10 from the tracker: Data access layer/repositories.
+- [ ] Begin later Phase 1 backlog: backend search API and PostgreSQL FTS/trigram.
 
 ## Status
 

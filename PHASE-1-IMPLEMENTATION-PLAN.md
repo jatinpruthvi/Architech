@@ -111,7 +111,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | 7 | Storybook/component documentation | P1-UI-001 | validated | Storybook 10 added with stories for header, footer, cards, compare flow, and UI states. |
 | 8 | Performance/bundle/Core Web Vitals budgets | PERF-001, PERF-002, P1-TEST-001 | validated | `pnpm test:perf` enforces route JS, gzip, HTML, chunk, image, and CWV target budgets. |
 | 9 | Prisma/PostgreSQL/PostGIS schema | P1-DATA-001 | validated | Prisma 7 schema, migration, seed script, schema contract tests, and docs added. |
-| 10 | Data access layer/repositories | P1-DATA-001, P1-SEO-002 | pending | Lets app switch from fixtures to database-backed data. |
+| 10 | Data access layer/repositories | P1-DATA-001, P1-SEO-002 | validated | Fixture-backed repository facades added and pages/components now consume repository functions. |
 
 ---
 
@@ -129,7 +129,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | partial | Prisma 7 schema, initial migration SQL, representative seed script, validation command, schema contract tests, and docs exist. | Run migration deploy and seed against provisioned PostgreSQL/PostGIS environment; add spatial columns/indexes when DB service is active. |
+| P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | partial | Prisma 7 schema, initial migration SQL, representative seed script, validation command, repository facade, schema/repository contract tests, and docs exist. | Run migration deploy and seed against provisioned PostgreSQL/PostGIS environment; add Prisma-backed repositories and spatial columns/indexes when DB service is active. |
 | P1-DATA-002 | Audit, provenance, lifecycle, deletion, retention model | pending | Demo freshness/trust copy only. | Audit events, source provenance, retention/deletion jobs, lifecycle tests, legal gate records. |
 
 ## UI, design system, localization
@@ -145,7 +145,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
 | P1-SEO-001 | Canonical URL builder and `SeoPage` registry | validated | Central canonical URL builder plus formal `SeoPage` registry and tests exist; sitemap is registry-driven. | Continue expanding registry when production data, lifecycle states, and guide routes are added. |
-| P1-SEO-002 | Server-rendered public templates and metadata/JSON-LD | partial | Next.js SSR/SSG routes, metadata, Place/Residence/Breadcrumb JSON-LD, and raw HTML SEO smoke tests exist. | Snapshot drift tests and production entity snapshots. |
+| P1-SEO-002 | Server-rendered public templates and metadata/JSON-LD | partial | Next.js SSR/SSG routes, metadata, Place/Residence/Breadcrumb JSON-LD, repository-fed route params, and raw HTML SEO smoke tests exist. | Snapshot drift tests and production entity snapshots. |
 | P1-SEO-003 | Links, facets, pagination, lifecycle, sitemaps, robots | partial | Crawlable links, registry-driven sitemap, robots, true 404s exist; search/saved excluded from indexable registry. | Lifecycle 301/404/410 rules, advanced faceted indexability gates, pagination policy, crawl simulation. |
 | P1-SEO-004 | Google Search Console ingestion and SEO alerting | pending | None. | Search Console setup, sitemap submission, API ingestion or manual monitoring workflow, alerts. |
 | P1-CONT-001 | Focused city/locality/RERA/buying/renting guides | prototype | `/guide` page exists. | Real guide routes, author/reviewer/source/freshness fields, Article JSON-LD, editorial approval. |
@@ -442,7 +442,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 10 — Data access layer
 
-**Status:** pending
+**Status:** validated
 **Workstream:** P1-DATA-001, P1-SEO-002
 **Goal:** Stop importing fixtures directly from pages/components.
 
@@ -460,9 +460,16 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- App behavior remains unchanged.
-- Data source can switch later without rewriting pages.
-- Tests cover repository behavior.
+- App behavior remains unchanged. ✅
+- Data source can switch later without rewriting pages. ✅
+- Tests cover repository behavior. ✅
+
+### Evidence
+
+- Added repository facade modules under `client/src/lib/repositories/` for listings, localities, and guides.
+- Updated App Router pages, SEO registry, client pages, Storybook stories, compare tray, and property card type imports to consume repository functions instead of importing fixture arrays directly.
+- Added repository tests covering lookup helpers, static params, guide fixtures, and a static guard that blocks direct fixture imports from app/pages/architech components.
+- Validation: `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ---
 
@@ -487,6 +494,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Item 10 — Data access layer.
+**Recommended next item:** Backend search API and PostgreSQL FTS/trigram.
 
-Reason: the production schema now exists, so the next step is to stop importing fixtures directly from pages/components and introduce typed repository functions that can later switch from fixtures to Prisma-backed data.
+Reason: the schema and repository facade now exist, so the next larger Phase 1 slice should begin moving search from fixture/client-only behavior toward a backend contract and eventual PostgreSQL FTS/trigram implementation.

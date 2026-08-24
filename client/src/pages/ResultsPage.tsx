@@ -7,15 +7,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import PropertyCard, { properties } from "../components/architech/PropertyCard";
+import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import useTitle from "../hooks/useTitle";
 import { applyFilters, applyQuery, applySort, makeFilters, parseFilterParam, serializeFilters, type SortId } from "@/lib/filters";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getListings, type Property } from "@/lib/repositories";
 
-const filterDefs = makeFilters<(typeof properties)[number]>();
+const filterDefs = makeFilters<Property>();
 const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
 
 function SkeletonCard() {
@@ -65,7 +66,7 @@ export default function ResultsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const filtered = useMemo(() => applySort(applyFilters(applyQuery(properties, query), active, filterDefs), sort), [active, sort, query]);
+  const filtered = useMemo(() => applySort(applyFilters(applyQuery(getListings(), query), active, filterDefs), sort), [active, sort, query]);
 
   const updateUrl = (nextFilters: string[], nextSort: SortId = sort) => {
     const p = new URLSearchParams();

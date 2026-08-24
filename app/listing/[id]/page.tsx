@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
-import { properties } from "@/lib/properties";
-import { findLocality } from "@/lib/localities";
+import { getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 
 export function generateStaticParams() {
-  return properties.map((p) => ({ id: p.id }));
+  return getListingStaticParams();
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const property = properties.find((p) => p.id === id);
+  const property = getListingById(id);
   if (!property) return { title: "Not found" };
   return {
     title: `${property.title} — ${property.price}`,
@@ -23,10 +22,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const property = properties.find((p) => p.id === id);
+  const property = getListingById(id);
   if (!property) notFound();
 
-  const locality = findLocality(property.localitySlug);
+  const locality = getLocalityBySlug(property.localitySlug);
   const [lat, lon] = (locality?.marker ?? "23.011,72.559").split(",");
   const jsonLd = {
     "@context": "https://schema.org",

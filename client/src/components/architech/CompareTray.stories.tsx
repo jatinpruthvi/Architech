@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import PropertyCard from "./PropertyCard";
 import { StorySurface } from "@/stories/StorySurface";
-import { properties } from "@/lib/properties";
+import { getListings } from "@/lib/repositories";
 
 const CompareFlow = () => (
   <StorySurface>
@@ -12,7 +12,7 @@ const CompareFlow = () => (
         <p className="mt-3 max-w-xl text-sm leading-6 text-ink/60">Use the compare icon on each card. The floating tray and drawer are provided by the shared provider stack.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-3">
-        {properties.slice(0, 3).map((property, index) => <PropertyCard key={property.id} property={property} index={index} />)}
+        {getListings().slice(0, 3).map((property, index) => <PropertyCard key={property.id} property={property} index={index} />)}
       </div>
     </div>
   </StorySurface>

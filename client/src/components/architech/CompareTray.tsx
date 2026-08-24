@@ -3,16 +3,16 @@
 import { ArrowUpRight, Scale, X } from "lucide-react";
 import Link from "next/link";
 import { useCompare } from "@/contexts/CompareContext";
-import { properties } from "./PropertyCard";
+import { getListings, type Property } from "@/lib/repositories";
 import Pic from "./Pic";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
 export default function CompareTray() {
   const { compared, toggle, clear } = useCompare();
-  const homes = properties.filter((p) => compared.includes(p.id));
+  const homes = getListings().filter((p) => compared.includes(p.id));
   if (homes.length === 0) return null;
 
-  const rows: [string, (p: (typeof properties)[number]) => string][] = [
+  const rows: [string, (p: Property) => string][] = [
     ["Price", (p) => p.price],
     ["Rate", (p) => p.pricePerSqft],
     ["Layout", (p) => p.meta],
