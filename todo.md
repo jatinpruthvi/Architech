@@ -45,6 +45,7 @@
 - [x] Implement final Phase 1 release report.
 - [x] Begin production enablement planning: environments, DB provisioning, legal approvals, and live adapters.
 - [x] Add production environment provisioning and secrets management runbooks/audits.
+- [x] Implement production data adapter layer: server-only Prisma repository adapter with fixture fallback.
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 
 ## Status

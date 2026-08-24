@@ -129,7 +129,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | partial | Prisma 7 schema, initial migration SQL, representative seed script, validation command, repository facade, schema/repository contract tests, and docs exist. | Run migration deploy and seed against provisioned PostgreSQL/PostGIS environment; add Prisma-backed repositories and spatial columns/indexes when DB service is active. |
+| P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | partial | Prisma 7 schema, initial migration SQL, representative seed script, validation command, repository facade, server-only Prisma repository adapter, mapper tests, schema/repository contract tests, and docs exist. | Run migration deploy and seed against provisioned PostgreSQL/PostGIS environment; switch selected server routes to Prisma mode after staging DB validation. |
 | P1-DATA-002 | Audit, provenance, lifecycle, deletion, retention model | partial | Lead API now creates idempotent lead records with consent text, masked phone, and audit-event metadata; Prisma schema has Lead/AuditEvent models. | Persist audit/deletion/retention workflows in PostgreSQL after DB provisioning and legal gate records. |
 
 ## UI, design system, localization
@@ -496,4 +496,4 @@ These should follow after the data foundation is in place:
 
 **Recommended next item:** Execute production environment provisioning when account access/secrets are available.
 
-Reason: environment and secrets runbooks/audits are now in place. Actual provisioning is blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.
+Recent implementation note: a server-only Prisma repository adapter with fixture fallback has been added so production data reads can be enabled via `ARCHITECH_DATA_SOURCE=prisma` after staging database provisioning. Actual provisioning remains blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.
