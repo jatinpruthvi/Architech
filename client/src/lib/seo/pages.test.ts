@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { getListings, getLocalities } from "@/lib/repositories";
+import { getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { getIndexableSeoPages, seoPages } from "./pages";
 import { savedPath, searchPath } from "./urls";
 
 describe("SeoPage registry", () => {
   it("registers the current indexable public page set", () => {
-    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1;
+    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1 + getGuides().length;
     expect(seoPages).toHaveLength(expectedCount);
     expect(seoPages.map((page) => page.routeType)).toContain("home");
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);
     expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
+    expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(1 + getGuides().length);
   });
 
   it("keeps registry IDs, paths, and canonicals unique", () => {
@@ -33,6 +34,7 @@ describe("SeoPage registry", () => {
     const indexablePaths = getIndexableSeoPages().map((page) => page.path);
     expect(indexablePaths).not.toContain(searchPath());
     expect(indexablePaths).not.toContain(savedPath());
+    for (const guide of getGuides().filter((item) => item.status !== "published")) expect(indexablePaths).not.toContain(guide.path);
     expect(getIndexableSeoPages().every((page) => page.indexability === "indexable")).toBe(true);
   });
 

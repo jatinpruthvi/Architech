@@ -1,4 +1,4 @@
-import { getListings, getLocalities } from "@/lib/repositories";
+import { getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { cityPath, cityUrl, guidePath, guideUrl, homePath, homeUrl, listingPath, listingUrl, localityPath, localityUrl } from "./urls";
 
 export type SeoRouteType = "home" | "city" | "locality" | "listing" | "guide";
@@ -96,7 +96,22 @@ const guidePage: SeoPage = {
   sitemap: { changeFrequency: "weekly", priority: 0.6 },
 };
 
-export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage];
+
+const guideDetailPages: SeoPage[] = getGuides().map((guide) => ({
+  id: `guide:${guide.id}`,
+  routeType: "guide",
+  path: guide.path,
+  canonicalUrl: guideUrl(guide.path.replace(/^\/guide\//, "").replace(/\/$/, "")),
+  primaryIntent: `Provide a sourced guide: ${guide.title}.`,
+  indexability: guide.status === "published" ? "indexable" : "noindex",
+  owner: "Content",
+  qualityState: guide.status === "published" ? "prototype-validated" : "editorial-review-required",
+  freshnessPolicy: "Refresh when source evidence, reviewer status, or market guidance changes.",
+  entityIds: ["brand:architech", `guide:${guide.id}`],
+  sitemap: { changeFrequency: "monthly", priority: 0.5 },
+}));
+
+export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages];
 
 export function getIndexableSeoPages() {
   return seoPages.filter((page) => page.indexability === "indexable");

@@ -148,7 +148,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | P1-SEO-002 | Server-rendered public templates and metadata/JSON-LD | partial | Next.js SSR/SSG routes, metadata, Place/Residence/Breadcrumb JSON-LD, repository-fed route params, and raw HTML SEO smoke tests exist. | Snapshot drift tests and production entity snapshots. |
 | P1-SEO-003 | Links, facets, pagination, lifecycle, sitemaps, robots | partial | Crawlable links, registry-driven sitemap, robots, true 404s exist; search/saved excluded from indexable registry. | Lifecycle 301/404/410 rules, advanced faceted indexability gates, pagination policy, crawl simulation. |
 | P1-SEO-004 | Google Search Console ingestion and SEO alerting | partial | Search Console setup docs, config audit, sitemap submission workflow, URL inspection samples, threshold helpers, alert tests, and CI audit exist. | Add live Search Console API ingestion after production domain verification and credential provisioning. |
-| P1-CONT-001 | Focused city/locality/RERA/buying/renting guides | prototype | `/guide` page exists. | Real guide routes, author/reviewer/source/freshness fields, Article JSON-LD, editorial approval. |
+| P1-CONT-001 | Focused city/locality/RERA/buying/renting guides | partial | Structured guide repository, RERA/locality/city guide routes, Article JSON-LD, author/reviewer/source/freshness fields, noindex editorial-review handling, and docs exist. | Database-backed guide CMS, editorial approval workflow, and published/indexable content release. |
 
 ## Search, maps, and discovery
 
@@ -496,4 +496,4 @@ These should follow after the data foundation is in place:
 
 **Recommended next item:** Execute production environment provisioning when account access/secrets are available.
 
-Recent implementation note: a server-only Prisma repository adapter with fixture fallback has been added so production data reads can be enabled via `ARCHITECH_DATA_SOURCE=prisma` after staging database provisioning. Actual provisioning remains blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.
+Recent implementation note: structured guide routes and editorial-review/noindex handling have been added. Actual production provisioning remains blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.
