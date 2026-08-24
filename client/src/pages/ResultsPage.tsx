@@ -3,18 +3,19 @@
    Filters are multi-select (AND), synced to the URL for back-button + sharing.
    Real sort control, honest counts, aria-live announcements, skeletons, bottom-sheet on mobile. */
 import { ArrowUpRight, Crosshair, LayoutList, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import useTitle from "../hooks/useTitle";
-import { applyFilters, applyQuery, applySort, makeFilters, parseFilterParam, serializeFilters, type SortId } from "@/lib/filters";
+import { makeFilters, parseFilterParam, serializeFilters, type SortId } from "@/lib/filters";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getListings, type Property } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
+import { searchListings, type SearchResponse } from "@/lib/search/search";
 
 const filterDefs = makeFilters<Property>();
 const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
@@ -64,9 +65,28 @@ export default function ResultsPage() {
   const [mapMode, setMapMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const activeKey = active.join(",");
+  const initialSearch = useMemo(() => searchListings({ q: query, filters: active, sort }), [activeKey, query, sort]);
+  const [searchResponse, setSearchResponse] = useState<SearchResponse>(initialSearch);
 
-  const filtered = useMemo(() => applySort(applyFilters(applyQuery(getListings(), query), active, filterDefs), sort), [active, sort, query]);
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (query) p.set("q", query);
+    if (active.length) p.set("filters", serializeFilters(active));
+    if (sort !== "fresh") p.set("sort", sort);
+
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/search/${p.toString() ? `?${p}` : ""}`)
+      .then((response) => { if (!response.ok) throw new Error(`Search API ${response.status}`); return response.json() as Promise<SearchResponse>; })
+      .then((data) => { if (!cancelled) setSearchResponse(data); })
+      .catch(() => { if (!cancelled) setSearchResponse(initialSearch); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [activeKey, initialSearch, query, sort]);
+
+  const results = searchResponse.results;
 
   const updateUrl = (nextFilters: string[], nextSort: SortId = sort) => {
     const p = new URLSearchParams();
@@ -74,16 +94,11 @@ export default function ResultsPage() {
     if (nextFilters.length) p.set("filters", serializeFilters(nextFilters));
     if (nextSort !== "fresh") p.set("sort", nextSort);
     router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false });
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    setLoading(true);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setLoading(false), 450);
+
   };
 
   const toggleFilter = (id: string) => updateUrl(active.includes(id) ? active.filter((f) => f !== id) : [...active, id]);
   const clearFilters = () => { setDrawerOpen(false); updateUrl([]); };
-  useEffect(() => () => clearTimeout(timer.current), []);
-
   const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => t.search.filters[f.id] ?? f.label).join(" + ") : t.search.allHomes;
 
   return (
@@ -94,7 +109,7 @@ export default function ResultsPage() {
           <p className="kicker text-brick">{t.search.kicker} · {t.common.ahmedabad}{query ? ` · “${query}”` : ""}</p>
           {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">{t.search.clearSearch} “{query}” <X size={12} /></button>}
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
-            <h1 className="display text-[clamp(36px,5vw,68px)]">{filtered.length} {filtered.length === 1 ? t.search.home : t.search.homes} {t.search.title1} <em className="text-brick">{t.search.cityName}</em></h1>
+            <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {results.length === 1 ? t.search.home : t.search.homes} {t.search.title1} <em className="text-brick">{t.search.cityName}</em></h1>
             <div className="flex gap-2">
               <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
                 <DrawerTrigger asChild>
@@ -110,7 +125,7 @@ export default function ResultsPage() {
                     <FilterChips active={active} onToggle={toggleFilter} vertical />
                     {active.length > 0 && <button onClick={clearFilters} className="touch-44 mt-3 w-full border border-ink/20 py-3 stamp !text-[11px] font-semibold text-ink/70">{t.search.clearAll}</button>}
                     <DrawerClose asChild>
-                      <button className="touch-44 mt-4 w-full bg-night py-3.5 stamp !text-[12px] font-semibold text-cream">{t.search.showHomes} · {filtered.length}</button>
+                      <button className="touch-44 mt-4 w-full bg-night py-3.5 stamp !text-[12px] font-semibold text-cream">{t.search.showHomes} · {results.length}</button>
                     </DrawerClose>
                   </div>
                 </DrawerContent>
@@ -148,19 +163,19 @@ export default function ResultsPage() {
           <div className={mapMode ? "hidden lg:block" : ""}>
             <div className="mb-7 flex items-center justify-between border-b border-ink/10 pb-4">
               <p className="stamp !text-[11px] text-ink/60" aria-live="polite" role="status">
-                {loading ? t.search.updating : `${filtered.length} ${filtered.length === 1 ? t.search.home : t.search.homes} · ${filterSummary}`}
+                {loading ? t.search.updating : `${results.length} ${results.length === 1 ? t.search.home : t.search.homes} · ${filterSummary}`}
               </p>
               <p className="stamp hidden !text-[11px] text-trust sm:block">{t.search.demoFixtures}</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2" aria-busy={loading}>
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-                : filtered.map((property, i) => (
+                : results.map((property, i) => (
                     <Reveal key={`${active.join()}-${sort}-${property.id}`} delay={i * 60}><PropertyCard property={property} index={i} /></Reveal>
                   ))}
             </div>
             {/* Curated empty state */}
-            {!loading && filtered.length === 0 && (
+            {!loading && results.length === 0 && (
               <div className="border border-dashed border-ink/25 p-10 text-center md:p-14">
                 <p className="font-display text-3xl tracking-[-0.02em]">{query ? <>{t.search.noHomesYet} “{query}” {active.length > 0 ? t.search.withFilters : ""} — <em className="text-brick">{t.search.yet}</em>.</> : <>{t.search.noCombination} — <em className="text-brick">{t.search.yet}</em>.</>}</p>
                 <p className="mx-auto mt-3 max-w-[380px] text-sm leading-6 text-ink/60">{t.search.emptyHelp}</p>
@@ -175,9 +190,9 @@ export default function ResultsPage() {
                 </div>
               </div>
             )}
-            {!loading && filtered.length > 0 && (
+            {!loading && results.length > 0 && (
               <div className="mt-12 flex items-center justify-between border-t border-ink/10 pt-6">
-                <span className="stamp !text-[11px] text-ink/60">{t.search.showingAll} {filtered.length} {t.search.demoInventorySuffix}</span>
+                <span className="stamp !text-[11px] text-ink/60">{t.search.showingAll} {results.length} {t.search.demoInventorySuffix}</span>
               </div>
             )}
           </div>
