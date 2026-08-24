@@ -30,7 +30,8 @@ export default function NumberTicker({ value, suffix = "", prefix = "", duration
   }, [value, duration]);
 
   return (
-    <span ref={ref} className={className} aria-label={finalText}>
+    <span ref={ref} className={className}>
+      <span className="sr-only">{finalText}</span>
       <span aria-hidden="true">{prefix}{display.toLocaleString("en-IN")}{suffix}</span>
     </span>
   );

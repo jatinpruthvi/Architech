@@ -22,7 +22,12 @@
 ## Phase 1 execution tracker
 
 - [x] Add `PHASE-1-IMPLEMENTATION-PLAN.md` as the active pick-one-item Phase 1 tracker.
-- [ ] Implement Item 2 from the tracker: central canonical URL builder.
+- [x] Implement Item 2 from the tracker: central canonical URL builder.
+- [x] Implement Item 3 from the tracker: formal `SeoPage` registry.
+- [x] Implement Item 4 from the tracker: no-JavaScript SEO tests.
+- [x] Implement Item 5 from the tracker: accessibility automation.
+- [x] Implement Item 6 from the tracker: complete Hindi UI foundation.
+- [ ] Implement Item 7 from the tracker: Storybook/component documentation.
 
 ## Status
 

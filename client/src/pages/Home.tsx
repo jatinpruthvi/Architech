@@ -17,7 +17,7 @@ import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
 import { localities } from "@/lib/localities";
 import { useLang } from "@/contexts/LangContext";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const tickerItems = ["Paldi", "Navrangpura", "Thaltej", "Bopal", "Satellite", "Ambawadi", "Vastrapur", "Maninagar", "Gulbai Tekra", "Sindhu Bhavan"];
@@ -69,6 +69,8 @@ function HeroSearch() {
             <TabsTrigger key={v} value={v} className="rounded-none border-0 px-7 py-3 stamp !text-[11px] font-semibold text-cream/60 data-[state=active]:bg-brick data-[state=active]:text-cream data-[state=active]:shadow-none">{l}</TabsTrigger>
           ))}
         </TabsList>
+        <TabsContent value="buy" className="sr-only">Buy homes search mode</TabsContent>
+        <TabsContent value="rent" className="sr-only">Rent homes search mode</TabsContent>
       </Tabs>
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}
@@ -152,9 +154,9 @@ export default function Home() {
           </div>
           <div className="fade-rise mt-14 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-6" style={{ "--d": "850ms" } as React.CSSProperties}>
             <div className="flex gap-10 md:gap-16">
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={281} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">verified homes</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={14} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">localities mapped</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[10px] text-cream/65">RERA-checked</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={281} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={14} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[2]}</p></div>
             </div>
             <p className="hidden items-center gap-2 stamp !text-[10px] text-cream/60 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
           </div>
@@ -239,7 +241,7 @@ export default function Home() {
             <p className="kicker text-brick">{t.sections.curatedKicker}</p>
             <h2 className="display mt-6 max-w-[640px] text-[clamp(34px,4.4vw,60px)]">Homes worth <em className="text-brick">returning</em> to.</h2>
           </div>
-          <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">All 281 homes <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
+          <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.sections.all281Homes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
         </Reveal>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {properties.map((property, i) => (

@@ -26,12 +26,15 @@ export default function WordReveal({ text, className = "" }: { text: string; cla
   }, []);
 
   return (
-    <p ref={ref} className={className} aria-label={text}>
-      {words.map((word, i) => (
-        <span key={i} aria-hidden="true" className="inline-block transition-opacity duration-300" style={{ opacity: i / words.length <= progress ? 1 : 0.18 }}>
-          {word}&nbsp;
-        </span>
-      ))}
+    <p ref={ref} className={className}>
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true">
+        {words.map((word, i) => (
+          <span key={i} className="inline-block transition-opacity duration-300" style={{ opacity: i / words.length <= progress ? 1 : 0.18 }}>
+            {word}&nbsp;
+          </span>
+        ))}
+      </span>
     </p>
   );
 }

@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { localities } from "@/lib/localities";
+import { cityUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
   title: "Buy in Ahmedabad — localities with verified context",
   description:
     "Explore Ahmedabad locality by locality: Paldi, Navrangpura, Prahlad Nagar, Thaltej, Bopal, Satellite — with RERA context, real coordinates, and verified distances.",
-  alternates: { canonical: "/buy/ahmedabad/" },
+  alternates: { canonical: cityUrl("ahmedabad") },
 };
 
 /* Server-rendered, fully crawlable city hub (architecture: Home → hubs → cities → localities). */

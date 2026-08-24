@@ -1,10 +1,9 @@
 import type { MetadataRoute } from "next";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://architech-demo.example.com";
+import { savedPath, searchPath, sitemapUrl } from "@/lib/seo/urls";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/saved/", "/search/"] }],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    rules: [{ userAgent: "*", allow: "/", disallow: [savedPath(), searchPath()] }],
+    sitemap: sitemapUrl(),
   };
 }

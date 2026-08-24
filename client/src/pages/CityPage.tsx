@@ -8,10 +8,12 @@ import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
 import { findLocality, localities } from "@/lib/localities";
+import { useLang } from "@/contexts/LangContext";
 
 export default function CityPage({ localitySlug }: { localitySlug: string }) {
   const locality = findLocality(localitySlug);
-  useTitle(locality ? `${locality.name}, Ahmedabad — homes & locality context` : "Not found");
+  const { t } = useLang();
+  useTitle(locality ? `${locality.name}, ${t.common.ahmedabad} — homes & locality context` : "Not found");
   if (!locality) return null;
 
   const isPaldi = locality.slug === "paldi";
@@ -26,28 +28,28 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
       <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
           <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
-            <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
-            <Link href="/buy/ahmedabad/" className="link-rail hover:text-brick">Buy in Ahmedabad</Link><span>/</span>
+            <Link href="/" className="link-rail hover:text-brick">{t.locality.breadcrumbHome}</Link><span>/</span>
+            <Link href="/buy/ahmedabad/" className="link-rail hover:text-brick">{t.locality.breadcrumbCity}</Link><span>/</span>
             <span className="text-ink/80">{locality.name}</span>
           </nav>
           <div className="mt-12 grid gap-12 md:grid-cols-[1.25fr_0.75fr] md:items-end">
             <div>
-              <p className="kicker text-brick">A locality, in context · {locality.hindi}</p>
-              <h1 className="display mt-6 text-[clamp(44px,7vw,96px)]">{locality.name}, <em className="text-brick">Ahmedabad.</em></h1>
+              <p className="kicker text-brick">{t.locality.kicker} · {locality.hindi}</p>
+              <h1 className="display mt-6 text-[clamp(44px,7vw,96px)]">{locality.name}, <em className="text-brick">{t.locality.titleCity}</em></h1>
               <p className="mt-7 max-w-[560px] text-base leading-8 text-ink/65 md:text-lg">
-                {locality.note}. Explore homes with the whole place around them — streets, distances, and sources included.
+                {locality.note}. {t.locality.introSuffix}
               </p>
               <p className="stamp mt-5 !text-[10px] text-ink/60">{locality.coords} · © OpenStreetMap contributors</p>
             </div>
             <Reveal delay={100}>
               <div className="border-l-4 border-brick bg-paper p-6 editorial-shadow md:p-7">
-                <p className="stamp !text-[10px] text-ink/60">Locality snapshot · demo data</p>
+                <p className="stamp !text-[10px] text-ink/60">{t.locality.snapshot}</p>
                 <div className="mt-5 grid grid-cols-2 gap-6">
-                  {[[`${locality.homes * 3}`, "active homes"], ["₹11.2k", "median / sq ft"], ["4.8 km", "to riverfront"], ["92%", "RERA coverage"]].map(([n, l]) => (
+                  {[[`${locality.homes * 3}`, t.locality.activeHomes], ["₹11.2k", t.locality.medianRate], ["4.8 km", t.locality.toRiverfront], ["92%", t.locality.reraCoverage]].map(([n, l]) => (
                     <div key={l}><strong className="font-display text-[28px] font-medium tracking-[-0.02em]">{n}</strong><p className="stamp mt-1 !text-[10px] text-ink/60">{l}</p></div>
                   ))}
                 </div>
-                <p className="mt-5 flex items-center gap-2 border-t border-ink/10 pt-4 stamp !text-[10px] text-trust"><Clock3 size={12} /> Updated 21 Aug 2026 · Sources reviewed</p>
+                <p className="mt-5 flex items-center gap-2 border-t border-ink/10 pt-4 stamp !text-[10px] text-trust"><Clock3 size={12} /> {t.locality.updatedSources}</p>
               </div>
             </Reveal>
           </div>
@@ -57,12 +59,12 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
       {/* Feel of the place */}
       <section className="container grid gap-14 py-20 md:grid-cols-[0.95fr_1.05fr] md:items-center md:py-28">
         <Reveal>
-          <p className="kicker text-brick">What the place feels like</p>
-          <h2 className="display mt-6 max-w-[480px] text-[clamp(30px,3.8vw,52px)]">A neighbourhood with a front door and a <em className="text-brick">backstory</em>.</h2>
+          <p className="kicker text-brick">{t.locality.feelKicker}</p>
+          <h2 className="display mt-6 max-w-[480px] text-[clamp(30px,3.8vw,52px)]">{t.locality.feelTitle1} <em className="text-brick">{t.locality.feelTitleEm}</em>.</h2>
           <p className="mt-7 max-w-[460px] text-[15px] leading-7 text-ink/65">
             {isPaldi
               ? "Paldi balances a residential rhythm with a generous everyday life: walkable lanes, places to eat that aren't chains, and a strong mix of established homes and newer projects."
-              : `${locality.name} — ${locality.note.toLowerCase()}. Our field team is writing the full locality study; the essentials below are verified from public records.`}
+              : `${locality.name} — ${locality.note.toLowerCase()}. ${t.locality.fullStudySoon}`}
           </p>
           <ul className="mt-9 space-y-4 text-sm text-ink/75">
             {(isPaldi
@@ -72,7 +74,7 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
             ))}
           </ul>
           <div className="mt-10 flex flex-wrap gap-2">
-            <span className="stamp mr-1 mt-2 !text-[10px] text-ink/60">Nearby —</span>
+            <span className="stamp mr-1 mt-2 !text-[10px] text-ink/60">{t.locality.nearby}</span>
             {nearby.map((n) => (
               <Link key={n.slug} href={`/buy/ahmedabad/${n.slug}/`} className="border border-ink/20 px-3.5 py-2 stamp !text-[11px] text-ink/75 transition-colors hover:border-brick hover:text-brick">{n.name}</Link>
             ))}
@@ -102,8 +104,8 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
               <p className="stamp absolute right-3 top-3 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
             </div>
             <div className="bg-card p-7 md:p-9">
-              <p className="kicker text-brick !text-[10px]">Measured, not guessed</p>
-              <h3 className="mt-4 font-display text-2xl font-medium tracking-[-0.02em]">Distances from {locality.name}</h3>
+              <p className="kicker text-brick !text-[10px]">{t.locality.measured}</p>
+              <h3 className="mt-4 font-display text-2xl font-medium tracking-[-0.02em]">{t.locality.distancesFrom} {locality.name}</h3>
               {locality.landmarks ? (
                 <div className="mt-6 space-y-0 border-t border-ink/12">
                   {locality.landmarks.map(([place, d]) => (
@@ -116,7 +118,7 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
               ) : (
                 <p className="mt-6 border-t border-ink/12 pt-5 text-sm leading-6 text-ink/60">Verified landmark distances for {locality.name} are being measured by our field team — publishing with the full locality study.</p>
               )}
-              <p className="stamp mt-5 !text-[9px] leading-4 text-ink/60">Geodata via OpenStreetMap · straight-line distances</p>
+              <p className="stamp mt-5 !text-[9px] leading-4 text-ink/60">{t.locality.geodata}</p>
             </div>
           </div>
         </Reveal>
@@ -127,10 +129,10 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
         <div className="container">
           <Reveal className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div>
-              <p className="kicker text-brick">Homes in {locality.name}</p>
-              <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">Every home carries a <em className="text-brick">source trail</em>.</h2>
+              <p className="kicker text-brick">{t.locality.homesIn} {locality.name}</p>
+              <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">{t.locality.sourceTrailTitle} <em className="text-brick">{t.locality.sourceTrailEm}</em>.</h2>
             </div>
-            <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">Refine in search <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
+            <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.locality.refine} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
           </Reveal>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {showcase.map((property, i) => (
@@ -146,10 +148,10 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
           <div className="grid gap-8 border border-ink/12 bg-card p-8 md:grid-cols-[auto_1fr_auto] md:items-center md:p-10">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-trust/10 text-trust"><ShieldCheck size={24} /></span>
             <div>
-              <p className="font-display text-2xl font-medium tracking-[-0.015em]">Every {locality.name} listing is checked against Gujarat RERA.</p>
-              <p className="mt-2 max-w-[560px] text-sm leading-6 text-ink/60">Registration numbers, promoter details, and completion status are reviewed before publication — and re-checked when a listing is updated.</p>
+              <p className="font-display text-2xl font-medium tracking-[-0.015em]">{t.locality.trustTitlePrefix} {locality.name} {t.locality.trustTitleSuffix}</p>
+              <p className="mt-2 max-w-[560px] text-sm leading-6 text-ink/60">{t.locality.trustCopy}</p>
             </div>
-            <Link href="/guide" className="btn-sweep motion-press inline-flex w-fit items-center gap-2 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream">How we verify</Link>
+            <Link href="/guide" className="btn-sweep motion-press inline-flex w-fit items-center gap-2 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream">{t.locality.verifyCta}</Link>
           </div>
         </Reveal>
       </section>

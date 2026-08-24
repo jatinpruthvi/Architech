@@ -20,7 +20,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Type check
         run: pnpm check
+      - name: Lint
+        run: pnpm lint
       - name: Unit tests
         run: pnpm test
       - name: Production build
         run: pnpm build
+      - name: No-JavaScript SEO smoke tests
+        run: pnpm test:seo
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Accessibility smoke tests
+        run: pnpm test:a11y

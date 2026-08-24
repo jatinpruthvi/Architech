@@ -35,7 +35,7 @@ function SkeletonCard() {
 function FilterChips({ active, onToggle, vertical = false }: { active: string[]; onToggle: (id: string) => void; vertical?: boolean }) {
   const { t } = useLang();
   return (
-    <div className={vertical ? "flex flex-col gap-2" : "flex flex-wrap items-center gap-2"} role="group" aria-label="Filters (combinable)">
+    <div className={vertical ? "flex flex-col gap-2" : "flex flex-wrap items-center gap-2"} role="group" aria-label={t.search.filtersGroup}>
       {filterDefs.map((f) => {
         const on = active.includes(f.id);
         return (
@@ -83,39 +83,39 @@ export default function ResultsPage() {
   const clearFilters = () => { setDrawerOpen(false); updateUrl([]); };
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => f.label).join(" + ") : "All homes";
+  const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => t.search.filters[f.id] ?? f.label).join(" + ") : t.search.allHomes;
 
   return (
     <div className="bg-paper pt-[78px] text-ink">
       {/* Header */}
       <section className="border-b border-ink/12 bg-sand/70 py-12 md:py-16">
         <div className="container">
-          <p className="kicker text-brick">Search · Ahmedabad{query ? ` · “${query}”` : ""}</p>
-          {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">Clear search “{query}” <X size={12} /></button>}
+          <p className="kicker text-brick">{t.search.kicker} · {t.common.ahmedabad}{query ? ` · “${query}”` : ""}</p>
+          {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">{t.search.clearSearch} “{query}” <X size={12} /></button>}
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
             <h1 className="display text-[clamp(36px,5vw,68px)]">{filtered.length} {filtered.length === 1 ? t.search.home : t.search.homes} {t.search.title1} <em className="text-brick">{t.search.cityName}</em></h1>
             <div className="flex gap-2">
               <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
                 <DrawerTrigger asChild>
                   <button className="touch-44 inline-flex items-center gap-2 border border-ink/20 px-4 stamp !text-[11px] font-semibold transition-colors hover:border-brick hover:text-brick md:hidden">
-                    <SlidersHorizontal size={14} /> Filters {active.length > 0 && <span className="grid h-5 w-5 place-items-center rounded-full bg-brick text-[10px] text-cream">{active.length}</span>}
+                    <SlidersHorizontal size={14} /> {t.search.filtersButton} {active.length > 0 && <span className="grid h-5 w-5 place-items-center rounded-full bg-brick text-[10px] text-cream">{active.length}</span>}
                   </button>
                 </DrawerTrigger>
                 <DrawerContent className="border-t-2 border-brick bg-paper">
                   <DrawerHeader className="text-left">
-                    <DrawerTitle className="font-display text-2xl font-medium tracking-[-0.02em]">Filter homes</DrawerTitle>
+                    <DrawerTitle className="font-display text-2xl font-medium tracking-[-0.02em]">{t.search.filterHomes}</DrawerTitle>
                   </DrawerHeader>
                   <div className="px-4 pb-8">
                     <FilterChips active={active} onToggle={toggleFilter} vertical />
-                    {active.length > 0 && <button onClick={clearFilters} className="touch-44 mt-3 w-full border border-ink/20 py-3 stamp !text-[11px] font-semibold text-ink/70">Clear all</button>}
+                    {active.length > 0 && <button onClick={clearFilters} className="touch-44 mt-3 w-full border border-ink/20 py-3 stamp !text-[11px] font-semibold text-ink/70">{t.search.clearAll}</button>}
                     <DrawerClose asChild>
-                      <button className="touch-44 mt-4 w-full bg-night py-3.5 stamp !text-[12px] font-semibold text-cream">Show {filtered.length} homes</button>
+                      <button className="touch-44 mt-4 w-full bg-night py-3.5 stamp !text-[12px] font-semibold text-cream">{t.search.showHomes} · {filtered.length}</button>
                     </DrawerClose>
                   </div>
                 </DrawerContent>
               </Drawer>
               <button onClick={() => setMapMode(!mapMode)} className="touch-44 inline-flex items-center gap-2 border border-ink/20 px-4 stamp !text-[11px] font-semibold transition-colors hover:border-brick hover:text-brick lg:hidden" aria-pressed={mapMode}>
-                {mapMode ? <><LayoutList size={14} /> List</> : <><MapIcon size={14} /> Map</>}
+                {mapMode ? <><LayoutList size={14} /> {t.search.list}</> : <><MapIcon size={14} /> {t.search.map}</>}
               </button>
             </div>
           </div>
@@ -127,8 +127,8 @@ export default function ResultsPage() {
             <div className="ml-auto flex items-center gap-2">
               <span className="stamp !text-[10px] text-ink/60">{t.search.sort}</span>
               <Select value={sort} onValueChange={(v) => updateUrl(active, v as SortId)}>
-                <SelectTrigger className="h-11 w-[190px] rounded-none border-ink/20 bg-transparent stamp !text-[11px] font-semibold">
-                  <SelectValue />
+                <SelectTrigger aria-label={t.search.sortHomes} className="h-11 w-[190px] rounded-none border-ink/20 bg-transparent stamp !text-[11px] font-semibold">
+                  <SelectValue placeholder={t.search.sortFresh} />
                 </SelectTrigger>
                 <SelectContent className="rounded-none border-ink/15 bg-paper">
                   <SelectItem value="fresh">{t.search.sortFresh}</SelectItem>
@@ -147,9 +147,9 @@ export default function ResultsPage() {
           <div className={mapMode ? "hidden lg:block" : ""}>
             <div className="mb-7 flex items-center justify-between border-b border-ink/10 pb-4">
               <p className="stamp !text-[11px] text-ink/60" aria-live="polite" role="status">
-                {loading ? "Updating results…" : `${filtered.length} ${filtered.length === 1 ? "home" : "homes"} · ${filterSummary}`}
+                {loading ? t.search.updating : `${filtered.length} ${filtered.length === 1 ? t.search.home : t.search.homes} · ${filterSummary}`}
               </p>
-              <p className="stamp hidden !text-[11px] text-trust sm:block">Demo fixtures · updated daily in production</p>
+              <p className="stamp hidden !text-[11px] text-trust sm:block">{t.search.demoFixtures}</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2" aria-busy={loading}>
               {loading
@@ -161,28 +161,28 @@ export default function ResultsPage() {
             {/* Curated empty state */}
             {!loading && filtered.length === 0 && (
               <div className="border border-dashed border-ink/25 p-10 text-center md:p-14">
-                <p className="font-display text-3xl tracking-[-0.02em]">{query ? <>No homes match “{query}” {active.length > 0 ? "with those filters" : ""} — <em className="text-brick">yet</em>.</> : <>Nothing matches that combination — <em className="text-brick">yet</em>.</>}</p>
-                <p className="mx-auto mt-3 max-w-[380px] text-sm leading-6 text-ink/60">Loosen a filter, try a trending search, or save this search and we'll tell you the moment something arrives.</p>
+                <p className="font-display text-3xl tracking-[-0.02em]">{query ? <>{t.search.noHomesYet} “{query}” {active.length > 0 ? t.search.withFilters : ""} — <em className="text-brick">{t.search.yet}</em>.</> : <>{t.search.noCombination} — <em className="text-brick">{t.search.yet}</em>.</>}</p>
+                <p className="mx-auto mt-3 max-w-[380px] text-sm leading-6 text-ink/60">{t.search.emptyHelp}</p>
                 <div className="mt-7 flex flex-wrap justify-center gap-2">
                   {trending.map((t) => (
                     <button key={t} onClick={clearFilters} className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick">{t}</button>
                   ))}
                 </div>
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <button onClick={() => toast("Search saved", { description: "We'll notify you when a matching home arrives. (Demo)" })} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream">Save this search</button>
-                  <Link href="/guide" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-brick">Read locality guides <ArrowUpRight size={13} /></Link>
+                  <button onClick={() => toast(t.search.searchSavedToast, { description: t.search.searchSavedDescription })} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream">{t.search.saveSearch}</button>
+                  <Link href="/guide" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-brick">{t.search.readGuides} <ArrowUpRight size={13} /></Link>
                 </div>
               </div>
             )}
             {!loading && filtered.length > 0 && (
               <div className="mt-12 flex items-center justify-between border-t border-ink/10 pt-6">
-                <span className="stamp !text-[11px] text-ink/60">Showing all {filtered.length} demo {filtered.length === 1 ? "home" : "homes"} — full inventory arrives with the live data build</span>
+                <span className="stamp !text-[11px] text-ink/60">{t.search.showingAll} {filtered.length} {t.search.demoInventorySuffix}</span>
               </div>
             )}
           </div>
 
           {/* Real OpenStreetMap aside */}
-          <aside className={`relative min-h-[480px] overflow-hidden border border-ink/12 bg-sand ${mapMode ? "block" : "hidden lg:block"} lg:sticky lg:top-[102px] lg:h-[calc(100vh-130px)]`} aria-label="Map of Ahmedabad homes">
+          <aside className={`relative min-h-[480px] overflow-hidden border border-ink/12 bg-sand ${mapMode ? "block" : "hidden lg:block"} lg:sticky lg:top-[102px] lg:h-[calc(100vh-130px)]`} aria-label={t.search.mapLabel}>
             <iframe
               title="Map of Ahmedabad localities — OpenStreetMap"
               src="https://www.openstreetmap.org/export/embed.html?bbox=72.4300%2C22.9650%2C72.6350%2C23.0950&layer=mapnik&marker=23.011%2C72.559"
@@ -191,13 +191,13 @@ export default function ResultsPage() {
             />
             <p className="stamp absolute right-3 top-3 z-10 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
             <button
-              onClick={() => toast("Searching this area", { description: "Results refresh for the visible map area with the live data build. Filters kept." })}
+              onClick={() => toast(t.search.searchingArea, { description: t.search.searchingAreaDescription })}
               className="touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp !text-[11px] font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
-              <Crosshair size={14} className="text-ember" /> Search this area
+              <Crosshair size={14} className="text-ember" /> {t.search.searchArea}
             </button>
             <div className="pointer-events-none absolute inset-x-5 bottom-5 z-10 border border-ink/12 bg-paper/95 p-5 backdrop-blur">
-              <p className="stamp !text-[10px] font-semibold text-brick">Live cartography · Paldi pinned</p>
-              <p className="mt-2 text-sm leading-6 text-ink/65">Real OpenStreetMap data for Ahmedabad — explore the shape of the neighbourhood without losing the list.</p>
+              <p className="stamp !text-[10px] font-semibold text-brick">{t.search.liveCartography}</p>
+              <p className="mt-2 text-sm leading-6 text-ink/65">{t.search.mapCopy}</p>
             </div>
           </aside>
         </div>

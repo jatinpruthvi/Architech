@@ -103,11 +103,11 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | Order | Item | Workstream IDs | Status | Why next |
 |---:|---|---|---|---|
 | 1 | Add this Phase 1 tracker | P1-GOV-001 | implemented | Creates the working control board. |
-| 2 | Central canonical URL builder | P1-SEO-001, SEO-001 | pending | Removes hardcoded URL logic before more SEO work. |
-| 3 | Formal `SeoPage` registry | P1-SEO-001, SEO-002, SEO-003 | pending | Ensures only qualified pages enter sitemap/indexing. |
-| 4 | No-JavaScript SEO tests | UX-001, SEO-006, P1-TEST-001 | pending | Protects the Google-indexable foundation. |
-| 5 | Accessibility automation | P1-UI-001, P1-TEST-001 | pending | Turns manual accessibility confidence into a test gate. |
-| 6 | Complete Hindi UI foundation | P1-I18N-001, UX-004 | pending | Improves India readiness before backend fields. |
+| 2 | Central canonical URL builder | P1-SEO-001, SEO-001 | validated | Central helper added in `client/src/lib/seo/urls.ts`; used by metadata, JSON-LD, sitemap, and robots. |
+| 3 | Formal `SeoPage` registry | P1-SEO-001, SEO-002, SEO-003 | validated | Registry added in `client/src/lib/seo/pages.ts`; sitemap is registry-driven. |
+| 4 | No-JavaScript SEO tests | UX-001, SEO-006, P1-TEST-001 | validated | `pnpm test:seo` builds, starts Next, and verifies raw HTML facts for key public pages. |
+| 5 | Accessibility automation | P1-UI-001, P1-TEST-001 | validated | Playwright + axe smoke tests cover main routes on desktop/mobile and keyboard checks. |
+| 6 | Complete Hindi UI foundation | P1-I18N-001, UX-004 | validated | Hindi dictionary expanded across search, saved, locality, listing, cards, CTAs, and trust UI. |
 | 7 | Storybook/component documentation | P1-UI-001 | pending | Documents UI states, dark mode, Hindi, and accessibility. |
 | 8 | Performance/bundle/Core Web Vitals budgets | PERF-001, PERF-002, P1-TEST-001 | pending | Prevents regressions before adding heavier features. |
 | 9 | Prisma/PostgreSQL/PostGIS schema | P1-DATA-001 | pending | Starts the production data foundation. |
@@ -122,7 +122,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
 | P1-GOV-001 | Normative document, IDs, decision log, supersession manifest | partial | Governance files exist; this tracker added. | Confirm all active decisions have IDs and link this tracker from docs. |
-| P1-PLAT-001 | Next.js 16, CI, environments, secrets, deployment | partial | Next.js 16 app exists; `.github/workflows/ci.yml` exists; PR #2 passed local gates. | Real preview/prod deploy, environment management, rollback process, health checks, secret handling. |
+| P1-PLAT-001 | Next.js 16, CI, environments, secrets, deployment | partial | Next.js 16 app exists; `.github/workflows/ci.yml` runs type, lint, unit, build, and no-JS SEO gates. | Real preview/prod deploy, environment management, rollback process, health checks, secret handling. |
 | P1-PLAT-002 | Railway API/worker services and managed data services | pending | None. | Railway services, private networking, DB/Redis provisioning, backups, pool limits, alerts. |
 
 ## Data and domain model
@@ -136,17 +136,17 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-UI-001 | Design tokens, typography, shadcn/Radix components, Storybook | partial | Amdavad Modern tokens, dark tokens, components, responsive pages. | Storybook, component state coverage, visual regression, formal Devanagari layout tests. |
+| P1-UI-001 | Design tokens, typography, shadcn/Radix components, Storybook | partial | Amdavad Modern tokens, dark tokens, components, responsive pages, and automated accessibility smoke tests. | Storybook, component state coverage, visual regression, formal Devanagari layout tests. |
 | P1-UI-002 | Premium motion system and fallbacks | prototype | Reveal/card motion and reduced-motion CSS exist. | Motion benchmarks, no-WebGL/no-video fallback evidence, device performance validation. |
-| P1-I18N-001 | English/Hindi fields, aliases, transliteration, dictionaries, formatting | partial | Hindi toggle and dictionary foundation in `client/src/lib/i18n.ts`; `<html lang>` switching. | Full UI dictionary, entity locale fields, aliases/transliteration, mixed-language search tests, metadata tests, editorial review workflow. |
+| P1-I18N-001 | English/Hindi fields, aliases, transliteration, dictionaries, formatting | partial | Expanded Hindi UI dictionary, `<html lang>` switching, major-surface Hindi labels, partial-translation note, and dictionary coverage tests exist. | Entity locale fields, aliases/transliteration, mixed-language search tests, metadata tests, editorial review workflow. |
 
 ## SEO and content
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-SEO-001 | Canonical URL builder and `SeoPage` registry | partial | Per-route canonicals exist via Next metadata. | Central URL builder, formal `SeoPage` registry, canonical consistency tests. |
-| P1-SEO-002 | Server-rendered public templates and metadata/JSON-LD | partial | Next.js SSR/SSG routes, metadata, Place/Residence/Breadcrumb JSON-LD. | Raw HTML/no-JS test suite, snapshot drift tests, production entity snapshots. |
-| P1-SEO-003 | Links, facets, pagination, lifecycle, sitemaps, robots | partial | Crawlable links, sitemap, robots, true 404s exist. | Lifecycle 301/404/410 rules, faceted indexability gates, pagination policy, crawl simulation. |
+| P1-SEO-001 | Canonical URL builder and `SeoPage` registry | validated | Central canonical URL builder plus formal `SeoPage` registry and tests exist; sitemap is registry-driven. | Continue expanding registry when production data, lifecycle states, and guide routes are added. |
+| P1-SEO-002 | Server-rendered public templates and metadata/JSON-LD | partial | Next.js SSR/SSG routes, metadata, Place/Residence/Breadcrumb JSON-LD, and raw HTML SEO smoke tests exist. | Snapshot drift tests and production entity snapshots. |
+| P1-SEO-003 | Links, facets, pagination, lifecycle, sitemaps, robots | partial | Crawlable links, registry-driven sitemap, robots, true 404s exist; search/saved excluded from indexable registry. | Lifecycle 301/404/410 rules, advanced faceted indexability gates, pagination policy, crawl simulation. |
 | P1-SEO-004 | Google Search Console ingestion and SEO alerting | pending | None. | Search Console setup, sitemap submission, API ingestion or manual monitoring workflow, alerts. |
 | P1-CONT-001 | Focused city/locality/RERA/buying/renting guides | prototype | `/guide` page exists. | Real guide routes, author/reviewer/source/freshness fields, Article JSON-LD, editorial approval. |
 
@@ -174,7 +174,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 |---|---|---|---|---|
 | P1-OBS-001 | Sentry, Pino, OpenTelemetry, RUM, dashboards, SLOs | pending | None. | Error tracking, structured logs, traces, Web Vitals/RUM, alerts, incident runbook. |
 | P1-OFF-001 | Authority baseline, assets, relationship registry, outreach governance | partial | Google-first off-page authority strategy exists in docs. | Asset registry, outreach log, disclosure review, referral/reporting baseline. |
-| P1-TEST-001 | Full unit/integration/E2E/accessibility/performance/security/SEO suite | partial | TypeScript, ESLint, Vitest, production build pass. | Playwright E2E, axe/accessibility, SEO raw HTML tests, performance budgets, security checks, release report. |
+| P1-TEST-001 | Full unit/integration/E2E/accessibility/performance/security/SEO suite | partial | TypeScript, ESLint, Vitest, production build, no-JavaScript SEO smoke tests, and Playwright/axe accessibility smoke tests pass. | Broader Playwright E2E journeys, performance budgets, security checks, release report. |
 
 ---
 
@@ -182,7 +182,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 2 — Central canonical URL builder
 
-**Status:** pending  
+**Status:** validated  
 **Workstream:** P1-SEO-001, SEO-001  
 **Goal:** Every route, metadata object, JSON-LD object, sitemap entry, and robots reference should use one canonical URL helper.
 
@@ -202,15 +202,22 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- Canonical URLs are consistent across metadata, sitemap, robots, and JSON-LD.
-- Tests fail if a URL loses trailing slash policy.
-- `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build` pass.
+- Canonical URLs are consistent across metadata, sitemap, robots, and JSON-LD. ✅
+- Tests fail if a URL loses trailing slash policy. ✅
+- `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build` pass. ✅
+
+### Evidence
+
+- Added `client/src/lib/seo/urls.ts`.
+- Added `client/src/lib/seo/urls.test.ts`.
+- Replaced route-level hardcoded canonical URL construction in metadata, sitemap, robots, and JSON-LD.
+- Validation: `pnpm check`, `pnpm lint`, `pnpm test` (19 passed), `pnpm build`.
 
 ---
 
 ## Item 3 — Formal `SeoPage` registry
 
-**Status:** pending  
+**Status:** validated  
 **Workstream:** P1-SEO-001, SEO-002, SEO-003  
 **Goal:** Define which pages are indexable and why.
 
@@ -232,15 +239,22 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- Sitemap only includes canonical, indexable pages.
-- Faceted/search pages are excluded unless explicitly approved later.
-- Tests pass.
+- Sitemap only includes canonical, indexable pages. ✅
+- Faceted/search pages are excluded unless explicitly approved later. ✅
+- Tests pass. ✅
+
+### Evidence
+
+- Added `client/src/lib/seo/pages.ts` with `SeoPage` type, ownership, intent, indexability, quality state, freshness policy, entity IDs, and sitemap policy.
+- Added `client/src/lib/seo/pages.test.ts`.
+- Updated `app/sitemap.ts` to generate from `getIndexableSeoPages()`.
+- Validation: `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ---
 
 ## Item 4 — No-JavaScript SEO tests
 
-**Status:** pending  
+**Status:** validated  
 **Workstream:** UX-001, SEO-006, P1-TEST-001  
 **Goal:** Guarantee public page facts exist in raw server HTML.
 
@@ -257,14 +271,22 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- Tests cover `/`, `/buy/ahmedabad/`, `/buy/ahmedabad/paldi/`, `/listing/garden-courtyard/`.
-- Tests pass in CI.
+- Tests cover `/`, `/buy/ahmedabad/`, `/buy/ahmedabad/paldi/`, `/listing/garden-courtyard/`. ✅
+- Tests pass in CI. ✅ Added to `.github/workflows/ci.yml`.
+
+### Evidence
+
+- Added `scripts/seo/raw-html-smoke.mjs`.
+- Added `pnpm test:seo` script.
+- Updated CI to run lint and no-JavaScript SEO smoke tests.
+- The SEO smoke test builds production Next.js, starts `next start`, fetches raw HTML, and verifies titles, canonicals, JSON-LD, crawlable links/breadcrumbs, locality facts, and listing price/locality facts.
+- Validation: `pnpm test:seo`; full gate: `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ---
 
 ## Item 5 — Accessibility automation
 
-**Status:** pending  
+**Status:** validated  
 **Workstream:** P1-UI-001, P1-TEST-001  
 **Goal:** Add automated accessibility checks for key flows.
 
@@ -281,13 +303,23 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- `pnpm test:a11y` exists and passes locally/CI.
+- `pnpm test:a11y` exists and passes locally/CI. ✅
+
+### Evidence
+
+- Added `playwright.a11y.config.ts`.
+- Added `tests/a11y/accessibility.spec.ts`.
+- Added `pnpm test:a11y`.
+- Updated CI to install Chromium dependencies and run accessibility smoke tests.
+- Fixed real axe findings: screen-reader text for animated counters/word reveal, Radix tab panel linkage, sort select accessible name, and skip-link focus target.
+- Coverage: Home, Search, Paldi locality, garden-courtyard listing, Saved, skip link, theme toggle, and language toggle on desktop and mobile Chromium.
+- Validation: `pnpm test:a11y` passed 14 tests; full gate: `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 ---
 
 ## Item 6 — Complete Hindi UI foundation
 
-**Status:** pending  
+**Status:** validated  
 **Workstream:** P1-I18N-001, UX-004  
 **Goal:** Expand Hindi toggle beyond the current hero/header foundation.
 
@@ -300,9 +332,17 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- Major UI labels are translated.
-- Editorial/listing content is clearly marked partial until reviewed.
-- No `hreflang` is emitted until equivalent reviewed pages exist.
+- Major UI labels are translated. ✅
+- Editorial/listing content is clearly marked partial until reviewed. ✅
+- No `hreflang` is emitted until equivalent reviewed pages exist. ✅
+
+### Evidence
+
+- Expanded `client/src/lib/i18n.ts` for search, saved, locality, listing, property cards, trust labels, dialogs, map copy, and common translation status.
+- Updated major pages/components to consume the expanded dictionary: `ResultsPage`, `Saved`, `CityPage`, `ListingPage`, `PropertyCard`, and homepage stats/CTA labels.
+- Added `client/src/lib/i18n.test.ts` to verify English/Hindi dictionary shape parity, major Hindi surface coverage, and partial-translation disclosure.
+- Hindi remains a reviewed UI foundation only; property editorial prose and full SEO alternates are intentionally not marked as equivalent Hindi pages yet.
+- Validation: `pnpm check`, `pnpm lint`, `pnpm test` (27 passed), `pnpm build`, `pnpm test:a11y`, `pnpm test:seo`.
 
 ---
 
@@ -414,6 +454,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Item 2 — Central canonical URL builder.
+**Recommended next item:** Item 7 — Storybook/component documentation.
 
-Reason: it is small, high-leverage, and should be completed before adding the `SeoPage` registry, raw HTML SEO tests, guide expansion, or production data model.
+Reason: the major UI foundations now have SEO, accessibility, and Hindi coverage gates, so the next step is documenting reusable component states, themes, and language variants for design-system maturity.

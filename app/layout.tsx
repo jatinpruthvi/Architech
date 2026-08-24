@@ -3,9 +3,8 @@ import type { ReactNode } from "react";
 import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
+import { assetUrl, homeUrl, SITE_URL } from "@/lib/seo/urls";
 import "@/index.css";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://architech-demo.example.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -16,15 +15,16 @@ export const metadata: Metadata = {
   description:
     "Architech is a high-trust way to discover Ahmedabad homes: verified RERA context, locality intelligence, and architecture-grade curation.",
   manifest: "/manifest.webmanifest",
+  alternates: { canonical: homeUrl() },
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }], apple: "/icon-192.png" },
   openGraph: {
     type: "website",
     siteName: "Architech",
     locale: "en_IN",
-    url: "/",
+    url: homeUrl(),
     title: "Architech — Find the place before the address.",
     description: "A high-trust way to discover Ahmedabad homes: verified RERA context, locality intelligence, and architecture-grade curation.",
-    images: [{ url: "/images/hero-ahmedabad.jpg", width: 1376, height: 768, alt: "Brick architecture of Ahmedabad at golden hour" }],
+    images: [{ url: assetUrl("/images/hero-ahmedabad.jpg"), width: 1376, height: 768, alt: "Brick architecture of Ahmedabad at golden hour" }],
   },
   twitter: { card: "summary_large_image" },
 };
@@ -36,18 +36,18 @@ const websiteJsonLd = {
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": `${SITE_URL}/#website`,
-      url: `${SITE_URL}/`,
+      "@id": `${homeUrl()}#website`,
+      url: homeUrl(),
       name: "Architech",
       description: "High-trust home discovery for Ahmedabad, India.",
       inLanguage: ["en-IN", "hi-IN"],
     },
     {
       "@type": "Organization",
-      "@id": `${SITE_URL}/#org`,
+      "@id": `${homeUrl()}#org`,
       name: "Architech",
-      url: `${SITE_URL}/`,
-      logo: `${SITE_URL}/icon-512.png`,
+      url: homeUrl(),
+      logo: assetUrl("/icon-512.png"),
       areaServed: { "@type": "City", name: "Ahmedabad" },
     },
   ],
@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
           <Header />
-          <main id="main">{children}</main>
+          <main id="main" tabIndex={-1}>{children}</main>
           <Footer />
         </Providers>
       </body>

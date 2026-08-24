@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { properties, type Property } from "@/lib/properties";
 import { useSaved } from "@/contexts/SavedContext";
 import { useCompare } from "@/contexts/CompareContext";
+import { useLang } from "@/contexts/LangContext";
 import Pic from "./Pic";
 
 
@@ -15,16 +16,17 @@ import Pic from "./Pic";
 export { properties, type Property };
 
 function BadgeTooltip({ property }: { property: Property }) {
+  const { t } = useLang();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="flex cursor-help items-center gap-1.5 bg-paper/95 px-2.5 py-1.5 stamp !text-[10px] font-semibold text-ink" aria-label={`${property.badge} — details`}>
+        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="flex cursor-help items-center gap-1.5 bg-paper/95 px-2.5 py-1.5 stamp !text-[10px] font-semibold text-ink" aria-label={`${property.badge} — ${t.property.details}`}>
           <ShieldCheck size={12} className="text-trust" /> {property.badge}
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="max-w-[250px] border border-ink/15 bg-night text-cream">
-        <p className="stamp !text-[10px] text-ember">GJ/RERA/AHM/2026/0{property.bhk}482 (sample)</p>
-        <p className="mt-1.5 text-xs leading-5">In production every listing is checked against the Gujarat RERA registry and re-verified on each update. This is an illustrative trail for the concept preview.</p>
+        <p className="stamp !text-[10px] text-ember">GJ/RERA/AHM/2026/0{property.bhk}482 ({t.property.badgeSample})</p>
+        <p className="mt-1.5 text-xs leading-5">{t.property.badgeDetailsCopy}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -33,13 +35,14 @@ function BadgeTooltip({ property }: { property: Property }) {
 export default function PropertyCard({ property, arch = false, index }: { property: Property; arch?: boolean; index?: number }) {
   const { isSaved, toggle } = useSaved();
   const { isCompared, toggle: toggleCompare } = useCompare();
+  const { t } = useLang();
   const saved = isSaved(property.id);
   const compared = isCompared(property.id);
 
   const onSave = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     const nowSaved = toggle(property.id);
-    toast(nowSaved ? "Saved to your shortlist" : "Removed from shortlist", {
+    toast(nowSaved ? t.property.savedToast : t.property.removedToast, {
       description: nowSaved ? `${property.title} · ${property.price}` : undefined,
     });
   };
@@ -62,13 +65,13 @@ export default function PropertyCard({ property, arch = false, index }: { proper
               <button
                 onClick={onCompare}
                 className={`touch-44 hidden place-items-center rounded-full transition-all duration-200 focus-visible:opacity-100 md:grid ${compared ? "bg-night text-ember opacity-100" : "bg-paper/95 text-ink opacity-0 hover:bg-night hover:text-cream group-hover:opacity-100"}`}
-                aria-label={compared ? `Remove ${property.title} from compare` : `Compare ${property.title}`} aria-pressed={compared}>
+                aria-label={compared ? `${t.property.removeCompare} ${property.title}` : `${t.property.compare} ${property.title}`} aria-pressed={compared}>
                 <Scale size={15} strokeWidth={1.8} />
               </button>
               <button
                 onClick={onSave}
                 className={`touch-44 grid place-items-center rounded-full transition-all duration-200 ${saved ? "scale-110 bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick hover:text-cream"}`}
-                aria-label={saved ? `Remove ${property.title} from saved` : `Save ${property.title}`} aria-pressed={saved}>
+                aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`} aria-pressed={saved}>
                 <Heart size={16} strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
               </button>
             </div>
@@ -97,7 +100,7 @@ export default function PropertyCard({ property, arch = false, index }: { proper
         {/* TERTIARY: freshness + action */}
         <div className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3.5">
           <span className="stamp !text-[10px] text-trust">{property.status}</span>
-          <Link href={`/listing/${property.id}`} className="inline-flex min-h-[44px] items-center gap-1 stamp !text-[11px] font-semibold text-brick">View <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link>
+          <Link href={`/listing/${property.id}`} className="inline-flex min-h-[44px] items-center gap-1 stamp !text-[11px] font-semibold text-brick">{t.property.view} <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link>
         </div>
       </div>
     </article>
