@@ -32,6 +32,10 @@ jobs:
         run: pnpm test:seo
       - name: Search Console config audit
         run: pnpm seo:gsc:audit
+      - name: Security and legal gates
+        run: pnpm security:audit
+      - name: Operational readiness audit
+        run: pnpm ops:audit
       - name: Storybook smoke test
         run: pnpm storybook:smoke
       - name: Performance budget
