@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUpRight, Compass, Quote, Search, ShieldCheck, Timer, Tr
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import PropertyCard, { properties } from "../components/architech/PropertyCard";
+import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import NumberTicker from "../components/magicui/NumberTicker";
 import TiltCard from "../components/magicui/TiltCard";
@@ -15,7 +15,7 @@ import WordReveal from "../components/magicui/WordReveal";
 import Marquee from "../components/magicui/Marquee";
 import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
-import { localities } from "@/lib/localities";
+import { getListings, getLocalities } from "@/lib/repositories";
 import { useLang } from "@/contexts/LangContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -244,7 +244,7 @@ export default function Home() {
           <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.sections.all281Homes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
         </Reveal>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {properties.map((property, i) => (
+          {getListings().map((property, i) => (
             <Reveal key={property.id} delay={i * 90}>
               <TiltCard><PropertyCard property={property} index={i} arch={i === 0} /></TiltCard>
             </Reveal>
@@ -263,7 +263,7 @@ export default function Home() {
             <p className="stamp hidden !text-[10px] text-ink/60 md:block">Coordinates © OpenStreetMap contributors</p>
           </Reveal>
           <div className="mt-14 border-t border-ink/15">
-            {localities.map((place, i) => (
+            {getLocalities().map((place, i) => (
               <Reveal key={place.slug} delay={i * 50}>
                 <Link href={`/buy/ahmedabad/${place.slug}/`} className="group grid grid-cols-[48px_1fr_auto] items-center gap-4 border-b border-ink/15 py-6 transition-colors hover:bg-paper md:grid-cols-[90px_1.1fr_0.9fr_auto] md:gap-8 md:py-7">
                   <span className="index-num text-[28px] text-ink/25 transition-colors group-hover:text-brick md:text-[44px]">{String(i + 1).padStart(2, "0")}</span>

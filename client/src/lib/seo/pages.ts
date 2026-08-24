@@ -1,5 +1,4 @@
-import { localities } from "@/lib/localities";
-import { properties } from "@/lib/properties";
+import { getListings, getLocalities } from "@/lib/repositories";
 import { cityPath, cityUrl, guidePath, guideUrl, homePath, homeUrl, listingPath, listingUrl, localityPath, localityUrl } from "./urls";
 
 export type SeoRouteType = "home" | "city" | "locality" | "listing" | "guide";
@@ -55,7 +54,7 @@ const cityPage: SeoPage = {
   sitemap: { changeFrequency: "daily", priority: 0.9 },
 };
 
-const localityPages: SeoPage[] = localities.map((locality) => ({
+const localityPages: SeoPage[] = getLocalities().map((locality) => ({
   id: `locality:${CITY_SLUG}:${locality.slug}:buy`,
   routeType: "locality",
   path: localityPath(CITY_SLUG, locality.slug),
@@ -69,7 +68,7 @@ const localityPages: SeoPage[] = localities.map((locality) => ({
   sitemap: { changeFrequency: "daily", priority: 0.8 },
 }));
 
-const listingPages: SeoPage[] = properties.map((property) => ({
+const listingPages: SeoPage[] = getListings().map((property) => ({
   id: `listing:${property.id}`,
   routeType: "listing",
   path: listingPath(property.id),

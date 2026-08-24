@@ -7,12 +7,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { properties } from "../components/architech/PropertyCard";
+import { getListingById, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
 import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
-import { findLocality } from "@/lib/localities";
 import { useLang } from "@/contexts/LangContext";
 
 function LeadDialog({ propertyTitle }: { propertyTitle: string }) {
@@ -57,14 +56,14 @@ function LeadDialog({ propertyTitle }: { propertyTitle: string }) {
 }
 
 export default function ListingPage({ id }: { id: string }) {
-  const property = properties.find((p) => p.id === id);
+  const property = getListingById(id);
   const { t } = useLang();
   useTitle(property ? `${property.title} — ${property.price}` : "Not found");
   const { isSaved, toggle } = useSaved();
   if (!property) return null;
 
   const saved = isSaved(property.id);
-  const locality = findLocality(property.localitySlug);
+  const locality = getLocalityBySlug(property.localitySlug);
 
   const onSave = () => {
     const nowSaved = toggle(property.id);
@@ -225,7 +224,7 @@ export default function ListingPage({ id }: { id: string }) {
             <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.listing.allHomes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
-            {properties.filter((p) => p.id !== property.id).slice(0, 3).map((p, i) => (
+            {getRelatedListings(property.id, 3).map((p, i) => (
               <Reveal key={p.id} delay={i * 80}>
                 <Link href={`/listing/${p.id}`} className="group block border border-ink/12 bg-card motion-lift hover:editorial-shadow">
                   <div className="img-hover aspect-[1.4] bg-sand"><Pic name={p.image} alt={p.title} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, 33vw" /></div>

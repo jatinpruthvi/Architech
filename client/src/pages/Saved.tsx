@@ -2,16 +2,17 @@
 /* ARCHITECH — Saved homes: real persisted shortlist from SavedContext. */
 import { ArrowUpRight, Bookmark } from "lucide-react";
 import Link from "next/link";
-import PropertyCard, { properties } from "../components/architech/PropertyCard";
+import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
 import { useLang } from "@/contexts/LangContext";
+import { getListings } from "@/lib/repositories";
 
 export default function Saved() {
   const { saved } = useSaved();
   const { t } = useLang();
-  const savedHomes = properties.filter((p) => saved.includes(p.id));
+  const savedHomes = getListings().filter((p) => saved.includes(p.id));
   useTitle(savedHomes.length ? `${t.saved.title} (${savedHomes.length})` : t.saved.title);
 
   if (savedHomes.length === 0) {

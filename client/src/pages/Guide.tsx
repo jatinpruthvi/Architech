@@ -5,12 +5,7 @@ import Link from "next/link";
 import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
-
-const notes = [
-  { img: "brick-arch", tag: "Methodology", title: "How we verify a listing against Gujarat RERA", time: "6 min read" },
-  { img: "locality-street", tag: "Locality study", title: "Paldi: reading a neighbourhood by its trees", time: "8 min read" },
-  { img: "stepwell", tag: "Essay", title: "What Adalaj teaches us about trust in layers", time: "5 min read" },
-];
+import { getGuides } from "@/lib/repositories";
 
 export default function Guide() {
   useTitle("Field notes — how we verify");
@@ -40,10 +35,10 @@ export default function Guide() {
         <div className="container">
           <Reveal><h2 className="display text-[clamp(28px,3.6vw,48px)]">Latest notes<span className="text-brick">.</span></h2></Reveal>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {notes.map((n, i) => (
+            {getGuides().map((n, i) => (
               <Reveal key={n.title} delay={i * 90}>
                 <article className="group border border-ink/12 bg-card motion-lift hover:editorial-shadow">
-                  <div className="img-hover aspect-[1.35] bg-sand"><Pic name={n.img} alt="" className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, 33vw" /></div>
+                  <div className="img-hover aspect-[1.35] bg-sand"><Pic name={n.image} alt="" className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, 33vw" /></div>
                   <div className="p-6">
                     <p className="stamp !text-[10px] text-brick">{n.tag} · {n.time}</p>
                     <h3 className="mt-3 font-display text-[22px] font-medium leading-snug tracking-[-0.02em] group-hover:text-brick">{n.title}</h3>

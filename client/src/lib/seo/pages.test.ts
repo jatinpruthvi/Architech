@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { localities } from "@/lib/localities";
-import { properties } from "@/lib/properties";
+import { getListings, getLocalities } from "@/lib/repositories";
 import { getIndexableSeoPages, seoPages } from "./pages";
 import { savedPath, searchPath } from "./urls";
 
 describe("SeoPage registry", () => {
   it("registers the current indexable public page set", () => {
-    const expectedCount = 1 + 1 + localities.length + properties.length + 1;
+    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1;
     expect(seoPages).toHaveLength(expectedCount);
     expect(seoPages.map((page) => page.routeType)).toContain("home");
-    expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(localities.length);
-    expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(properties.length);
+    expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);
+    expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
   });
 
   it("keeps registry IDs, paths, and canonicals unique", () => {

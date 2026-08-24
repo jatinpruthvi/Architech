@@ -5,7 +5,7 @@ import { ArrowUpRight, BedDouble, Heart, MapPin, Ruler, Scale, ShieldCheck } fro
 import Link from "next/link";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { properties, type Property } from "@/lib/properties";
+import type { Property } from "@/lib/repositories";
 import { useSaved } from "@/contexts/SavedContext";
 import { useCompare } from "@/contexts/CompareContext";
 import { useLang } from "@/contexts/LangContext";
@@ -13,7 +13,7 @@ import Pic from "./Pic";
 
 
 
-export { properties, type Property };
+export type { Property };
 
 function BadgeTooltip({ property }: { property: Property }) {
   const { t } = useLang();

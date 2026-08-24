@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CityPage from "@/pages/CityPage";
-import { findLocality, localities } from "@/lib/localities";
+import { getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, localityUrl } from "@/lib/seo/urls";
 
 export function generateStaticParams() {
-  return localities.map((l) => ({ locality: l.slug }));
+  return getLocalityStaticParams();
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locality: string }> }): Promise<Metadata> {
   const { locality: slug } = await params;
-  const locality = findLocality(slug);
+  const locality = getLocalityBySlug(slug);
   if (!locality) return { title: "Not found" };
   return {
     title: `${locality.name}, Ahmedabad — homes & locality context`,
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locality:
 
 export default async function Page({ params }: { params: Promise<{ locality: string }> }) {
   const { locality: slug } = await params;
-  const locality = findLocality(slug);
+  const locality = getLocalityBySlug(slug);
   if (!locality) notFound();
 
   const [lat, lon] = locality.marker.split(",");
