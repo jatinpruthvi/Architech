@@ -19,9 +19,9 @@ Current automated gates:
 | Route first-load JS, raw | ≤ 760 KiB |
 | Route first-load JS, gzip | ≤ 230 KiB |
 | Sampled server HTML | ≤ 120 KiB |
-| Total `.next/static/chunks/*.js` | ≤ 1.2 MiB |
-| Largest JS chunk, raw | ≤ 260 KiB |
-| Largest JS chunk, gzip | ≤ 80 KiB |
+| Total `.next/static/chunks/*.js` | ≤ 2.0 MiB |
+| Largest JS chunk, raw | ≤ 1.1 MiB |
+| Largest JS chunk, gzip | ≤ 280 KiB |
 | Mobile WebP image derivative | ≤ 225 KiB |
 | Full WebP image derivative | ≤ 300 KiB |
 | JPEG source image | ≤ 400 KiB |
@@ -44,14 +44,16 @@ Sample from the current Next.js production build:
 | Route | First-load JS raw | First-load JS gzip |
 |---|---:|---:|
 | `/` | ~698 KiB | ~213 KiB |
-| `/search` | ~691 KiB | ~212 KiB |
+| `/search` | ~698 KiB | ~215 KiB |
 | `/listing/[id]` | ~673 KiB | ~205 KiB |
 | `/buy/ahmedabad/[locality]` | ~665 KiB | ~203 KiB |
 | `/guide` | ~659 KiB | ~201 KiB |
 | `/saved` | ~657 KiB | ~201 KiB |
 | `/buy/ahmedabad` | ~654 KiB | ~199 KiB |
 
-Largest current known public HTML artifact: home page, ~97 KiB.
+Largest current known public HTML artifact: home page, ~98 KiB.
+
+MapLibre is intentionally loaded as a lazy async chunk for the search map/list experience. Route first-load JS budgets remain tight; total/largest static JS budgets allow that lazy map chunk while still catching accidental bundle growth.
 
 ## Regression policy
 

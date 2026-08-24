@@ -32,7 +32,9 @@
 - [x] Implement Item 9 from the tracker: Prisma/PostgreSQL/PostGIS schema.
 - [x] Implement Item 10 from the tracker: Data access layer/repositories.
 - [x] Begin later Phase 1 backlog: backend search API and PostgreSQL FTS/trigram.
-- [ ] Implement later Phase 1 backlog: MapLibre synchronized map/list experience.
+- [x] Implement later Phase 1 backlog: MapLibre synchronized map/list experience.
+- [x] Implement later Phase 1 backlog: lead persistence and consent/audit backend.
+- [ ] Implement later Phase 1 backlog: Better Auth and broker organizations.
 
 ## Status
 

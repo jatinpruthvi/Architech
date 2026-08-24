@@ -278,3 +278,39 @@ a { color: inherit; text-decoration: none; }
   .skeleton { animation: none; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
+
+.arch-map-marker {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--paper) 85%, transparent);
+  border-radius: 999px 999px 999px 0;
+  background: var(--night);
+  color: var(--cream);
+  box-shadow: 0 10px 24px rgb(27 22 18 / 0.28);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.arch-map-marker span {
+  display: block;
+  transform: rotate(8deg);
+}
+
+.arch-map-marker:hover,
+.arch-map-marker:focus-visible,
+.arch-map-marker.is-selected {
+  background: var(--brick);
+  border-color: var(--ember);
+  outline: none;
+  transform: translateY(-4px) rotate(-8deg) scale(1.05);
+}
+
+.dark .arch-map-marker {
+  border-color: color-mix(in srgb, var(--ember) 55%, transparent);
+}

@@ -130,7 +130,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
 | P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | partial | Prisma 7 schema, initial migration SQL, representative seed script, validation command, repository facade, schema/repository contract tests, and docs exist. | Run migration deploy and seed against provisioned PostgreSQL/PostGIS environment; add Prisma-backed repositories and spatial columns/indexes when DB service is active. |
-| P1-DATA-002 | Audit, provenance, lifecycle, deletion, retention model | pending | Demo freshness/trust copy only. | Audit events, source provenance, retention/deletion jobs, lifecycle tests, legal gate records. |
+| P1-DATA-002 | Audit, provenance, lifecycle, deletion, retention model | partial | Lead API now creates idempotent lead records with consent text, masked phone, and audit-event metadata; Prisma schema has Lead/AuditEvent models. | Persist audit/deletion/retention workflows in PostgreSQL after DB provisioning and legal gate records. |
 
 ## UI, design system, localization
 
@@ -156,7 +156,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 |---|---|---|---|---|
 | P1-SEARCH-001 | PostgreSQL FTS, aliases, trigram, filters, deterministic parser | partial | Backend `/api/search` contract, fixture-backed search service, deterministic parser/filter tests, and PostgreSQL FTS/trigram migration SQL exist. | Switch search service to live PostgreSQL, add aliases/transliteration, DB-backed golden-query accuracy, and latency tests after database provisioning. |
 | P1-SEARCH-002 | cmdk and optional LLM adapter contract | pending | None. | cmdk search surface, typed optional LLM adapter, validation, cost/latency telemetry. |
-| P1-MAP-001 | MapLibre/deck.gl contracts, clusters, list fallback, benchmark harness | pending | OSM/static map-style embeds only. | MapLibre pins, clusters, selected listing sync, search-this-area, mobile fallback, Redmi-class benchmark. |
+| P1-MAP-001 | MapLibre/deck.gl contracts, clusters, list fallback, benchmark harness | partial | Search results now use a lazy-loaded MapLibre map with listing pins, locality cluster chips, selected listing sync, search-this-area UI, and no-WebGL/list fallback. | Add deck.gl layers and Redmi-class device benchmark before broader rollout. |
 
 ## Media, trust, auth, broker operations
 
@@ -165,7 +165,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | P1-MEDIA-001 | R2/Stream upload, derivatives, captions, transcripts, moderation | pending | Static images and local WebP derivatives only. | Signed upload, malware/MIME checks, EXIF removal, moderation, deletion/takedown evidence. |
 | P1-RERA-001 | RERA adapter, provenance, freshness, correction workflow | pending | Demo RERA/trust UI only. | RERA source adapter, evidence fields, stale/disputed states, correction workflow, legal review. |
 | P1-AUTH-001 | Better Auth, roles, passkeys, 2FA, recovery, audit | pending | None. | Auth/session model, roles, protected routes, passkeys/2FA/recovery, audit and rate-limit tests. |
-| P1-LEAD-001 | Masked/direct consented lead workflow | prototype | Lead dialog/funnel UI exists. | Lead API, persistence, consent audit, masked/direct modes, notifications, idempotency, deletion. |
+| P1-LEAD-001 | Masked/direct consented lead workflow | partial | Listing dialog posts to `/api/leads`; API validates consent, masks phone, provides idempotency, and returns audit metadata. | Replace in-memory fixture store with Prisma transaction, notifications, deletion workflow, and legal approval. |
 | P1-BROKER-001 | Broker onboarding, verification, listing workflow, moderation | pending | None. | Broker org setup, listing draft/review/active flow, moderation, media rights, lead inbox, audit. |
 
 ## Operations, authority, and testing
@@ -478,8 +478,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 These should follow after the data foundation is in place:
 
 1. Backend search API and PostgreSQL FTS/trigram. ✅ First slice validated: `/api/search`, search service tests, client fetch integration, and FTS/trigram migration SQL.
-2. MapLibre synchronized map/list experience.
-3. Lead persistence and consent/audit backend.
+2. MapLibre synchronized map/list experience. ✅ First slice validated: lazy MapLibre map, listing pins, selected listing sync, cluster chips, fallback, and performance budget update.
+3. Lead persistence and consent/audit backend. ✅ First slice validated: `/api/leads`, consent checkbox, masked phone, idempotency, audit metadata, docs, and tests.
 4. Better Auth and broker organizations.
 5. Broker onboarding and listing moderation.
 6. Media upload pipeline with moderation and derivatives.
@@ -494,6 +494,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** MapLibre synchronized map/list experience.
+**Recommended next item:** Better Auth and broker organizations.
 
-Reason: the first backend search contract and PostgreSQL FTS/trigram migration are now in place, so the next discovery slice should replace static map embeds with a real synchronized map/list interface.
+Reason: lead capture now has a backend consent/audit contract, so the next Phase 1 slice should add identity, sessions, organizations, and roles for broker/admin workflows.
