@@ -1,4 +1,5 @@
-/* Magic-UI-style scroll-driven word reveal: words ink in as the paragraph crosses the viewport. */
+"use client";
+/* Magic-UI-style scroll-driven word reveal — rAF-throttled scroll handler. */
 import { useEffect, useRef, useState } from "react";
 
 export default function WordReveal({ text, className = "" }: { text: string; className?: string }) {
@@ -8,17 +9,20 @@ export default function WordReveal({ text, className = "" }: { text: string; cla
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setProgress(1); return; }
+    let frame = 0;
     const onScroll = () => {
-      const node = ref.current;
-      if (!node) return;
-      const rect = node.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const p = Math.min(Math.max((vh * 0.85 - rect.top) / (vh * 0.55), 0), 1);
-      setProgress(p);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const node = ref.current;
+        if (!node) return;
+        const rect = node.getBoundingClientRect();
+        const vh = window.innerHeight;
+        setProgress(Math.min(Math.max((vh * 0.85 - rect.top) / (vh * 0.55), 0), 1));
+      });
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", onScroll); };
   }, []);
 
   return (

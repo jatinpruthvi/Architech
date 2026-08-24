@@ -40,9 +40,9 @@
   --color-brick: var(--brick);
   --color-ember: var(--ember);
   --color-trust: var(--trust);
-  /* Legacy aliases so older components keep working */
-  --color-clay: var(--brick);
-  --color-limestone: var(--sand);
+  /* Fixed (theme-independent) surfaces: dark-section night + light-on-dark cream */
+  --color-cream: var(--cream);
+  --color-night: var(--night);
   --font-display: "Fraunces", "Noto Sans Devanagari", Georgia, serif;
   --font-sans: "Archivo", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -57,6 +57,8 @@
   --brick-deep: #7e2f1c;
   --ember: #eeb195;
   --trust: #2f6b5a;
+  --cream: #f4eee2;
+  --night: #1b1612;
 
   /* Motion design system — single source of truth for durations & easing */
   --dur-1: 160ms;  /* taps, toggles */
@@ -85,15 +87,45 @@
   --border: rgba(27, 22, 18, 0.16);
   --input: rgba(27, 22, 18, 0.2);
   --ring: var(--brick);
-  /* legacy vars referenced by older code */
-  --clay: var(--brick);
-  --clay-dark: var(--brick-deep);
-  --limestone: var(--sand);
   --shadow-editorial: 0 30px 90px rgba(50, 30, 16, 0.16);
 }
 
+/* ---------- Dark theme (Amdavad Modern, night edition) ---------- */
+.dark {
+  --ink: #ece4d3;          /* foreground becomes warm light */
+  --paper: #171310;        /* page surface becomes deep umber */
+  --sand: #211b14;
+  --brick: #c2553a;        /* brighter brick for contrast on dark */
+  --ember: #f0b89e;
+  --trust: #63b096;
+  --night: #100d0a;        /* fixed dark sections sit a step deeper */
+  --cream: #f4eee2;
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #1e1812;
+  --card-foreground: var(--ink);
+  --popover: #1e1812;
+  --popover-foreground: var(--ink);
+  --primary: var(--brick);
+  --primary-foreground: var(--cream);
+  --secondary: #241d15;
+  --secondary-foreground: var(--ink);
+  --muted: #241d15;
+  --muted-foreground: #a5977f;
+  --accent: #241d15;
+  --accent-foreground: var(--ink);
+  --border: rgba(236, 228, 211, 0.15);
+  --input: rgba(236, 228, 211, 0.22);
+  --ring: var(--brick);
+  --shadow-editorial: 0 30px 90px rgba(0, 0, 0, 0.55);
+}
+.dark .map-frame { filter: sepia(0.25) saturate(0.7) contrast(0.95) brightness(0.82); }
+.dark .grain::after { opacity: 0.35; }
+
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--background); }
+html { scroll-behavior: smooth; background: var(--background); color-scheme: light; }
+html.dark { color-scheme: dark; }
 body {
   margin: 0;
   min-width: 320px;
@@ -193,7 +225,7 @@ a { color: inherit; text-decoration: none; }
 .map-frame { filter: sepia(0.32) saturate(0.82) contrast(0.96); }
 
 /* Skip-to-content link (visible on keyboard focus only) */
-.skip-link { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--brick); color: var(--paper); padding: 14px 22px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.skip-link { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--brick); color: var(--cream); padding: 14px 22px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
 .skip-link:focus { left: 0; }
 
 /* Skeleton loading — shape-matched shimmer */
@@ -229,13 +261,11 @@ a { color: inherit; text-decoration: none; }
 
 /* logo mark: ink square with arch cutout */
 .arch-mark { position: relative; background: var(--ink); }
+.dark .arch-mark { background: #2a221a; }
 .arch-mark-arch { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 56%; height: 72%; background: var(--brick); border-radius: 999px 999px 0 0; transition: background 250ms ease; }
 .group:hover .arch-mark-arch { background: var(--ember); }
 
 .editorial-shadow { box-shadow: var(--shadow-editorial); }
-
-/* thin ruled grid lines for sections */
-.ruled { background-image: linear-gradient(var(--border) 1px, transparent 1px); background-size: 100% 96px; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

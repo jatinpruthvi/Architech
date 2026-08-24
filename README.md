@@ -4,7 +4,30 @@
 
 Architech is the architecture and implementation-planning repository for a premium India-focused real-estate discovery platform. It defines the product, user experience, technical stack, page-authority model, Google-first SEO system, AI-search readiness, broker operations, RERA verification, media pipeline, security posture, localization strategy, infrastructure, testing, and three-phase delivery plan.
 
-This repository is the **architecture source**, not the application source code. Engineering teams and AI coding systems should use it as the authoritative design reference before implementing production code.
+This repository is the **architecture source**, not the application source code.
+
+## 🚧 Live prototype (August 2026) — now on Next.js 16
+
+This repo contains a working **Next.js 16 App Router application** — the "Amdavad Modern" UI — with server-side rendering, per-route metadata, JSON-LD, generated sitemap/robots, dark mode, and a Hindi (हिन्दी) language toggle. Views/components live in `client/src/`, routes in `app/`.
+
+```bash
+pnpm install
+cp .env.example .env   # set NEXT_PUBLIC_SITE_URL to your real domain (canonicals, OG, sitemap)
+pnpm dev        # next dev — http://localhost:3000
+pnpm check      # typescript
+pnpm test       # vitest unit tests
+pnpm lint       # eslint + jsx-a11y
+pnpm build      # next build (SSG: all public pages prerendered)
+pnpm start      # production server
+```
+
+SEO now real: server-rendered HTML for every public page, per-route titles/canonicals, `Place`/`Residence`/`BreadcrumbList` JSON-LD, `sitemap.xml`, `robots.txt` (search/saved unindexed per faceted-navigation rules), true HTTP 404s, and stable trailing-slash URLs per the architecture's grammar. Dark mode: token-level theme with pre-paint script. Hindi: reviewed-strings foundation via `client/src/lib/i18n.ts` (ASCII slugs unchanged).
+
+Pages: Home (`/`), locality pages (`/buy/ahmedabad/{paldi|navrangpura|prahlad-nagar|thaltej|bopal|satellite}/`), search (`/search` — URL-synced multi-select filters), listing dossiers (`/listing/:id`), field notes (`/guide`), saved shortlist (`/saved`, persisted locally).
+
+> All listings, statistics, testimonials, and RERA numbers in the prototype are **illustrative demo data**. The production build (Next.js 16, per this architecture) replaces them with verified sources.
+
+ Engineering teams and AI coding systems should use it as the authoritative design reference before implementing production code.
 
 > **Primary objective:** Build the best real-estate discovery experience in India while making every important public page useful, trustworthy, crawlable, indexable, fast, accessible, and understandable to Google and AI systems.
 

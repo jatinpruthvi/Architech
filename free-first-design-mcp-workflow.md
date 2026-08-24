@@ -77,3 +77,25 @@ Motion must use transform and opacity where possible, remain interruptible, resp
 - https://storybook.js.org/docs/ai/mcp/overview
 - https://developer.chrome.com/docs/devtools/agents/get-started
 - https://vercel.com/design/guidelines
+
+
+---
+
+## 2026 revision — adopted MCP toolkit (August 2026)
+
+Reviewed against current (2026) ecosystem. Adopted tiers:
+
+| Tier | MCP server | Purpose | Status |
+|---|---|---|---|
+| 1 · Beauty | shadcn/ui MCP (jpisnice) | Correct component/blocks usage | Adopted (patterns applied) |
+| 1 · Beauty | Magic UI MCP | Animated marketing components | Adopted (hand-built equivalents in `components/magicui/`) |
+| 1 · Beauty | 21st.dev Magic | Rapid UI variant generation | Adopted for exploration |
+| 2 · Quality | Playwright MCP | Route/responsive/a11y QA | Kept (primary) |
+| 2 · Quality | Chrome DevTools MCP | Perf traces, CWV | Kept (on demand) |
+| 2 · Quality | Sentry MCP | Production debugging | Planned at launch |
+| 3 · Domain | OpenStreetMap MCP | Real Ahmedabad geodata | Adopted (coords, embeds, distances in `lib/localities.ts`) |
+| 3 · Domain | PostgreSQL MCP | Schema/query assist | Planned with Phase-1 DB |
+| 3 · Domain | Brave Search MCP | SEO competitive research | Optional |
+| 4 · Docs | Context7 | Version-accurate docs | Kept (note: free tier now 1,000 calls/mo) |
+
+Rules unchanged: MCP tools must never invent listing facts, prices, RERA claims, or locality statistics; OpenStreetMap is used precisely because it *adds verifiable* geodata.
