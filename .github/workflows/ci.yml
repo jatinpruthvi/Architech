@@ -30,6 +30,8 @@ jobs:
         run: pnpm build
       - name: No-JavaScript SEO smoke tests
         run: pnpm test:seo
+      - name: Search Console config audit
+        run: pnpm seo:gsc:audit
       - name: Storybook smoke test
         run: pnpm storybook:smoke
       - name: Performance budget

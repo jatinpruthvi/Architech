@@ -1,0 +1,18 @@
+{
+  "propertyType": "domain",
+  "propertyUrl": "sc-domain:architech.example.com",
+  "productionSiteUrlEnv": "NEXT_PUBLIC_SITE_URL",
+  "sitemapPath": "/sitemap.xml",
+  "sampleInspectionUrls": [
+    "/",
+    "/buy/ahmedabad/",
+    "/buy/ahmedabad/paldi/",
+    "/listing/garden-courtyard/"
+  ],
+  "thresholds": {
+    "minIndexedRatio": 0.85,
+    "maxSitemapErrors": 0,
+    "maxCoverageErrors": 0,
+    "maxClickDropRatio": 0.35
+  }
+}
