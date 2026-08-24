@@ -19,6 +19,11 @@
 - [x] Validate keyboard focus, screen-reader semantics, mobile layout, reduced motion, console errors, and production build.
 - [x] Capture final desktop and mobile previews and save a recoverable checkpoint.
 
+## Phase 1 execution tracker
+
+- [x] Add `PHASE-1-IMPLEMENTATION-PLAN.md` as the active pick-one-item Phase 1 tracker.
+- [ ] Implement Item 2 from the tracker: central canonical URL builder.
+
 ## Status
 
-All redesign and motion-revision tasks completed in the Amdavad Modern overhaul (Aug 2026). See `IMPROVEMENT-REVIEW.md` for the follow-up audit and its implementation.
+All redesign and motion-revision tasks completed in the Amdavad Modern overhaul (Aug 2026). See `IMPROVEMENT-REVIEW.md` for the follow-up audit and its implementation. Use `PHASE-1-IMPLEMENTATION-PLAN.md` for the active Phase 1 backlog and acceptance tracking.

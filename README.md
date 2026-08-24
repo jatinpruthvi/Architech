@@ -70,6 +70,12 @@ The previous archive index is preserved in:
 ARCHIVE_INDEX.md
 ```
 
+The active pick-one-item Phase 1 execution tracker is maintained in:
+
+```text
+PHASE-1-IMPLEMENTATION-PLAN.md
+```
+
 ### Required reading order
 
 For implementation, read `README.md`, then `governance/feedback/FEEDBACK-REVIEW.md`, `architecture/normative/final-three-phase-architecture.md`, `governance/contracts/REQUIREMENTS.md`, `governance/contracts/DOMAIN-CONTRACTS.md`, `governance/contracts/IMPLEMENTATION-MATRIX.md`, `governance/decisions/DECISION-LOG.md`, and `governance/legal/LEGAL-GATES.md`. Historical version files are for context only and are not independent specifications.
