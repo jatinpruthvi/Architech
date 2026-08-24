@@ -1,19 +1,185 @@
-/* Architech Editorial Terracotta: Ahmedabad property dossier; trust, price, evidence, and locality context precede visual spectacle. */
+/* ARCHITECH — Listing dossier: trust, price, evidence, and locality context before spectacle. */
 import { ArrowUpRight, BedDouble, Check, Clock3, Heart, MapPin, MessageCircle, Ruler, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "wouter";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { properties } from "../components/architech/PropertyCard";
+import Reveal from "../components/architech/Reveal";
 
 export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
-  const title = id === "garden-courtyard" ? "A garden courtyard in Paldi" : id === "light-filled-home" ? "Light across every room" : "A quieter edge of Thaltej";
-  const locality = id === "garden-courtyard" ? "Paldi" : id === "light-filled-home" ? "Prahlad Nagar" : "Thaltej";
-  return <div className="bg-paper pt-[76px] text-ink">
-    <section className="container py-8 md:py-12">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-ink/55"><Link href="/" className="hover:text-clay">Home</Link><span>/</span><Link href="/buy/ahmedabad/" className="hover:text-clay">Ahmedabad</Link><span>/</span><span>{locality}</span><span>/</span><span>{title}</span></div>
-      <div className="mt-8 grid gap-4 border-y border-ink/15 bg-limestone p-5 md:grid-cols-[1fr_auto] md:items-center md:p-7">
-        <div><p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-clay"><ShieldCheck size={14} /> RERA verified · source reviewed · updated 2 days ago</p><h1 className="mt-3 max-w-[680px] font-display text-4xl font-medium leading-[.92] tracking-[-.055em] md:text-5xl">{title}</h1><p className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink/60"><span className="flex items-center gap-2"><MapPin size={15} className="text-clay" /> {locality}, Ahmedabad</span><span className="flex items-center gap-2"><BedDouble size={15} className="text-clay" /> 3 BHK</span><span className="flex items-center gap-2"><Ruler size={15} className="text-clay" /> 1,482 sq ft</span></p></div><div className="border-l border-ink/15 pl-5 md:min-w-[180px]"><p className="text-[10px] font-semibold uppercase tracking-[.16em] text-ink/50">Guide price</p><p className="mt-2 font-display text-3xl font-semibold tracking-[-.04em]">₹1.85 Cr</p><p className="mt-1 text-xs text-ink/50">Nivasa Partners</p></div>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-[1.4fr_.8fr]"><div className="relative min-h-[320px] overflow-hidden bg-limestone md:min-h-[500px]"><img src="/manus-storage/architech-ahmedabad-interior_d69d08e0.jpg" alt={`${title} interior`} className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.02]" /><div className="absolute left-5 top-5 bg-paper/90 px-3 py-2 text-[10px] font-semibold uppercase tracking-[.15em] text-ink">Verified interior view</div></div><div className="grid gap-3 md:grid-rows-2"><img src="/manus-storage/architech-ahmedabad-detail_9e4baf39.jpg" alt="Architectural detail of the property" className="h-full min-h-[180px] w-full object-cover" /><div className="relative overflow-hidden bg-ink"><img src="/manus-storage/architech-ahmedabad-locality_fadc78b5.jpg" alt={`Neighbourhood around ${locality}, Ahmedabad`} className="h-full w-full object-cover opacity-65" /><div className="absolute inset-0 flex items-end p-5"><span className="text-sm font-semibold text-paper">See the neighbourhood around it <ArrowUpRight size={15} className="ml-1 inline text-[#f0b59b]" /></span></div></div></div></div>
-    </section>
-    <section className="container pb-16 md:pb-24"><div className="grid gap-12 lg:grid-cols-[1fr_340px]"><div><div className="flex items-start justify-between gap-5"><div><p className="text-sm leading-7 text-ink/60">A light-filled home with a calm material palette and a generous relationship to the neighbourhood outside. The details here are assembled from the partner submission, source review, and the latest meaningful update.</p></div><button className="grid h-11 w-11 shrink-0 place-items-center border border-ink/15 hover:border-clay hover:text-clay" aria-label="Save listing"><Heart size={18} /></button></div><div className="mt-8 grid gap-8 border-t border-ink/15 pt-8 md:grid-cols-2"><div><p className="text-[10px] font-semibold uppercase tracking-[.18em] text-clay">Why it stands out</p><ul className="mt-5 grid gap-3 text-sm text-ink/70"><li className="flex gap-3"><Check size={16} className="shrink-0 text-clay" /> Quiet orientation with natural light</li><li className="flex gap-3"><Check size={16} className="shrink-0 text-clay" /> Walkable everyday conveniences</li><li className="flex gap-3"><Check size={16} className="shrink-0 text-clay" /> Verified partner and source trail</li></ul></div><div><p className="text-[10px] font-semibold uppercase tracking-[.18em] text-clay">Information trail</p><p className="mt-5 flex items-center gap-2 text-sm text-ink/60"><Clock3 size={15} /> Updated 2 days ago</p><Link href="/guide" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-clay">How we review listings <ArrowUpRight size={15} /></Link></div></div></div><aside className="h-fit border border-ink/15 bg-limestone p-6 md:p-7 lg:sticky lg:top-28"><p className="text-[10px] font-semibold uppercase tracking-[.18em] text-clay">Private next step</p><p className="mt-3 font-display text-3xl font-semibold tracking-[-.04em]">Talk to the partner</p><p className="mt-2 text-sm text-ink/55">Your contact details stay private until you choose to share them.</p><div className="mt-7 border-t border-ink/15 pt-5"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-ink font-display text-lg text-paper">N</div><div><p className="font-semibold">Nivasa Partners</p><p className="text-xs text-ink/55">Verified Ahmedabad partner</p></div></div></div><button className="mt-7 flex w-full items-center justify-center gap-2 bg-[var(--clay)] px-5 py-4 text-sm font-semibold text-paper transition-transform hover:-translate-y-0.5"><MessageCircle size={17} /> Ask about this home</button></aside></div></section>
-  </div>;
+  const property = properties.find((p) => p.id === id) ?? properties[0];
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <div className="bg-paper pt-[78px] text-ink">
+      <section className="container py-10 md:py-14">
+        {/* Breadcrumb */}
+        <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/50" aria-label="Breadcrumb">
+          <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
+          <Link href="/buy/ahmedabad/" className="link-rail hover:text-brick">Ahmedabad</Link><span>/</span>
+          <span>{property.locality}</span><span>/</span>
+          <span className="text-ink/80">{property.title}</span>
+        </nav>
+
+        {/* Title band */}
+        <div className="mt-8 grid gap-6 border-y border-ink/15 bg-sand/70 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-9">
+          <div>
+            <p className="flex flex-wrap items-center gap-2 stamp !text-[11px] font-semibold text-trust">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="flex cursor-help items-center gap-1.5 underline decoration-dotted underline-offset-4" aria-label="RERA verification details">
+                    <ShieldCheck size={14} /> {property.badge}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[260px] border border-ink/15 bg-ink text-paper">
+                  <p className="stamp !text-[10px] text-ember">GJ/RERA/AHM/2026/04821</p>
+                  <p className="mt-1.5 text-xs leading-5">Checked against the Gujarat RERA registry: registration, promoter, and completion status. Last verified 19 Aug 2026.</p>
+                </TooltipContent>
+              </Tooltip>
+              <span aria-hidden="true">·</span> Source reviewed <span aria-hidden="true">·</span> {property.status}
+            </p>
+            <h1 className="display mt-4 max-w-[720px] text-[clamp(34px,4.6vw,60px)]">{property.title}<span className="text-brick">.</span></h1>
+            <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink/60">
+              <span className="flex items-center gap-2"><MapPin size={15} className="text-brick" /> {property.locality}, Ahmedabad</span>
+              <span className="flex items-center gap-2"><BedDouble size={15} className="text-brick" /> {property.meta}</span>
+              <span className="flex items-center gap-2"><Ruler size={15} className="text-brick" /> {property.area}</span>
+            </p>
+          </div>
+          <div className="border-l-4 border-brick pl-6 md:min-w-[210px]">
+            <p className="stamp !text-[10px] text-ink/50">Guide price</p>
+            <p className="mt-2 font-display text-[40px] font-semibold leading-none tracking-[-0.03em]">{property.price}</p>
+            <p className="stamp mt-2 !text-[10px] text-ink/45">{property.pricePerSqft}</p>
+          </div>
+        </div>
+
+        {/* Gallery */}
+        <div className="mt-6 grid gap-4 md:grid-cols-[1.45fr_0.8fr]">
+          <Reveal>
+            <div className="img-hover grain relative min-h-[340px] overflow-hidden bg-sand md:min-h-[540px]">
+              <img src={property.image} alt={`${property.title} — primary view`} className="absolute inset-0 h-full w-full object-cover" />
+              <span className="stamp absolute left-5 top-5 z-10 bg-paper/95 px-3 py-2 !text-[10px] font-semibold">Verified view · Nº 01</span>
+            </div>
+          </Reveal>
+          <div className="grid gap-4 md:grid-rows-2">
+            <Reveal delay={100}>
+              <div className="img-hover h-full min-h-[200px] overflow-hidden">
+                <img src="/images/brick-arch.jpg" alt="Architectural character of the building" className="h-full w-full object-cover" loading="lazy" />
+              </div>
+            </Reveal>
+            <Reveal delay={180}>
+              <Link href="/buy/ahmedabad/" className="group relative block h-full min-h-[200px] overflow-hidden bg-ink">
+                <img src="/images/locality-street.jpg" alt={`Neighbourhood around ${property.locality}`} className="h-full w-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-75" loading="lazy" />
+                <span className="absolute inset-0 flex items-end p-5 text-sm font-semibold text-paper">See the neighbourhood <ArrowUpRight size={15} className="ml-1.5 text-ember transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></span>
+              </Link>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* Body */}
+      <section className="container pb-20 md:pb-28">
+        <div className="grid gap-14 lg:grid-cols-[1fr_360px]">
+          <div>
+            <div className="flex items-start justify-between gap-6">
+              <p className="max-w-[600px] text-[15px] leading-8 text-ink/65">{property.note} The details here are assembled from the partner submission, the RERA registry, and the latest meaningful update — nothing is invented, and every fact carries its date.</p>
+              <button onClick={() => { const n = !saved; setSaved(n); toast(n ? "Saved to your shortlist" : "Removed from shortlist", { description: n ? `${property.title} · ${property.price}` : undefined }); }} aria-pressed={saved} aria-label={saved ? "Remove from saved" : "Save listing"}
+                className={`touch-44 grid shrink-0 place-items-center border transition-all ${saved ? "border-brick bg-brick text-paper" : "border-ink/20 hover:border-brick hover:text-brick"}`}>
+                <Heart size={19} fill={saved ? "currentColor" : "none"} />
+              </button>
+            </div>
+
+            <div className="mt-10 grid gap-10 border-t border-ink/15 pt-10 md:grid-cols-2">
+              <div>
+                <p className="kicker text-brick !text-[10px]">Why it stands out</p>
+                <ul className="mt-6 space-y-4 text-sm text-ink/75">
+                  {["Quiet orientation with generous natural light", "Walkable everyday conveniences and schools", "Verified partner with a complete source trail", "Fair pricing against the locality median"].map((t) => (
+                    <li key={t} className="flex gap-3"><Check size={16} className="mt-0.5 shrink-0 text-trust" /> {t}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="kicker text-brick !text-[10px]">Information trail</p>
+                <div className="mt-6 space-y-0 border-l-2 border-ink/12 pl-5">
+                  {[["12 Aug 2026", "Listed by verified partner"], ["19 Aug 2026", "RERA registration re-checked"], ["20 Aug 2026", "Photos & price reviewed"]].map(([date, event]) => (
+                    <div key={date} className="relative pb-6 last:pb-0">
+                      <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-paper bg-brick" />
+                      <p className="stamp !text-[10px] text-ink/45">{date}</p>
+                      <p className="mt-1 text-sm font-medium text-ink/85">{event}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-6 flex items-center gap-2 stamp !text-[10px] text-trust"><Clock3 size={13} /> {property.status}</p>
+              </div>
+            </div>
+
+            {/* Facts strip */}
+            <div className="mt-12 grid grid-cols-2 divide-x divide-ink/12 border-y border-ink/12 sm:grid-cols-4">
+              {[["Type", property.meta.split("·")[0].trim()], ["Carpet area", property.area], ["Status", property.meta.split("·")[1]?.trim() ?? "Available"], ["Rate", property.pricePerSqft]].map(([k, v]) => (
+                <div key={k} className="px-5 py-6 first:pl-0">
+                  <p className="stamp !text-[10px] text-ink/45">{k}</p>
+                  <p className="mt-2 font-display text-lg font-medium tracking-[-0.01em]">{v}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Real OSM neighbourhood map */}
+            <div className="mt-12">
+              <p className="kicker text-brick !text-[10px]">The neighbourhood, mapped</p>
+              <div className="relative mt-5 h-[320px] border border-ink/12 bg-sand">
+                <iframe
+                  title={`Map around ${property.locality}, Ahmedabad — OpenStreetMap`}
+                  src="https://www.openstreetmap.org/export/embed.html?bbox=72.5400%2C22.9980%2C72.5800%2C23.0240&layer=mapnik&marker=23.011%2C72.559"
+                  className="map-frame absolute inset-0 h-full w-full border-0"
+                  loading="lazy"
+                />
+                <p className="stamp absolute right-3 top-3 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
+              </div>
+              <p className="stamp mt-3 !text-[9px] text-ink/40">Location shown at locality precision until you connect with the partner — exact address stays private.</p>
+            </div>
+          </div>
+
+          {/* Sticky aside */}
+          <aside className="h-fit border border-ink/15 bg-sand/70 p-7 lg:sticky lg:top-[102px] md:p-8">
+            <p className="kicker text-brick !text-[10px]">Private next step</p>
+            <p className="mt-4 font-display text-[30px] font-medium leading-tight tracking-[-0.02em]">Talk to the partner.</p>
+            <p className="mt-3 text-sm leading-6 text-ink/60">Your contact details stay masked until you choose to share them. No spam calls — that's a contract, not a promise.</p>
+            <div className="mt-7 border-t border-ink/15 pt-6">
+              <div className="flex items-center gap-4">
+                <span className="grid h-12 w-12 place-items-center rounded-t-full bg-ink font-display text-xl text-paper">N</span>
+                <div>
+                  <p className="font-semibold">Nivasa Partners</p>
+                  <p className="stamp mt-0.5 flex items-center gap-1.5 !text-[10px] text-trust"><ShieldCheck size={11} /> Verified Ahmedabad partner</p>
+                </div>
+              </div>
+            </div>
+            <button className="btn-sweep motion-press mt-8 flex w-full items-center justify-center gap-2 bg-brick px-6 py-5 stamp !text-[12px] font-semibold text-paper"><MessageCircle size={16} /> Ask about this home</button>
+            <p className="stamp mt-4 text-center !text-[10px] text-ink/40">Usually replies within 4 working hours</p>
+          </aside>
+        </div>
+
+        {/* More homes */}
+        <div className="mt-20 border-t border-ink/12 pt-14">
+          <div className="flex items-end justify-between">
+            <h2 className="display text-[clamp(26px,3vw,40px)]">Nearby, also worth a <em className="text-brick">look</em>.</h2>
+            <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">All homes <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
+          </div>
+          <div className="mt-10 grid gap-6 sm:grid-cols-3">
+            {properties.filter((p) => p.id !== property.id).slice(0, 3).map((p, i) => (
+              <Reveal key={p.id} delay={i * 80}>
+                <Link href={`/listing/${p.id}`} className="group block border border-ink/12 bg-card motion-lift hover:editorial-shadow">
+                  <div className="img-hover aspect-[1.4] bg-sand"><img src={p.image} alt={p.title} className="h-full w-full object-cover" loading="lazy" /></div>
+                  <div className="p-5">
+                    <p className="font-display text-lg font-medium leading-tight tracking-[-0.015em] group-hover:text-brick">{p.title}</p>
+                    <div className="mt-2 flex items-center justify-between text-sm text-ink/60"><span>{p.locality}</span><strong className="font-display text-ink">{p.price}</strong></div>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }
