@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
-import { getDemoSession } from "@/lib/auth/session";
 import { canAccessBrokerDashboard } from "@/lib/auth/roles";
+import { getSessionContractForRequest } from "@/lib/auth/live";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const mode = url.searchParams.get("mode") === "none" ? "none" : "demo";
-  const session = getDemoSession(mode);
+  const contract = await getSessionContractForRequest(request);
+  const status = contract.source === "better-auth-not-configured" ? 503 : 200;
 
   return NextResponse.json({
-    authenticated: Boolean(session),
-    session,
-    canAccessBrokerDashboard: canAccessBrokerDashboard(session),
+    authenticated: Boolean(contract.session),
+    session: contract.session,
+    canAccessBrokerDashboard: canAccessBrokerDashboard(contract.session),
     authProvider: "better-auth",
-    source: session?.source ?? "better-auth-contract-demo",
-  }, { headers: { "Cache-Control": "no-store" } });
+    source: contract.source,
+    missing: contract.missing,
+  }, { status, headers: { "Cache-Control": "no-store" } });
 }

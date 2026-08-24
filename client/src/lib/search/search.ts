@@ -16,7 +16,7 @@ export type SearchResponse = {
   sort: SortId;
   count: number;
   source: SearchSource;
-  indexPlan: "deterministic-parser-now-postgres-fts-trigram-next";
+  indexPlan: "deterministic-parser-now-postgres-fts-trigram-next" | "postgres-fts-trigram-ready";
   results: Property[];
 };
 

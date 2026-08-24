@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { searchListingsFromSearchParams } from "@/lib/search/search";
+import { searchListingsFromSearchParamsForServer } from "@/lib/search/server";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const response = searchListingsFromSearchParams(url.searchParams);
+  const response = await searchListingsFromSearchParamsForServer(url.searchParams);
   return NextResponse.json(response, {
     headers: {
       "Cache-Control": "no-store",
