@@ -33,7 +33,7 @@ export type LeadRecord = {
     entityType: "Lead";
     metadata: {
       masked: boolean;
-      source: "api.leads.fixture-store";
+      source: "api.leads.fixture-store" | "api.leads.prisma";
     };
   };
   createdAt: string;
