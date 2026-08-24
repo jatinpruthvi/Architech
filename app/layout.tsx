@@ -4,6 +4,7 @@ import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
 import { assetUrl, homeUrl, SITE_URL } from "@/lib/seo/urls";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "@/index.css";
 
 export const metadata: Metadata = {

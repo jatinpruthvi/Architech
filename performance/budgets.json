@@ -1,5 +1,5 @@
 {
-  "description": "Phase 1 performance budgets for the Architech public prototype. Budgets are intentionally conservative enough to catch regressions before backend/map/media work lands.",
+  "description": "Phase 1 performance budgets for the Architech public prototype. Route first-load budgets stay tight; total/largest static JS budgets allow one lazy MapLibre chunk for the map/list experience.",
   "routes": {
     "default": {
       "maxFirstLoadJsBytes": 760000,
@@ -18,9 +18,9 @@
     ]
   },
   "staticAssets": {
-    "maxTotalStaticJsBytes": 1200000,
-    "maxLargestChunkBytes": 260000,
-    "maxLargestChunkGzipBytes": 80000,
+    "maxTotalStaticJsBytes": 2000000,
+    "maxLargestChunkBytes": 1100000,
+    "maxLargestChunkGzipBytes": 280000,
     "maxMobileWebpBytes": 225000,
     "maxFullWebpBytes": 300000,
     "maxJpegBytes": 400000

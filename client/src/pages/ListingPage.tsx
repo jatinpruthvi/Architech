@@ -14,13 +14,37 @@ import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
 import { useLang } from "@/contexts/LangContext";
 
-function LeadDialog({ propertyTitle }: { propertyTitle: string }) {
+function LeadDialog({ propertyId, propertyTitle }: { propertyId: string; propertyTitle: string }) {
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { t } = useLang();
-  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setOpen(false);
-    toast(t.listing.querySent, { description: t.listing.querySentDescription });
+    const form = new FormData(e.currentTarget);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId: propertyId,
+          name: String(form.get("name") ?? ""),
+          phone: String(form.get("phone") ?? ""),
+          message: String(form.get("message") ?? ""),
+          mode: "MASKED",
+          consentText: t.listing.consentText,
+          idempotencyKey: crypto.randomUUID?.() ?? `${propertyId}-${Date.now()}`,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "Lead failed");
+      setOpen(false);
+      toast(t.listing.querySent, { description: `${t.listing.querySentDescription} · ${payload.lead.phoneMasked}` });
+    } catch {
+      toast(t.listing.queryFailed, { description: t.listing.queryFailedDescription });
+    } finally {
+      setSubmitting(false);
+    }
   };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -37,17 +61,21 @@ function LeadDialog({ propertyTitle }: { propertyTitle: string }) {
         <form onSubmit={submit} className="mt-2 space-y-4">
           <div>
             <label htmlFor="lead-name" className="stamp !text-[10px] text-ink/60">{t.listing.name}</label>
-            <input id="lead-name" required className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" placeholder="Kinjal Shah" />
+            <input id="lead-name" name="name" required className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" placeholder="Kinjal Shah" />
           </div>
           <div>
             <label htmlFor="lead-phone" className="stamp !text-[10px] text-ink/60">{t.listing.phone}</label>
-            <input id="lead-phone" required type="tel" pattern="[0-9+ -]{8,}" className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" placeholder="+91 …" />
+            <input id="lead-phone" name="phone" required type="tel" pattern="[0-9+ -]{8,}" className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" placeholder="+91 …" />
           </div>
           <div>
             <label htmlFor="lead-msg" className="stamp !text-[10px] text-ink/60">{t.listing.message}</label>
-            <textarea id="lead-msg" rows={3} className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" defaultValue={`I'd like to know more about "${propertyTitle}".`} />
+            <textarea id="lead-msg" name="message" rows={3} className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" defaultValue={`I'd like to know more about "${propertyTitle}".`} />
           </div>
-          <button type="submit" className="btn-sweep touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream">{t.listing.send}</button>
+          <label className="flex items-start gap-3 border border-ink/15 bg-sand/50 p-3 text-xs leading-5 text-ink/65">
+            <input required type="checkbox" className="mt-1 accent-[var(--brick)]" />
+            <span>{t.listing.consentText}</span>
+          </label>
+          <button type="submit" disabled={submitting} className="btn-sweep touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">{submitting ? t.listing.sending : t.listing.send}</button>
           <p className="stamp text-center !text-[9px] text-ink/60">{t.listing.noRealMessage}</p>
         </form>
       </DialogContent>
@@ -212,7 +240,7 @@ export default function ListingPage({ id }: { id: string }) {
                 </div>
               </div>
             </div>
-            <LeadDialog propertyTitle={property.title} />
+            <LeadDialog propertyId={property.id} propertyTitle={property.title} />
             <p className="stamp mt-4 text-center !text-[10px] text-ink/60">{t.listing.usuallyReplies}</p>
           </aside>
         </div>

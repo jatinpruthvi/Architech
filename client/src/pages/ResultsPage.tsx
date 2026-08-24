@@ -2,7 +2,7 @@
 /* ARCHITECH — Search results v4.
    Filters are multi-select (AND), synced to the URL for back-button + sharing.
    Real sort control, honest counts, aria-live announcements, skeletons, bottom-sheet on mobile. */
-import { ArrowUpRight, Crosshair, LayoutList, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpRight, LayoutList, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,6 +16,7 @@ import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Property } from "@/lib/repositories";
 import { searchListings, type SearchResponse } from "@/lib/search/search";
+import MapListSync from "@/components/architech/MapListSync";
 
 const filterDefs = makeFilters<Property>();
 const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
@@ -65,6 +66,7 @@ export default function ResultsPage() {
   const [mapMode, setMapMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeKey = active.join(",");
   const initialSearch = useMemo(() => searchListings({ q: query, filters: active, sort }), [activeKey, query, sort]);
   const [searchResponse, setSearchResponse] = useState<SearchResponse>(initialSearch);
@@ -79,8 +81,10 @@ export default function ResultsPage() {
     setLoading(true);
     fetch(`/api/search/${p.toString() ? `?${p}` : ""}`)
       .then((response) => { if (!response.ok) throw new Error(`Search API ${response.status}`); return response.json() as Promise<SearchResponse>; })
-      .then((data) => { if (!cancelled) setSearchResponse(data); })
-      .catch(() => { if (!cancelled) setSearchResponse(initialSearch); })
+      .then((data) => { if (!cancelled) setSearchResponse(data);
+        setSelectedId((current) => current && data.results.some((property) => property.id === current) ? current : data.results[0]?.id ?? null); })
+      .catch(() => { if (!cancelled) setSearchResponse(initialSearch);
+        setSelectedId((current) => current && initialSearch.results.some((property) => property.id === current) ? current : initialSearch.results[0]?.id ?? null); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
@@ -171,7 +175,11 @@ export default function ResultsPage() {
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
                 : results.map((property, i) => (
-                    <Reveal key={`${active.join()}-${sort}-${property.id}`} delay={i * 60}><PropertyCard property={property} index={i} /></Reveal>
+                    <Reveal key={`${active.join()}-${sort}-${property.id}`} delay={i * 60}>
+                      <div id={`listing-${property.id}`} onMouseEnter={() => setSelectedId(property.id)} onFocus={() => setSelectedId(property.id)} className={selectedId === property.id ? "ring-2 ring-brick ring-offset-4 ring-offset-paper" : undefined}>
+                        <PropertyCard property={property} index={i} />
+                      </div>
+                    </Reveal>
                   ))}
             </div>
             {/* Curated empty state */}
@@ -197,25 +205,21 @@ export default function ResultsPage() {
             )}
           </div>
 
-          {/* Real OpenStreetMap aside */}
-          <aside className={`relative min-h-[480px] overflow-hidden border border-ink/12 bg-sand ${mapMode ? "block" : "hidden lg:block"} lg:sticky lg:top-[102px] lg:h-[calc(100vh-130px)]`} aria-label={t.search.mapLabel}>
-            <iframe
-              title="Map of Ahmedabad localities — OpenStreetMap"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=72.4300%2C22.9650%2C72.6350%2C23.0950&layer=mapnik&marker=23.011%2C72.559"
-              className="map-frame absolute inset-0 h-full w-full border-0"
-              loading="lazy"
-            />
-            <p className="stamp absolute right-3 top-3 z-10 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
-            <button
-              onClick={() => toast(t.search.searchingArea, { description: t.search.searchingAreaDescription })}
-              className="touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp !text-[11px] font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
-              <Crosshair size={14} className="text-ember" /> {t.search.searchArea}
-            </button>
-            <div className="pointer-events-none absolute inset-x-5 bottom-5 z-10 border border-ink/12 bg-paper/95 p-5 backdrop-blur">
-              <p className="stamp !text-[10px] font-semibold text-brick">{t.search.liveCartography}</p>
-              <p className="mt-2 text-sm leading-6 text-ink/65">{t.search.mapCopy}</p>
-            </div>
-          </aside>
+          {/* MapLibre map/list synchronized aside */}
+          <MapListSync
+            listings={results}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            className={`${mapMode ? "block" : "hidden lg:block"} lg:sticky lg:top-[102px] lg:h-[calc(100vh-130px)]`}
+            copy={{
+              mapLabel: t.search.mapLabel,
+              searchArea: t.search.searchArea,
+              searchingArea: t.search.searchingArea,
+              searchingAreaDescription: t.search.searchingAreaDescription,
+              liveCartography: t.search.liveCartography,
+              mapCopy: t.search.mapCopy,
+            }}
+          />
         </div>
       </section>
     </div>
