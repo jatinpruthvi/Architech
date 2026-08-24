@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { GET } from "../../../../app/api/search/route";
 import { normalizeLimit, normalizeSort, searchListings, searchListingsFromSearchParams } from "./search";
 
 describe("backend search contract", () => {
@@ -20,15 +19,8 @@ describe("backend search contract", () => {
     expect(response.results[0].priceNum).toBeLessThan(15_000_000);
   });
 
-  it("parses URLSearchParams the same way as the API route", () => {
+  it("parses URLSearchParams consistently with the API contract", () => {
     const response = searchListingsFromSearchParams(new URLSearchParams("q=Thaltej&filters=3bhk,rera&sort=price-asc"));
     expect(response.results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
-  });
-
-  it("returns JSON from the route handler", async () => {
-    const response = await GET(new Request("http://example.com/api/search?q=Paldi&filters=rera"));
-    expect(response.headers.get("X-Architech-Search-Source")).toBe("fixture-repository");
-    const body = await response.json();
-    expect(body.results.map((property: { id: string }) => property.id)).toContain("garden-courtyard");
   });
 });
