@@ -488,12 +488,12 @@ These should follow after the data foundation is in place:
 9. Google Search Console setup and SEO alerting. ✅ First slice validated: setup docs, config audit, sitemap submission/URL inspection workflow, thresholds, helpers, and tests.
 10. Security/privacy/legal gates. ✅ First slice validated: security headers, privacy notice, terms/disclaimers, data-flow map, legal gate registry, CI audits, and docs.
 11. Backup/restore/cost operational readiness. ✅ First slice validated: RPO/RTO, backup retention, restore drill checklist, service owners, budgets, alerts, docs, and CI audit.
-12. Final Phase 1 release report.
+12. Final Phase 1 release report. ✅ Validated: release report, evidence JSON, audit script, CI gate, known limitations, blockers, and launch recommendation.
 
 ---
 
 # Current selected next item
 
-**Recommended next item:** Final Phase 1 release report.
+**Recommended next item:** Execute production environment provisioning when account access/secrets are available.
 
-Reason: backup/restore/cost readiness now has an auditable operations registry, so the next slice should produce the final Phase 1 release report across all gates and known limitations.
+Reason: environment and secrets runbooks/audits are now in place. Actual provisioning is blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.
