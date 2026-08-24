@@ -29,7 +29,8 @@
 - [x] Implement Item 6 from the tracker: complete Hindi UI foundation.
 - [x] Implement Item 7 from the tracker: Storybook/component documentation.
 - [x] Implement Item 8 from the tracker: performance and Core Web Vitals budgets.
-- [ ] Implement Item 9 from the tracker: Prisma/PostgreSQL/PostGIS schema.
+- [x] Implement Item 9 from the tracker: Prisma/PostgreSQL/PostGIS schema.
+- [ ] Implement Item 10 from the tracker: Data access layer/repositories.
 
 ## Status
 
