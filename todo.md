@@ -34,7 +34,9 @@
 - [x] Begin later Phase 1 backlog: backend search API and PostgreSQL FTS/trigram.
 - [x] Implement later Phase 1 backlog: MapLibre synchronized map/list experience.
 - [x] Implement later Phase 1 backlog: lead persistence and consent/audit backend.
-- [ ] Implement later Phase 1 backlog: Better Auth and broker organizations.
+- [x] Implement later Phase 1 backlog: Better Auth and broker organizations.
+- [x] Implement later Phase 1 backlog: broker onboarding and listing moderation.
+- [ ] Implement later Phase 1 backlog: media upload pipeline with moderation and derivatives.
 
 ## Status
 

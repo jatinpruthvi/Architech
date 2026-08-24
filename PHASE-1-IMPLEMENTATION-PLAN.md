@@ -164,9 +164,9 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 |---|---|---|---|---|
 | P1-MEDIA-001 | R2/Stream upload, derivatives, captions, transcripts, moderation | pending | Static images and local WebP derivatives only. | Signed upload, malware/MIME checks, EXIF removal, moderation, deletion/takedown evidence. |
 | P1-RERA-001 | RERA adapter, provenance, freshness, correction workflow | pending | Demo RERA/trust UI only. | RERA source adapter, evidence fields, stale/disputed states, correction workflow, legal review. |
-| P1-AUTH-001 | Better Auth, roles, passkeys, 2FA, recovery, audit | pending | None. | Auth/session model, roles, protected routes, passkeys/2FA/recovery, audit and rate-limit tests. |
+| P1-AUTH-001 | Better Auth, roles, passkeys, 2FA, recovery, audit | partial | `better-auth` dependency, demo session contract, role/permission helpers, `/api/auth/session`, broker dashboard shell, organization context, docs, and tests exist. | Wire live Better Auth sessions, secure cookies, passkeys/2FA/recovery, rate limits, and database-backed organization memberships. |
 | P1-LEAD-001 | Masked/direct consented lead workflow | partial | Listing dialog posts to `/api/leads`; API validates consent, masks phone, provides idempotency, and returns audit metadata. | Replace in-memory fixture store with Prisma transaction, notifications, deletion workflow, and legal approval. |
-| P1-BROKER-001 | Broker onboarding, verification, listing workflow, moderation | pending | None. | Broker org setup, listing draft/review/active flow, moderation, media rights, lead inbox, audit. |
+| P1-BROKER-001 | Broker onboarding, verification, listing workflow, moderation | partial | Broker onboarding shell, listing draft UI, moderation queue UI, draft/create/submit/moderate API contracts, media-rights gate, audit trail, docs, and tests exist. | Persist drafts/review decisions in PostgreSQL, add media upload integration, lead inbox, and operations/legal approval. |
 
 ## Operations, authority, and testing
 
@@ -480,8 +480,8 @@ These should follow after the data foundation is in place:
 1. Backend search API and PostgreSQL FTS/trigram. ✅ First slice validated: `/api/search`, search service tests, client fetch integration, and FTS/trigram migration SQL.
 2. MapLibre synchronized map/list experience. ✅ First slice validated: lazy MapLibre map, listing pins, selected listing sync, cluster chips, fallback, and performance budget update.
 3. Lead persistence and consent/audit backend. ✅ First slice validated: `/api/leads`, consent checkbox, masked phone, idempotency, audit metadata, docs, and tests.
-4. Better Auth and broker organizations.
-5. Broker onboarding and listing moderation.
+4. Better Auth and broker organizations. ✅ First slice validated: dependency, session contract, broker org shell, role/permission helpers, docs, and tests.
+5. Broker onboarding and listing moderation. ✅ First slice validated: onboarding shell, draft submission contract, moderation decisions, media-rights gate, audit trail, docs, and tests.
 6. Media upload pipeline with moderation and derivatives.
 7. RERA adapter/provenance/correction workflow.
 8. Sentry/logging/RUM/observability.
@@ -494,6 +494,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Better Auth and broker organizations.
+**Recommended next item:** Media upload pipeline with moderation and derivatives.
 
-Reason: lead capture now has a backend consent/audit contract, so the next Phase 1 slice should add identity, sessions, organizations, and roles for broker/admin workflows.
+Reason: broker onboarding and listing moderation now have route/API contracts, so the next Phase 1 slice should add signed media upload, media-rights evidence, moderation states, and derivative metadata.
