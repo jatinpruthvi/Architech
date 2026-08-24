@@ -27,7 +27,9 @@
 - [x] Implement Item 4 from the tracker: no-JavaScript SEO tests.
 - [x] Implement Item 5 from the tracker: accessibility automation.
 - [x] Implement Item 6 from the tracker: complete Hindi UI foundation.
-- [ ] Implement Item 7 from the tracker: Storybook/component documentation.
+- [x] Implement Item 7 from the tracker: Storybook/component documentation.
+- [x] Implement Item 8 from the tracker: performance and Core Web Vitals budgets.
+- [ ] Implement Item 9 from the tracker: Prisma/PostgreSQL/PostGIS schema.
 
 ## Status
 

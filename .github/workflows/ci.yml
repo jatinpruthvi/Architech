@@ -28,6 +28,10 @@ jobs:
         run: pnpm build
       - name: No-JavaScript SEO smoke tests
         run: pnpm test:seo
+      - name: Storybook smoke test
+        run: pnpm storybook:smoke
+      - name: Performance budget
+        run: pnpm test:perf
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
       - name: Accessibility smoke tests
