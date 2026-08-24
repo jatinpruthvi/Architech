@@ -154,7 +154,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-SEARCH-001 | PostgreSQL FTS, aliases, trigram, filters, deterministic parser | prototype | Client/fixture query parser and filter tests exist. | PostgreSQL FTS/trigram indexes, aliases, backend search API, golden-query accuracy and latency tests. |
+| P1-SEARCH-001 | PostgreSQL FTS, aliases, trigram, filters, deterministic parser | partial | Backend `/api/search` contract, fixture-backed search service, deterministic parser/filter tests, and PostgreSQL FTS/trigram migration SQL exist. | Switch search service to live PostgreSQL, add aliases/transliteration, DB-backed golden-query accuracy, and latency tests after database provisioning. |
 | P1-SEARCH-002 | cmdk and optional LLM adapter contract | pending | None. | cmdk search surface, typed optional LLM adapter, validation, cost/latency telemetry. |
 | P1-MAP-001 | MapLibre/deck.gl contracts, clusters, list fallback, benchmark harness | pending | OSM/static map-style embeds only. | MapLibre pins, clusters, selected listing sync, search-this-area, mobile fallback, Redmi-class benchmark. |
 
@@ -477,7 +477,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 These should follow after the data foundation is in place:
 
-1. Backend search API and PostgreSQL FTS/trigram.
+1. Backend search API and PostgreSQL FTS/trigram. ✅ First slice validated: `/api/search`, search service tests, client fetch integration, and FTS/trigram migration SQL.
 2. MapLibre synchronized map/list experience.
 3. Lead persistence and consent/audit backend.
 4. Better Auth and broker organizations.
@@ -494,6 +494,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Backend search API and PostgreSQL FTS/trigram.
+**Recommended next item:** MapLibre synchronized map/list experience.
 
-Reason: the schema and repository facade now exist, so the next larger Phase 1 slice should begin moving search from fixture/client-only behavior toward a backend contract and eventual PostgreSQL FTS/trigram implementation.
+Reason: the first backend search contract and PostgreSQL FTS/trigram migration are now in place, so the next discovery slice should replace static map embeds with a real synchronized map/list interface.

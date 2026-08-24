@@ -31,7 +31,8 @@
 - [x] Implement Item 8 from the tracker: performance and Core Web Vitals budgets.
 - [x] Implement Item 9 from the tracker: Prisma/PostgreSQL/PostGIS schema.
 - [x] Implement Item 10 from the tracker: Data access layer/repositories.
-- [ ] Begin later Phase 1 backlog: backend search API and PostgreSQL FTS/trigram.
+- [x] Begin later Phase 1 backlog: backend search API and PostgreSQL FTS/trigram.
+- [ ] Implement later Phase 1 backlog: MapLibre synchronized map/list experience.
 
 ## Status
 
