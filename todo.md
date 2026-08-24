@@ -36,7 +36,9 @@
 - [x] Implement later Phase 1 backlog: lead persistence and consent/audit backend.
 - [x] Implement later Phase 1 backlog: Better Auth and broker organizations.
 - [x] Implement later Phase 1 backlog: broker onboarding and listing moderation.
-- [ ] Implement later Phase 1 backlog: media upload pipeline with moderation and derivatives.
+- [x] Implement later Phase 1 backlog: media upload pipeline with moderation and derivatives.
+- [x] Implement later Phase 1 backlog: RERA adapter/provenance/correction workflow.
+- [ ] Implement later Phase 1 backlog: Sentry/logging/RUM/observability.
 
 ## Status
 

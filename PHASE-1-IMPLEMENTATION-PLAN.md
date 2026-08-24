@@ -162,8 +162,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-MEDIA-001 | R2/Stream upload, derivatives, captions, transcripts, moderation | pending | Static images and local WebP derivatives only. | Signed upload, malware/MIME checks, EXIF removal, moderation, deletion/takedown evidence. |
-| P1-RERA-001 | RERA adapter, provenance, freshness, correction workflow | pending | Demo RERA/trust UI only. | RERA source adapter, evidence fields, stale/disputed states, correction workflow, legal review. |
+| P1-MEDIA-001 | R2/Stream upload, derivatives, captions, transcripts, moderation | partial | Signed upload API contract, MIME/size/license validation, media-rights confirmation, EXIF policy, derivative plans, completion/moderation APIs, audit trail, docs, and tests exist. | Replace in-memory contract with R2/Stream, malware scanning, worker-generated derivatives, captions/transcripts, deletion/takedown workflow, and legal approval. |
+| P1-RERA-001 | RERA adapter, provenance, freshness, correction workflow | partial | Demo RERA adapter, provenance evidence fields, freshness/stale/disputed states, correction request/resolve workflow, API routes, docs, and tests exist. | Replace demo adapter with approved Gujarat RERA source integration and legal review before public enablement. |
 | P1-AUTH-001 | Better Auth, roles, passkeys, 2FA, recovery, audit | partial | `better-auth` dependency, demo session contract, role/permission helpers, `/api/auth/session`, broker dashboard shell, organization context, docs, and tests exist. | Wire live Better Auth sessions, secure cookies, passkeys/2FA/recovery, rate limits, and database-backed organization memberships. |
 | P1-LEAD-001 | Masked/direct consented lead workflow | partial | Listing dialog posts to `/api/leads`; API validates consent, masks phone, provides idempotency, and returns audit metadata. | Replace in-memory fixture store with Prisma transaction, notifications, deletion workflow, and legal approval. |
 | P1-BROKER-001 | Broker onboarding, verification, listing workflow, moderation | partial | Broker onboarding shell, listing draft UI, moderation queue UI, draft/create/submit/moderate API contracts, media-rights gate, audit trail, docs, and tests exist. | Persist drafts/review decisions in PostgreSQL, add media upload integration, lead inbox, and operations/legal approval. |
@@ -482,8 +482,8 @@ These should follow after the data foundation is in place:
 3. Lead persistence and consent/audit backend. ✅ First slice validated: `/api/leads`, consent checkbox, masked phone, idempotency, audit metadata, docs, and tests.
 4. Better Auth and broker organizations. ✅ First slice validated: dependency, session contract, broker org shell, role/permission helpers, docs, and tests.
 5. Broker onboarding and listing moderation. ✅ First slice validated: onboarding shell, draft submission contract, moderation decisions, media-rights gate, audit trail, docs, and tests.
-6. Media upload pipeline with moderation and derivatives.
-7. RERA adapter/provenance/correction workflow.
+6. Media upload pipeline with moderation and derivatives. ✅ First slice validated: signed upload contract, MIME/size/license validation, derivative plans, completion/moderation APIs, EXIF policy, docs, and tests.
+7. RERA adapter/provenance/correction workflow. ✅ First slice validated: adapter contract, provenance fields, stale/disputed states, correction workflow, APIs, docs, and tests.
 8. Sentry/logging/RUM/observability.
 9. Google Search Console setup and SEO alerting.
 10. Security/privacy/legal gates.
@@ -494,6 +494,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Media upload pipeline with moderation and derivatives.
+**Recommended next item:** Sentry/logging/RUM/observability.
 
-Reason: broker onboarding and listing moderation now have route/API contracts, so the next Phase 1 slice should add signed media upload, media-rights evidence, moderation states, and derivative metadata.
+Reason: RERA trust workflows now have provenance and correction contracts, so the next Phase 1 slice should add operational visibility: error capture, structured logs, Web Vitals/RUM hooks, and runbook documentation.
