@@ -36,6 +36,12 @@ jobs:
         run: pnpm security:audit
       - name: Operational readiness audit
         run: pnpm ops:audit
+      - name: Phase 1 release audit
+        run: pnpm release:audit
+      - name: Production enablement plan audit
+        run: pnpm production:plan:audit
+      - name: Production provisioning audit
+        run: pnpm provisioning:audit
       - name: Storybook smoke test
         run: pnpm storybook:smoke
       - name: Performance budget

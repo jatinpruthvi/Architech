@@ -1,0 +1,53 @@
+{
+  "release": "phase-1-prototype-foundation",
+  "date": "2026-08-24",
+  "decision": "validated_prototype_foundation_not_production_enabled",
+  "requiredCommands": [
+    "pnpm check",
+    "pnpm lint",
+    "pnpm test",
+    "pnpm db:validate",
+    "pnpm seo:gsc:audit",
+    "pnpm security:audit",
+    "pnpm ops:audit",
+    "pnpm build",
+    "pnpm test:perf",
+    "pnpm test:seo",
+    "pnpm storybook:smoke",
+    "pnpm test:a11y"
+  ],
+  "validatedAreas": [
+    "nextjs-ssr-seo",
+    "canonical-url-builder",
+    "seo-page-registry",
+    "raw-html-seo-tests",
+    "accessibility-smoke-tests",
+    "hindi-ui-foundation",
+    "storybook-documentation",
+    "performance-budgets",
+    "prisma-domain-schema",
+    "repository-facade",
+    "search-api-contract",
+    "maplibre-map-list-sync",
+    "lead-api-contract",
+    "auth-broker-organization-contract",
+    "broker-onboarding-moderation-contract",
+    "media-upload-contract",
+    "rera-provenance-correction-contract",
+    "observability-foundation",
+    "search-console-monitoring-workflow",
+    "security-privacy-legal-gates",
+    "backup-restore-cost-readiness"
+  ],
+  "productionBlockers": [
+    "live-environment-provisioning",
+    "database-migration-on-real-postgres",
+    "legal-gate-approvals",
+    "live-auth-sessions",
+    "r2-stream-media-pipeline",
+    "approved-rera-source-integration",
+    "search-console-domain-verification",
+    "sentry-log-drain-dashboard-provisioning",
+    "restore-drill-on-real-services"
+  ]
+}

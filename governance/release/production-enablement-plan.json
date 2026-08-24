@@ -1,0 +1,63 @@
+{
+  "plan": "production-enablement-after-phase-1",
+  "lastUpdated": "2026-08-24",
+  "decision": "do_not_enable_production_until_all_required_gates_are_evidenced",
+  "environments": [
+    {
+      "name": "preview",
+      "purpose": "Per-PR validation and stakeholder review",
+      "required": true,
+      "platforms": ["Vercel preview", "Railway staging services when needed"],
+      "requiredSecrets": ["NEXT_PUBLIC_SITE_URL"],
+      "exitCriteria": ["CI passes", "preview URL opens", "no preview-blocking headers"]
+    },
+    {
+      "name": "staging",
+      "purpose": "Production-like integration, migrations, restore drills, legal review evidence",
+      "required": true,
+      "platforms": ["Vercel staging", "Railway PostgreSQL/PostGIS", "Railway Redis", "Sentry staging"],
+      "requiredSecrets": ["DATABASE_URL", "BETTER_AUTH_SECRET", "SENTRY_DSN", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "RESEND_API_KEY"],
+      "exitCriteria": ["migrations deploy", "seed/smoke passes", "restore drill recorded", "legal gates reviewed"]
+    },
+    {
+      "name": "production",
+      "purpose": "Public launch after legal, data, security, SEO and ops gates pass",
+      "required": true,
+      "platforms": ["Vercel production", "Railway production services", "Cloudflare R2/Stream", "Sentry production", "Google Search Console"],
+      "requiredSecrets": ["DATABASE_URL", "BETTER_AUTH_SECRET", "SENTRY_DSN", "NEXT_PUBLIC_SENTRY_DSN", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "RESEND_API_KEY", "GSC_CREDENTIALS"],
+      "exitCriteria": ["all legal gates approved", "Search Console verified", "RPO/RTO drill passes", "incident owners assigned", "rollback documented"]
+    }
+  ],
+  "adapterSwitches": [
+    { "id": "repositories", "from": "fixture repositories", "to": "Prisma-backed repositories", "owner": "Backend/Data", "requiredEvidence": ["integration tests", "migration deployed", "seed verified"] },
+    { "id": "search", "from": "fixture search service", "to": "PostgreSQL FTS/trigram search", "owner": "Search/Backend", "requiredEvidence": ["golden query report", "latency baseline", "index explain plan"] },
+    { "id": "leads", "from": "in-memory lead API", "to": "Prisma transaction + notification queue", "owner": "Product/Backend", "requiredEvidence": ["consent audit", "idempotency tests", "deletion test"] },
+    { "id": "auth", "from": "demo Better Auth contract", "to": "live Better Auth sessions + org memberships", "owner": "Security/Backend", "requiredEvidence": ["session tests", "role tests", "cookie/security review"] },
+    { "id": "media", "from": "media upload contract", "to": "R2/Stream signed uploads + derivative workers", "owner": "Media/Security", "requiredEvidence": ["MIME/malware tests", "EXIF stripping evidence", "moderation evidence"] },
+    { "id": "rera", "from": "demo RERA adapter", "to": "approved Gujarat RERA source adapter", "owner": "Data/Legal", "requiredEvidence": ["source terms approval", "provenance fixtures", "correction workflow"] },
+    { "id": "observability", "from": "local logger/RUM contracts", "to": "Sentry/log drain dashboards and alerts", "owner": "SRE", "requiredEvidence": ["dashboard links", "alert test", "incident runbook"] }
+  ],
+  "launchGates": [
+    "pnpm check",
+    "pnpm lint",
+    "pnpm test",
+    "pnpm db:validate",
+    "pnpm security:audit",
+    "pnpm ops:audit",
+    "pnpm release:audit",
+    "pnpm production:plan:audit",
+    "pnpm build",
+    "pnpm test:perf",
+    "pnpm test:seo",
+    "pnpm test:a11y"
+  ],
+  "blockedUntil": [
+    "production domain selected and configured",
+    "Vercel/Railway/Cloudflare/Sentry/Search Console accounts provisioned",
+    "all required secrets stored outside source control",
+    "PostgreSQL/PostGIS migrations deployed in staging",
+    "legal gates LEG-001 through LEG-009 approved or explicitly disabled",
+    "restore drill completed on staging",
+    "rollback procedure tested"
+  ]
+}

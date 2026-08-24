@@ -42,7 +42,10 @@
 - [x] Implement later Phase 1 backlog: Google Search Console setup and SEO alerting.
 - [x] Implement later Phase 1 backlog: security/privacy/legal gates.
 - [x] Implement later Phase 1 backlog: backup/restore/cost operational readiness.
-- [ ] Implement final Phase 1 release report.
+- [x] Implement final Phase 1 release report.
+- [x] Begin production enablement planning: environments, DB provisioning, legal approvals, and live adapters.
+- [x] Add production environment provisioning and secrets management runbooks/audits.
+- [ ] Execute production environment provisioning when accounts/secrets are available.
 
 ## Status
 

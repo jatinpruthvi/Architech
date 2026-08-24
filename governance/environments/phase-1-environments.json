@@ -1,0 +1,33 @@
+{
+  "lastUpdated": "2026-08-24",
+  "status": "provisioning_plan_ready_external_account_access_required",
+  "environments": [
+    {
+      "name": "preview",
+      "domainPattern": "vercel-preview-url",
+      "deployment": "Vercel Preview",
+      "services": ["Next.js web"],
+      "requiredChecks": ["pnpm check", "pnpm lint", "pnpm test", "pnpm build", "pnpm test:seo", "pnpm test:perf"],
+      "requiredSecrets": ["NEXT_PUBLIC_SITE_URL"],
+      "provisioningStatus": "blocked_external_account_access"
+    },
+    {
+      "name": "staging",
+      "domainPattern": "staging.architech.example.com",
+      "deployment": "Vercel Staging + Railway Staging",
+      "services": ["Next.js web", "PostgreSQL/PostGIS", "Redis", "Sentry", "Cloudflare R2", "Resend"],
+      "requiredChecks": ["pnpm db:migrate", "pnpm db:seed", "pnpm check", "pnpm test", "pnpm build", "pnpm security:audit", "pnpm ops:audit", "pnpm release:audit"],
+      "requiredSecrets": ["NEXT_PUBLIC_SITE_URL", "DATABASE_URL", "BETTER_AUTH_SECRET", "SENTRY_DSN", "NEXT_PUBLIC_SENTRY_DSN", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "RESEND_API_KEY"],
+      "provisioningStatus": "blocked_external_account_access"
+    },
+    {
+      "name": "production",
+      "domainPattern": "architech.example.com",
+      "deployment": "Vercel Production + Railway Production",
+      "services": ["Next.js web", "PostgreSQL/PostGIS", "Redis", "Sentry", "Cloudflare R2/Stream", "Resend", "Google Search Console"],
+      "requiredChecks": ["pnpm check", "pnpm lint", "pnpm test", "pnpm db:validate", "pnpm security:audit", "pnpm ops:audit", "pnpm release:audit", "pnpm production:plan:audit", "pnpm build", "pnpm test:perf", "pnpm test:seo", "pnpm test:a11y"],
+      "requiredSecrets": ["NEXT_PUBLIC_SITE_URL", "DATABASE_URL", "BETTER_AUTH_SECRET", "SENTRY_DSN", "NEXT_PUBLIC_SENTRY_DSN", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "RESEND_API_KEY", "GSC_CREDENTIALS"],
+      "provisioningStatus": "blocked_external_account_access"
+    }
+  ]
+}

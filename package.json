@@ -25,7 +25,12 @@
     "security:headers": "node scripts/security/header-audit.mjs",
     "legal:gates": "node scripts/security/legal-gate-audit.mjs",
     "security:audit": "pnpm security:headers && pnpm legal:gates",
-    "ops:audit": "node scripts/operations/readiness-audit.mjs"
+    "ops:audit": "node scripts/operations/readiness-audit.mjs",
+    "release:audit": "node scripts/release/phase-1-release-audit.mjs",
+    "production:plan:audit": "node scripts/release/production-enablement-audit.mjs",
+    "env:audit": "node scripts/operations/environment-audit.mjs",
+    "secrets:audit": "node scripts/operations/secrets-audit.mjs",
+    "provisioning:audit": "pnpm env:audit && pnpm secrets:audit && pnpm production:plan:audit"
   },
   "dependencies": {
     "@prisma/client": "^7.9.1",
