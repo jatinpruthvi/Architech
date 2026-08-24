@@ -26,7 +26,10 @@ describe("fixture-backed repositories", () => {
   });
 
   it("exposes guide fixtures for the content repository contract", () => {
-    expect(getGuides().map((guide) => guide.slug)).toContain("how-we-verify-rera");
+    const guides = getGuides();
+    expect(guides.map((guide) => guide.slug)).toContain("how-we-verify-rera");
+    expect(guides.every((guide) => guide.path.startsWith("/guide/"))).toBe(true);
+    expect(guides.every((guide) => guide.author && guide.reviewer && guide.sources.length > 0)).toBe(true);
   });
 
   it("keeps pages and components behind repository facades instead of fixture arrays", () => {

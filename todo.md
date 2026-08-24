@@ -46,6 +46,7 @@
 - [x] Begin production enablement planning: environments, DB provisioning, legal approvals, and live adapters.
 - [x] Add production environment provisioning and secrets management runbooks/audits.
 - [x] Implement production data adapter layer: server-only Prisma repository adapter with fixture fallback.
+- [x] Implement structured guide/content system with editorial noindex gates.
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 
 ## Status

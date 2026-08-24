@@ -37,14 +37,14 @@ export default function Guide() {
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {getGuides().map((n, i) => (
               <Reveal key={n.title} delay={i * 90}>
-                <article className="group border border-ink/12 bg-card motion-lift hover:editorial-shadow">
+                <Link href={n.path} className="group block border border-ink/12 bg-card motion-lift hover:editorial-shadow">
                   <div className="img-hover aspect-[1.35] bg-sand"><Pic name={n.image} alt="" className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, 33vw" /></div>
                   <div className="p-6">
                     <p className="stamp !text-[10px] text-brick">{n.tag} · {n.time}</p>
                     <h3 className="mt-3 font-display text-[22px] font-medium leading-snug tracking-[-0.02em] group-hover:text-brick">{n.title}</h3>
-                    <p className="mt-4 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60">In the studio — publishing soon</p>
+                    <p className="mt-4 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60">Read note <ArrowUpRight size={13} /></p>
                   </div>
-                </article>
+                </Link>
               </Reveal>
             ))}
           </div>
