@@ -18,6 +18,8 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Prisma schema validate
+        run: pnpm db:validate
       - name: Type check
         run: pnpm check
       - name: Lint

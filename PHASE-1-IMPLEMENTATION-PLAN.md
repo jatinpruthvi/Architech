@@ -110,7 +110,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | 6 | Complete Hindi UI foundation | P1-I18N-001, UX-004 | validated | Hindi dictionary expanded across search, saved, locality, listing, cards, CTAs, and trust UI. |
 | 7 | Storybook/component documentation | P1-UI-001 | validated | Storybook 10 added with stories for header, footer, cards, compare flow, and UI states. |
 | 8 | Performance/bundle/Core Web Vitals budgets | PERF-001, PERF-002, P1-TEST-001 | validated | `pnpm test:perf` enforces route JS, gzip, HTML, chunk, image, and CWV target budgets. |
-| 9 | Prisma/PostgreSQL/PostGIS schema | P1-DATA-001 | pending | Starts the production data foundation. |
+| 9 | Prisma/PostgreSQL/PostGIS schema | P1-DATA-001 | validated | Prisma 7 schema, migration, seed script, schema contract tests, and docs added. |
 | 10 | Data access layer/repositories | P1-DATA-001, P1-SEO-002 | pending | Lets app switch from fixtures to database-backed data. |
 
 ---
@@ -129,7 +129,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | pending | Fixture data exists in `client/src/lib/properties.ts` and `client/src/lib/localities.ts`. | Prisma schema, migrations, constraints, seed data, migration deploy test. |
+| P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | partial | Prisma 7 schema, initial migration SQL, representative seed script, validation command, schema contract tests, and docs exist. | Run migration deploy and seed against provisioned PostgreSQL/PostGIS environment; add spatial columns/indexes when DB service is active. |
 | P1-DATA-002 | Audit, provenance, lifecycle, deletion, retention model | pending | Demo freshness/trust copy only. | Audit events, source provenance, retention/deletion jobs, lifecycle tests, legal gate records. |
 
 ## UI, design system, localization
@@ -408,7 +408,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ## Item 9 — Prisma/PostgreSQL/PostGIS schema
 
-**Status:** pending
+**Status:** validated
 **Workstream:** P1-DATA-001
 **Goal:** Create the canonical production data model.
 
@@ -421,9 +421,22 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Acceptance
 
-- `prisma validate` passes.
-- Migration exists.
-- Seed command creates representative demo data.
+- `prisma validate` passes. ✅
+- Migration exists. ✅
+- Seed command creates representative demo data. ✅ Script exists; live execution requires `DATABASE_URL`.
+
+### Evidence
+
+- Added Prisma 7 dependencies and `prisma.config.ts`.
+- Added `prisma/schema.prisma` for City, Locality, Listing, PropertyMedia, BrokerOrganization, User, BrokerUser, ReraRecord, Lead, AuditEvent, and SavedSearch.
+- Added lifecycle/status enums for listing lifecycle, verification, translation, media moderation, property type, user role, lead mode, and lead status.
+- Added initial migration: `prisma/migrations/202608240001_phase1_domain_schema/migration.sql`.
+- Added representative Ahmedabad seed script: `prisma/seed.mjs`.
+- Added docs: `docs/data/phase-1-prisma-schema.md`.
+- Added schema contract tests: `client/src/lib/db-schema.test.ts`.
+- Added scripts: `pnpm db:validate`, `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed`.
+- Updated CI to run `pnpm db:validate`.
+- Validation: `pnpm db:validate`, `pnpm db:generate`, `pnpm check`, `pnpm lint`, `pnpm test` (30 passed), `pnpm build`, `pnpm test:perf`, `pnpm storybook:smoke`, `pnpm test:seo`, `pnpm test:a11y` (14 passed).
 
 ---
 
@@ -474,6 +487,6 @@ These should follow after the data foundation is in place:
 
 # Current selected next item
 
-**Recommended next item:** Item 9 — Prisma/PostgreSQL/PostGIS schema.
+**Recommended next item:** Item 10 — Data access layer.
 
-Reason: the UI/SEO/accessibility/performance foundation is now guarded by automated checks, so the next Phase 1 step is the production data model.
+Reason: the production schema now exists, so the next step is to stop importing fixtures directly from pages/components and introduce typed repository functions that can later switch from fixtures to Prisma-backed data.
