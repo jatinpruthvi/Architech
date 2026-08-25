@@ -2,6 +2,8 @@ import "server-only";
 import { createSignedMediaUpload, type MediaUploadInput } from "@/lib/media/upload";
 import { MemoryMediaStorageProvider, mediaObjectKey, R2MediaStorageProvider, type MediaStorageProvider } from "@/lib/media/provider";
 import { getMediaStorageMode, validateR2Environment } from "@/lib/media/source";
+import { createMediaUploadForServer } from "@/lib/persistence/media-store";
+import { isPrismaPersistence } from "@/lib/persistence/source";
 
 export function getMediaStorageProvider(mode = getMediaStorageMode()): MediaStorageProvider {
   if (mode === "r2") {
@@ -19,6 +21,11 @@ export async function createSignedMediaUploadForServer(input: MediaUploadInput) 
   const provider = getMediaStorageProvider();
   const objectKey = mediaObjectKey(input, result.upload.id);
   const signed = await provider.signUpload({ ...input, uploadId: result.upload.id, objectKey });
+
+  // Persist a durable PropertyMedia record when the data source is `prisma`.
+  // Idempotent: the shared stable id means this reconciles with the contract
+  // upload without creating a second record.
+  if (isPrismaPersistence()) await createMediaUploadForServer(input);
 
   return {
     ...result,
