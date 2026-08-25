@@ -150,4 +150,14 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Map each observed feature to Architech, separating directly implementable UI behavior from live-service activation gates.
 - [x] Implement the agreed compatible feature set without copying Addressbox branding, text, or protected visual assets.
 - [x] Verify the new flows in Chrome, including responsive behavior, accessibility, and SEO/indexability safety.
-- [ ] Save a checkpoint and report any remaining external-service requirements.
+- [x] Save a checkpoint and report any remaining external-service requirements.
+
+
+## Addressbox Agent Dashboard Parity
+
+- [ ] Inspect the provided Addressbox agent dashboard in Chrome and inventory its broker-facing features and states.
+- [ ] Compare the observed workflow with Architech’s current broker dashboard, leads, listings, media, and moderation surfaces.
+- [ ] Define secure role, organization-scope, persistence, and external-service activation gates for missing capabilities.
+- [ ] Implement the missing compatible agent functionality without copying Addressbox branding, text, or protected assets.
+- [ ] Verify agent flows, authorization boundaries, responsive UX, accessibility, and build quality.
+- [ ] Save a checkpoint and report remaining live-service requirements.

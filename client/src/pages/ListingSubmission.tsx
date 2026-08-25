@@ -93,19 +93,21 @@ export default function ListingSubmission() {
   };
 
   return (
-    <div className="bg-paper pt-[78px] text-ink">
-      <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
+    <div className="page-transition listing-dossier bg-paper pt-[78px] text-ink">
+      <section className="listing-dossier-hero border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
-          <p className="kicker text-brick">Listing draft · moderation required</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><p className="kicker text-brick">Listing draft · moderation required</p><span className="stamp text-ink/45">SOURCE PACKET / 01 · AHMEDABAD</span></div>
           <h1 className="display mt-6 max-w-[760px] text-[clamp(40px,6vw,78px)]">Submit a home with the <em className="text-brick">source trail</em> attached.</h1>
-          <p className="mt-6 max-w-[560px] text-base leading-8 text-ink/65">Capture the fields enforced by the listing contract, create a draft, then submit it for moderation.</p>
+          <p className="mt-6 max-w-[560px] text-base leading-8 text-ink/65">Capture the fields enforced by the listing contract, create a private draft, then submit the evidence packet for moderation.</p>
+          <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-ink/12 pt-4 stamp text-ink/50"><span>01 / capture</span><span>02 / verify</span><span>03 / review</span><span>04 / publish</span></div>
         </div>
       </section>
 
-      <section className="container grid gap-8 py-14 lg:grid-cols-[1fr_360px] md:py-20">
-        <div className="border border-ink/12 bg-card p-7">
-          <p className="kicker text-brick !text-[10px]">Draft fields</p>
+      <section className="listing-dossier-body container grid gap-8 py-14 lg:grid-cols-[1fr_360px] md:py-20">
+        <div className="listing-packet border border-ink/12 bg-card p-7">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink/12 pb-5"><div><p className="kicker text-brick !text-[10px]">Draft fields</p><p className="mt-2 text-sm text-ink/55">Packet 01 · editorial facts and source context</p></div><span className="stamp text-ink/45">PRIVATE UNTIL REVIEW</span></div>
           <div className="mt-6 grid gap-5">
+            <div className="listing-field-note flex items-center gap-2 border-l-2 border-brick/50 bg-sand/40 px-3 py-2 stamp text-[10px] text-ink/55"><FileCheck2 size={13} className="text-brick" /> Every value becomes part of the reviewable source packet.</div>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Title" required>
                 <input value={draft.title} onChange={(e) => set("title", e.target.value)} className={inputCls} placeholder="A garden courtyard in Paldi" />
@@ -134,7 +136,7 @@ export default function ListingSubmission() {
             <Field label="Description / source context" required>
               <textarea value={draft.description} onChange={(e) => set("description", e.target.value)} rows={4} className={inputCls} placeholder="Old trees, kota stone floors, and a courtyard that carries the whole house." />
             </Field>
-            <label className="flex items-start gap-3 border border-ink/15 bg-sand/50 p-3 text-xs leading-5 text-ink/65">
+            <label className="flex items-start gap-3 border border-brick/20 bg-brick/5 p-3 text-xs leading-5 text-ink/65">
               <input type="checkbox" checked={draft.mediaRightsConfirmed} onChange={(e) => set("mediaRightsConfirmed", e.target.checked)} className="mt-1 accent-[var(--brick)]" />
               <span>I confirm media rights for the images/plans and grant Architech publication rights.</span>
             </label>
@@ -164,15 +166,17 @@ export default function ListingSubmission() {
           )}
         </div>
 
-        <aside className="h-fit border border-ink/12 bg-sand/70 p-7">
-          <ShieldCheck size={22} className="text-trust" />
-          <h2 className="mt-4 font-display text-2xl font-medium tracking-[-0.02em]">Before review</h2>
-          <ul className="mt-5 space-y-3 text-sm text-ink/65">
+        <aside className="listing-dossier-aside h-fit border border-ink/12 bg-sand/70 p-7">
+          <div className="flex items-start justify-between"><ShieldCheck size={22} className="text-trust" /><span className="stamp text-ink/45">DOSSIER / 01</span></div>
+          <h2 className="mt-7 font-display text-2xl font-medium tracking-[-0.02em]">Before review</h2>
+          <p className="mt-2 text-sm leading-6 text-ink/60">A moderator should be able to understand what is claimed, where it belongs, and whether publication rights are clear.</p>
+          <ul className="mt-5 space-y-3 border-t border-ink/12 pt-5 text-sm text-ink/65">
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Media rights confirmed</li>
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Locality selected</li>
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Price and area supplied</li>
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Description has source context</li>
           </ul>
+          <div className="mt-7 border-t border-ink/12 pt-4 stamp text-ink/45">LOCALITY · PRICE · MEDIA RIGHTS · RERA</div>
           <Link href="/admin/moderation/listings" className="mt-7 inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">View moderation queue <ArrowUpRight size={14} /></Link>
         </aside>
       </section>
@@ -180,7 +184,7 @@ export default function ListingSubmission() {
   );
 }
 
-const inputCls = "mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none";
+const inputCls = "mt-1.5 w-full border border-ink/20 bg-paper/35 px-4 py-3 text-sm transition-colors duration-200 placeholder:text-ink/35 focus:border-brick focus:bg-card focus:outline-none";
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
