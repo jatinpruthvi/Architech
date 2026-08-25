@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
 import { getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
+import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
 
 export function generateStaticParams() {
   return getListingStaticParams();
@@ -27,6 +28,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   const locality = getLocalityBySlug(property.localitySlug);
   const [lat, lon] = (locality?.marker ?? "23.011,72.559").split(",");
+  const trust = computeTrustScore(badgesToTrustInput(property.badge, property.status));
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -39,6 +41,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         address: { "@type": "PostalAddress", addressLocality: property.locality, addressRegion: "Gujarat", addressCountry: "IN" },
         geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
         image: assetUrl(`/images/${property.image}.jpg`),
+        additionalProperty: [
+          { "@type": "PropertyValue", name: "trustScore", value: trust.score, unitText: "out of 100" },
+          { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },
+          ...trust.signals.map((signal) => ({ "@type": "PropertyValue", name: signal.id, value: signal.met ? "verified" : "not-verified" })),
+        ],
       },
       {
         "@type": "BreadcrumbList",

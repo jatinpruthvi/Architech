@@ -68,6 +68,13 @@ export const strings = {
       privateStep: "Private next step", talkPartner: "Talk to the partner.", maskedCopy: "Your contact details stay masked until you choose to share them. No spam calls — that's a contract, not a promise.",
       verifiedPartner: "Verified Ahmedabad partner", ask: "Ask about this home", usuallyReplies: "Usually replies within 4 working hours", nearbyTitle1: "Nearby, also worth a", nearbyTitleEm: "look", allHomes: "All homes",
       dialogTitle: "Ask about this home", dialogCopy: "Your message goes to the verified partner. Your phone number stays masked until you choose to share it.", name: "Your name", phone: "Phone (kept masked)", message: "Message", send: "Send query", sending: "Sending…", noRealMessage: "Concept preview — stored through the lead API contract.", consentText: "I consent to Architech storing this enquiry, keeping my phone masked by default, and sharing it only with the verified partner for this listing.", querySent: "Query sent to Nivasa Partners", querySentDescription: "They usually reply within 4 working hours. Your number stays masked. (Demo)", queryFailed: "Could not send query", queryFailedDescription: "Please check the details and try again.",
+      trust: {
+        kicker: "Verification & trust", scoreLabel: "Trust score",
+        gradeHigh: "High trust", gradeMedium: "Moderate trust", gradeLow: "Low trust",
+        summaryHeader: "Why this home is worth considering", confirmed: "Confirmed", notConfirmed: "Not yet confirmed",
+        howWeVerify: "How we verify",
+        disclaimer: "Trust signals are derived only from structured facts — RERA registry, source review, partner verification, media rights, freshness, and dispute status. Nothing is invented.",
+      },
     },
     property: {
       view: "View", compare: "Compare", removeCompare: "Remove from compare", save: "Save", removeSaved: "Remove from saved", details: "details",
@@ -129,6 +136,13 @@ export const strings = {
       privateStep: "निजी अगला कदम", talkPartner: "Partner से बात करें।", maskedCopy: "आपकी contact details तब तक masked रहती हैं जब तक आप share न करें। Spam calls नहीं — यह contract है, सिर्फ़ promise नहीं।",
       verifiedPartner: "सत्यापित Ahmedabad partner", ask: "इस घर के बारे में पूछें", usuallyReplies: "आमतौर पर 4 working hours में जवाब", nearbyTitle1: "पास में, देखने लायक", nearbyTitleEm: "घर", allHomes: "सभी घर",
       dialogTitle: "इस घर के बारे में पूछें", dialogCopy: "आपका message verified partner को जाएगा। आपका phone number तब तक masked रहेगा जब तक आप share न करें।", name: "आपका नाम", phone: "फ़ोन (masked रहेगा)", message: "संदेश", send: "Query भेजें", sending: "भेज रहे हैं…", noRealMessage: "Concept preview — lead API contract के ज़रिए stored.", consentText: "मैं सहमत हूँ कि Architech इस enquiry को store करे, मेरा phone default रूप से masked रखे, और इसे केवल इस listing के verified partner से share करे।", querySent: "Query Nivasa Partners को भेजी गई", querySentDescription: "वे आमतौर पर 4 working hours में जवाब देते हैं। आपका number masked रहता है। (डेमो)", queryFailed: "Query भेजी नहीं जा सकी", queryFailedDescription: "कृपया details जाँचकर फिर कोशिश करें।",
+      trust: {
+        kicker: "सत्यापन और भरोसा", scoreLabel: "ट्रस्ट स्कोर",
+        gradeHigh: "उच्च विश्वास", gradeMedium: "मध्यम विश्वास", gradeLow: "कम विश्वास",
+        summaryHeader: "यह घर क्यों विचारने लायक है", confirmed: "पुष्ट", notConfirmed: "अभी पुष्ट नहीं",
+        howWeVerify: "हम कैसे सत्यापित करते हैं",
+        disclaimer: "ट्रस्ट सिग्नल केवल structured facts से लिए जाते हैं — RERA registry, source review, partner verification, media rights, freshness और dispute status। कुछ भी invent नहीं किया गया।",
+      },
     },
     property: {
       view: "देखें", compare: "तुलना करें", removeCompare: "तुलना से हटाएँ", save: "सहेजें", removeSaved: "सहेजे गए से हटाएँ", details: "विवरण",
