@@ -179,3 +179,12 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Implement safe missing functionality without copying Addressbox branding, protected assets, or unverifiable claims.
 - [x] Verify public and broker routes, mobile behavior, accessibility, SEO safety, authorization boundaries, and error states.
 - [ ] Save a checkpoint and report the remaining live-service requirements.
+
+
+## Homepage Hydration Mismatch Follow-up
+
+- [x] Confirm that `bis_skin_checked` is browser-injected markup rather than application-owned output.
+- [x] Trace the homepage client/server content mismatch to the hidden Radix TabsContent text and dynamic animation state.
+- [x] Remove the mismatching hidden text while preserving search, motion, accessibility, and SEO content.
+- [x] Verify the homepage in Chrome, including clean console, mobile layout, build, accessibility, and regression checks.
+- [ ] Save a corrected checkpoint and report any extension-only limitation separately.
