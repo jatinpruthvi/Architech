@@ -83,6 +83,14 @@
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 
+## Chrome Follow-up Debugging
+
+- [x] Reproduce and inventory the user-reported non-working website parts in the open Chrome preview.
+- [x] Repair the confirmed Reveal/visibility defect without removing intended motion or crawlable content.
+- [x] Verify navigation, search, listing, saved, language, theme, and responsive flows in Chrome.
+- [x] Run typecheck, lint, unit/SEO checks, and production build after the fix.
+- [ ] Save a validated checkpoint and report remaining activation-gate limitations.
+
 ## Status
 
 All redesign and motion-revision tasks completed in the Amdavad Modern overhaul (Aug 2026). See `IMPROVEMENT-REVIEW.md` for the follow-up audit and its implementation. Use `PHASE-1-IMPLEMENTATION-PLAN.md` for the active Phase 1 backlog and acceptance tracking.
@@ -113,3 +121,24 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Reconcile README, historical reviews, tracker, and generated project status.
 - [x] Complete high-value UX states for save, compare, search, map/list, leads, media, moderation, and Hindi.
 - [x] Run full validation and update the tracker; external-account activation remains open.
+
+## Local Preview Recovery
+
+- [x] Inspect the active workspace, dev-server process, port 3000, and recent server/browser errors.
+- [x] Restart or repair the local Next.js preview without discarding project changes.
+- [x] Verify the root page and representative routes respond successfully in the browser preview.
+- [x] Record any remaining environment-specific or external-account blocker and report the working preview URL.
+
+## Localhost Connection Refusal
+
+- [x] Check whether port 3000 is listening and whether the managed preview process is alive.
+- [x] Inspect recent server output and deployment/preview metadata for the connection failure.
+- [x] Restart or repair the correct local development server without changing application source.
+- [x] Verify localhost and the proxied preview URL return the Architech homepage and a representative route.
+
+## Windows Localhost Startup
+
+- [x] Confirm the Windows project path and Node/pnpm availability.
+- [x] Start `pnpm dev` from the local Architech repository on the connected Windows computer.
+- [x] Verify Windows `127.0.0.1:3000` returns the Architech homepage.
+- [x] Report the local terminal state and the URL to open.

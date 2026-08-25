@@ -32,8 +32,16 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Match the architecture's canonical URL grammar (/buy/{city}/{locality}/)
   trailingSlash: true,
-  // Sandbox live-preview is proxied via *.e2b.app
-  allowedDevOrigins: ["*.e2b.app"],
+  // Sandbox live-preview domains changed from *.e2b.app to *.manus.computer.
+  // Keep both allowlists so the Next.js dev client can hydrate through either
+  // proxy family; without this, server-rendered controls remain inert in Chrome.
+  allowedDevOrigins: [
+    "*.e2b.app",
+    "*.manus.computer",
+    "3000-ic1kcjb43qdag8kqqfuag-1217bc80.sg1.manus.computer",
+    "localhost",
+    "127.0.0.1",
+  ],
   // Plain <img>/<picture> pipeline (pre-generated WebP derivatives)
   images: {
     // Public assets currently use pre-generated WebP derivatives. Keep this

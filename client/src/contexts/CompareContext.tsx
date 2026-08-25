@@ -1,3 +1,4 @@
+"use client";
 /* Compare selection (max 2 homes) + drawer tray. */
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { toast } from "sonner";
