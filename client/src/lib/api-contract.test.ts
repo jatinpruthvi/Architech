@@ -11,6 +11,9 @@ import { GET as suggestGet } from "../../../app/api/search/suggest/route";
 import { POST as leadsPost } from "../../../app/api/leads/route";
 import { GET as healthGet } from "../../../app/api/observability/health/route";
 import { GET as sloGet } from "../../../app/api/observability/slo/route";
+import { GET as statusGet } from "../../../app/api/observability/status/route";
+import { GET as brokerDraftsGet, POST as brokerDraftsPost } from "../../../app/api/broker/listings/route";
+import { POST as draftMediaPost } from "../../../app/api/broker/listings/[draftId]/media/route";
 import { POST as errorsPost } from "../../../app/api/observability/errors/route";
 import { GET as savedSearchesGet, POST as savedSearchesPost } from "../../../app/api/saved-searches/route";
 import { GET as reraGet } from "../../../app/api/rera/gujarat/route";
@@ -99,6 +102,50 @@ describe("public API contract", () => {
     const body = await json(response);
     expect(body.ok).toBe(true);
     expect((body as { provider: string }).provider).toBe("demo-rera-adapter");
+  });
+
+  it("GET /api/observability/status returns consolidated service status", async () => {
+    const response = await statusGet();
+    expect(response.status).toBe(200);
+    const body = await json(response);
+    expect(body.ok).toBe(true);
+    expect(body.service).toBe("architech-web");
+    expect((body as { slo: { status: string; results: unknown[] } }).slo.status).toBe("ok");
+    expect((body as { endpoints: { health: string } }).endpoints.health).toBe("/api/observability/health");
+  });
+
+  it("GET /api/broker/listings returns the broker's drafts", async () => {
+    const response = await brokerDraftsGet();
+    expect(response.status).toBe(200);
+    const body = await json(response);
+    expect(body.ok).toBe(true);
+    expect(Array.isArray((body as { drafts: unknown[] }).drafts)).toBe(true);
+  });
+
+  it("DELETE /api/broker/leads with consent mode revokes a lead", async () => {
+    const created = await leadsPost(new Request("http://example.com/api/leads", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ listingId: "garden-courtyard", name: "Sanjay Patel", phone: "+91 91234 56780", message: "Please share more details about this home.", consentText: "I consent to masked contact.", idempotencyKey: "api-contract-delete" }),
+    }));
+    const { lead } = await json(created) as { lead: { id: string } };
+    const response = await (await import("../../../app/api/broker/leads/[id]/route")).DELETE(new Request(`http://example.com/api/broker/leads/${encodeURIComponent(lead.id)}?mode=consent`, { method: "DELETE" }), { params: Promise.resolve({ id: lead.id }) });
+    expect(response.status).toBe(200);
+    const body = await json(response);
+    expect((body as { lead: { status: string } }).lead.status).toBe("DELETED");
+  });
+
+  it("POST /api/broker/listings/:id/media attaches media ids", async () => {
+    const created = await brokerDraftsPost(new Request("http://example.com/api/broker/listings", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Media attach draft", localitySlug: "paldi", priceInr: 15000000, bhk: 3, areaSqft: 1500, availability: "Ready to move", description: "A draft used to test media attachment through the API contract.", mediaRightsConfirmed: true }),
+    }));
+    const { draft } = await json(created) as { draft: { id: string } };
+    const response = await draftMediaPost(new Request("http://example.com/api/broker/listings/medium/media", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mediaId: "media_demo_1" }) }), { params: Promise.resolve({ draftId: draft.id }) });
+    expect(response.status).toBe(200);
+    const body = await json(response);
+    expect((body as { ok: boolean }).ok).toBe(true);
   });
 
   it("GET /api/ai/search-assist returns deterministic structured intent", async () => {

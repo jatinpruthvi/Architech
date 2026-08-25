@@ -1,5 +1,5 @@
 import "server-only";
-import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
+import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
@@ -110,6 +110,21 @@ export async function listBrokerDraftsForServer(organizationId: string): Promise
     orderBy: { updatedAt: "desc" },
   })) as Array<Record<string, unknown>>;
   return rows.map((row) => contractFromRow(row));
+}
+
+/** Media ids attached to a broker draft. */
+export async function attachMediaToDraftForServer(draftId: string, mediaId: string) {
+  return attachMediaToDraft(draftId, mediaId);
+}
+
+/** Detach a media id from a broker draft. */
+export async function detachMediaFromDraftForServer(draftId: string, mediaId: string) {
+  return detachMediaFromDraft(draftId, mediaId);
+}
+
+/** List media ids attached to a broker draft. */
+export async function listDraftMediaForServer(draftId: string): Promise<string[]> {
+  return listDraftMediaIds(draftId);
 }
 
 function contractFromRow(row: Record<string, unknown>): ListingDraft {

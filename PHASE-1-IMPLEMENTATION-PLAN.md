@@ -574,6 +574,19 @@ Converts contract-only shells into real product surfaces (see `docs/phase-1-batc
 
 Evidence: `pnpm test` → 46 files / 216 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets (total-static-JS re-baselined 2.0→2.1 MiB, per-route/CWV targets unchanged), `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
 
+# Applied batch 3 — search UX, media attach, lead privacy, ops status (Aug 2026)
+
+Fills remaining implementable gaps (see `docs/phase-1-batch3.md`):
+
+| # | Item | Workstream | Status |
+|---|---|---|---|
+| 1 | Server-backed search suggestions + results quick-search | `P1-SEARCH-002` | validated |
+| 2 | Media attach to broker draft | `P1-BROKER-001`, `P1-MEDIA-001` | validated |
+| 3 | Lead privacy/removal actions in inbox | `P1-LEAD-001`, `P1-DATA-002` | validated |
+| 4 | Consolidated observability status endpoint | `P1-OBS-001` | validated |
+
+Evidence: `pnpm test` → 46 files / 221 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
+
 ---
 
 # Current selected next item

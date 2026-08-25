@@ -133,6 +133,35 @@ export function listBrokerDrafts(organizationId: string) {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+/** Per-draft attached media ids (memory store; a real contract until media is
+    persisted to a durable store alongside the listing). */
+const draftMedia = new Map<string, Set<string>>();
+
+/** Attach a media id to a draft; requires the draft to exist. */
+export function attachMediaToDraft(draftId: string, mediaId: string): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
+  const draft = drafts.get(draftId);
+  if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  const current = draftMedia.get(draftId) ?? new Set<string>();
+  current.add(mediaId);
+  draftMedia.set(draftId, current);
+  return { ok: true, mediaIds: [...current] };
+}
+
+/** Detach a media id from a draft. */
+export function detachMediaFromDraft(draftId: string, mediaId: string): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
+  const draft = drafts.get(draftId);
+  if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  const current = draftMedia.get(draftId) ?? new Set<string>();
+  current.delete(mediaId);
+  return { ok: true, mediaIds: [...current] };
+}
+
+/** List media ids attached to a draft. */
+export function listDraftMediaIds(draftId: string): string[] {
+  return [...(draftMedia.get(draftId) ?? [])];
+}
+
 export function resetBrokerWorkflowForTests() {
   drafts.clear();
+  draftMedia.clear();
 }
