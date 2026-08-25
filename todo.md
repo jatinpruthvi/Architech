@@ -51,6 +51,9 @@
 - [x] Implement trust & verification score model (`P1-TRUST-001`).
 - [x] Implement trust-aware listing surface with JSON-LD (`P1-SEO-008`).
 - [x] Implement Prisma persistence adapters for broker/media/RERA (`P1-DATA-004`).
+- [x] Implement broker lead inbox with masked-response workflow (`P1-LEAD-001`).
+- [x] Implement live moderation queue driving the draft lifecycle (`P1-BROKER-001`).
+- [x] Implement trust-aware locality & city pages with JSON-LD (`P1-SEO-008`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 
 ## Status

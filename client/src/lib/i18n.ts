@@ -56,6 +56,10 @@ export const strings = {
       measured: "Measured, not guessed", distancesFrom: "Distances from", geodata: "Geodata via OpenStreetMap · straight-line distances",
       homesIn: "Homes in", sourceTrailTitle: "Every home carries a", sourceTrailEm: "source trail", refine: "Refine in search",
       trustTitlePrefix: "Every", trustTitleSuffix: "listing is checked against Gujarat RERA.", trustCopy: "Registration numbers, promoter details, and completion status are reviewed before publication — and re-checked when a listing is updated.", verifyCta: "How we verify",
+      trust: {
+        kicker: "Verification & trust in this area", coverage: "RERA coverage", avgScore: "Average trust score", verified: "RERA verified", sourceReviewed: "Source reviewed",
+        copy: "Trust signals are derived only from structured facts — RERA registry, source review, partner verification, media rights, freshness, and dispute status. Nothing is invented.",
+      },
       fullStudySoon: "Our field team is writing the full locality study; the essentials below are verified from public records.",
     },
     listing: {
@@ -124,6 +128,10 @@ export const strings = {
       measured: "नापा हुआ, अंदाज़ा नहीं", distancesFrom: "दूरी —", geodata: "जियोडेटा OpenStreetMap से · सीधी-रेखा दूरी",
       homesIn: "घर —", sourceTrailTitle: "हर घर के साथ", sourceTrailEm: "स्रोत ट्रेल", refine: "खोज में सुधारें",
       trustTitlePrefix: "हर", trustTitleSuffix: "लिस्टिंग गुजरात RERA से जाँची जाती है।", trustCopy: "प्रकाशन से पहले पंजीकरण संख्या, प्रमोटर विवरण और completion status की समीक्षा होती है — और अपडेट पर दोबारा जाँच होती है।", verifyCta: "हम कैसे सत्यापित करते हैं",
+      trust: {
+        kicker: "इस क्षेत्र में सत्यापन और भरोसा", coverage: "RERA कवरेज", avgScore: "औसत ट्रस्ट स्कोर", verified: "RERA सत्यापित", sourceReviewed: "स्रोत समीक्षा",
+        copy: "ट्रस्ट सिग्नल केवल structured facts से लिए जाते हैं — RERA registry, source review, partner verification, media rights, freshness और dispute status। कुछ भी invent नहीं किया गया।",
+      },
       fullStudySoon: "हमारी फ़ील्ड टीम पूरी locality study लिख रही है; नीचे की ज़रूरी बातें public records से सत्यापित हैं।",
     },
     listing: {

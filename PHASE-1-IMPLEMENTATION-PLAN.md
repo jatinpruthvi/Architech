@@ -504,6 +504,18 @@ Three additional items were implemented and validated in this slice:
 
 Evidence: `pnpm test` → 27 files / 115 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke and performance budgets pass; adapter source-resolution + fixture-fallback contract tests added; `vitest` stubs `server-only` so server-mode modules are unit-tested directly while the production guard stays in the bundle.
 
+# Applied product-operations slice (Aug 2026)
+
+Three additional items operationalize the trust/persistence layer into product surfaces:
+
+| Item | Workstream | Status |
+|---|---|---|
+| Broker lead inbox with masked-response workflow | `P1-LEAD-001` | validated |
+| Live moderation queue driving the draft lifecycle | `P1-BROKER-001` | validated |
+| Trust-aware locality & city pages with JSON-LD | `P1-SEO-008` | validated |
+
+Evidence: `pnpm test` → 28 files / 120 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke (incl. city + locality trust assertions) and performance budgets pass; `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
+
 ---
 
 # Current selected next item
