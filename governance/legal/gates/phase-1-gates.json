@@ -1,0 +1,16 @@
+{
+  "release": "phase-1-prototype",
+  "lastUpdated": "2026-08-24",
+  "enforceApprovalForProduction": true,
+  "gates": [
+    { "id": "LEG-001", "area": "RERA ingestion", "owner": "Legal + Data", "status": "pending_approval", "evidence": ["docs/rera/phase-1-rera-adapter.md"], "reversal": "Disable public RERA badges or mark as demo/disputed." },
+    { "id": "LEG-002", "area": "Personal data", "owner": "Privacy + Security", "status": "pending_approval", "evidence": ["app/privacy/page.tsx", "docs/security/privacy-data-flow-map.md"], "reversal": "Disable lead capture and authenticated workflows." },
+    { "id": "LEG-003", "area": "Broker media rights", "owner": "Legal + Operations", "status": "pending_approval", "evidence": ["docs/media/phase-1-media-upload-pipeline.md"], "reversal": "Keep media pending moderation and block publication." },
+    { "id": "LEG-004", "area": "Public-record republication", "owner": "Legal + Data", "status": "pending_approval", "evidence": ["docs/rera/phase-1-rera-adapter.md"], "reversal": "Remove public-record fields from public pages." },
+    { "id": "LEG-005", "area": "Email and messaging", "owner": "Legal + Product", "status": "pending_approval", "evidence": ["docs/leads/phase-1-lead-workflow.md"], "reversal": "Disable notifications and direct messaging." },
+    { "id": "LEG-006", "area": "Sponsored links and PR", "owner": "Legal + Growth", "status": "pending_approval", "evidence": ["seo/authority/off-page-authority-google-first-appendix.md"], "reversal": "Remove sponsored/partnership placements." },
+    { "id": "LEG-007", "area": "Commercial leads", "owner": "Legal + Product + Finance", "status": "pending_approval", "evidence": ["docs/leads/phase-1-lead-workflow.md"], "reversal": "Disable monetized lead attribution." },
+    { "id": "LEG-008", "area": "AI and generated content", "owner": "Legal + Editorial + Security", "status": "pending_approval", "evidence": ["README.md"], "reversal": "Disable AI summaries/recommendations." },
+    { "id": "LEG-009", "area": "Localization", "owner": "Legal + Localization", "status": "pending_approval", "evidence": ["client/src/lib/i18n.ts"], "reversal": "Keep Hindi as UI-only partial translation; no hreflang/indexable Hindi alternates." }
+  ]
+}

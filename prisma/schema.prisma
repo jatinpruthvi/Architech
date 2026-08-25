@@ -1,0 +1,359 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ListingLifecycle {
+  DRAFT
+  IN_REVIEW
+  ACTIVE
+  SOLD
+  EXPIRED
+  REMOVED
+  DUPLICATE
+  ARCHIVED
+}
+
+enum VerificationStatus {
+  DEMO
+  SOURCE_REVIEWED
+  VERIFIED_PARTNER
+  RERA_VERIFIED
+  DISPUTED
+  STALE
+}
+
+enum TranslationStatus {
+  ENGLISH_ONLY
+  MACHINE_DRAFT
+  HUMAN_REVIEW_PENDING
+  REVIEWED
+}
+
+enum MediaModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  TAKEDOWN_REQUESTED
+  DELETED
+}
+
+enum PropertyType {
+  APARTMENT
+  ROWHOUSE
+  VILLA
+  PENTHOUSE
+  PLOT
+}
+
+enum UserRole {
+  BUYER
+  BROKER_MEMBER
+  BROKER_ADMIN
+  MODERATOR
+  ADMIN
+}
+
+enum LeadMode {
+  MASKED
+  DIRECT_CONSENTED
+}
+
+enum LeadStatus {
+  NEW
+  ACKNOWLEDGED
+  REPLIED
+  CLOSED
+  DELETED
+}
+
+model City {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  hindiName String?
+  state     String
+  country   String   @default("IN")
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+
+  localities    Locality[]
+  listings      Listing[]
+  organizations BrokerOrganization[]
+  savedSearches SavedSearch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([state, country])
+}
+
+model Locality {
+  id        String   @id @default(cuid())
+  cityId    String
+  slug      String
+  name      String
+  hindiName String?
+  aliases   String[] @default([])
+  note      String
+
+  latitude      Decimal? @db.Decimal(9, 6)
+  longitude     Decimal? @db.Decimal(9, 6)
+  bbox          String?
+  landmarks     Json?
+  demoHomeCount Int      @default(0)
+
+  city          City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  listings      Listing[]
+  savedSearches SavedSearch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cityId, slug])
+  @@index([name])
+}
+
+model BrokerOrganization {
+  id                 String             @id @default(cuid())
+  cityId             String?
+  slug               String             @unique
+  name               String
+  legalName          String?
+  verificationStatus VerificationStatus @default(SOURCE_REVIEWED)
+  reraNumber         String?
+  website            String?
+  phoneMasked        String?
+  email              String?
+
+  city     City?        @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  users    BrokerUser[]
+  listings Listing[]
+  leads    Lead[]
+  audits   AuditEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([verificationStatus])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  role          UserRole @default(BUYER)
+  phoneMasked   String?
+  emailVerified DateTime?
+  lastLoginAt   DateTime?
+
+  brokerMemberships BrokerUser[]
+  leads             Lead[]
+  savedSearches     SavedSearch[]
+  audits            AuditEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model BrokerUser {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           UserRole @default(BROKER_MEMBER)
+  active         Boolean  @default(true)
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, active])
+}
+
+model ReraRecord {
+  id                 String             @id @default(cuid())
+  registrationNumber String             @unique
+  state              String             @default("Gujarat")
+  promoterName       String?
+  projectName        String?
+  sourceUrl          String?
+  retrievedAt        DateTime?
+  parserVersion      String?
+  confidence         Decimal?           @db.Decimal(5, 4)
+  evidence           Json?
+  verificationStatus VerificationStatus @default(SOURCE_REVIEWED)
+  correctionStatus   String?            @default("none")
+
+  listings Listing[]
+  audits   AuditEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([state, verificationStatus])
+}
+
+model Listing {
+  id                String             @id @default(cuid())
+  stableId          String             @unique
+  slug              String             @unique
+  cityId            String
+  localityId        String
+  brokerOrgId       String?
+  reraRecordId      String?
+
+  title             String
+  titleHi           String?
+  description       String
+  descriptionHi     String?
+  note              String?
+  lifecycle         ListingLifecycle   @default(DRAFT)
+  verification      VerificationStatus @default(DEMO)
+  translationStatus TranslationStatus  @default(ENGLISH_ONLY)
+  propertyType      PropertyType       @default(APARTMENT)
+
+  priceInr       Int
+  priceLabel     String
+  pricePerSqft   String?
+  bhk            Int?
+  areaSqft       Int?
+  availability   String?
+  addressLocality String?
+  latitude       Decimal? @db.Decimal(9, 6)
+  longitude      Decimal? @db.Decimal(9, 6)
+
+  sourceSummary      String?
+  meaningfulUpdatedAt DateTime @default(now())
+  publishedAt         DateTime?
+  expiresAt           DateTime?
+  canonicalToListingId String?
+
+  city         City                @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  locality     Locality            @relation(fields: [localityId], references: [id], onDelete: Restrict)
+  brokerOrg    BrokerOrganization? @relation(fields: [brokerOrgId], references: [id], onDelete: SetNull)
+  reraRecord   ReraRecord?         @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
+  media        PropertyMedia[]
+  leads        Lead[]
+  audits       AuditEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cityId, lifecycle])
+  @@index([cityId, localityId, lifecycle, meaningfulUpdatedAt])
+  @@index([brokerOrgId, lifecycle, updatedAt])
+  @@index([localityId, lifecycle])
+  @@index([verification])
+  @@index([priceInr])
+  @@index([bhk])
+  @@index([meaningfulUpdatedAt])
+}
+
+model PropertyMedia {
+  id               String                @id @default(cuid())
+  listingId        String
+  kind             String                @default("image")
+  url              String
+  alt              String?
+  width            Int?
+  height           Int?
+  blurHash         String?
+  derivatives      Json?
+  licenseEvidence  String?
+  exifStripped     Boolean               @default(false)
+  moderationStatus MediaModerationStatus @default(PENDING)
+  sortOrder        Int                   @default(0)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId, sortOrder])
+  @@index([moderationStatus])
+}
+
+model Lead {
+  id             String     @id @default(cuid())
+  listingId      String
+  userId         String?
+  organizationId String?
+  mode           LeadMode   @default(MASKED)
+  status         LeadStatus @default(NEW)
+  name           String
+  phoneMasked    String?
+  email          String?
+  message        String
+  consentText    String
+  idempotencyKey String?    @unique
+  deletedAt      DateTime?
+
+  listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization BrokerOrganization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  audits       AuditEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId, status])
+  @@index([organizationId, status])
+  @@index([createdAt])
+}
+
+model SavedSearch {
+  id         String   @id @default(cuid())
+  userId     String?
+  cityId     String?
+  localityId String?
+  query      String?
+  filters    Json
+  notify     Boolean  @default(false)
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  city     City?     @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  locality Locality? @relation(fields: [localityId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, notify])
+  @@index([cityId])
+  @@index([localityId])
+}
+
+model AuditEvent {
+  id             String  @id @default(cuid())
+  actorUserId    String?
+  organizationId String?
+  listingId      String?
+  reraRecordId   String?
+  leadId         String?
+  action         String
+  entityType     String
+  entityId       String
+  before         Json?
+  after          Json?
+  metadata       Json?
+  ipHash         String?
+
+  actor        User?                @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  organization BrokerOrganization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  listing      Listing?             @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  reraRecord   ReraRecord?          @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
+  lead         Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([actorUserId])
+}

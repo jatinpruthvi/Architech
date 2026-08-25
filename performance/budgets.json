@@ -1,0 +1,34 @@
+{
+  "description": "Phase 1 performance budgets for the Architech public prototype. Route first-load budgets stay tight; total/largest static JS budgets allow one lazy MapLibre chunk for the map/list experience. The total-static-JS cap was re-baselined to 2.1 MiB on 25 Aug 2026 to accommodate two added authenticated product surfaces (a saved-searches page and a functional broker listing-draft form); per-route first-load and core-web-vital targets remain unchanged.",
+  "routes": {
+    "default": {
+      "maxFirstLoadJsBytes": 760000,
+      "maxFirstLoadJsGzipBytes": 230000
+    }
+  },
+  "html": {
+    "maxHtmlBytes": 120000,
+    "routes": [
+      { "route": "/", "file": ".next/server/app/index.html" },
+      { "route": "/buy/ahmedabad/", "file": ".next/server/app/buy/ahmedabad.html" },
+      { "route": "/buy/ahmedabad/paldi/", "file": ".next/server/app/buy/ahmedabad/paldi.html" },
+      { "route": "/listing/garden-courtyard/", "file": ".next/server/app/listing/garden-courtyard.html" },
+      { "route": "/search/", "file": ".next/server/app/search.html" },
+      { "route": "/saved/", "file": ".next/server/app/saved.html" }
+    ]
+  },
+  "staticAssets": {
+    "maxTotalStaticJsBytes": 2100000,
+    "maxLargestChunkBytes": 1100000,
+    "maxLargestChunkGzipBytes": 280000,
+    "maxMobileWebpBytes": 225000,
+    "maxFullWebpBytes": 300000,
+    "maxJpegBytes": 400000
+  },
+  "coreWebVitalsTargets": {
+    "lcpMs": 2500,
+    "inpMs": 200,
+    "cls": 0.1,
+    "ttfbMs": 800
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "release": "phase-1-prototype",
+  "lastUpdated": "2026-08-24",
+  "rpoHours": 24,
+  "rtoHours": 4,
+  "backupRetentionDays": 30,
+  "restoreDrillCadenceDays": 90,
+  "costReviewCadenceDays": 30,
+  "services": [
+    {
+      "id": "web-nextjs",
+      "name": "Next.js public web application",
+      "platform": "Vercel",
+      "criticality": "high",
+      "backup": "source-control-and-deployment-rollbacks",
+      "restore": "redeploy-last-known-good-git-sha",
+      "owner": "Platform",
+      "monthlyBudgetInr": 2500,
+      "alertAtPercent": 80
+    },
+    {
+      "id": "postgres-postgis",
+      "name": "PostgreSQL/PostGIS primary database",
+      "platform": "Railway or selected managed Postgres",
+      "criticality": "critical",
+      "backup": "daily-automated-backups-plus-pre-migration-snapshots",
+      "restore": "point-in-time-or-latest-backup-restore-to-staging-before-production-cutover",
+      "owner": "SRE/Data",
+      "monthlyBudgetInr": 5000,
+      "alertAtPercent": 75
+    },
+    {
+      "id": "redis-cache",
+      "name": "Redis cache and queues",
+      "platform": "Railway or selected managed Redis",
+      "criticality": "medium",
+      "backup": "ephemeral-cache-no-business-data",
+      "restore": "recreate-service-and-warm-cache",
+      "owner": "SRE",
+      "monthlyBudgetInr": 2000,
+      "alertAtPercent": 80
+    },
+    {
+      "id": "media-r2-stream",
+      "name": "Media storage and video delivery",
+      "platform": "Cloudflare R2/Stream",
+      "criticality": "high",
+      "backup": "versioned-object-storage-and-media-rights-records",
+      "restore": "restore-object-version-or-reprocess-derivatives-from-original",
+      "owner": "Media/Security",
+      "monthlyBudgetInr": 4000,
+      "alertAtPercent": 75
+    },
+    {
+      "id": "email-resend",
+      "name": "Transactional email",
+      "platform": "Resend via provider abstraction",
+      "criticality": "medium",
+      "backup": "templates-in-source-control-event-log-in-database",
+      "restore": "switch-provider-abstraction-or-replay-idempotent-events",
+      "owner": "Product/Platform",
+      "monthlyBudgetInr": 1500,
+      "alertAtPercent": 80
+    },
+    {
+      "id": "observability",
+      "name": "Sentry/logging/RUM",
+      "platform": "Sentry plus selected log drain",
+      "criticality": "medium",
+      "backup": "configuration-as-code-and-exported-dashboards",
+      "restore": "recreate-project-and-dashboards-from-docs",
+      "owner": "SRE",
+      "monthlyBudgetInr": 2500,
+      "alertAtPercent": 80
+    }
+  ],
+  "restoreDrillChecklist": [
+    "create isolated staging environment",
+    "restore latest database backup",
+    "run prisma migrate deploy",
+    "run smoke tests against restored database",
+    "verify media originals and derivatives are readable",
+    "verify lead and audit records survive restore",
+    "record timings against RPO/RTO",
+    "document gaps and remediation owner"
+  ],
+  "costCategories": [
+    "web hosting",
+    "database",
+    "redis/queues",
+    "media storage and delivery",
+    "email",
+    "observability",
+    "background jobs",
+    "AI/search experiments"
+  ]
+}

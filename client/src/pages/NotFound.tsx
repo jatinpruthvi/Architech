@@ -1,49 +1,28 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
-import { useLocation } from "wouter";
+"use client";
+/* ARCHITECH — 404: the arch that leads nowhere. */
+import { ArrowUpRight, Compass } from "lucide-react";
+import Link from "next/link";
+import useTitle from "../hooks/useTitle";
 
 export default function NotFound() {
-  const [, setLocation] = useLocation();
-
-  const handleGoHome = () => {
-    setLocation("/");
-  };
-
+  useTitle("Page not found");
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
-            </div>
-          </div>
-
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
-
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
-            Page Not Found
-          </h2>
-
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="bg-paper pt-[78px] text-ink">
+      <section className="container flex min-h-[80vh] flex-col items-center justify-center py-24 text-center">
+        <div className="flex items-end gap-3 font-display text-[clamp(110px,20vw,240px)] font-medium leading-none tracking-[-0.05em]" aria-hidden="true">
+          <span>4</span>
+          <span className="arch-frame grain relative mb-2 inline-block h-[0.78em] w-[0.62em] overflow-hidden bg-brick">
+            <img src="/images/brick-arch.jpg" alt="" className="h-full w-full object-cover opacity-80" />
+          </span>
+          <span>4</span>
+        </div>
+        <h1 className="display mt-8 max-w-[560px] text-[clamp(28px,3.6vw,44px)]">This address doesn't exist — <em className="text-brick">yet</em>.</h1>
+        <p className="mt-4 max-w-[400px] text-[15px] leading-7 text-ink/60">The page may have moved, or the plot was never registered. Either way, the city is still out there.</p>
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <Link href="/" className="btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-8 py-5 stamp !text-[12px] font-semibold text-cream"><Compass size={15} /> Back to the start</Link>
+          <Link href="/search" className="motion-press inline-flex items-center gap-2 border border-ink/25 px-8 py-5 stamp !text-[12px] font-semibold text-ink transition-colors hover:border-brick hover:text-brick">Search homes <ArrowUpRight size={15} /></Link>
+        </div>
+      </section>
     </div>
   );
 }
