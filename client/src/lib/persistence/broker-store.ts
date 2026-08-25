@@ -112,14 +112,28 @@ export async function listBrokerDraftsForServer(organizationId: string): Promise
   return rows.map((row) => contractFromRow(row));
 }
 
-/** Media ids attached to a broker draft. */
+/** Attach a media id to a broker draft, recording an audit event in prisma mode. */
 export async function attachMediaToDraftForServer(draftId: string, mediaId: string) {
-  return attachMediaToDraft(draftId, mediaId);
+  const result = attachMediaToDraft(draftId, mediaId);
+  if (result.ok && isPrismaPersistence()) {
+    const db = prisma();
+    await db.auditEvent.create({
+      data: { action: "listing.draft.media.attached", entityType: "Listing", entityId: draftId, metadata: { mediaId, source: "api.broker.listings.media.prisma" } },
+    });
+  }
+  return result;
 }
 
-/** Detach a media id from a broker draft. */
+/** Detach a media id from a broker draft, recording an audit event in prisma mode. */
 export async function detachMediaFromDraftForServer(draftId: string, mediaId: string) {
-  return detachMediaFromDraft(draftId, mediaId);
+  const result = detachMediaFromDraft(draftId, mediaId);
+  if (result.ok && isPrismaPersistence()) {
+    const db = prisma();
+    await db.auditEvent.create({
+      data: { action: "listing.draft.media.detached", entityType: "Listing", entityId: draftId, metadata: { mediaId, source: "api.broker.listings.media.prisma" } },
+    });
+  }
+  return result;
 }
 
 /** List media ids attached to a broker draft. */
