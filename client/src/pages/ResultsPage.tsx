@@ -105,6 +105,26 @@ export default function ResultsPage() {
   const clearFilters = () => { setDrawerOpen(false); updateUrl([]); };
   const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => t.search.filters[f.id] ?? f.label).join(" + ") : t.search.allHomes;
 
+  const [savingSearch, setSavingSearch] = useState(false);
+  const saveSearch = async () => {
+    if (savingSearch) return;
+    setSavingSearch(true);
+    try {
+      const response = await fetch("/api/saved-searches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, filters: active, sort, notify: true }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "Could not save this search.");
+      toast(t.search.searchSavedToast, { description: payload.duplicate ? t.search.searchSavedDuplicate : t.search.searchSavedDescription });
+    } catch {
+      toast(t.search.searchSaveFailed, { description: t.common.demoData });
+    } finally {
+      setSavingSearch(false);
+    }
+  };
+
   return (
     <div className="bg-paper pt-[78px] text-ink">
       {/* Header */}
@@ -193,7 +213,7 @@ export default function ResultsPage() {
                   ))}
                 </div>
                 <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <button onClick={() => toast(t.search.searchSavedToast, { description: t.search.searchSavedDescription })} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream">{t.search.saveSearch}</button>
+                  <button onClick={() => void saveSearch()} disabled={savingSearch} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">{savingSearch ? "…" : t.search.saveSearch}</button>
                   <Link href="/guide" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-brick">{t.search.readGuides} <ArrowUpRight size={13} /></Link>
                 </div>
               </div>

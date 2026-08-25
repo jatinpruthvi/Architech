@@ -516,6 +516,19 @@ Three additional items operationalize the trust/persistence layer into product s
 
 Evidence: `pnpm test` → 28 files / 120 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke (incl. city + locality trust assertions) and performance budgets pass; `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
 
+# Applied search/observability slice (Aug 2026)
+
+Four additional items strengthen search intelligence, saved searches, and client resilience:
+
+| Item | Workstream | Status |
+|---|---|---|
+| Server-backed search suggestions (`/api/search/suggest`) | `P1-SEARCH-003` | validated |
+| No-results search recovery | `P1-SEARCH-004` | validated |
+| Saved-search persistence + alerts (memory/prisma) | `P1-DATA-005` | validated |
+| Client error boundaries + redacted error reporting | `P1-OBS-002` | validated |
+
+Evidence: `pnpm test` → 32 files / 139 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
+
 ---
 
 # Current selected next item

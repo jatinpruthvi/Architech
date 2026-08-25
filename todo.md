@@ -54,6 +54,9 @@
 - [x] Implement broker lead inbox with masked-response workflow (`P1-LEAD-001`).
 - [x] Implement live moderation queue driving the draft lifecycle (`P1-BROKER-001`).
 - [x] Implement trust-aware locality & city pages with JSON-LD (`P1-SEO-008`).
+- [x] Implement search suggestions and no-results recovery (`P1-SEARCH-003`, `P1-SEARCH-004`).
+- [x] Implement saved-search persistence with memory/prisma adapter (`P1-DATA-005`).
+- [x] Implement client error boundaries and redacted error reporting (`P1-OBS-002`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 
 ## Status
