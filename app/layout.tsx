@@ -77,7 +77,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
       </head>
-      <body>
+      {/* <body> carries suppressHydrationWarning because browser/DOM-instrumentation
+          extensions inject attributes (e.g. __processed_*) before React hydrates; it is
+          not caused by app state. Warnings for child content still surface normally. */}
+      <body suppressHydrationWarning>
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
           <Header />
