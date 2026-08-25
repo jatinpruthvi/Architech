@@ -529,10 +529,27 @@ Four additional items strengthen search intelligence, saved searches, and client
 
 Evidence: `pnpm test` → 32 files / 139 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
 
+# Applied remaining-slice (Aug 2026)
+
+The implementable Phase 1 items that do not require external accounts were delivered (see `docs/phase-1-remaining-slice.md`):
+
+| # | Item | Workstream | Status |
+|---|---|---|---|
+| 1 | Search alias & transliteration (Devanagari/English) | `P1-I18N-001`, `P1-SEARCH-001` | validated |
+| 2 | Optional AI adapter contract (cost/latency telemetry) | `P1-SEARCH-002` | validated |
+| 3 | Better Auth live-session adapter (cookie) | `P1-AUTH-001` | validated |
+| 4 | Listing lifecycle → HTTP & indexability | `P1-SEO-003`, `P1-SEO-004` | validated |
+| 5 | Guide editorial approval workflow | `P1-CONT-001` | validated |
+| 6 | Observability SLOs, alert thresholds & trace spans | `P1-OBS-001` | validated |
+| 7 | Media retention, takedown & EXIF policy | `P1-MEDIA-001`, `P1-DATA-002` | validated |
+| 8 | Search Console provider contract | `P1-SEO-004` | validated |
+| 9 | Authority/outreach governance | `P1-OFF-001` | validated |
+| 10 | Security & operational hygiene/rollback checks | `P1-PLAT-001` | validated |
+
+Evidence: `pnpm test` → 42 files / 193 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
+
 ---
 
 # Current selected next item
 
-**Recommended next item:** Execute production environment provisioning when account access/secrets are available.
-
-Recent implementation note: deployment manifests, staging/production environment templates, local production-like Docker compose, and a provisioning smoke audit have been added. Actual production provisioning remains blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.
+**Recommended next item:** Execute production environment provisioning when account access/secrets are available (blocked on external accounts) and wire live Sentry/R2/GSC/legal + Better Auth sessions once credentials are provisioned.

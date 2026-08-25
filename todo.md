@@ -57,7 +57,18 @@
 - [x] Implement search suggestions and no-results recovery (`P1-SEARCH-003`, `P1-SEARCH-004`).
 - [x] Implement saved-search persistence with memory/prisma adapter (`P1-DATA-005`).
 - [x] Implement client error boundaries and redacted error reporting (`P1-OBS-002`).
+- [x] Implement search alias & transliteration module (`P1-SEARCH-001`, `P1-I18N-001`).
+- [x] Implement optional AI adapter contract with cost/latency telemetry (`P1-SEARCH-002`).
+- [x] Implement Better Auth live-session adapter (`P1-AUTH-001`).
+- [x] Implement listing lifecycle → HTTP & indexability (`P1-SEO-003`, `P1-SEO-004`).
+- [x] Implement guide editorial approval workflow (`P1-CONT-001`).
+- [x] Implement observability SLOs, alert thresholds & trace spans (`P1-OBS-001`).
+- [x] Implement media retention, takedown & EXIF policy (`P1-MEDIA-001`, `P1-DATA-002`).
+- [x] Implement Search Console provider contract (`P1-SEO-004`).
+- [x] Implement authority/outreach governance (`P1-OFF-001`).
+- [x] Implement security & operational hygiene/rollback checks (`P1-PLAT-001`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
+- [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 
 ## Status
 
