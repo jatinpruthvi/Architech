@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "outputDirectory": ".next",
+  "env": {
+    "ARCHITECH_DATA_SOURCE": "fixture",
+    "ARCHITECH_SEARCH_SOURCE": "fixture",
+    "ARCHITECH_LEAD_STORAGE": "memory",
+    "ARCHITECH_MEDIA_STORAGE": "memory",
+    "ARCHITECH_RERA_SOURCE": "demo",
+    "ARCHITECH_AUTH_SOURCE": "demo",
+    "ARCHITECH_AI_PROVIDER": "disabled"
+  }
+}

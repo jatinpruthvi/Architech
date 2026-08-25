@@ -496,4 +496,4 @@ These should follow after the data foundation is in place:
 
 **Recommended next item:** Execute production environment provisioning when account access/secrets are available.
 
-Recent implementation note: structured guide routes and editorial-review/noindex handling have been added. Actual production provisioning remains blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.
+Recent implementation note: deployment manifests, staging/production environment templates, local production-like Docker compose, and a provisioning smoke audit have been added. Actual production provisioning remains blocked until Vercel, Railway/PostgreSQL, Cloudflare R2/Stream, Sentry, Resend, Google Search Console, DNS access, and non-chat secret delivery are available.

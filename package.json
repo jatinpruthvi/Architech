@@ -30,7 +30,8 @@
     "production:plan:audit": "node scripts/release/production-enablement-audit.mjs",
     "env:audit": "node scripts/operations/environment-audit.mjs",
     "secrets:audit": "node scripts/operations/secrets-audit.mjs",
-    "provisioning:audit": "pnpm env:audit && pnpm secrets:audit && pnpm production:plan:audit"
+    "provisioning:audit": "pnpm env:audit && pnpm secrets:audit && pnpm production:plan:audit && pnpm provisioning:smoke",
+    "provisioning:smoke": "node scripts/operations/provisioning-smoke.mjs"
   },
   "dependencies": {
     "@prisma/client": "^7.9.1",
