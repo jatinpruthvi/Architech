@@ -1,5 +1,6 @@
 import { applyFilters, applyQuery, applySort, makeFilters, parseFilterParam, type SortId } from "@/lib/filters";
 import { getListings, type Property } from "@/lib/repositories";
+import { normalizePage, normalizePageSize, paginate, type PaginationMeta } from "./pagination";
 
 export type SearchSource = "fixture-repository" | "postgres-fts-trigram";
 
@@ -8,6 +9,7 @@ export type SearchRequest = {
   filters?: string[];
   sort?: SortId;
   limit?: number;
+  page?: number;
 };
 
 export type SearchResponse = {
@@ -17,6 +19,7 @@ export type SearchResponse = {
   count: number;
   source: SearchSource;
   indexPlan: "deterministic-parser-now-postgres-fts-trigram-next" | "postgres-fts-trigram-ready";
+  page: PaginationMeta;
   results: Property[];
 };
 
@@ -37,11 +40,12 @@ export function searchListings(request: SearchRequest = {}): SearchResponse {
   const query = request.q?.trim() ?? "";
   const filters = request.filters ?? [];
   const sort = normalizeSort(request.sort);
-  const limit = normalizeLimit(request.limit);
+  const pageSize = normalizePageSize(request.limit);
+  const page = normalizePage(request.page);
 
   const defs = makeFilters<Property>();
   const filtered = applySort(applyFilters(applyQuery(getListings(), query), filters, defs), sort);
-  const results = typeof limit === "number" ? filtered.slice(0, limit) : filtered;
+  const { items, meta } = paginate(filtered, { page, pageSize });
 
   return {
     query,
@@ -50,7 +54,8 @@ export function searchListings(request: SearchRequest = {}): SearchResponse {
     count: filtered.length,
     source: "fixture-repository",
     indexPlan: "deterministic-parser-now-postgres-fts-trigram-next",
-    results,
+    page: meta,
+    results: items,
   };
 }
 
@@ -60,5 +65,6 @@ export function searchListingsFromSearchParams(params: URLSearchParams): SearchR
     filters: parseFilterParam(params.get("filters")),
     sort: normalizeSort(params.get("sort")),
     limit: normalizeLimit(params.get("limit")),
+    page: Number.parseInt(params.get("page") ?? "", 10) || undefined,
   });
 }

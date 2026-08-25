@@ -67,6 +67,10 @@
 - [x] Implement Search Console provider contract (`P1-SEO-004`).
 - [x] Implement authority/outreach governance (`P1-OFF-001`).
 - [x] Implement security & operational hygiene/rollback checks (`P1-PLAT-001`).
+- [x] Implement lead deletion & consent-revocation workflow (`P1-LEAD-001`, `P1-DATA-002`).
+- [x] Implement media takedown & deletion workflow (`P1-MEDIA-001`, `P1-DATA-002`).
+- [x] Implement search pagination policy & faceted indexability gate (`P1-SEO-003`).
+- [x] Implement API contract suite over built route handlers (`P1-TEST-001`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 

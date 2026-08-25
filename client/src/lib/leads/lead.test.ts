@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createLead, listLeads, maskPhone, resetLeadStoreForTests, updateLeadStatus, validateLeadInput } from "./lead";
+import { createLead, listActiveLeads, listLeads, maskPhone, resetLeadStoreForTests, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput } from "./lead";
 import { getLeadStorageMode } from "./source";
 
 describe("lead consent/audit workflow", () => {
@@ -45,5 +45,22 @@ describe("lead consent/audit workflow", () => {
     const missing = updateLeadStatus("does-not-exist", "CLOSED");
     expect(missing.ok).toBe(false);
     if (!missing.ok) expect(missing.status).toBe(404);
+  });
+
+  it("soft-deletes and consent-revokes a lead, excluding it from the active inbox", () => {
+    const input = { listingId: "garden-courtyard", name: "Kinjal Shah", phone: "+91 98765 43210", message: "I would like more details.", consentText: "I consent to masked contact.", idempotencyKey: "lead-delete-1" };
+    const created = createLead(input);
+    if (!created.ok) throw new Error("create failed");
+    expect(listActiveLeads()).toHaveLength(1);
+
+    const deleted = softDeleteLead(created.lead.id);
+    expect(deleted.ok).toBe(true);
+    if (deleted.ok) expect(deleted.lead.status).toBe("DELETED");
+    expect(listActiveLeads()).toHaveLength(0);
+    expect(listLeads()).toHaveLength(1); // soft-deleted still in full store
+
+    const revoked = revokeLeadConsent(created.lead.id);
+    expect(revoked.ok).toBe(true);
+    if (revoked.ok) expect(revoked.lead.status).toBe("DELETED");
   });
 });

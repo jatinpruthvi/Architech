@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { completeMediaUpload, createSignedMediaUpload, moderateMedia, planDerivatives, resetMediaStoreForTests, validateMediaUpload } from "./upload";
+import { completeMediaUpload, createSignedMediaUpload, deleteMedia, getMediaUpload, moderateMedia, planDerivatives, requestMediaTakedown, resetMediaStoreForTests, validateMediaUpload } from "./upload";
 
 const imageInput = {
   listingDraftId: "draft_abc",
@@ -33,5 +33,21 @@ describe("media upload pipeline contract", () => {
     expect(completed.ok && completed.upload.derivatives.every((d) => d.status === "ready")).toBe(true);
     const moderated = moderateMedia(signed.upload.id, "APPROVED", "Image rights verified.");
     expect(moderated.ok && moderated.upload.moderationStatus).toBe("APPROVED");
+  });
+
+  it("requests a takedown and then confirms deletion", () => {
+    const signed = createSignedMediaUpload(imageInput);
+    if (!signed.ok) throw new Error("sign failed");
+    const takedown = requestMediaTakedown(signed.upload.id, "Copyright dispute.");
+    expect(takedown.ok && takedown.upload.moderationStatus).toBe("TAKEDOWN_REQUESTED");
+    const removed = deleteMedia(signed.upload.id);
+    expect(removed.ok).toBe(true);
+    if (removed.ok) expect(removed.id).toBe(signed.upload.id);
+    expect(getMediaUpload(signed.upload.id)).toBeUndefined();
+  });
+
+  it("returns 404 for unknown takedown/delete targets", () => {
+    expect(requestMediaTakedown("nope", "test").ok).toBe(false);
+    expect(deleteMedia("nope").ok).toBe(false);
   });
 });
