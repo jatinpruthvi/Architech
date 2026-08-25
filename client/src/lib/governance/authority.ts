@@ -22,12 +22,14 @@ export type AuthorityAsset = {
   relationshipRegistry?: string;
 };
 
+export type OutreachOutcome = "sent" | "accepted" | "declined";
+
 export type OutreachEntry = {
   id: string;
   date: string;
   target: string;
   assetId?: string;
-  outcome: "sent" | "accepted" | "declined";
+  outcome: OutreachOutcome;
   reviewedBy?: string;
 };
 

@@ -595,6 +595,15 @@ Evidence: `pnpm test` → 46 files / 221 tests; `pnpm check`, `pnpm lint`, `pnpm
 
 Adds a public `/list-property/` page (source-trail explainer + "Start listing" CTA), entry points in the header/footer/homepage, central URL builders, i18n labels, an indexable SEO-registry entry, and a raw-HTML SEO assertion. Evidence: `pnpm test` → 46 files / 221 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; `test:seo` covers 5 routes incl. `/list-property/`; `test:perf`, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
 
+# Applied batch 4 — authority registry & media-attach hardening (Aug 2026)
+
+| # | Item | Workstream | Status |
+|---|---|---|---|
+| 1 | Authority/outreach registry + API endpoints | `P1-OFF-001` | validated |
+| 2 | Media-attach audit hardening on broker drafts | `P1-BROKER-001`, `P1-MEDIA-001` | validated |
+
+Evidence: `pnpm test` → 47 files / 228 tests; `pnpm check`, `pnpm lint`, `pnpm build` (passes in isolation), `test:seo` (5 routes), `test:perf`; `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
+
 ---
 
 # Current selected next item

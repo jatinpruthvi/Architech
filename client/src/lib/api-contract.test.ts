@@ -12,6 +12,8 @@ import { POST as leadsPost } from "../../../app/api/leads/route";
 import { GET as healthGet } from "../../../app/api/observability/health/route";
 import { GET as sloGet } from "../../../app/api/observability/slo/route";
 import { GET as statusGet } from "../../../app/api/observability/status/route";
+import { GET as authorityAssetsGet, POST as authorityAssetsPost } from "../../../app/api/authority/assets/route";
+import { GET as authorityOutreachGet, POST as authorityOutreachPost } from "../../../app/api/authority/outreach/route";
 import { GET as brokerDraftsGet, POST as brokerDraftsPost } from "../../../app/api/broker/listings/route";
 import { POST as draftMediaPost } from "../../../app/api/broker/listings/[draftId]/media/route";
 import { POST as errorsPost } from "../../../app/api/observability/errors/route";
@@ -146,6 +148,28 @@ describe("public API contract", () => {
     expect(response.status).toBe(200);
     const body = await json(response);
     expect((body as { ok: boolean }).ok).toBe(true);
+  });
+
+  it("GET/POST /api/authority/assets enforce the disclosure registry", async () => {
+    const created = await authorityAssetsPost(new Request("http://example.com/api/authority/assets", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "guide", title: "How we verify against Gujarat RERA", isNofollow: true, paidForLink: false, disclosure: "declared" }),
+    }));
+    expect([200, 201]).toContain(created.status);
+
+    const list = await authorityAssetsGet();
+    const body = await json(list);
+    expect(Array.isArray((body as { assets: unknown[] }).assets)).toBe(true);
+  });
+
+  it("POST /api/authority/outreach requires a reviewer for accepted outreach", async () => {
+    const rejected = await authorityOutreachPost(new Request("http://example.com/api/authority/outreach", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ date: "2026-08-25", target: "example.com", outcome: "accepted", reviewedBy: "" }),
+    }));
+    expect(rejected.status).toBe(400);
   });
 
   it("GET /api/ai/search-assist returns deterministic structured intent", async () => {
