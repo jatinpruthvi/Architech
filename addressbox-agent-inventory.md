@@ -75,3 +75,7 @@ The agent Post Property flow is a five-stage wizard: Basic Details, Property Det
 ## Property wizard navigation behavior
 
 Clicking the second progress step without completing required basic fields did not advance the wizard; the interface stayed on Basic Details. This confirms step gating and per-stage validation are part of the workflow, not merely visual progress indicators. The loaded first step exposes Sell/Rent, Ahmedabad/Gandhinagar, Residential/Commercial/PG-Co-Living/Plot/Land, residential subtypes, map search, address fields, society/project name, locality, pin code, state, and property description.
+
+## Attached hydration mismatch investigation
+
+The attached report targeted `/dashboard/`. Before the fix, that path rendered Architech's animated not-found page rather than the intended protected broker dashboard. The reported `bis_skin_checked="1"` attributes are not present in application source and are consistent with browser/DOM instrumentation injected before React hydration; the current root layout already uses `suppressHydrationWarning` at the document shell, but that cannot suppress extension mutations on every descendant node. A server-side `/dashboard/` compatibility redirect was added to `/broker/dashboard/`, so the stale not-found client tree is no longer rendered at that URL. After the fix, Chrome followed the redirect to `/broker/dashboard/`, rendered the command-spread dashboard, and the current browser console had no output.

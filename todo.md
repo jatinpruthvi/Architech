@@ -161,3 +161,12 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [ ] Implement the missing compatible agent functionality without copying Addressbox branding, text, or protected assets.
 - [ ] Verify agent flows, authorization boundaries, responsive UX, accessibility, and build quality.
 - [ ] Save a checkpoint and report remaining live-service requirements.
+
+
+## Attached Hydration Mismatch
+
+- [x] Read and reproduce the `/dashboard/` hydration warning from the attached report.
+- [x] Verify whether `bis_skin_checked` is extension-injected markup or application-generated markup.
+- [x] Fix the stale `/dashboard/` route with a server-side redirect while preserving the existing `/broker/dashboard/` route.
+- [x] Verify `/dashboard/`, `/broker/dashboard/`, console output, responsive rendering, and regression checks.
+- [ ] Save a corrected checkpoint and report any browser-extension limitation separately.
