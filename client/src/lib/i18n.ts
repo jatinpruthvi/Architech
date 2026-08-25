@@ -5,7 +5,7 @@ export type Lang = "en" | "hi";
 
 export const strings = {
   en: {
-    nav: { explore: "Explore Ahmedabad", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring" },
+    nav: { explore: "Explore Ahmedabad", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring", list: "List your property" },
     hero: {
       kicker: "Ahmedabad · 23.03° N, 72.58° E · अमदावाद",
       h1a: "Find the ",
@@ -29,6 +29,14 @@ export const strings = {
       all281Homes: "All 281 homes",
     },
     cta: { kicker: "Begin today", title1: "Your address is out there, ", title2: "waiting", start: "Start exploring", browse: "Browse localities" },
+    list: {
+      kicker: "Own it? List it.", title: "Put your home on the market with its", titleEm: "source trail", titleSuffix: "attached.",
+      copy: "A listing on Architech is not just photos and a price — it carries media rights, RERA context, and a freshness stamp. Here is how we get there.",
+      step1Title: "Gather the facts", step1Body: "Price, area, BHK, availability, and the RERA number (if applicable).",
+      step2Title: "Confirm media rights", step2Body: "You confirm you own or are authorised to publish the photos and plans.",
+      step3Title: "Submit for review", step3Body: "A moderator checks the source trail — only then does the listing go live.",
+      cta: "Start listing", portalNote: "Part of the broker operations workspace", sourceTrail: "Source trail on every listing",
+    },
     search: {
       title1: "in", cityName: "Ahmedabad.", home: "home", homes: "homes",
       filter: "Combine", clearAll: "Clear all", sort: "Sort", sortHomes: "Sort homes",
@@ -87,12 +95,12 @@ export const strings = {
     },
     footer: {
       made: "Made in Amdavad", tagline: "Find the place before you choose the address.", explore: "Explore", trust: "Trust", office: "Field office",
-      links: { buy: "Buy in Ahmedabad", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches" },
+      links: { buy: "Buy in Ahmedabad", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches", listProperty: "List your property" },
     },
     common: { skip: "Skip to content", translationNote: "", ahmedabad: "Ahmedabad", demoData: "demo data", partialTranslation: "" },
   },
   hi: {
-    nav: { explore: "अहमदाबाद देखें", find: "घर खोजें", notes: "फ़ील्ड नोट्स", saved: "सहेजे गए", start: "खोज शुरू करें" },
+    nav: { explore: "अहमदाबाद देखें", find: "घर खोजें", notes: "फ़ील्ड नोट्स", saved: "सहेजे गए", start: "खोज शुरू करें", list: "अपनी संपत्ति सूचीबद्ध करें" },
     hero: {
       kicker: "अहमदाबाद · 23.03° N, 72.58° E · Ahmedabad",
       h1a: "पहले ", h1em: "जगह", h1b: "फिर पता चुनिए।",
@@ -104,6 +112,14 @@ export const strings = {
     },
     sections: { localityKicker: "इलाक़ों की सूची", localityTitle: "शहर नक़्शे के एक बिंदु से कहीं ज़्यादा है।", curatedKicker: "इस हफ़्ते की पसंद", methodKicker: "हमारा तरीक़ा", homesCount: "घर", allHomes: "सभी घर", all281Homes: "सभी 281 घर" },
     cta: { kicker: "आज ही शुरू करें", title1: "आपका पता कहीं ", title2: "इंतज़ार", start: "खोज शुरू करें", browse: "इलाक़े देखें" },
+    list: {
+      kicker: "आपका है? सूचीबद्ध करें।", title: "अपने घर को बाज़ार में रखें,", titleEm: "स्रोत ट्रेल", titleSuffix: "के साथ।",
+      copy: "Architech पर listing केवल photos और क़ीमत नहीं है — इसमें media rights, RERA context और freshness stamp शामिल हैं। यहाँ हम यह कैसे करते हैं।",
+      step1Title: "तथ्य एकत्र करें", step1Body: "क़ीमत, area, BHK, availability और RERA number (यदि applicable)।",
+      step2Title: "Media rights की पुष्टि करें", step2Body: "आप पुष्टि करते हैं कि photos और plans publish करने के अधिकार आपके पास हैं।",
+      step3Title: "समीक्षा के लिए भेजें", step3Body: "Moderator source trail जाँचता है — उसके बाद ही listing live होती है।",
+      cta: "Listing शुरू करें", portalNote: "Broker operations workspace का हिस्सा", sourceTrail: "हर listing पर source trail",
+    },
     search: {
       title1: "—", cityName: "अहमदाबाद में।", home: "घर", homes: "घर", filter: "जोड़ें", clearAll: "सब हटाएँ", sort: "क्रम", sortHomes: "घरों का क्रम चुनें",
       sortFresh: "सबसे ताज़ा पहले", sortAsc: "क़ीमत — कम से ज़्यादा", sortDesc: "क़ीमत — ज़्यादा से कम",
@@ -157,7 +173,7 @@ export const strings = {
       badgeDetailsCopy: "प्रोडक्शन में हर listing Gujarat RERA registry से जाँची जाएगी और हर update पर re-verify होगी। यह concept preview के लिए illustrative trail है।",
       badgeSample: "नमूना", savedToast: "आपकी शॉर्टलिस्ट में सहेजा गया", removedToast: "शॉर्टलिस्ट से हटाया गया",
     },
-    footer: { made: "अमदावाद में निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "अहमदाबाद में ख़रीदें", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर", savedSearches: "सहेजी गई खोजें" } },
+    footer: { made: "अमदावाद में निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "अहमदाबाद में ख़रीदें", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर", savedSearches: "सहेजी गई खोजें", listProperty: "अपनी संपत्ति सूचीबद्ध करें" } },
     common: { skip: "सीधे सामग्री पर जाएँ", translationNote: "आंशिक अनुवाद · संपादकीय समीक्षा जारी — संपत्ति का editorial content अभी अंग्रेज़ी में रह सकता है।", ahmedabad: "अहमदाबाद", demoData: "डेमो डेटा", partialTranslation: "आंशिक अनुवाद" },
   },
 } as const;

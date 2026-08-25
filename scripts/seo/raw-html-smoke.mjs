@@ -101,6 +101,16 @@ const routeChecks = [
     },
   },
   {
+    route: "/list-property/",
+    check(html) {
+      assertCommonSeo(html, "/list-property/");
+      includes(html, "List your property", "/list-property/");
+      includes(html, "source trail", "/list-property/");
+      includes(html, "@type\":\"WebPage", "/list-property/");
+      includes(html, "rel=\"canonical\"", "/list-property/");
+    },
+  },
+  {
     route: "/listing/garden-courtyard/",
     check(html) {
       assertCommonSeo(html, "/listing/garden-courtyard/");

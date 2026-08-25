@@ -5,12 +5,13 @@ import { savedPath, searchPath } from "./urls";
 
 describe("SeoPage registry", () => {
   it("registers the current indexable public page set", () => {
-    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1 + getGuides().length;
+    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1 + getGuides().length + 1; // +1 list-property page
     expect(seoPages).toHaveLength(expectedCount);
     expect(seoPages.map((page) => page.routeType)).toContain("home");
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);
     expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
     expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(1 + getGuides().length);
+    expect(seoPages.find((page) => page.id === "page:list-property")?.indexability).toBe("indexable");
   });
 
   it("keeps registry IDs, paths, and canonicals unique", () => {

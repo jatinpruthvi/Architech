@@ -1,6 +1,6 @@
 import { getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { isIndexable } from "./lifecycle";
-import { cityPath, cityUrl, guidePath, guideUrl, homePath, homeUrl, listingPath, listingUrl, localityPath, localityUrl } from "./urls";
+import { cityPath, cityUrl, guidePath, guideUrl, homePath, homeUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl } from "./urls";
 
 export type SeoRouteType = "home" | "city" | "locality" | "listing" | "guide";
 export type SeoIndexability = "indexable" | "noindex";
@@ -114,7 +114,21 @@ const guideDetailPages: SeoPage[] = getGuides().map((guide) => ({
   sitemap: { changeFrequency: "monthly", priority: 0.5 },
 }));
 
-export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages];
+const listPropertyPage: SeoPage = {
+  id: "page:list-property",
+  routeType: "home",
+  path: listPropertyPath(),
+  canonicalUrl: listPropertyUrl(),
+  primaryIntent: "Help owners/sellers submit a listing for moderation so it can be published with a source trail.",
+  indexability: "indexable",
+  owner: "Product",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh when the listing submission flow or source-trail language changes.",
+  entityIds: ["brand:architech"],
+  sitemap: { changeFrequency: "monthly", priority: 0.6 },
+};
+
+export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, listPropertyPage];
 
 export function getIndexableSeoPages() {
   return seoPages.filter((page) => page.indexability === "indexable");
