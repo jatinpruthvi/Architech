@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
 import { getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
+import { httpDecisionForListing } from "@/lib/seo/lifecycle";
 import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
 
 export function generateStaticParams() {
@@ -25,6 +26,16 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { id } = await params;
   const property = getListingById(id);
   if (!property) notFound();
+
+  // Enforce listing-indexability per the SEO-004 lifecycle contract. A non-ACTIVE
+  // listing resolves to notFound (404) / a permanent redirect here; a DUPLICATE
+  // listing redirects to its canonical stable id. Fixtures default to ACTIVE so
+  // this is a safety net for future lifecycle-aware data.
+  const decision = httpDecisionForListing(property.lifecycle, property.id);
+  if (decision.status === 301 && "redirectTo" in decision && decision.redirectTo) {
+    redirect(listingUrl(decision.redirectTo));
+  }
+  if (decision.status !== 200) notFound();
 
   const locality = getLocalityBySlug(property.localitySlug);
   const [lat, lon] = (locality?.marker ?? "23.011,72.559").split(",");

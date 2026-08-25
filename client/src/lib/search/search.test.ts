@@ -23,4 +23,14 @@ describe("backend search contract", () => {
     const response = searchListingsFromSearchParams(new URLSearchParams("q=Thaltej&filters=3bhk,rera&sort=price-asc"));
     expect(response.results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
   });
+
+  it("matches a Devanagari locality query via alias resolution", () => {
+    const response = searchListings({ q: "पालडी" });
+    expect(response.results.some((property) => property.localitySlug === "paldi")).toBe(true);
+  });
+
+  it("matches a transliterated locality alias variant", () => {
+    const response = searchListings({ q: "prahlad nagar" });
+    expect(response.results.some((property) => property.localitySlug === "prahlad-nagar")).toBe(true);
+  });
 });

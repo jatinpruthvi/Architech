@@ -1,4 +1,5 @@
 import { getGuides, getListings, getLocalities } from "@/lib/repositories";
+import { isIndexable } from "./lifecycle";
 import { cityPath, cityUrl, guidePath, guideUrl, homePath, homeUrl, listingPath, listingUrl, localityPath, localityUrl } from "./urls";
 
 export type SeoRouteType = "home" | "city" | "locality" | "listing" | "guide";
@@ -74,7 +75,9 @@ const listingPages: SeoPage[] = getListings().map((property) => ({
   path: listingPath(property.id),
   canonicalUrl: listingUrl(property.id),
   primaryIntent: `Present property facts, trust context, and next action for ${property.title}.`,
-  indexability: "indexable",
+  // Only ACTIVE listings are indexable; SOLD context stays viewable but noindexed,
+  // and non-public states are excluded entirely (SEO-003/SEO-004).
+  indexability: isIndexable(property.lifecycle ?? "ACTIVE") ? "indexable" : "noindex",
   owner: "SEO",
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",

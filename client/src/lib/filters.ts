@@ -1,4 +1,6 @@
 /* Pure, testable multi-select filter + sort logic for search. */
+import { localityMatchesToken, localityNameMatchesToken } from "@/lib/search/aliases";
+
 export type FilterableProperty = { bhk: number; priceNum: number; badge: string };
 
 export type FilterDef<T extends FilterableProperty> = { id: string; label: string; fn: (p: T) => boolean };
@@ -47,6 +49,12 @@ export function matchesQuery<T extends QueryableProperty>(p: T, query: string): 
   if (!q) return true;
   const haystack = `${p.locality} ${p.title} ${p.city}`.toLowerCase();
 
+  // Mixed-language locality matching: a residual token matches if it is an alias
+  // (Devanagari, transliterated, or secondary name) for this listing's locality.
+  const slug = (p as unknown as { localitySlug?: string }).localitySlug;
+  const tokenMatchesLocality = (token: string) =>
+    (slug ? localityMatchesToken(slug, token) : false) || localityNameMatchesToken(p.locality, token);
+
   // BHK pattern anywhere in the query
   const bhkMatch = q.match(/(\d+)\s*bhk/);
   // "under X cr" / "under X crore"
@@ -64,7 +72,7 @@ export function matchesQuery<T extends QueryableProperty>(p: T, query: string): 
     if (p.priceNum >= limit) return false;
   }
   const tokens = residual.split(/[^\p{L}]+/u).filter((t) => t.length > 2);
-  return tokens.every((t) => haystack.includes(t));
+  return tokens.every((t) => haystack.includes(t) || tokenMatchesLocality(t));
 }
 
 export function applyQuery<T extends QueryableProperty>(list: T[], query: string): T[] {

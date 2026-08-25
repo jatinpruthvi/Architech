@@ -2,6 +2,8 @@
 export type Property = {
   id: string; title: string; locality: string; localitySlug: string; city: string; price: string; priceNum: number; pricePerSqft: string;
   meta: string; bhk: number; area: string; areaNum: number; image: string; badge: string; status: string; note: string;
+  /** Lifecycle governs HTTP/indexability behavior; fixtures default to ACTIVE. */
+  lifecycle?: "DRAFT" | "IN_REVIEW" | "ACTIVE" | "SOLD" | "EXPIRED" | "REMOVED" | "DUPLICATE" | "ARCHIVED";
 };
 
 export const properties: Property[] = [
