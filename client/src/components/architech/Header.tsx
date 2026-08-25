@@ -22,6 +22,7 @@ export default function Header() {
     { href: "/buy/ahmedabad/", label: t.nav.explore },
     { href: "/search/", label: t.nav.find },
     { href: "/guide/", label: t.nav.notes },
+    { href: "/list-property/", label: t.nav.list },
   ];
 
   useEffect(() => {

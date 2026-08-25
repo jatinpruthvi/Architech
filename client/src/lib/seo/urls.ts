@@ -75,6 +75,14 @@ export function guideUrl(slug?: string, base?: string) {
   return canonicalUrl(guidePath(slug), base);
 }
 
+export function listPropertyPath() {
+  return "/list-property/";
+}
+
+export function listPropertyUrl(base?: string) {
+  return canonicalUrl(listPropertyPath(), base);
+}
+
 export function searchPath() {
   return "/search/";
 }

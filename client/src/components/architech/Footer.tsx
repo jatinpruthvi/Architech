@@ -20,6 +20,7 @@ export default function Footer() {
               <li><Link href="/buy/ahmedabad/" className="link-rail">{t.footer.links.buy}</Link></li>
               <li><Link href="/search/" className="link-rail">{t.footer.links.search}</Link></li>
               <li><Link href="/guide/" className="link-rail">{t.footer.links.notes}</Link></li>
+              <li><Link href="/list-property/" className="link-rail">{t.footer.links.listProperty}</Link></li>
             </ul>
           </nav>
           <nav aria-label={t.footer.trust}>

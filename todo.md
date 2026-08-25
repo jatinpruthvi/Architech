@@ -77,6 +77,7 @@
 - [x] Implement media attach to broker draft (`P1-BROKER-001`, `P1-MEDIA-001`).
 - [x] Implement lead privacy/removal actions in inbox (`P1-LEAD-001`, `P1-DATA-002`).
 - [x] Implement consolidated observability status endpoint (`P1-OBS-001`).
+- [x] Implement discoverable "List your property" seller/owner entry point (`P1-BROKER-001`, `P1-SEO-002`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 

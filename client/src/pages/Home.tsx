@@ -375,6 +375,20 @@ export default function Home() {
         </Reveal>
       </section>
 
+      {/* ================= List your property ================= */}
+      <section className="border-t border-ink/12 bg-sand/40 py-16 md:py-24">
+        <div className="container grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+          <Reveal>
+            <p className="kicker text-brick">{t.list.kicker}</p>
+            <h2 className="display mt-5 max-w-[640px] text-[clamp(30px,4vw,54px)]">{t.list.title} <em className="text-brick">{t.list.titleEm}</em>{t.list.titleSuffix}</h2>
+            <p className="mt-4 max-w-[520px] text-[15px] leading-7 text-ink/65">{t.list.copy}</p>
+          </Reveal>
+          <Reveal delay={120}>
+            <Link href="/list-property/" className="btn-sweep motion-press inline-flex items-center gap-2 bg-night px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ================= CTA ================= */}
       <section className="grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
         <span className="pointer-events-none absolute -right-24 -top-40 h-[480px] w-[300px] rounded-t-full bg-ember/20 md:-right-10" aria-hidden="true" />

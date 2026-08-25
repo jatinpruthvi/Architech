@@ -587,6 +587,14 @@ Fills remaining implementable gaps (see `docs/phase-1-batch3.md`):
 
 Evidence: `pnpm test` → 46 files / 221 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
 
+# Applied discoverable listing entry (Aug 2026)
+
+| Item | Workstream | Status |
+|---|---|---|
+| "List your property" seller/owner entry point | `P1-BROKER-001`, `P1-SEO-002` | validated |
+
+Adds a public `/list-property/` page (source-trail explainer + "Start listing" CTA), entry points in the header/footer/homepage, central URL builders, i18n labels, an indexable SEO-registry entry, and a raw-HTML SEO assertion. Evidence: `pnpm test` → 46 files / 221 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; `test:seo` covers 5 routes incl. `/list-property/`; `test:perf`, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
+
 ---
 
 # Current selected next item
