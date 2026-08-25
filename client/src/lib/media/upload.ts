@@ -154,6 +154,25 @@ export function getMediaUpload(uploadId: string) {
   return uploads.get(uploadId);
 }
 
+/** Request a takedown (retention/holding) for a media record. */
+export function requestMediaTakedown(uploadId: string, reason: string): { ok: true; upload: SignedMediaUpload } | { ok: false; status: number; errors: string[] } {
+  const upload = uploads.get(uploadId);
+  if (!upload) return { ok: false, status: 404, errors: ["Upload not found."] };
+  upload.moderationStatus = "TAKEDOWN_REQUESTED";
+  upload.auditTrail.push(audit("media.takedown.requested", "moderator", { reason }));
+  return { ok: true, upload };
+}
+
+/** Hard-delete a media record after takedown confirmation (retention-privacy). */
+export function deleteMedia(uploadId: string): { ok: true; id: string } | { ok: false; status: number; errors: string[] } {
+  const upload = uploads.get(uploadId);
+  if (!upload) return { ok: false, status: 404, errors: ["Upload not found."] };
+  upload.moderationStatus = "DELETED";
+  upload.auditTrail.push(audit("media.deleted", "system", {})) ;
+  uploads.delete(uploadId);
+  return { ok: true, id: uploadId };
+}
+
 export function resetMediaStoreForTests() {
   uploads.clear();
 }

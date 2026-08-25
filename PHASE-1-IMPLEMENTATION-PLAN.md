@@ -548,6 +548,19 @@ The implementable Phase 1 items that do not require external accounts were deliv
 
 Evidence: `pnpm test` → 42 files / 193 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
 
+# Applied hardening slice (Aug 2026)
+
+A focused hardening batch closes requirement gaps (see `docs/phase-1-hardening-slice.md`):
+
+| # | Item | Workstream | Status |
+|---|---|---|---|
+| 1 | Lead deletion & consent-revocation workflow | `P1-LEAD-001`, `P1-DATA-002` | validated |
+| 2 | Media takedown & deletion workflow | `P1-MEDIA-001`, `P1-DATA-002` | validated |
+| 3 | Search pagination policy & faceted indexability gate | `P1-SEO-003` | validated |
+| 4 | API contract suite over built route handlers | `P1-TEST-001` | validated |
+
+Evidence: `pnpm test` → 45 files / 212 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke, performance budgets, `db:validate`, `security:audit`, `ops:audit`, `release:audit`, `provisioning:audit` pass.
+
 ---
 
 # Current selected next item

@@ -1,5 +1,5 @@
 import "server-only";
-import { createSignedMediaUpload, completeMediaUpload, moderateMedia, type MediaUploadInput, type MediaModerationStatus } from "@/lib/media/upload";
+import { createSignedMediaUpload, completeMediaUpload, deleteMedia, moderateMedia, requestMediaTakedown, type MediaUploadInput, type MediaModerationStatus } from "@/lib/media/upload";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
@@ -69,6 +69,28 @@ export async function moderateMediaForServer(uploadId: string, status: Exclude<M
     await db.auditEvent.create({
       data: { action: `media.moderation.${status.toLowerCase()}`, entityType: "PropertyMedia", entityId: uploadId, metadata: { reason, source: "api.admin.media.moderate.prisma" } },
     });
+  }
+  return result;
+}
+
+export async function requestMediaTakedownForServer(uploadId: string, reason: string) {
+  const result = requestMediaTakedown(uploadId, reason);
+  if (!result.ok) return result;
+  if (isPrismaPersistence()) {
+    const db = prisma();
+    await db.propertyMedia.updateMany({ where: { id: uploadId }, data: { moderationStatus: "TAKEDOWN_REQUESTED" } });
+    await db.auditEvent.create({ data: { action: "media.takedown.requested", entityType: "PropertyMedia", entityId: uploadId, metadata: { reason, source: "api.admin.media.takedown.prisma" } } });
+  }
+  return result;
+}
+
+export async function deleteMediaForServer(uploadId: string) {
+  const result = deleteMedia(uploadId);
+  if (!result.ok) return result;
+  if (isPrismaPersistence()) {
+    const db = prisma();
+    await db.propertyMedia.updateMany({ where: { id: uploadId }, data: { moderationStatus: "DELETED" } });
+    await db.auditEvent.create({ data: { action: "media.deleted", entityType: "PropertyMedia", entityId: uploadId, metadata: { source: "api.admin.media.delete.prisma" } } });
   }
   return result;
 }

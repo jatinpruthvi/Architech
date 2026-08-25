@@ -1,5 +1,5 @@
 import "server-only";
-import { createLead, listLeads, maskPhone, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
+import { createLead, listActiveLeads, maskPhone, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
@@ -129,7 +129,7 @@ function dbLeadRowToContract(row: Record<string, unknown>): LeadRecord {
 
 /** All leads for the broker inbox, newest-first. */
 export async function listLeadsForServer(): Promise<LeadRecord[]> {
-  if (!isPrismaLeadStorage()) return listLeads();
+  if (!isPrismaLeadStorage()) return listActiveLeads();
   const prisma = getPrismaClient() as unknown as PrismaLeadClient;
   const rows = await prisma.lead.findMany({
     where: { deletedAt: null },
@@ -137,6 +137,29 @@ export async function listLeadsForServer(): Promise<LeadRecord[]> {
     include: { listing: { select: { title: true } } },
   });
   return rows.map((row) => dbLeadRowToContract(row));
+}
+
+/** Soft-delete a lead (retention-privacy) and record the audit trail. */
+export async function deleteLeadForServer(id: string): Promise<{ ok: true; lead: LeadRecord } | { ok: false; status: number; errors: string[] }> {
+  if (!isPrismaLeadStorage()) return softDeleteLead(id);
+  const prisma = getPrismaClient() as unknown as PrismaLeadClient;
+  const existing = (await prisma.lead.findUnique({ where: { id } })) as { id: string; deletedAt?: Date | null } | null;
+  if (!existing) return { ok: false, status: 404, errors: ["Lead not found."] };
+  await prisma.lead.update({ where: { id }, data: { deletedAt: new Date(), status: "DELETED" } });
+  const row = (await prisma.lead.findUnique({ where: { id }, include: { listing: { select: { title: true } } } })) as Record<string, unknown> | null;
+  return { ok: true, lead: dbLeadRowToContract(row ?? { id }) };
+}
+
+/** Revoke a lead's stored data at the buyer's request (privacy/consent). */
+export async function revokeLeadConsentForServer(id: string): Promise<{ ok: true; lead: LeadRecord } | { ok: false; status: number; errors: string[] }> {
+  if (!isPrismaLeadStorage()) return revokeLeadConsent(id);
+  const prisma = getPrismaClient() as unknown as PrismaLeadClient;
+  const existing = (await prisma.lead.findUnique({ where: { id } })) as { id: string; deletedAt?: Date | null } | null;
+  if (!existing) return { ok: false, status:404, errors: ["Lead not found."] };
+  await prisma.lead.update({ where: { id }, data: { deletedAt: new Date(), status: "DELETED" } });
+  await prisma.auditEvent.create({ data: { leadId: id, action: "lead.consent.revoked", entityType: "Lead", entityId: id, metadata: { source: "api.broker.leads.consent.prisma" } } });
+  const row = (await prisma.lead.findUnique({ where: { id }, include: { listing: { select: { title: true } } } })) as Record<string, unknown> | null;
+  return { ok: true, lead: dbLeadRowToContract(row ?? { id }) };
 }
 
 /** Advance a lead's status in the masked-response workflow (with audit). */

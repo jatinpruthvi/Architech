@@ -134,6 +134,29 @@ export function updateLeadStatus(
   return { ok: true, lead };
 }
 
+/** Soft-delete a lead (retention-privacy) and record the revocation in its trail. */
+export function softDeleteLead(id: string): { ok: true; lead: LeadRecord } | { ok: false; status: number; errors: string[] } {
+  const lead = [...leadsByKey.values()].find((record) => record.id === id);
+  if (!lead) return { ok: false, status: 404, errors: ["Lead not found."] };
+  lead.status = "DELETED";
+  lead.statusHistory.push({ id: stableId("audit", `lead.deleted:${id}`), action: "lead.deleted", at: new Date().toISOString(), metadata: { source: "api.broker.leads.delete.fixture-store" } });
+  return { ok: true, lead };
+}
+
+/** Revoke a lead's stored data at the buyer's request (privacy/consent). */
+export function revokeLeadConsent(id: string): { ok: true; lead: LeadRecord } | { ok: false; status: number; errors: string[] } {
+  const lead = [...leadsByKey.values()].find((record) => record.id === id);
+  if (!lead) return { ok: false, status: 404, errors: ["Lead not found."] };
+  lead.status = "DELETED";
+  lead.statusHistory.push({ id: stableId("audit", `lead.consent.revoked:${id}`), action: "lead.consent.revoked", at: new Date().toISOString(), metadata: { source: "api.broker.leads.consent.fixture-store" } });
+  return { ok: true, lead };
+}
+
+/** Leads visible to a broker: excludes soft-deleted records. */
+export function listActiveLeads(): LeadRecord[] {
+  return listLeads().filter((record) => record.status !== "DELETED");
+}
+
 export function resetLeadStoreForTests() {
   leadsByKey.clear();
 }
