@@ -34,6 +34,7 @@ describe("SeoPage registry", () => {
     const indexablePaths = getIndexableSeoPages().map((page) => page.path);
     expect(indexablePaths).not.toContain(searchPath());
     expect(indexablePaths).not.toContain(savedPath());
+    expect(indexablePaths).not.toContain("/saved-searches/");
     for (const guide of getGuides().filter((item) => item.status !== "published")) expect(indexablePaths).not.toContain(guide.path);
     expect(getIndexableSeoPages().every((page) => page.indexability === "indexable")).toBe(true);
   });

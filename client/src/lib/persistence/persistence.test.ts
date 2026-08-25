@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { getPersistenceMode, isPrismaPersistence } from "./source";
 import { requestReraCorrectionForServer, markReraStaleForServer } from "./rera-store";
 import { createMediaUploadForServer, completeMediaUploadForServer, moderateMediaForServer } from "./media-store";
-import { createListingDraftForServer, submitListingForReviewForServer, moderateListingForServer, getModerationQueueForServer } from "./broker-store";
+import { createListingDraftForServer, submitListingForReviewForServer, moderateListingForServer, getModerationQueueForServer, listBrokerDraftsForServer } from "./broker-store";
 import { resetBrokerWorkflowForTests } from "@/lib/broker/workflow";
 import { resetMediaStoreForTests } from "@/lib/media/upload";
 import { resetReraStoreForTests } from "@/lib/rera/rera";
@@ -51,6 +51,18 @@ describe("broker draft persistence (fixture/memory path)", () => {
     const moderated = await moderateListingForServer(created.draft.id, "approve", "Facts verified against source.");
     expect(moderated.ok).toBe(true);
     if (moderated.ok) expect(moderated.draft.status).toBe("ACTIVE");
+  });
+
+  it("lists a broker's own drafts across statuses, newest-edit-first", async () => {
+    const first = await createListingDraftForServer({ ...draftInput, title: "Courtyard draft one" });
+    const second = await createListingDraftForServer({ ...draftInput, title: "Courtyard draft two" });
+    if (!first.ok || !second.ok) throw new Error("create failed");
+
+    const drafts = await listBrokerDraftsForServer("demo-org-nivasa-partners");
+    expect(drafts.map((draft) => draft.title)).toContain("Courtyard draft one");
+    expect(drafts.map((draft) => draft.title)).toContain("Courtyard draft two");
+    // newest-edit-first ordering is stable
+    expect(drafts[0].updatedAt >= drafts[1].updatedAt).toBe(true);
   });
 });
 

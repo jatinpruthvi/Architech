@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { ArrowUpRight, Building2, Inbox, ShieldCheck, UserRoundCog } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { demoBrokerSession } from "@/lib/auth/roles";
+import type { ListingDraft } from "@/lib/broker/workflow";
 import useTitle from "@/hooks/useTitle";
 
 const cards = [
@@ -13,6 +15,21 @@ const cards = [
 export default function BrokerDashboard() {
   useTitle("Broker dashboard");
   const session = demoBrokerSession;
+  const [drafts, setDrafts] = useState<ListingDraft[]>([]);
+
+  const loadDrafts = useCallback(async () => {
+    try {
+      const response = await fetch("/api/broker/listings", { cache: "no-store" });
+      const payload = await response.json();
+      setDrafts(Array.isArray(payload.drafts) ? payload.drafts : []);
+    } catch {
+      setDrafts([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDrafts();
+  }, [loadDrafts]);
 
   return (
     <div className="bg-paper pt-[78px] text-ink">
@@ -22,6 +39,29 @@ export default function BrokerDashboard() {
           <h1 className="display mt-6 max-w-[780px] text-[clamp(40px,6vw,84px)]">A protected workspace for <em className="text-brick">verified partners</em>.</h1>
           <p className="mt-6 max-w-[560px] text-base leading-8 text-ink/65">This is the Phase 1 authenticated shell: roles, organization context, and permissions are in place before live sessions are enabled.</p>
         </div>
+      </section>
+
+      <section className="container border-b border-ink/12 py-10">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-2xl font-medium tracking-[-0.02em]">My submissions <span className="text-brick">{drafts.length}</span></h2>
+          <Link href="/broker/listings/new" className="stamp inline-flex items-center gap-1.5 !text-[11px] font-semibold text-brick">New draft <ArrowUpRight size={13} /></Link>
+        </div>
+        {drafts.length === 0 ? (
+          <p className="mt-4 text-sm text-ink/60">No drafts yet. Create one to build the source trail.</p>
+        ) : (
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {drafts.map((draft) => (
+              <article key={draft.id} className="border border-ink/12 bg-card p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="font-display text-lg font-medium leading-tight">{draft.title}</h3>
+                  <span className={`stamp px-2 py-1 !text-[9px] font-semibold ${draft.status === "ACTIVE" ? "bg-trust/10 text-trust" : draft.status === "IN_REVIEW" ? "bg-ember/10 text-ember" : "bg-sand text-ink/60"}`}>{draft.status.toLowerCase()}</span>
+                </div>
+                <p className="mt-2 text-sm text-ink/60">{draft.localitySlug} · {draft.priceInr >= 10000000 ? `₹${(draft.priceInr / 10000000).toFixed(2)} Cr` : `₹${(draft.priceInr / 100000).toFixed(1)} L`} · {draft.bhk} BHK</p>
+                <Link href="/admin/moderation/listings" className="mt-4 inline-flex items-center gap-1.5 stamp !text-[10px] font-semibold text-brick">Track in queue <ArrowUpRight size={12} /></Link>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="container py-14 md:py-20">
