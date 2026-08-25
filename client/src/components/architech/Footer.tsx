@@ -28,6 +28,7 @@ export default function Footer() {
               <li><Link href="/guide/" className="link-rail">{t.footer.links.verify}</Link></li>
               <li><Link href="/guide/" className="link-rail">{t.footer.links.rera}</Link></li>
               <li><Link href="/saved/" className="link-rail">{t.footer.links.saved}</Link></li>
+              <li><Link href="/saved-searches/" className="link-rail">{t.footer.links.savedSearches}</Link></li>
             </ul>
           </nav>
           <div>

@@ -1,5 +1,5 @@
 import "server-only";
-import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
+import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
@@ -101,6 +101,17 @@ export async function getModerationQueueForServer() {
   return rows.map((row) => contractFromRow(row));
 }
 
+/** A broker's own drafts (all statuses), newest-edit-first. */
+export async function listBrokerDraftsForServer(organizationId: string): Promise<ListingDraft[]> {
+  if (!isPrismaPersistence()) return listBrokerDrafts(organizationId);
+  const db = prisma();
+  const rows = (await db.listing.findMany({
+    where: { brokerOrgId: organizationId },
+    orderBy: { updatedAt: "desc" },
+  })) as Array<Record<string, unknown>>;
+  return rows.map((row) => contractFromRow(row));
+}
+
 function contractFromRow(row: Record<string, unknown>): ListingDraft {
   return {
     id: String(row.id ?? ""),
@@ -114,7 +125,7 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     description: String(row.description ?? ""),
     mediaRightsConfirmed: true,
     organizationId: String(row.brokerOrgId ?? ""),
-    status: "IN_REVIEW",
+    status: (String(row.lifecycle ?? "IN_REVIEW") as ListingDraft["status"]) || "IN_REVIEW",
     auditTrail: [],
     createdAt: new Date(row.createdAt as string | Date).toISOString(),
     updatedAt: new Date(row.updatedAt as string | Date).toISOString(),

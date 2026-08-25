@@ -87,7 +87,7 @@ export const strings = {
     },
     footer: {
       made: "Made in Amdavad", tagline: "Find the place before you choose the address.", explore: "Explore", trust: "Trust", office: "Field office",
-      links: { buy: "Buy in Ahmedabad", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes" },
+      links: { buy: "Buy in Ahmedabad", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches" },
     },
     common: { skip: "Skip to content", translationNote: "", ahmedabad: "Ahmedabad", demoData: "demo data", partialTranslation: "" },
   },
@@ -157,7 +157,7 @@ export const strings = {
       badgeDetailsCopy: "प्रोडक्शन में हर listing Gujarat RERA registry से जाँची जाएगी और हर update पर re-verify होगी। यह concept preview के लिए illustrative trail है।",
       badgeSample: "नमूना", savedToast: "आपकी शॉर्टलिस्ट में सहेजा गया", removedToast: "शॉर्टलिस्ट से हटाया गया",
     },
-    footer: { made: "अमदावाद में निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "अहमदाबाद में ख़रीदें", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर" } },
+    footer: { made: "अमदावाद में निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "अहमदाबाद में ख़रीदें", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर", savedSearches: "सहेजी गई खोजें" } },
     common: { skip: "सीधे सामग्री पर जाएँ", translationNote: "आंशिक अनुवाद · संपादकीय समीक्षा जारी — संपत्ति का editorial content अभी अंग्रेज़ी में रह सकता है।", ahmedabad: "अहमदाबाद", demoData: "डेमो डेटा", partialTranslation: "आंशिक अनुवाद" },
   },
 } as const;

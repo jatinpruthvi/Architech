@@ -126,6 +126,13 @@ export function getModerationQueue() {
   return [...drafts.values()].filter((draft) => draft.status === "IN_REVIEW");
 }
 
+/** A broker's own drafts, newest-edit-first. Excludes nothing (all statuses). */
+export function listBrokerDrafts(organizationId: string) {
+  return [...drafts.values()]
+    .filter((draft) => draft.organizationId === organizationId)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
 export function resetBrokerWorkflowForTests() {
   drafts.clear();
 }

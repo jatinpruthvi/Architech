@@ -71,6 +71,8 @@
 - [x] Implement media takedown & deletion workflow (`P1-MEDIA-001`, `P1-DATA-002`).
 - [x] Implement search pagination policy & faceted indexability gate (`P1-SEO-003`).
 - [x] Implement API contract suite over built route handlers (`P1-TEST-001`).
+- [x] Implement broker draft listing + live listing-submission form (`P1-BROKER-001`).
+- [x] Implement managed Saved-searches page + URL builder (`P1-SEARCH-001`, `P1-DATA-005`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 
