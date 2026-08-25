@@ -47,6 +47,7 @@
 - [x] Add production environment provisioning and secrets management runbooks/audits.
 - [x] Implement production data adapter layer: server-only Prisma repository adapter with fixture fallback.
 - [x] Implement structured guide/content system with editorial noindex gates.
+- [x] Add deployment manifests and production-like provisioning smoke audit.
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 
 ## Status
