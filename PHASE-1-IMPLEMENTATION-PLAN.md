@@ -492,6 +492,20 @@ These should follow after the data foundation is in place:
 
 ---
 
+# Applied trust & persistence slice (Aug 2026)
+
+Three additional items were implemented and validated in this slice:
+
+| Item | Workstream | Status |
+|---|---|---|
+| Trust & verification score model | `P1-TRUST-001` | validated |
+| Trust-aware listing surface with JSON-LD | `P1-SEO-008` | validated |
+| Prisma persistence adapters (broker/media/RERA) | `P1-DATA-004` | validated |
+
+Evidence: `pnpm test` → 27 files / 115 tests; `pnpm check`, `pnpm lint`, `pnpm build` pass; raw-HTML SEO smoke and performance budgets pass; adapter source-resolution + fixture-fallback contract tests added; `vitest` stubs `server-only` so server-mode modules are unit-tested directly while the production guard stays in the bundle.
+
+---
+
 # Current selected next item
 
 **Recommended next item:** Execute production environment provisioning when account access/secrets are available.

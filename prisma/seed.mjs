@@ -102,6 +102,51 @@ async function main() {
     });
   }
 
+  // A demo broker draft (DRAFT) demonstrating the persistence adapter path for
+  // the moderation queue. In the demo it stays in review; in prisma mode it is
+  // the durable record the moderation API reads back.
+  const draftLocality = localityBySlug.get("paldi");
+  const draft = await prisma.listing.upsert({
+    where: { stableId: "courtyard-draft-01" },
+    update: {
+      title: "Garden courtyard in Paldi — draft",
+      lifecycle: "IN_REVIEW",
+      verification: "DEMO",
+      priceInr: 18_500_000,
+      bhk: 3,
+      areaSqft: 1482,
+      availability: "Ready to move",
+      description: "Draft submission awaiting moderation review and source checks.",
+      cityId: city.id,
+      localityId: draftLocality.id,
+      brokerOrgId: broker.id,
+    },
+    create: {
+      stableId: "courtyard-draft-01",
+      slug: "courtyard-draft-01",
+      title: "Garden courtyard in Paldi — draft",
+      description: "Draft submission awaiting moderation review and source checks.",
+      lifecycle: "IN_REVIEW",
+      verification: "DEMO",
+      translationStatus: "ENGLISH_ONLY",
+      propertyType: "APARTMENT",
+      priceInr: 18_500_000,
+      priceLabel: "₹1.85 Cr",
+      bhk: 3,
+      areaSqft: 1482,
+      availability: "Ready to move",
+      cityId: city.id,
+      localityId: draftLocality.id,
+      brokerOrgId: broker.id,
+    },
+  });
+
+  await prisma.propertyMedia.upsert({
+    where: { id: "media-courtyard-draft-01-pending" },
+    update: { url: "/media/pending/courtyard-draft-01.jpg", moderationStatus: "PENDING" },
+    create: { id: "media-courtyard-draft-01-pending", listingId: draft.id, url: "/media/pending/courtyard-draft-01.jpg", alt: "Garden courtyard draft — pending review", moderationStatus: "PENDING", exifStripped: true, sortOrder: 0 },
+  });
+
   await prisma.auditEvent.create({
     data: {
       action: "seed.phase1_domain_schema",

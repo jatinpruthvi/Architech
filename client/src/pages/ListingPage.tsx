@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { getListingById, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
 import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
+import { TrustPanel } from "../components/architech/TrustPanel";
 import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
 import { useLang } from "@/contexts/LangContext";
@@ -209,6 +210,9 @@ export default function ListingPage({ id }: { id: string }) {
                 </div>
               ))}
             </div>
+
+            {/* Trust dossier */}
+            <TrustPanel property={property} />
 
             {/* Real OSM neighbourhood map */}
             <div className="mt-12">

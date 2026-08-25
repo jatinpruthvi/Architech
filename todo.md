@@ -48,6 +48,9 @@
 - [x] Implement production data adapter layer: server-only Prisma repository adapter with fixture fallback.
 - [x] Implement structured guide/content system with editorial noindex gates.
 - [x] Add deployment manifests and production-like provisioning smoke audit.
+- [x] Implement trust & verification score model (`P1-TRUST-001`).
+- [x] Implement trust-aware listing surface with JSON-LD (`P1-SEO-008`).
+- [x] Implement Prisma persistence adapters for broker/media/RERA (`P1-DATA-004`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 
 ## Status

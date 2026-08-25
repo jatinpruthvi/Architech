@@ -100,6 +100,11 @@ const routeChecks = [
       assertCommonSeo(html, "/listing/garden-courtyard/");
       includes(html, "A garden courtyard in Paldi", "/listing/garden-courtyard/");
       includes(html, "₹1.85 Cr", "/listing/garden-courtyard/");
+      includes(html, "\"name\":\"trustScore\"", "/listing/garden-courtyard/");
+      includes(html, "\"additionalProperty\"", "/listing/garden-courtyard/");
+      includes(html, "Trust score", "/listing/garden-courtyard/");
+      includes(html, "RERA verified", "/listing/garden-courtyard/");
+
       includes(html, "Paldi", "/listing/garden-courtyard/");
       includes(html, "@type\":\"Residence", "/listing/garden-courtyard/");
       includes(html, "@type\":\"BreadcrumbList", "/listing/garden-courtyard/");

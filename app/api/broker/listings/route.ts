@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createListingDraft, type ListingDraftInput } from "@/lib/broker/workflow";
+import { createListingDraftForServer } from "@/lib/persistence/broker-store";
+import type { ListingDraftInput } from "@/lib/broker/workflow";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, errors: ["Request body must be JSON."] }, { status: 400 });
   }
 
-  const result = createListingDraft(body);
+  const result = await createListingDraftForServer(body);
   if (!result.ok) return NextResponse.json(result, { status: result.status });
   return NextResponse.json(result, { status: 201, headers: { "Cache-Control": "no-store" } });
 }
