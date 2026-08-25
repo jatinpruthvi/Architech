@@ -142,3 +142,12 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Start `pnpm dev` from the local Architech repository on the connected Windows computer.
 - [x] Verify Windows `127.0.0.1:3000` returns the Architech homepage.
 - [x] Report the local terminal state and the URL to open.
+
+
+## Addressbox Feature Parity
+
+- [x] Inspect the open Addressbox website in Chrome and inventory its public features and key flows.
+- [x] Map each observed feature to Architech, separating directly implementable UI behavior from live-service activation gates.
+- [x] Implement the agreed compatible feature set without copying Addressbox branding, text, or protected visual assets.
+- [x] Verify the new flows in Chrome, including responsive behavior, accessibility, and SEO/indexability safety.
+- [ ] Save a checkpoint and report any remaining external-service requirements.

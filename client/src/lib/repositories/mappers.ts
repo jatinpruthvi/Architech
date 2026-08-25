@@ -36,6 +36,11 @@ export type DbListingRow = {
     name: string;
   };
   media?: Array<{ url: string; derivatives?: unknown; alt?: string | null }>;
+  transactionType?: string | null;
+  category?: string | null;
+  propertyType?: string | null;
+  projectName?: string | null;
+  developerName?: string | null;
 };
 
 function decimalToNumber(value: DecimalLike): number | undefined {
@@ -92,6 +97,12 @@ export function dbLocalityToLocality(row: DbLocalityRow): Locality {
 export function dbListingToProperty(row: DbListingRow): Property {
   const bhk = row.bhk ?? 0;
   const area = row.areaSqft ?? 0;
+  const category = ["residential", "commercial", "pg", "plot", "land", "auction"].includes(row.category ?? "")
+    ? row.category as Property["category"]
+    : "residential";
+  const subtype = ["Flat/Apartment", "Villa", "Office", "Shop", "Plot", "Land", "PG/Co-living", "Bank Auction"].includes(row.propertyType ?? "")
+    ? row.propertyType as Property["subtype"]
+    : "Flat/Apartment";
   return {
     id: row.stableId || row.slug,
     title: row.title,
@@ -109,5 +120,10 @@ export function dbListingToProperty(row: DbListingRow): Property {
     badge: badgeFromVerification(row.verification),
     status: freshnessLabel(row.meaningfulUpdatedAt),
     note: row.description,
+    transaction: row.transactionType?.toUpperCase() === "RENT" ? "rent" : "buy",
+    category,
+    subtype,
+    project: row.projectName ?? row.title,
+    developer: row.developerName ?? "Verified partner",
   };
 }

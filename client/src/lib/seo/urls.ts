@@ -91,6 +91,30 @@ export function searchUrl(base?: string) {
   return canonicalUrl(searchPath(), base);
 }
 
+export function requirementsPath() {
+  return "/requirements/";
+}
+
+export function requirementsUrl(base?: string) {
+  return canonicalUrl(requirementsPath(), base);
+}
+
+export function developersPath() {
+  return "/developers/";
+}
+
+export function developersUrl(base?: string) {
+  return canonicalUrl(developersPath(), base);
+}
+
+export function investmentPath() {
+  return "/investment/";
+}
+
+export function investmentUrl(base?: string) {
+  return canonicalUrl(investmentPath(), base);
+}
+
 export function savedPath() {
   return "/saved/";
 }

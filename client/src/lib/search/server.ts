@@ -1,5 +1,5 @@
 import "server-only";
-import { applyFilters, applyQuery, applySort, makeFilters, parseFilterParam } from "@/lib/filters";
+import { applyFilters, applyMarket, applyQuery, applySort, makeFilters, parseFilterParam, type MarketCategory, type MarketIntent } from "@/lib/filters";
 import { getListingsForServer } from "@/lib/repositories/server/prisma";
 import type { Property } from "@/lib/repositories";
 import { buildPostgresSearchPlan } from "./sql";
@@ -14,18 +14,22 @@ export type ServerSearchResponse = SearchResponse & {
 export async function searchListingsForServer(request: SearchRequest = {}): Promise<ServerSearchResponse> {
   const query = request.q?.trim() ?? "";
   const filters = request.filters ?? [];
+  const category: MarketCategory = ["all", "residential", "commercial", "pg", "plot", "land", "auction"].includes(request.category ?? "") ? request.category as MarketCategory : "all";
+  const intent: MarketIntent = request.intent === "rent" ? "rent" : "buy";
   const sort = normalizeSort(request.sort);
   const pageSize = normalizePageSize(request.limit);
   const page = normalizePage(request.page);
   const listings = await getListingsForServer();
   const defs = makeFilters<Property>();
-  const filtered = applySort(applyFilters(applyQuery(listings, query), filters, defs), sort);
+  const filtered = applySort(applyFilters(applyMarket(applyQuery(listings, query), category, intent), filters, defs), sort);
   const { items, meta } = paginate(filtered, { page, pageSize });
   const prismaMode = isPrismaSearchSource();
 
   return {
     query,
     filters,
+    category,
+    intent,
     sort,
     count: filtered.length,
     source: prismaMode ? "postgres-fts-trigram" : "fixture-repository",
@@ -40,6 +44,8 @@ export function searchListingsFromSearchParamsForServer(params: URLSearchParams)
   return searchListingsForServer({
     q: params.get("q") ?? "",
     filters: parseFilterParam(params.get("filters")),
+    category: (params.get("category") as MarketCategory) || "all",
+    intent: params.get("intent") === "rent" ? "rent" : "buy",
     sort: normalizeSort(params.get("sort")),
     limit: normalizeLimit(params.get("limit")),
     page: Number.parseInt(params.get("page") ?? "", 10) || undefined,

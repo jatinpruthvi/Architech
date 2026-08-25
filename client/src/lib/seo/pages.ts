@@ -1,6 +1,6 @@
 import { getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { isIndexable } from "./lifecycle";
-import { cityPath, cityUrl, guidePath, guideUrl, homePath, homeUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl } from "./urls";
+import { cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, requirementsPath, requirementsUrl } from "./urls";
 
 export type SeoRouteType = "home" | "city" | "locality" | "listing" | "guide";
 export type SeoIndexability = "indexable" | "noindex";
@@ -114,6 +114,48 @@ const guideDetailPages: SeoPage[] = getGuides().map((guide) => ({
   sitemap: { changeFrequency: "monthly", priority: 0.5 },
 }));
 
+const requirementsPage: SeoPage = {
+  id: "page:requirements",
+  routeType: "home",
+  path: requirementsPath(),
+  canonicalUrl: requirementsUrl(),
+  primaryIntent: "Capture a privacy-aware buyer, renter, owner, agent, or builder requirement brief.",
+  indexability: "indexable",
+  owner: "Product",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh when the requirement fields, consent language, or routing policy changes.",
+  entityIds: ["brand:architech", "city:ahmedabad", "topic:property-requirements"],
+  sitemap: { changeFrequency: "monthly", priority: 0.6 },
+};
+
+const developersPage: SeoPage = {
+  id: "page:developers",
+  routeType: "guide",
+  path: developersPath(),
+  canonicalUrl: developersUrl(),
+  primaryIntent: "Help users discover Ahmedabad builders and projects with context and evidence policy.",
+  indexability: "indexable",
+  owner: "SEO",
+  qualityState: "needs-production-data",
+  freshnessPolicy: "Refresh when developer evidence, project links, or partner status changes.",
+  entityIds: ["brand:architech", "city:ahmedabad", "topic:developers"],
+  sitemap: { changeFrequency: "weekly", priority: 0.6 },
+};
+
+const investmentPage: SeoPage = {
+  id: "page:investment",
+  routeType: "guide",
+  path: investmentPath(),
+  canonicalUrl: investmentUrl(),
+  primaryIntent: "Provide general Ahmedabad property context without personalized financial recommendations.",
+  indexability: "indexable",
+  owner: "Content",
+  qualityState: "editorial-review-required",
+  freshnessPolicy: "Refresh when sources, legal disclaimers, or locality context changes.",
+  entityIds: ["brand:architech", "city:ahmedabad", "topic:investment-context"],
+  sitemap: { changeFrequency: "monthly", priority: 0.5 },
+};
+
 const listPropertyPage: SeoPage = {
   id: "page:list-property",
   routeType: "home",
@@ -128,7 +170,7 @@ const listPropertyPage: SeoPage = {
   sitemap: { changeFrequency: "monthly", priority: 0.6 },
 };
 
-export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, listPropertyPage];
+export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, listPropertyPage];
 
 export function getIndexableSeoPages() {
   return seoPages.filter((page) => page.indexability === "indexable");

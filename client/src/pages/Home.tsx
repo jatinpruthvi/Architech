@@ -14,6 +14,7 @@ import TiltCard from "../components/magicui/TiltCard";
 import WordReveal from "../components/magicui/WordReveal";
 import Marquee from "../components/magicui/Marquee";
 import Pic from "../components/architech/Pic";
+import MarketDirectory from "../components/architech/MarketDirectory";
 import useTitle from "../hooks/useTitle";
 import { getListings, getLocalities } from "@/lib/repositories";
 import { useLang } from "@/contexts/LangContext";
@@ -251,6 +252,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ================= MARKET DIRECTORY ================= */}
+      <MarketDirectory />
 
       {/* ================= LOCALITY INDEX (real OSM coords) ================= */}
       <section className="border-t border-ink/12 bg-sand/40 py-24 md:py-32">
