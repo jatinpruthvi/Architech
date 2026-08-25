@@ -6,7 +6,7 @@ import useTitle from "@/hooks/useTitle";
 
 const cards = [
   { icon: Building2, title: "Organization profile", body: "Nivasa Partners is represented as a verified broker organization in the Phase 1 schema.", action: "Review profile" },
-  { icon: Inbox, title: "Lead inbox contract", body: "Lead records now carry masked contact, consent text, idempotency, and audit metadata.", action: "Open leads" },
+  { icon: Inbox, title: "Lead inbox", body: "Enquiries land here with masked contact, consent on file, and every status change audited.", action: "Open leads", href: "/broker/leads" },
   { icon: UserRoundCog, title: "Roles and permissions", body: "Broker admin/member role checks are centralized before Better Auth is fully connected.", action: "View roles" },
 ];
 
@@ -38,12 +38,16 @@ export default function BrokerDashboard() {
           </aside>
 
           <div className="grid gap-5 md:grid-cols-3">
-            {cards.map(({ icon: Icon, title, body, action }) => (
+            {cards.map(({ icon: Icon, title, body, action, href }) => (
               <article key={title} className="border border-ink/12 bg-card p-6 motion-lift hover:editorial-shadow">
                 <Icon size={20} className="text-brick" />
                 <h2 className="mt-5 font-display text-2xl font-medium tracking-[-0.02em]">{title}</h2>
                 <p className="mt-3 text-sm leading-6 text-ink/60">{body}</p>
-                <p className="mt-6 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-brick">{action} <ArrowUpRight size={13} /></p>
+                {href ? (
+                  <Link href={href} className="group mt-6 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-brick">{action} <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link>
+                ) : (
+                  <p className="mt-6 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-brick">{action} <ArrowUpRight size={13} /></p>
+                )}
               </article>
             ))}
           </div>

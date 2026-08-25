@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getLocalities } from "@/lib/repositories";
 import { cityUrl } from "@/lib/seo/urls";
+import { cityTrustSummary } from "@/lib/trust/locality";
+import { LocalityTrust } from "@/components/architech/LocalityTrust";
 
 export const metadata: Metadata = {
   title: "Buy in Ahmedabad — localities with verified context",
@@ -13,8 +15,26 @@ export const metadata: Metadata = {
 
 /* Server-rendered, fully crawlable city hub (architecture: Home → hubs → cities → localities). */
 export default function CityHub() {
+  const trust = cityTrustSummary();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "City",
+        name: "Ahmedabad",
+        additionalProperty: [
+          { "@type": "PropertyValue", name: "trustScore", value: trust.avgScore, unitText: "out of 100" },
+          { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },
+          { "@type": "PropertyValue", name: "reraCoveragePct", value: trust.reraCoveragePct },
+          { "@type": "PropertyValue", name: "sourceReviewedCount", value: trust.sourceReviewed },
+        ],
+      },
+    ],
+  };
   return (
-    <div className="bg-paper pt-[78px] text-ink">
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div className="bg-paper pt-[78px] text-ink">
       <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
           <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
@@ -46,7 +66,9 @@ export default function CityHub() {
           ))}
         </div>
         <p className="stamp mt-6 !text-[10px] text-ink/60">Coordinates © OpenStreetMap contributors · home counts are illustrative for this concept preview</p>
+        <LocalityTrust summary={trust} />
       </section>
     </div>
+    </>
   );
 }

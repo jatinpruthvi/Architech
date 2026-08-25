@@ -79,6 +79,9 @@ const routeChecks = [
       assertCommonSeo(html, "/buy/ahmedabad/");
       includes(html, "Buy in", "/buy/ahmedabad/");
       includes(html, "Paldi", "/buy/ahmedabad/");
+      includes(html, "\"trustScore\"", "/buy/ahmedabad/");
+      includes(html, "trust in this area", "/buy/ahmedabad/");
+
       includes(html, "href=\"/buy/ahmedabad/paldi/\"", "/buy/ahmedabad/");
       matches(html, /<title>Buy in Ahmedabad[^<]*· Architech<\/title>/, "/buy/ahmedabad/", "route title");
     },
@@ -88,6 +91,9 @@ const routeChecks = [
     check(html) {
       assertCommonSeo(html, "/buy/ahmedabad/paldi/");
       includes(html, "Homes in Paldi", "/buy/ahmedabad/paldi/");
+      includes(html, "\"trustScore\"", "/buy/ahmedabad/paldi/");
+      includes(html, "RERA coverage", "/buy/ahmedabad/paldi/");
+
       includes(html, "Paldi", "/buy/ahmedabad/paldi/");
       includes(html, "@type\":\"Place", "/buy/ahmedabad/paldi/");
       includes(html, "@type\":\"BreadcrumbList", "/buy/ahmedabad/paldi/");

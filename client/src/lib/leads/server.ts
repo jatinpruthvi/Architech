@@ -1,11 +1,16 @@
 import "server-only";
-import { createLead, maskPhone, validateLeadInput, type LeadInput, type LeadRecord, type LeadResult } from "./lead";
+import { createLead, listLeads, maskPhone, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
 type PrismaLeadClient = ReturnType<typeof getPrismaClient> & {
   listing: { findFirst(args: unknown): Promise<{ id: string; title: string; brokerOrgId?: string | null } | null> };
-  lead: { findUnique(args: unknown): Promise<unknown | null>; create(args: unknown): Promise<{ id: string; createdAt: Date }> };
+  lead: {
+    findUnique(args: unknown): Promise<unknown | null>;
+    findMany(args: unknown): Promise<Array<Record<string, unknown>>>;
+    create(args: unknown): Promise<{ id: string; createdAt: Date }>;
+    update(args: unknown): Promise<{ id: string }>;
+  };
   auditEvent: { create(args: unknown): Promise<{ id: string }> };
   $transaction<T>(fn: (tx: PrismaLeadClient) => Promise<T>): Promise<T>;
 };
@@ -93,8 +98,62 @@ function dbLeadContract(input: LeadInput, listingTitle: string, id: string, audi
     consentText: input.consentText.trim(),
     idempotencyKey: input.idempotencyKey?.trim() || `${input.listingId}:${input.phone.replace(/\D/g, "")}:${input.message.trim().toLowerCase()}`,
     auditEvent: { id: auditId, action: "lead.created", entityType: "Lead", metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source } },
+    statusHistory: [{ id: auditId, action: "lead.created", at: createdAt, metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source } }],
     createdAt,
   };
+}
+
+/** Map a Prisma lead row (with listing title) to the lead contract. */
+function dbLeadRowToContract(row: Record<string, unknown>): LeadRecord {
+  const id = String(row.id ?? "");
+  const listing = (row.listing ?? {}) as { title?: string };
+  const createdAt = new Date(row.createdAt as string | Date).toISOString();
+  return {
+    id,
+    listingId: String(row.listingId ?? ""),
+    listingTitle: listing.title ?? "Unknown listing",
+    organizationName: "Nivasa Partners",
+    name: String(row.name ?? ""),
+    phoneMasked: String(row.phoneMasked ?? ""),
+    email: typeof row.email === "string" ? row.email : undefined,
+    message: String(row.message ?? ""),
+    mode: String(row.mode ?? "MASKED") as LeadMode,
+    status: String(row.status ?? "NEW") as LeadStatus,
+    consentText: String(row.consentText ?? ""),
+    idempotencyKey: String(row.idempotencyKey ?? ""),
+    auditEvent: { id: stableId("audit", `${id}:lead.created`), action: "lead.created", entityType: "Lead", metadata: { masked: true, source: "api.leads.prisma" } },
+    statusHistory: [],
+    createdAt,
+  };
+}
+
+/** All leads for the broker inbox, newest-first. */
+export async function listLeadsForServer(): Promise<LeadRecord[]> {
+  if (!isPrismaLeadStorage()) return listLeads();
+  const prisma = getPrismaClient() as unknown as PrismaLeadClient;
+  const rows = await prisma.lead.findMany({
+    where: { deletedAt: null },
+    orderBy: { createdAt: "desc" },
+    include: { listing: { select: { title: true } } },
+  });
+  return rows.map((row) => dbLeadRowToContract(row));
+}
+
+/** Advance a lead's status in the masked-response workflow (with audit). */
+export async function updateLeadStatusForServer(
+  id: string,
+  status: Exclude<LeadStatus, "NEW" | "DELETED">
+): Promise<{ ok: true; lead: LeadRecord } | { ok: false; status: number; errors: string[] }> {
+  if (!isPrismaLeadStorage()) return updateLeadStatus(id, status);
+  const prisma = getPrismaClient() as unknown as PrismaLeadClient;
+  const existing = (await prisma.lead.findUnique({ where: { id } })) as { id: string; listingId: string; organizationId?: string | null } | null;
+  if (!existing) return { ok: false, status: 404, errors: ["Lead not found."] };
+  await prisma.lead.update({ where: { id }, data: { status } });
+  await prisma.auditEvent.create({
+    data: { leadId: id, listingId: existing.listingId, organizationId: existing.organizationId, action: `lead.${status.toLowerCase()}`, entityType: "Lead", entityId: id, metadata: { source: "api.broker.leads.reply.prisma" } },
+  });
+  const row = (await prisma.lead.findUnique({ where: { id }, include: { listing: { select: { title: true } } } })) as Record<string, unknown> | null;
+  return { ok: true, lead: dbLeadRowToContract(row ?? { id }) };
 }
 
 export function validateLeadInputForConfiguredSource(input: Partial<LeadInput>) {

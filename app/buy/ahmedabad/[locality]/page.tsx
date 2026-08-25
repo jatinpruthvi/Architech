@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import CityPage from "@/pages/CityPage";
 import { getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, localityUrl } from "@/lib/seo/urls";
+import { localityTrustSummary } from "@/lib/trust/locality";
+import { LocalityTrust } from "@/components/architech/LocalityTrust";
 
 export function generateStaticParams() {
   return getLocalityStaticParams();
@@ -26,6 +28,7 @@ export default async function Page({ params }: { params: Promise<{ locality: str
   if (!locality) notFound();
 
   const [lat, lon] = locality.marker.split(",");
+  const trust = localityTrustSummary(slug);
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -35,6 +38,12 @@ export default async function Page({ params }: { params: Promise<{ locality: str
         alternateName: locality.hindi,
         geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
         containedInPlace: { "@type": "City", name: "Ahmedabad" },
+        additionalProperty: [
+          { "@type": "PropertyValue", name: "trustScore", value: trust.avgScore, unitText: "out of 100" },
+          { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },
+          { "@type": "PropertyValue", name: "reraCoveragePct", value: trust.reraCoveragePct },
+          { "@type": "PropertyValue", name: "sourceReviewedCount", value: trust.sourceReviewed },
+        ],
       },
       {
         "@type": "BreadcrumbList",
@@ -51,6 +60,7 @@ export default async function Page({ params }: { params: Promise<{ locality: str
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <CityPage localitySlug={locality.slug} />
+      <LocalityTrust summary={trust} />
     </>
   );
 }

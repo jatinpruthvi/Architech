@@ -3,6 +3,13 @@ import { getListingById } from "@/lib/repositories";
 export type LeadMode = "MASKED" | "DIRECT_CONSENTED";
 export type LeadStatus = "NEW" | "ACKNOWLEDGED" | "REPLIED" | "CLOSED" | "DELETED";
 
+export type LeadStatusEvent = {
+  id: string;
+  action: string;
+  at: string;
+  metadata?: Record<string, unknown>;
+};
+
 export type LeadInput = {
   listingId: string;
   name: string;
@@ -36,6 +43,8 @@ export type LeadRecord = {
       source: "api.leads.fixture-store" | "api.leads.prisma";
     };
   };
+  /** Append-only events for the masked-response (reply/close) workflow. */
+  statusHistory: LeadStatusEvent[];
   createdAt: string;
 };
 
@@ -98,11 +107,31 @@ export function createLead(input: LeadInput): LeadResult {
       entityType: "Lead",
       metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source: "api.leads.fixture-store" },
     },
+    statusHistory: [
+      { id: stableId("audit", `${key}:lead.created`), action: "lead.created", at: now, metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source: "api.leads.fixture-store" } },
+    ],
     createdAt: now,
   };
 
   leadsByKey.set(key, lead);
   return { ok: true, lead, duplicate: false };
+}
+
+/** All leads for a broker, newest-first. Memory-store read for the fixture path. */
+export function listLeads(): LeadRecord[] {
+  return [...leadsByKey.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Advance a lead's status (masked-response workflow) and append to its trail. */
+export function updateLeadStatus(
+  id: string,
+  status: Exclude<LeadStatus, "NEW" | "DELETED">
+): { ok: true; lead: LeadRecord } | { ok: false; status: number; errors: string[] } {
+  const lead = [...leadsByKey.values()].find((record) => record.id === id);
+  if (!lead) return { ok: false, status: 404, errors: ["Lead not found."] };
+  lead.status = status;
+  lead.statusHistory.push({ id: stableId("audit", `lead.${status.toLowerCase()}:${id}`), action: `lead.${status.toLowerCase()}`, at: new Date().toISOString(), metadata: { source: "api.broker.leads.reply.fixture-store" } });
+  return { ok: true, lead };
 }
 
 export function resetLeadStoreForTests() {
