@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { getPersistenceMode, isPrismaPersistence } from "./source";
 import { requestReraCorrectionForServer, markReraStaleForServer } from "./rera-store";
 import { createMediaUploadForServer, completeMediaUploadForServer, moderateMediaForServer } from "./media-store";
-import { createListingDraftForServer, submitListingForReviewForServer, moderateListingForServer, getModerationQueueForServer, listBrokerDraftsForServer } from "./broker-store";
+import { createListingDraftForServer, submitListingForReviewForServer, moderateListingForServer, getModerationQueueForServer, listBrokerDraftsForServer, attachMediaToDraftForServer, detachMediaFromDraftForServer, listDraftMediaForServer } from "./broker-store";
 import { resetBrokerWorkflowForTests } from "@/lib/broker/workflow";
 import { resetMediaStoreForTests } from "@/lib/media/upload";
 import { resetReraStoreForTests } from "@/lib/rera/rera";
@@ -63,6 +63,23 @@ describe("broker draft persistence (fixture/memory path)", () => {
     expect(drafts.map((draft) => draft.title)).toContain("Courtyard draft two");
     // newest-edit-first ordering is stable
     expect(drafts[0].updatedAt >= drafts[1].updatedAt).toBe(true);
+  });
+
+  it("attaches and detaches media on a broker draft", async () => {
+    const created = await createListingDraftForServer(draftInput);
+    if (!created.ok) throw new Error("create failed");
+
+    const attached = await attachMediaToDraftForServer(created.draft.id, "media_courtyard_01");
+    expect(attached.ok).toBe(true);
+    if (attached.ok) expect(attached.mediaIds).toEqual(["media_courtyard_01"]);
+
+    expect(await listDraftMediaForServer(created.draft.id)).toEqual(["media_courtyard_01"]);
+
+    const detached = await detachMediaFromDraftForServer(created.draft.id, "media_courtyard_01");
+    expect(detached.ok).toBe(true);
+    if (detached.ok) expect(detached.mediaIds).toEqual([]);
+
+    expect(await listDraftMediaForServer("does-not-exist")).toEqual([]);
   });
 });
 

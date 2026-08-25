@@ -2,7 +2,7 @@
 /* Broker lead inbox — reads the masked lead contract and advances statuses.
    Contact stays masked until the buyer chooses to share it; every status
    change is audited through the lead server adapter. */
-import { CheckCheck, Inbox, MessageCircle, Phone } from "lucide-react";
+import { CheckCheck, Inbox, MessageCircle, Phone, ShieldOff, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { LeadRecord, LeadStatus } from "@/lib/leads/lead";
@@ -54,6 +54,17 @@ export default function BrokerLeadInbox() {
     }
     setLeads((current) => current.map((lead) => (lead.id === id ? payload.lead : lead)));
     toast(`Lead ${status.toLowerCase()}.`, { description: "The status change was recorded." });
+  };
+
+  const removeLead = async (id: string, mode: "consent" | "delete") => {
+    const response = await fetch(`/api/broker/leads/${encodeURIComponent(id)}?mode=${mode}`, { method: "DELETE" });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      toast(payload.errors?.join(" ") ?? "Could not remove the lead.", { description: "Please try again." });
+      return;
+    }
+    setLeads((current) => current.filter((lead) => lead.id !== id));
+    toast(mode === "consent" ? "Buyer consent revoked." : "Lead removed.", { description: "The action was recorded in the audit trail." });
   };
 
   return (
@@ -122,6 +133,21 @@ export default function BrokerLeadInbox() {
                     </span>
                   </button>
                 ))}
+                <span aria-hidden="true" className="mx-1 hidden self-center border-l border-ink/15 sm:block" />
+                <button
+                  onClick={() => void removeLead(lead.id, "consent")}
+                  className="touch-44 inline-flex items-center gap-1.5 px-3 py-2 stamp !text-[10px] font-semibold text-ink/60 hover:text-brick"
+                  title="Revoke buyer consent (privacy/right to be forgotten)"
+                >
+                  <ShieldOff size={12} /> Revoke consent
+                </button>
+                <button
+                  onClick={() => void removeLead(lead.id, "delete")}
+                  className="touch-44 inline-flex items-center gap-1.5 px-3 py-2 stamp !text-[10px] font-semibold text-ink/60 hover:text-brick"
+                  title="Remove this lead"
+                >
+                  <Trash2 size={12} /> Remove
+                </button>
               </div>
             </article>
           ))}

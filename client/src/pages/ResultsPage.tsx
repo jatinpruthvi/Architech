@@ -2,7 +2,7 @@
 /* ARCHITECH — Search results v4.
    Filters are multi-select (AND), synced to the URL for back-button + sharing.
    Real sort control, honest counts, aria-live announcements, skeletons, bottom-sheet on mobile. */
-import { ArrowUpRight, LayoutList, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpRight, LayoutList, Map as MapIcon, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Property } from "@/lib/repositories";
 import { searchListings, type SearchResponse } from "@/lib/search/search";
 import MapListSync from "@/components/architech/MapListSync";
+import { useSearchSuggestions } from "@/components/architech/useSearchSuggestions";
 
 const filterDefs = makeFilters<Property>();
 const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
@@ -106,6 +107,22 @@ export default function ResultsPage() {
   const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => t.search.filters[f.id] ?? f.label).join(" + ") : t.search.allHomes;
 
   const [savingSearch, setSavingSearch] = useState(false);
+
+  // Server-backed quick search (debounced, abortable) for refining the query.
+  const [qInput, setQInput] = useState(query);
+  const [qFocused, setQFocused] = useState(false);
+  const { suggestions: qSuggestions } = useSearchSuggestions(qInput);
+  useEffect(() => { setQInput(query); }, [query]);
+  const runQuery = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const p = new URLSearchParams(searchStr);
+    p.set("q", trimmed);
+    router.replace(`/search?${p.toString()}`, { scroll: false });
+    setQInput(trimmed);
+    setQFocused(false);
+  };
+
   const saveSearch = async () => {
     if (savingSearch) return;
     setSavingSearch(true);
@@ -132,6 +149,32 @@ export default function ResultsPage() {
         <div className="container">
           <p className="kicker text-brick">{t.search.kicker} · {t.common.ahmedabad}{query ? ` · “${query}”` : ""}</p>
           {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">{t.search.clearSearch} “{query}” <X size={12} /></button>}
+          <div className="mt-6 max-w-[560px]">
+            <div className="relative">
+              <form onSubmit={(e) => { e.preventDefault(); runQuery(qInput); }} className="flex items-stretch border border-ink/20 bg-paper focus-within:border-brick" role="search" aria-label="Search homes">
+                <span className="grid w-12 place-items-center text-ink/55"><Search size={16} /></span>
+                <input
+                  value={qInput}
+                  onChange={(e) => setQInput(e.target.value)}
+                  onFocus={() => setQFocused(true)}
+                  onBlur={() => setQFocused(false)}
+                  className="w-full bg-transparent px-2 py-3 text-sm focus:outline-none"
+                  placeholder={t.hero.placeholderBuy}
+                  aria-label={t.search.kicker}
+                />
+                <button type="submit" className="btn-sweep touch-44 m-1.5 bg-brick px-5 stamp !text-[11px] font-semibold text-cream">{t.hero.search}</button>
+              </form>
+              {qFocused && qSuggestions.length > 0 && (
+                <div className="absolute inset-x-0 top-full z-30 mt-1 border border-ink/15 bg-paper text-ink editorial-shadow" role="listbox" aria-label="Search suggestions">
+                  {qSuggestions.map((s, i) => (
+                    <button key={`${s.kind}-${i}`} onMouseDown={(e) => { e.preventDefault(); runQuery(s.query); }} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-ink/80 hover:bg-sand/70 hover:text-brick" role="option" aria-selected={false}>
+                      <Search size={12} className="text-ink/55" /> {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
             <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {results.length === 1 ? t.search.home : t.search.homes} {t.search.title1} <em className="text-brick">{t.search.cityName}</em></h1>
             <div className="flex gap-2">

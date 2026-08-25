@@ -73,6 +73,10 @@
 - [x] Implement API contract suite over built route handlers (`P1-TEST-001`).
 - [x] Implement broker draft listing + live listing-submission form (`P1-BROKER-001`).
 - [x] Implement managed Saved-searches page + URL builder (`P1-SEARCH-001`, `P1-DATA-005`).
+- [x] Implement server-backed search suggestions + results quick-search (`P1-SEARCH-002`).
+- [x] Implement media attach to broker draft (`P1-BROKER-001`, `P1-MEDIA-001`).
+- [x] Implement lead privacy/removal actions in inbox (`P1-LEAD-001`, `P1-DATA-002`).
+- [x] Implement consolidated observability status endpoint (`P1-OBS-001`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 
