@@ -1,6 +1,6 @@
 import { getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { isIndexable } from "./lifecycle";
-import { cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, requirementsPath, requirementsUrl } from "./urls";
+import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, requirementsPath, requirementsUrl } from "./urls";
 
 export type SeoRouteType = "home" | "city" | "locality" | "listing" | "guide";
 export type SeoIndexability = "indexable" | "noindex";
@@ -156,6 +156,76 @@ const investmentPage: SeoPage = {
   sitemap: { changeFrequency: "monthly", priority: 0.5 },
 };
 
+const aboutPage: SeoPage = {
+  id: "page:about",
+  routeType: "home",
+  path: "/about-us/",
+  canonicalUrl: canonicalUrl("/about-us/"),
+  primaryIntent: "Explain Architech’s Ahmedabad-first product, evidence policy, and place-first approach.",
+  indexability: "indexable",
+  owner: "Product",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh when company positioning, methodology, or coverage changes.",
+  entityIds: ["brand:architech", "city:ahmedabad"],
+  sitemap: { changeFrequency: "monthly", priority: 0.4 },
+};
+
+const contactPage: SeoPage = {
+  id: "page:contact",
+  routeType: "home",
+  path: "/contact-us/",
+  canonicalUrl: canonicalUrl("/contact-us/"),
+  primaryIntent: "Provide a clear, privacy-aware contact path for product, property, and editorial enquiries.",
+  indexability: "indexable",
+  owner: "Product",
+  qualityState: "needs-production-data",
+  freshnessPolicy: "Refresh when approved contact channels and response policy change.",
+  entityIds: ["brand:architech", "city:ahmedabad"],
+  sitemap: { changeFrequency: "monthly", priority: 0.4 },
+};
+
+const homeLoanPage: SeoPage = {
+  id: "page:home-loan",
+  routeType: "guide",
+  path: "/home-loan/",
+  canonicalUrl: canonicalUrl("/home-loan/"),
+  primaryIntent: "Explain indicative home-loan calculations without personalized financial advice.",
+  indexability: "indexable",
+  owner: "Content",
+  qualityState: "editorial-review-required",
+  freshnessPolicy: "Refresh when calculator assumptions, disclosures, or approved providers change.",
+  entityIds: ["brand:architech", "city:ahmedabad", "topic:home-loan-context"],
+  sitemap: { changeFrequency: "monthly", priority: 0.4 },
+};
+
+const reviewPage: SeoPage = {
+  id: "page:review",
+  routeType: "home",
+  path: "/review/",
+  canonicalUrl: canonicalUrl("/review/"),
+  primaryIntent: "Collect honest user feedback only after consent and moderation are activated.",
+  indexability: "noindex",
+  owner: "Product",
+  qualityState: "needs-production-data",
+  freshnessPolicy: "Refresh when moderation, consent, or retention policy changes.",
+  entityIds: ["brand:architech"],
+  sitemap: { changeFrequency: "yearly", priority: 0.1 },
+};
+
+const htmlSitemapPage: SeoPage = {
+  id: "page:sitemap-html",
+  routeType: "home",
+  path: "/sitemap.html/",
+  canonicalUrl: canonicalUrl("/sitemap.html/"),
+  primaryIntent: "Expose Architech’s reviewed public route hierarchy to users and crawlers.",
+  indexability: "indexable",
+  owner: "SEO",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh whenever a crawlable public route is added, removed, or materially changed.",
+  entityIds: ["brand:architech", "city:ahmedabad"],
+  sitemap: { changeFrequency: "weekly", priority: 0.5 },
+};
+
 const listPropertyPage: SeoPage = {
   id: "page:list-property",
   routeType: "home",
@@ -170,7 +240,7 @@ const listPropertyPage: SeoPage = {
   sitemap: { changeFrequency: "monthly", priority: 0.6 },
 };
 
-export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, listPropertyPage];
+export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
 
 export function getIndexableSeoPages() {
   return seoPages.filter((page) => page.indexability === "indexable");

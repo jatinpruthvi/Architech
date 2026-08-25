@@ -289,17 +289,29 @@ export default function ResultsPage() {
             </div>
             {/* Curated empty state */}
             {!loading && results.length === 0 && (
-              <div className="border border-dashed border-ink/25 p-10 text-center md:p-14">
-                <p className="font-display text-3xl tracking-[-0.02em]">{query ? <>{t.search.noHomesYet} “{query}” {active.length > 0 ? t.search.withFilters : ""} — <em className="text-brick">{t.search.yet}</em>.</> : <>{t.search.noCombination} — <em className="text-brick">{t.search.yet}</em>.</>}</p>
-                <p className="mx-auto mt-3 max-w-[380px] text-sm leading-6 text-ink/60">{t.search.emptyHelp}</p>
-                <div className="mt-7 flex flex-wrap justify-center gap-2">
+              <div className="relative overflow-hidden border border-dashed border-ink/25 bg-sand/35 p-8 md:p-12">
+                <div className="absolute right-0 top-0 hidden select-none font-display text-[130px] leading-none text-brick/[0.10] md:block">00</div>
+                <div className="relative grid gap-8 md:grid-cols-[1fr_0.72fr] md:items-end">
+                  <div>
+                    <p className="kicker text-brick">Field note / inventory watch</p>
+                    <p className="mt-5 font-display text-3xl tracking-[-0.02em]">{query ? <>{t.search.noHomesYet} “{query}” {active.length > 0 ? t.search.withFilters : ""} — <em className="text-brick">{t.search.yet}</em>.</> : <>{t.search.noCombination} — <em className="text-brick">{t.search.yet}</em>.</>}</p>
+                    <p className="mt-3 max-w-[480px] text-sm leading-6 text-ink/60">{t.search.emptyHelp}</p>
+                  </div>
+                  <div className="border-l-2 border-brick pl-5 text-sm leading-6 text-ink/65">
+                    <p className="stamp !text-[10px] text-trust">SOURCE COVERAGE · LIVE</p>
+                    <p className="mt-2">This locality is being watched for verified inventory. Fresh records appear only after source review and consent checks.</p>
+                    <p className="mt-4 stamp !text-[10px] text-ink/55">NEXT STEP · broaden the brief or save the search</p>
+                  </div>
+                </div>
+                <div className="relative mt-8 flex flex-wrap gap-2 border-t border-ink/12 pt-6">
                   {trending.map((t) => (
-                    <button key={t} onClick={clearFilters} className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick">{t}</button>
+                    <button key={t} onClick={clearFilters} className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick">Try {t}</button>
                   ))}
                 </div>
-                <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <div className="relative mt-7 flex flex-col gap-3 sm:flex-row">
                   <button onClick={() => void saveSearch()} disabled={savingSearch} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">{savingSearch ? "…" : t.search.saveSearch}</button>
                   <Link href="/guide" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-brick">{t.search.readGuides} <ArrowUpRight size={13} /></Link>
+                  <Link href="/requirements/" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-ink/70">Tell us what you need <ArrowUpRight size={13} /></Link>
                 </div>
               </div>
             )}

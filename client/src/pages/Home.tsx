@@ -3,7 +3,7 @@
    Magic-UI-style (NumberTicker, BorderBeam, Shimmer, TiltCard, WordReveal, Marquee),
    shadcn/ui (Tabs, Accordion), 21st.dev patterns (bento, testimonial rails),
    OpenStreetMap-sourced coordinates for every locality. */
-import { ArrowDown, ArrowUpRight, Compass, Quote, Search, ShieldCheck, Timer, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Compass, Search, ShieldCheck, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,15 +22,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const tickerItems = ["Paldi", "Navrangpura", "Thaltej", "Bopal", "Satellite", "Ambawadi", "Vastrapur", "Maninagar", "Gulbai Tekra", "Sindhu Bhavan"];
-
-const testimonials = [
-  { quote: "The freshness stamps changed how I shortlisted. I stopped calling about homes that were already gone.", name: "Kinjal S.", role: "Bought in Paldi" },
-  { quote: "First portal where the RERA number was on the page, not behind a form.", name: "Rohan M.", role: "Bought in Thaltej" },
-  { quote: "Masked contact actually works. Zero spam calls in three months of searching.", name: "Devanshi P.", role: "Renting in Navrangpura" },
-  { quote: "As a broker, the verification badge earns me trust I used to spend weeks building.", name: "Nivasa Partners", role: "Verified partner" },
-  { quote: "The locality notes read like a friend who lives there wrote them.", name: "Arjun K.", role: "Exploring Bopal" },
-  { quote: "I chose the neighbourhood first, exactly like the site told me to. No regrets.", name: "Sana V.", role: "Bought in Satellite" },
-];
 
 const faqs = [
   { q: "How is every listing RERA-verified?", a: "Each listing is checked against the Gujarat RERA registry at publication — registration number, promoter, and completion status — and re-checked on every meaningful update. The registration number is displayed on the listing page, never behind a form." },
@@ -323,40 +314,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= TESTIMONIAL RAILS ================= */}
-      <section className="overflow-hidden border-b border-ink/12 py-20 md:py-28">
-        <div className="container mb-12">
+      {/* ================= FEEDBACK / EVIDENCE ================= */}
+      <section className="border-b border-ink/12 bg-sand/60 py-20 md:py-28">
+        <div className="container grid gap-10 md:grid-cols-[0.8fr_1.2fr] md:items-end">
           <Reveal>
-            <p className="kicker text-brick">Word on the street</p>
-            <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">Trust, <em className="text-brick">earned</em> and repeated.</h2>
-            <p className="stamp mt-4 !text-[10px] text-ink/60">Illustrative voices for this concept preview — real reviews arrive with the live platform.</p>
+            <p className="kicker text-brick">Signal, not theatre</p>
+            <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">Trust is measured by the <em className="text-brick">trail.</em></h2>
           </Reveal>
-        </div>
-        <div className="space-y-5">
-          <Marquee speed={46}>
-            {testimonials.slice(0, 3).map((t) => (
-              <blockquote key={t.name} className="mx-2.5 w-[380px] shrink-0 border border-ink/12 bg-card p-6">
-                <Quote size={16} className="text-brick" />
-                <p className="mt-3 text-sm leading-6 text-ink/75">"{t.quote}"</p>
-                <footer className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3">
-                  <span className="text-sm font-semibold">{t.name}</span>
-                  <span className="stamp !text-[10px] text-trust">{t.role}</span>
-                </footer>
-              </blockquote>
-            ))}
-          </Marquee>
-          <Marquee speed={52} reverse>
-            {testimonials.slice(3).map((t) => (
-              <blockquote key={t.name} className="mx-2.5 w-[380px] shrink-0 border border-ink/12 bg-card p-6">
-                <Quote size={16} className="text-brick" />
-                <p className="mt-3 text-sm leading-6 text-ink/75">"{t.quote}"</p>
-                <footer className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3">
-                  <span className="text-sm font-semibold">{t.name}</span>
-                  <span className="stamp !text-[10px] text-trust">{t.role}</span>
-                </footer>
-              </blockquote>
-            ))}
-          </Marquee>
+          <Reveal delay={100} className="border-l-2 border-brick pl-6 md:pl-8">
+            <p className="max-w-2xl text-[15px] leading-7 text-ink/70">We do not publish invented reviews, ratings, or partner praise. The useful signal is already on the page: source, freshness, RERA context, and a clear next action.</p>
+            <div className="mt-7 flex flex-wrap gap-3"><Link href="/guide/" className="inline-flex items-center gap-2 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link><Link href="/review/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link></div>
+          </Reveal>
         </div>
       </section>
 

@@ -155,12 +155,12 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 
 ## Addressbox Agent Dashboard Parity
 
-- [ ] Inspect the provided Addressbox agent dashboard in Chrome and inventory its broker-facing features and states.
-- [ ] Compare the observed workflow with Architech’s current broker dashboard, leads, listings, media, and moderation surfaces.
-- [ ] Define secure role, organization-scope, persistence, and external-service activation gates for missing capabilities.
-- [ ] Implement the missing compatible agent functionality without copying Addressbox branding, text, or protected assets.
-- [ ] Verify agent flows, authorization boundaries, responsive UX, accessibility, and build quality.
-- [ ] Save a checkpoint and report remaining live-service requirements.
+- [x] Inspect the provided Addressbox agent dashboard in Chrome and inventory its broker-facing features and states.
+- [x] Compare the observed workflow with Architech’s current broker dashboard, leads, listings, media, and moderation surfaces.
+- [x] Define secure role, organization-scope, persistence, and external-service activation gates for missing capabilities.
+- [x] Implement the missing compatible agent functionality without copying Addressbox branding, text, or protected assets.
+- [x] Verify agent flows, authorization boundaries, responsive UX, accessibility, and build quality.
+- [x] Save a checkpoint and report remaining live-service requirements.
 
 
 ## Attached Hydration Mismatch
@@ -169,4 +169,13 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Verify whether `bis_skin_checked` is extension-injected markup or application-generated markup.
 - [x] Fix the stale `/dashboard/` route with a server-side redirect while preserving the existing `/broker/dashboard/` route.
 - [x] Verify `/dashboard/`, `/broker/dashboard/`, console output, responsive rendering, and regression checks.
-- [ ] Save a corrected checkpoint and report any browser-extension limitation separately.
+- [x] Save a corrected checkpoint and report any browser-extension limitation separately.
+
+## Addressbox Full Functionality Parity Expansion
+
+- [x] Audit all public Addressbox routes, navigation, search, content, conversion, and listing flows.
+- [x] Re-check authenticated dashboard, profile, requirements, subscriptions, inventory, AI, auction, tender, shortlist, contacted, and post-property flows.
+- [x] Map every capability to an Architech route, reusable domain contract, or explicit external-service gate.
+- [x] Implement safe missing functionality without copying Addressbox branding, protected assets, or unverifiable claims.
+- [x] Verify public and broker routes, mobile behavior, accessibility, SEO safety, authorization boundaries, and error states.
+- [ ] Save a checkpoint and report the remaining live-service requirements.

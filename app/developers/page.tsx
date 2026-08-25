@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import DeveloperIndexPage from "@/pages/DeveloperIndexPage";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Ahmedabad builders and projects — Architech",
   description: "Browse Architech’s evidence-led Ahmedabad developer and project index, with locality context, freshness signals, and source trails.",
