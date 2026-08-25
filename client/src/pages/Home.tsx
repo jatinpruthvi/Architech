@@ -126,23 +126,27 @@ export default function Home() {
 
       {/* ================= HERO ================= */}
       <section className="relative min-h-[100svh] overflow-hidden bg-night text-cream">
-        <div className="grain absolute inset-0">
+        <div className="grain !absolute inset-0">
           <Pic name="hero-ahmedabad" alt="Brick architecture of Ahmedabad glowing at golden hour" className="hero-zoom h-full w-full object-cover opacity-75" sizes="100vw" eager />
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(21,17,13,0.92)_0%,rgba(21,17,13,0.55)_48%,rgba(21,17,13,0.15)_100%)]" />
-        <div className="relative z-10 container flex min-h-[100svh] flex-col justify-end pb-16 pt-36 md:pb-20">
-          <p className="kicker fade-rise text-ember" style={{ "--d": "150ms" } as React.CSSProperties}>{t.hero.kicker}</p>
-          <h1 className="display mt-8 text-[clamp(52px,9.2vw,132px)] text-cream">
-            <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="text-ember">{t.hero.h1em}</em></span></span>
-            <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
-          </h1>
-          <p className="fade-rise mt-8 max-w-[460px] text-[15px] leading-7 text-cream/70 md:text-base" style={{ "--d": "560ms" } as React.CSSProperties}>
-            {t.hero.sub}
-          </p>
-          <div className="mt-10">
-            <HeroSearch />
+        <div className="relative z-10 container flex min-h-[100svh] flex-col justify-start pb-14 pt-20 md:pb-16 md:pt-[clamp(8rem,13vh,11rem)]">
+          <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
+            <p className="kicker fade-rise text-ember" style={{ "--d": "150ms" } as React.CSSProperties}>{t.hero.kicker}</p>
+            <h1 className="display mt-7 text-[clamp(52px,9.2vw,132px)] leading-[0.92] text-cream md:mt-8">
+              <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="text-ember">{t.hero.h1em}</em></span></span>
+              <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
+            </h1>
+            <p className="fade-rise mt-7 max-w-[600px] text-[15px] leading-7 text-cream/70 md:mt-8 md:text-base" style={{ "--d": "560ms" } as React.CSSProperties}>
+              {t.hero.sub}
+            </p>
+            <div className="fade-rise mt-8 w-full max-w-[760px] border border-cream/20 bg-night/30 p-2.5 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-sm md:mt-9 md:p-3" style={{ "--d": "700ms" } as React.CSSProperties}>
+              <div className="mx-auto flex justify-center">
+                <HeroSearch />
+              </div>
+            </div>
           </div>
-          <div className="fade-rise mt-14 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-6" style={{ "--d": "850ms" } as React.CSSProperties}>
+          <div className="fade-rise mt-12 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-6 md:mt-14" style={{ "--d": "850ms" } as React.CSSProperties}>
             <div className="flex gap-10 md:gap-16">
               <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={281} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
               <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={14} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>

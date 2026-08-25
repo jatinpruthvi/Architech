@@ -188,3 +188,12 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Remove the mismatching hidden text while preserving search, motion, accessibility, and SEO content.
 - [x] Verify the homepage in Chrome, including clean console, mobile layout, build, accessibility, and regression checks.
 - [ ] Save a corrected checkpoint and report any extension-only limitation separately.
+
+
+## Centered Hero Search Refinement
+
+- [x] Inspect the current first-viewport hero composition and compare the intended search prominence with Addressbox’s reference behavior.
+- [x] Center the search bar as the primary initial-viewport action without weakening the Ahmedabad editorial headline or trust cues.
+- [x] Preserve deterministic hydration, keyboard search, intent tabs, motion, contrast, and responsive touch sizing.
+- [x] Verify desktop/mobile screenshots, search interaction, accessibility, build, and regression checks.
+- [ ] Save a checkpoint and report the visual change.
