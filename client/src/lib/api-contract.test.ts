@@ -146,7 +146,7 @@ describe("public API contract", () => {
     const created = await brokerDraftsPost(new Request("http://example.com/api/broker/listings", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title: "Media attach draft", localitySlug: "paldi", priceInr: 15000000, bhk: 3, areaSqft: 1500, availability: "Ready to move", description: "A draft used to test media attachment through the API contract.", mediaRightsConfirmed: true }),
+      body: JSON.stringify({ title: "Media attach draft", localitySlug: "paldi", priceInr: 15000000, bhk: 3, areaSqft: 1500, propertyType: "APARTMENT", availability: "READY_TO_MOVE", description: "A draft used to test media attachment through the API contract.", mediaRightsConfirmed: true }),
     }));
     const { draft } = await json(created) as { draft: { id: string } };
     const response = await draftMediaPost(new Request("http://example.com/api/broker/listings/medium/media", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mediaId: "media_demo_1" }) }), { params: Promise.resolve({ draftId: draft.id }) });

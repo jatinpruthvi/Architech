@@ -21,6 +21,7 @@ export type SignedMediaUpload = {
   sizeBytes: number;
   uploadUrl: string;
   publicUrl: string;
+  storageProvider?: "memory" | "cloudflare-r2";
   requiredHeaders: Record<string, string>;
   expiresAt: string;
   exifPolicy: "strip-before-publication";

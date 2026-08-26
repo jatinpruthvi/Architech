@@ -1,6 +1,7 @@
 import "server-only";
 import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
 import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
+import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
@@ -31,6 +32,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       priceInr: draft.priceInr,
       bhk: draft.bhk,
       areaSqft: draft.areaSqft,
+      propertyType: draft.propertyType,
       availability: draft.availability,
       description: draft.description,
       cityId: city.id,
@@ -44,7 +46,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       lifecycle: draft.status as string,
       verification: "DEMO",
       translationStatus: "ENGLISH_ONLY",
-      propertyType: "APARTMENT",
+      propertyType: draft.propertyType,
       priceInr: draft.priceInr,
       priceLabel: `₹${(draft.priceInr / 10000000).toFixed(2)} Cr`,
       bhk: draft.bhk,
@@ -152,7 +154,8 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     priceInr: Number(row.priceInr ?? 0),
     bhk: Number(row.bhk ?? 0),
     areaSqft: Number(row.areaSqft ?? 0),
-    availability: String(row.availability ?? ""),
+    availability: normalizeAvailability(row.availability) ?? "READY_TO_MOVE",
+    propertyType: isPropertyTypeCode(row.propertyType) ? row.propertyType as PropertyTypeCode : "APARTMENT",
     description: String(row.description ?? ""),
     mediaRightsConfirmed: true,
     organizationId: String(row.brokerOrgId ?? ""),

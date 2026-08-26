@@ -1,9 +1,10 @@
 /* Pure, testable multi-select filter + sort logic for search. */
 import { localityMatchesToken, localityNameMatchesToken } from "@/lib/search/aliases";
+import type { AvailabilityCode, PropertyTypeCode } from "@/lib/listing-vocabulary";
 
 export type MarketCategory = "all" | "residential" | "commercial" | "pg" | "plot" | "land" | "auction";
 export type MarketIntent = "buy" | "rent";
-export type FilterableProperty = { bhk: number; priceNum: number; badge: string; category?: Exclude<MarketCategory, "all">; transaction?: MarketIntent };
+export type FilterableProperty = { bhk: number; priceNum: number; badge: string; category?: Exclude<MarketCategory, "all">; transaction?: MarketIntent; propertyType?: PropertyTypeCode; availability?: AvailabilityCode };
 
 export type FilterDef<T extends FilterableProperty> = { id: string; label: string; fn: (p: T) => boolean };
 
@@ -13,6 +14,12 @@ export function makeFilters<T extends FilterableProperty>(): FilterDef<T>[] {
     { id: "3bhk", label: "3 BHK +", fn: (p) => p.bhk >= 3 },
     { id: "under15", label: "Under ₹1.5 Cr", fn: (p) => p.priceNum < 15_000_000 },
     { id: "rera", label: "RERA verified", fn: (p) => p.badge === "RERA verified" },
+    { id: "type-apartment", label: "Apartment / flat", fn: (p) => p.propertyType === "APARTMENT" },
+    { id: "type-villa", label: "Villa", fn: (p) => p.propertyType === "VILLA" },
+    { id: "type-rowhouse", label: "Rowhouse", fn: (p) => p.propertyType === "ROWHOUSE" },
+    { id: "availability-ready", label: "Ready to move", fn: (p) => p.availability === "READY_TO_MOVE" },
+    { id: "availability-new", label: "New launch", fn: (p) => p.availability === "NEW_LAUNCH" },
+    { id: "availability-resale", label: "Resale", fn: (p) => p.availability === "RESALE" },
   ];
 }
 

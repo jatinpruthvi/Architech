@@ -1,5 +1,6 @@
 import { demoBrokerSession, requirePermission, type AuthSession } from "@/lib/auth/roles";
 import { getLocalityBySlug } from "@/lib/repositories";
+import { isAvailabilityCode, isPropertyTypeCode, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 
 export type BrokerProfileInput = {
   organizationName: string;
@@ -18,7 +19,8 @@ export type ListingDraftInput = {
   priceInr: number;
   bhk: number;
   areaSqft: number;
-  availability: string;
+  propertyType: PropertyTypeCode;
+  availability: AvailabilityCode;
   description: string;
   reraNumber?: string;
   mediaRightsConfirmed: boolean;
@@ -74,7 +76,8 @@ export function validateListingDraft(input: Partial<ListingDraftInput>, session:
   if (!Number.isFinite(input.priceInr) || Number(input.priceInr) <= 0) errors.push("Price must be a positive INR value.");
   if (!Number.isFinite(input.bhk) || Number(input.bhk) < 1) errors.push("BHK must be at least 1.");
   if (!Number.isFinite(input.areaSqft) || Number(input.areaSqft) < 150) errors.push("Area must be at least 150 sq ft.");
-  if (!input.availability || input.availability.trim().length < 3) errors.push("Availability/status is required.");
+  if (!isPropertyTypeCode(input.propertyType)) errors.push("Choose a reviewed property type.");
+  if (!isAvailabilityCode(input.availability)) errors.push("Choose a reviewed availability status.");
   if (!input.description || input.description.trim().length < 30) errors.push("Description must be at least 30 characters.");
   if (!input.mediaRightsConfirmed) errors.push("Media rights confirmation is required before review.");
   return errors;

@@ -1,5 +1,6 @@
 import type { Locality } from "@/lib/localities";
 import type { Property } from "@/lib/properties";
+import { isPropertyTypeCode, labelForAvailability, normalizeAvailability, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 
 type DecimalLike = { toString(): string } | string | number | null | undefined;
 
@@ -100,9 +101,9 @@ export function dbListingToProperty(row: DbListingRow): Property {
   const category = ["residential", "commercial", "pg", "plot", "land", "auction"].includes(row.category ?? "")
     ? row.category as Property["category"]
     : "residential";
-  const subtype = ["Flat/Apartment", "Villa", "Office", "Shop", "Plot", "Land", "PG/Co-living", "Bank Auction"].includes(row.propertyType ?? "")
-    ? row.propertyType as Property["subtype"]
-    : "Flat/Apartment";
+  const propertyType: PropertyTypeCode = isPropertyTypeCode(row.propertyType) ? row.propertyType : "APARTMENT";
+  const availability: AvailabilityCode = normalizeAvailability(row.availability) ?? "READY_TO_MOVE";
+  const subtype: Property["subtype"] = propertyType === "VILLA" ? "Villa" : propertyType === "PLOT" ? "Plot" : "Flat/Apartment";
   return {
     id: row.stableId || row.slug,
     title: row.title,
@@ -112,7 +113,7 @@ export function dbListingToProperty(row: DbListingRow): Property {
     price: row.priceLabel,
     priceNum: row.priceInr,
     pricePerSqft: row.pricePerSqft ?? "Rate on request",
-    meta: `${bhk} BHK · ${row.availability ?? "Available"}`,
+    meta: `${bhk} BHK · ${labelForAvailability(availability)}`,
     bhk,
     area: area ? `${area.toLocaleString("en-IN")} sq ft` : "Area on request",
     areaNum: area,
@@ -120,6 +121,8 @@ export function dbListingToProperty(row: DbListingRow): Property {
     badge: badgeFromVerification(row.verification),
     status: freshnessLabel(row.meaningfulUpdatedAt),
     note: row.description,
+    propertyType,
+    availability,
     transaction: row.transactionType?.toUpperCase() === "RENT" ? "rent" : "buy",
     category,
     subtype,

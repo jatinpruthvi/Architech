@@ -18,7 +18,7 @@ import MarketDirectory from "../components/architech/MarketDirectory";
 import useTitle from "../hooks/useTitle";
 import { getListings, getLocalities } from "@/lib/repositories";
 import { useLang } from "@/contexts/LangContext";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const tickerItems = ["Paldi", "Navrangpura", "Thaltej", "Bopal", "Satellite", "Ambawadi", "Vastrapur", "Maninagar", "Gulbai Tekra", "Sindhu Bhavan"];
@@ -61,6 +61,8 @@ function HeroSearch() {
             <TabsTrigger key={v} value={v} className="rounded-none border-0 px-7 py-3 stamp !text-[11px] font-semibold text-cream/60 data-[state=active]:bg-brick data-[state=active]:text-cream data-[state=active]:shadow-none">{l}</TabsTrigger>
           ))}
         </TabsList>
+        <TabsContent value="buy" className="hidden" aria-hidden="true" />
+        <TabsContent value="rent" className="hidden" aria-hidden="true" />
       </Tabs>
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}

@@ -41,7 +41,7 @@ export const strings = {
       title1: "in", cityName: "Ahmedabad.", home: "home", homes: "homes",
       filter: "Combine", clearAll: "Clear all", sort: "Sort", sortHomes: "Sort homes",
       sortFresh: "Freshest first", sortAsc: "Price — low to high", sortDesc: "Price — high to low",
-      filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "Under ₹1.5 Cr", rera: "RERA verified" } as Record<string, string>,
+      filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "Under ₹1.5 Cr", rera: "RERA verified", "type-apartment": "Apartment / flat", "type-villa": "Villa", "type-rowhouse": "Rowhouse", "availability-ready": "Ready to move", "availability-new": "New launch", "availability-resale": "Resale" } as Record<string, string>,
       filtersGroup: "Filters (combinable)", kicker: "Search", clearSearch: "Clear search", filtersButton: "Filters", filterHomes: "Filter homes",
       showHomes: "Show homes", map: "Map", list: "List", updating: "Updating results…", allHomes: "All homes",
       demoFixtures: "Demo fixtures · updated daily in production", noHomesYet: "No homes match", noCombination: "Nothing matches that combination", yet: "yet",
@@ -123,7 +123,7 @@ export const strings = {
     search: {
       title1: "—", cityName: "अहमदाबाद में।", home: "घर", homes: "घर", filter: "जोड़ें", clearAll: "सब हटाएँ", sort: "क्रम", sortHomes: "घरों का क्रम चुनें",
       sortFresh: "सबसे ताज़ा पहले", sortAsc: "क़ीमत — कम से ज़्यादा", sortDesc: "क़ीमत — ज़्यादा से कम",
-      filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "₹1.5 करोड़ से कम", rera: "RERA सत्यापित" } as Record<string, string>,
+      filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "₹1.5 करोड़ से कम", rera: "RERA सत्यापित", "type-apartment": "फ़्लैट / अपार्टमेंट", "type-villa": "विला", "type-rowhouse": "रोहहाउस", "availability-ready": "रहने के लिए तैयार", "availability-new": "नया लॉन्च", "availability-resale": "रीसेल" } as Record<string, string>,
       filtersGroup: "फ़िल्टर (जोड़े जा सकते हैं)", kicker: "खोज", clearSearch: "खोज हटाएँ", filtersButton: "फ़िल्टर", filterHomes: "घर फ़िल्टर करें",
       showHomes: "घर दिखाएँ", map: "नक़्शा", list: "सूची", updating: "परिणाम अपडेट हो रहे हैं…", allHomes: "सभी घर",
       demoFixtures: "डेमो डेटा · प्रोडक्शन में रोज़ अपडेट", noHomesYet: "कोई घर मेल नहीं खाता", noCombination: "इस संयोजन से कुछ नहीं मिला", yet: "अभी", withFilters: "इन फ़िल्टर के साथ",
