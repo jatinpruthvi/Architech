@@ -259,11 +259,20 @@ a { color: inherit; text-decoration: none; }
 .btn-sweep::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--brick-deep); transform: translateY(101%); transition: transform 360ms cubic-bezier(0.23, 1, 0.32, 1); }
 .btn-sweep:hover::before { transform: translateY(0); }
 
-/* logo mark: ink square with arch cutout */
-.arch-mark { position: relative; background: var(--ink); }
+/* logo mark: offset architectural planes forming an A with a clay doorway notch */
+.arch-mark { position: relative; overflow: hidden; background: var(--ink); box-shadow: inset 0 0 0 1px rgb(255 243 222 / 0.12); }
+.arch-mark::before { content: ""; position: absolute; inset: 8%; border: 1px solid rgb(255 243 222 / 0.22); transform: translate(3px, -3px); }
 .dark .arch-mark { background: #2a221a; }
-.arch-mark-arch { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 56%; height: 72%; background: var(--brick); border-radius: 999px 999px 0 0; transition: background 250ms ease; }
-.group:hover .arch-mark-arch { background: var(--ember); }
+.arch-mark-arch { position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%); width: 70%; height: 78%; background: var(--brick); clip-path: polygon(0 100%, 0 29%, 50% 0, 100% 29%, 100% 100%, 73% 100%, 73% 52%, 50% 31%, 27% 52%, 27% 100%); transition: background 250ms ease, transform 250ms cubic-bezier(0.23, 1, 0.32, 1); }
+.group:hover .arch-mark-arch { background: var(--ember); transform: translateX(-50%) translateY(-2px); }
+
+/* atlas surface: a branded cartographic layer rather than an empty map panel */
+.atlas-map { background: var(--sand); }
+.atlas-map::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(22deg, transparent 48%, rgb(105 82 55 / 0.12) 49%, transparent 50%), linear-gradient(90deg, rgb(105 82 55 / 0.09) 1px, transparent 1px), linear-gradient(0deg, rgb(105 82 55 / 0.09) 1px, transparent 1px); background-size: 180px 140px, 42px 42px, 42px 42px; mix-blend-mode: multiply; opacity: 0.7; z-index: 1; }
+.atlas-map::after { content: "23°03′ N  ·  72°58′ E  /  AHMEDABAD ATLAS"; position: absolute; left: 1.25rem; top: 1.25rem; z-index: 2; pointer-events: none; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; opacity: 0.62; }
+.atlas-map > div:first-child { z-index: 0; }
+.atlas-map .maplibregl-canvas { filter: sepia(0.2) saturate(0.7) contrast(0.92); }
+
 
 .editorial-shadow { box-shadow: var(--shadow-editorial); }
 
@@ -274,7 +283,7 @@ a { color: inherit; text-decoration: none; }
   .border-beam::before, .shimmer-btn::after { animation: none; display: none; }
   .tilt-card { transition: none; }
   .scroll-reveal { opacity: 1; transform: none; transition: none; }
-  .motion-lift, .img-hover img, .btn-sweep::before, .link-rail::after { transition: none; }
+  .motion-lift, .img-hover img, .btn-sweep::before, .link-rail::after, .arch-mark-arch { transition: none; }
   .skeleton { animation: none; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
@@ -313,4 +322,70 @@ a { color: inherit; text-decoration: none; }
 
 .dark .arch-map-marker {
   border-color: color-mix(in srgb, var(--ember) 55%, transparent);
+}
+
+
+/* ---------- Broker operating desk ---------- */
+/* The workspace is an architectural operating desk: layered plaster panels,
+   stepped grouping, brick rules, and mono evidence stamps replace generic admin repetition. */
+.desk-page main { background-image: linear-gradient(90deg, transparent 0 92%, rgb(168 67 42 / 0.035) 92% 92.15%, transparent 92.15%); }
+.desk-header { position: relative; overflow: hidden; }
+.desk-header::after { content: "AHMEDABAD / FIELD OFFICE / 2026"; position: absolute; right: clamp(20px, 4vw, 48px); bottom: 1rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .3; }
+.desk-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.desk-rule .kicker::before { width: 42px; }
+.desk-rule-detail { color: color-mix(in srgb, var(--ink) 48%, transparent); }
+.desk-rule-trust { color: var(--trust); }
+.desk-command-spread, .desk-catalogue { position: relative; }
+.desk-command-spread::before, .desk-catalogue::before { content: ""; position: absolute; top: 0; right: 0; width: 10rem; height: 10rem; border-top: 1px solid rgb(168 67 42 / .24); border-right: 1px solid rgb(168 67 42 / .24); pointer-events: none; }
+.desk-kpi { position: relative; min-height: 158px; overflow: hidden; transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) ease; }
+.desk-kpi::after { content: ""; position: absolute; right: -1.5rem; bottom: -2rem; width: 5rem; height: 5rem; border: 1px solid rgb(168 67 42 / .18); border-radius: 999px 999px 0 0; transform: rotate(-16deg); }
+.desk-kpi:hover { transform: translateY(-3px); box-shadow: 0 16px 30px rgb(50 30 16 / .08); }
+.desk-kpi-primary { min-height: 330px; background: linear-gradient(135deg, var(--card), color-mix(in srgb, var(--sand) 30%, var(--card))); }
+.desk-kpi-primary::before { content: "SIGNAL"; position: absolute; right: 1.5rem; top: 1.5rem; color: var(--brick); font-family: var(--font-mono); font-size: 9px; letter-spacing: .18em; opacity: .65; }
+.desk-stepwell { position: relative; padding-left: 1.25rem; border-left: 1px solid rgb(168 67 42 / .25); }
+.desk-stepwell::before { content: ""; position: absolute; left: -1px; top: 0; width: 1px; height: 3rem; background: var(--brick); }
+.desk-action { min-height: 66px; }
+.desk-action:nth-child(3n) { background: color-mix(in srgb, var(--sand) 28%, var(--card)); }
+.desk-trust-panel { position: relative; overflow: hidden; }
+.desk-trust-panel::after { content: "NIVASA / TRUST"; position: absolute; right: 1.5rem; bottom: 1.5rem; color: var(--ember); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .6; }
+.desk-empty { position: relative; }
+.desk-empty::before { content: "SOURCE GATE"; position: absolute; right: 1rem; top: 1rem; color: var(--brick); font-family: var(--font-mono); font-size: 9px; letter-spacing: .15em; opacity: .48; }
+.desk-filter { box-shadow: inset 5px 0 0 color-mix(in srgb, var(--brick) 24%, transparent); }
+.desk-ledger-intro { position: relative; }
+.desk-table-ledger thead { border-top: 2px solid color-mix(in srgb, var(--brick) 42%, transparent); }
+.desk-table-ledger tbody tr:hover { background: color-mix(in srgb, var(--sand) 28%, transparent); }
+.desk-gate { box-shadow: inset 6px 0 0 color-mix(in srgb, var(--brick) 34%, transparent); }
+.desk-capability { position: relative; min-height: 210px; overflow: hidden; transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) ease; }
+.desk-capability::after { content: "AI / CONTRACT"; position: absolute; right: 1.5rem; bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; opacity: .35; }
+.desk-capability:hover { transform: translateY(-4px); box-shadow: 0 18px 34px rgb(50 30 16 / .1); }
+.desk-page-ai main { background-image: linear-gradient(135deg, transparent 0 88%, rgb(168 67 42 / .05) 88% 88.2%, transparent 88.2%); }
+.desk-page-ai .desk-capability:first-of-type { min-height: 250px; background: linear-gradient(115deg, color-mix(in srgb, var(--sand) 38%, var(--card)), var(--card)); }
+.desk-page-leads main, .desk-page-inquiry main, .desk-page-contacted main { background-image: repeating-linear-gradient(0deg, transparent 0 45px, rgb(27 22 18 / .025) 45px 46px); }
+.desk-page-my-listings main, .desk-page-newspaper main, .desk-page-agent-listings main, .desk-page-owner-listings main { background-image: linear-gradient(90deg, transparent 0 78%, rgb(168 67 42 / .045) 78% 78.15%, transparent 78.15%); }
+
+@media (max-width: 767px) {
+  .desk-header::after { display: none; }
+  .desk-stepwell { padding-left: .85rem; }
+  .desk-kpi-primary { min-height: 270px; }
+  .desk-kpi { min-height: 142px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-kpi, .desk-capability { transition: none; }
+}
+
+
+/* Listing draft as a source-trail dossier: the form reads like a moderated evidence packet. */
+.listing-dossier { background-image: linear-gradient(90deg, transparent 0 82%, rgb(168 67 42 / .035) 82% 82.15%, transparent 82.15%); }
+.listing-dossier-hero { position: relative; overflow: hidden; }
+.listing-dossier-hero::after { content: "SOURCE / RIGHTS / PLACE / PRICE"; position: absolute; right: clamp(20px, 4vw, 48px); bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .3; }
+.listing-dossier-body { position: relative; }
+.listing-dossier-body::before { content: "ARCHITECH / MODERATION PACKET"; position: absolute; left: clamp(20px, 4vw, 48px); top: 2rem; color: var(--brick); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .45; writing-mode: vertical-rl; transform: rotate(180deg); }
+.listing-packet { box-shadow: 12px 12px 0 color-mix(in srgb, var(--sand) 42%, transparent); }
+.listing-dossier-aside { position: relative; box-shadow: inset 5px 0 0 color-mix(in srgb, var(--trust) 32%, transparent); }
+.listing-dossier-aside::after { content: "AHMEDABAD / PACKET 01"; position: absolute; right: 1.5rem; bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; opacity: .4; }
+.listing-field-note { min-height: 40px; }
+@media (max-width: 767px) {
+  .listing-dossier-hero::after, .listing-dossier-body::before { display: none; }
+  .listing-packet { box-shadow: 6px 6px 0 color-mix(in srgb, var(--sand) 42%, transparent); }
 }

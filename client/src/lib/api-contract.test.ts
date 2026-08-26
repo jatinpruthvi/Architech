@@ -13,7 +13,7 @@ import { GET as healthGet } from "../../../app/api/observability/health/route";
 import { GET as sloGet } from "../../../app/api/observability/slo/route";
 import { GET as statusGet } from "../../../app/api/observability/status/route";
 import { GET as authorityAssetsGet, POST as authorityAssetsPost } from "../../../app/api/authority/assets/route";
-import { GET as authorityOutreachGet, POST as authorityOutreachPost } from "../../../app/api/authority/outreach/route";
+import { POST as authorityOutreachPost } from "../../../app/api/authority/outreach/route";
 import { GET as brokerDraftsGet, POST as brokerDraftsPost } from "../../../app/api/broker/listings/route";
 import { POST as draftMediaPost } from "../../../app/api/broker/listings/[draftId]/media/route";
 import { POST as errorsPost } from "../../../app/api/observability/errors/route";
@@ -116,6 +116,11 @@ describe("public API contract", () => {
     expect((body as { endpoints: { health: string } }).endpoints.health).toBe("/api/observability/health");
   });
 
+  it("GET /api/broker/listings rejects an anonymous request", async () => {
+    const response = await brokerDraftsGet(new Request("http://example.com/api/broker/listings?mode=none"));
+    expect(response.status).toBe(401);
+  });
+
   it("GET /api/broker/listings returns the broker's drafts", async () => {
     const response = await brokerDraftsGet();
     expect(response.status).toBe(200);
@@ -141,7 +146,7 @@ describe("public API contract", () => {
     const created = await brokerDraftsPost(new Request("http://example.com/api/broker/listings", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title: "Media attach draft", localitySlug: "paldi", priceInr: 15000000, bhk: 3, areaSqft: 1500, availability: "Ready to move", description: "A draft used to test media attachment through the API contract.", mediaRightsConfirmed: true }),
+      body: JSON.stringify({ title: "Media attach draft", localitySlug: "paldi", priceInr: 15000000, bhk: 3, areaSqft: 1500, propertyType: "APARTMENT", availability: "READY_TO_MOVE", description: "A draft used to test media attachment through the API contract.", mediaRightsConfirmed: true }),
     }));
     const { draft } = await json(created) as { draft: { id: string } };
     const response = await draftMediaPost(new Request("http://example.com/api/broker/listings/medium/media", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mediaId: "media_demo_1" }) }), { params: Promise.resolve({ draftId: draft.id }) });

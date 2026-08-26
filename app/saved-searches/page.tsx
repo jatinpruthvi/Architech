@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import SavedSearches from "@/pages/SavedSearches";
 
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Saved searches",
   description: "Searches you saved on Architech; we notify you when matching homes arrive.",

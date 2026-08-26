@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { authorizeRequest, isAuthorized } from "@/lib/auth/guards";
 import { moderateMediaForServer } from "@/lib/persistence/media-store";
 import type { MediaModerationStatus } from "@/lib/media/upload";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request, { params }: { params: Promise<{ uploadId: string }> }) {
+  const access = await authorizeRequest(request, { permission: "media.moderation.write" });
+  if (!isAuthorized(access)) return access.response;
   const { uploadId } = await params;
   const body = await request.json().catch(() => ({}));
   const status = String(body.status ?? "APPROVED") as Exclude<MediaModerationStatus, "PENDING">;

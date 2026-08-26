@@ -4,7 +4,7 @@
 
 Architech is the architecture and implementation-planning repository for a premium India-focused real-estate discovery platform. It defines the product, user experience, technical stack, page-authority model, Google-first SEO system, AI-search readiness, broker operations, RERA verification, media pipeline, security posture, localization strategy, infrastructure, testing, and three-phase delivery plan.
 
-This repository is the **architecture source**, not the application source code.
+This repository is the **normative architecture, governance package, and working reference implementation**. The architecture and governance documents define the contracts; the Next.js application under `app/`, `client/`, `prisma/`, `seo/`, and `governance/` demonstrates those contracts and is the active implementation surface.
 
 ## 🚧 Live prototype (August 2026) — now on Next.js 16
 
@@ -27,7 +27,7 @@ Pages: Home (`/`), locality pages (`/buy/ahmedabad/{paldi|navrangpura|prahlad-na
 
 > All listings, statistics, testimonials, and RERA numbers in the prototype are **illustrative demo data**. The production build (Next.js 16, per this architecture) replaces them with verified sources.
 
- Engineering teams and AI coding systems should use it as the authoritative design reference before implementing production code.
+Engineering teams and AI coding systems should use the normative documents as the authoritative design reference, and inspect the working application when extending an already-implemented contract. Historical reviews are context only and are not active implementation instructions.
 
 > **Primary objective:** Build the best real-estate discovery experience in India while making every important public page useful, trustworthy, crawlable, indexable, fast, accessible, and understandable to Google and AI systems.
 
@@ -75,6 +75,8 @@ The active pick-one-item Phase 1 execution tracker is maintained in:
 ```text
 PHASE-1-IMPLEMENTATION-PLAN.md
 ```
+
+The current implementation and activation state is summarized in [`STATUS.md`](STATUS.md), and production indexability/provider gates are documented in [`docs/runtime-activation-gates.md`](docs/runtime-activation-gates.md).
 
 ### Required reading order
 

@@ -1,5 +1,7 @@
 import "server-only";
 import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
+import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
+import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
@@ -30,6 +32,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       priceInr: draft.priceInr,
       bhk: draft.bhk,
       areaSqft: draft.areaSqft,
+      propertyType: draft.propertyType,
       availability: draft.availability,
       description: draft.description,
       cityId: city.id,
@@ -43,20 +46,21 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       lifecycle: draft.status as string,
       verification: "DEMO",
       translationStatus: "ENGLISH_ONLY",
-      propertyType: "APARTMENT",
+      propertyType: draft.propertyType,
       priceInr: draft.priceInr,
       priceLabel: `₹${(draft.priceInr / 10000000).toFixed(2)} Cr`,
       bhk: draft.bhk,
       areaSqft: draft.areaSqft,
       availability: draft.availability,
+      brokerOrgId: draft.organizationId,
       cityId: city.id,
       localityId: locality.id,
     },
   });
 }
 
-export async function createListingDraftForServer(input: ListingDraftInput) {
-  const result = createListingDraft(input);
+export async function createListingDraftForServer(input: ListingDraftInput, session: AuthSession = demoBrokerSession) {
+  const result = createListingDraft(input, session);
   if (!result.ok) return result;
   if (isPrismaPersistence()) {
     const db = prisma();
@@ -68,12 +72,12 @@ export async function createListingDraftForServer(input: ListingDraftInput) {
   return result;
 }
 
-export async function submitListingForReviewForServer(draftId: string) {
-  const result = submitListingForReview(draftId);
+export async function submitListingForReviewForServer(draftId: string, session: AuthSession = demoBrokerSession) {
+  const result = submitListingForReview(draftId, session);
   if (!result.ok) return result;
   if (isPrismaPersistence()) {
     const db = prisma();
-    await db.listing.updateMany({ where: { stableId: result.draft.stableId }, data: { lifecycle: "IN_REVIEW" } });
+    await db.listing.updateMany({ where: { stableId: result.draft.stableId, brokerOrgId: session.organization?.id ?? result.draft.organizationId }, data: { lifecycle: "IN_REVIEW" } });
     await db.auditEvent.create({
       data: { action: "listing.review.submitted", entityType: "Listing", entityId: result.draft.stableId, metadata: { source: "api.broker.listings.submit.prisma" } },
     });
@@ -81,8 +85,8 @@ export async function submitListingForReviewForServer(draftId: string) {
   return result;
 }
 
-export async function moderateListingForServer(draftId: string, decision: ModerationDecision, reason: string) {
-  const result = moderateListing(draftId, decision, reason);
+export async function moderateListingForServer(draftId: string, decision: ModerationDecision, reason: string, session?: AuthSession) {
+  const result = moderateListing(draftId, decision, reason, session);
   if (!result.ok) return result;
   if (isPrismaPersistence()) {
     const db = prisma();
@@ -113,8 +117,8 @@ export async function listBrokerDraftsForServer(organizationId: string): Promise
 }
 
 /** Attach a media id to a broker draft, recording an audit event in prisma mode. */
-export async function attachMediaToDraftForServer(draftId: string, mediaId: string) {
-  const result = attachMediaToDraft(draftId, mediaId);
+export async function attachMediaToDraftForServer(draftId: string, mediaId: string, session: AuthSession = demoBrokerSession) {
+  const result = attachMediaToDraft(draftId, mediaId, session);
   if (result.ok && isPrismaPersistence()) {
     const db = prisma();
     await db.auditEvent.create({
@@ -125,8 +129,8 @@ export async function attachMediaToDraftForServer(draftId: string, mediaId: stri
 }
 
 /** Detach a media id from a broker draft, recording an audit event in prisma mode. */
-export async function detachMediaFromDraftForServer(draftId: string, mediaId: string) {
-  const result = detachMediaFromDraft(draftId, mediaId);
+export async function detachMediaFromDraftForServer(draftId: string, mediaId: string, session: AuthSession = demoBrokerSession) {
+  const result = detachMediaFromDraft(draftId, mediaId, session);
   if (result.ok && isPrismaPersistence()) {
     const db = prisma();
     await db.auditEvent.create({
@@ -137,8 +141,8 @@ export async function detachMediaFromDraftForServer(draftId: string, mediaId: st
 }
 
 /** List media ids attached to a broker draft. */
-export async function listDraftMediaForServer(draftId: string): Promise<string[]> {
-  return listDraftMediaIds(draftId);
+export async function listDraftMediaForServer(draftId: string, session: AuthSession = demoBrokerSession): Promise<string[]> {
+  return listDraftMediaIds(draftId, session);
 }
 
 function contractFromRow(row: Record<string, unknown>): ListingDraft {
@@ -150,7 +154,8 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     priceInr: Number(row.priceInr ?? 0),
     bhk: Number(row.bhk ?? 0),
     areaSqft: Number(row.areaSqft ?? 0),
-    availability: String(row.availability ?? ""),
+    availability: normalizeAvailability(row.availability) ?? "READY_TO_MOVE",
+    propertyType: isPropertyTypeCode(row.propertyType) ? row.propertyType as PropertyTypeCode : "APARTMENT",
     description: String(row.description ?? ""),
     mediaRightsConfirmed: true,
     organizationId: String(row.brokerOrgId ?? ""),

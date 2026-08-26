@@ -33,6 +33,7 @@ export async function createSignedMediaUploadForServer(input: MediaUploadInput) 
       ...result.upload,
       uploadUrl: signed.uploadUrl,
       publicUrl: signed.publicUrl,
+      storageProvider: signed.provider,
       requiredHeaders: signed.requiredHeaders,
       expiresAt: signed.expiresAt,
       auditTrail: [

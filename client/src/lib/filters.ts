@@ -1,7 +1,10 @@
 /* Pure, testable multi-select filter + sort logic for search. */
 import { localityMatchesToken, localityNameMatchesToken } from "@/lib/search/aliases";
+import type { AvailabilityCode, PropertyTypeCode } from "@/lib/listing-vocabulary";
 
-export type FilterableProperty = { bhk: number; priceNum: number; badge: string };
+export type MarketCategory = "all" | "residential" | "commercial" | "pg" | "plot" | "land" | "auction";
+export type MarketIntent = "buy" | "rent";
+export type FilterableProperty = { bhk: number; priceNum: number; badge: string; category?: Exclude<MarketCategory, "all">; transaction?: MarketIntent; propertyType?: PropertyTypeCode; availability?: AvailabilityCode };
 
 export type FilterDef<T extends FilterableProperty> = { id: string; label: string; fn: (p: T) => boolean };
 
@@ -11,10 +14,20 @@ export function makeFilters<T extends FilterableProperty>(): FilterDef<T>[] {
     { id: "3bhk", label: "3 BHK +", fn: (p) => p.bhk >= 3 },
     { id: "under15", label: "Under ₹1.5 Cr", fn: (p) => p.priceNum < 15_000_000 },
     { id: "rera", label: "RERA verified", fn: (p) => p.badge === "RERA verified" },
+    { id: "type-apartment", label: "Apartment / flat", fn: (p) => p.propertyType === "APARTMENT" },
+    { id: "type-villa", label: "Villa", fn: (p) => p.propertyType === "VILLA" },
+    { id: "type-rowhouse", label: "Rowhouse", fn: (p) => p.propertyType === "ROWHOUSE" },
+    { id: "availability-ready", label: "Ready to move", fn: (p) => p.availability === "READY_TO_MOVE" },
+    { id: "availability-new", label: "New launch", fn: (p) => p.availability === "NEW_LAUNCH" },
+    { id: "availability-resale", label: "Resale", fn: (p) => p.availability === "RESALE" },
   ];
 }
 
 /** AND-combines every active filter; empty selection = all homes. */
+export function applyMarket<T extends FilterableProperty>(list: T[], category: MarketCategory = "all", intent: MarketIntent = "buy"): T[] {
+  return list.filter((property) => (category === "all" || property.category === category) && (property.transaction ?? "buy") === intent);
+}
+
 export function applyFilters<T extends FilterableProperty>(list: T[], activeIds: string[], defs = makeFilters<T>()): T[] {
   if (activeIds.length === 0) return list;
   const active = defs.filter((d) => activeIds.includes(d.id));
@@ -40,14 +53,14 @@ export function serializeFilters(ids: string[]): string {
 }
 
 /* ---------- Free-text query matching (?q=) ---------- */
-export type QueryableProperty = { bhk: number; locality: string; title: string; city: string; priceNum: number };
+export type QueryableProperty = { bhk: number; locality: string; title: string; city: string; priceNum: number; project?: string; developer?: string; subtype?: string };
 
 /** Token-AND matching: "2 bhk thaltej" → bhk===2 AND text contains "thaltej".
     "under 1.5 cr" / "under 1 cr" style tokens match price. */
 export function matchesQuery<T extends QueryableProperty>(p: T, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  const haystack = `${p.locality} ${p.title} ${p.city}`.toLowerCase();
+  const haystack = `${p.locality} ${p.title} ${p.city} ${p.project ?? ""} ${p.developer ?? ""} ${p.subtype ?? ""}`.toLowerCase();
 
   // Mixed-language locality matching: a residual token matches if it is an alias
   // (Devanagari, transliterated, or secondary name) for this listing's locality.

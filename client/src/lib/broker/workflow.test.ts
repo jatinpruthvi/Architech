@@ -2,15 +2,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { POST as createDraftRoute } from "../../../../app/api/broker/listings/route";
 import { POST as submitDraftRoute } from "../../../../app/api/broker/listings/[draftId]/submit/route";
 import { POST as moderateDraftRoute } from "../../../../app/api/admin/moderation/listings/[draftId]/route";
-import { createListingDraft, getModerationQueue, moderateListing, resetBrokerWorkflowForTests, submitListingForReview, validateBrokerProfile, validateListingDraft } from "./workflow";
+import { createListingDraft, getModerationQueue, moderateListing, resetBrokerWorkflowForTests, submitListingForReview, validateBrokerProfile, validateListingDraft, type ListingDraftInput } from "./workflow";
 
-const validDraft = {
+const validDraft: ListingDraftInput = {
   title: "A verified garden apartment",
   localitySlug: "paldi",
   priceInr: 18500000,
   bhk: 3,
   areaSqft: 1482,
-  availability: "Ready to move",
+  propertyType: "APARTMENT",
+  availability: "READY_TO_MOVE",
   description: "A verified apartment draft with enough source context for moderation review.",
   reraNumber: "GJ/RERA/AHM/2026/04821-DEMO",
   mediaRightsConfirmed: true,

@@ -1,4 +1,4 @@
-import { applyFilters, applyQuery, applySort, makeFilters, parseFilterParam, type SortId } from "@/lib/filters";
+import { applyFilters, applyMarket, applyQuery, applySort, makeFilters, parseFilterParam, type MarketCategory, type MarketIntent, type SortId } from "@/lib/filters";
 import { getListings, type Property } from "@/lib/repositories";
 import { normalizePage, normalizePageSize, paginate, type PaginationMeta } from "./pagination";
 
@@ -7,6 +7,8 @@ export type SearchSource = "fixture-repository" | "postgres-fts-trigram";
 export type SearchRequest = {
   q?: string;
   filters?: string[];
+  category?: MarketCategory;
+  intent?: MarketIntent;
   sort?: SortId;
   limit?: number;
   page?: number;
@@ -15,6 +17,8 @@ export type SearchRequest = {
 export type SearchResponse = {
   query: string;
   filters: string[];
+  category: MarketCategory;
+  intent: MarketIntent;
   sort: SortId;
   count: number;
   source: SearchSource;
@@ -39,17 +43,21 @@ export function normalizeLimit(limit?: number | string | null): number | undefin
 export function searchListings(request: SearchRequest = {}): SearchResponse {
   const query = request.q?.trim() ?? "";
   const filters = request.filters ?? [];
+  const category: MarketCategory = ["all", "residential", "commercial", "pg", "plot", "land", "auction"].includes(request.category ?? "") ? request.category as MarketCategory : "all";
+  const intent: MarketIntent = request.intent === "rent" ? "rent" : "buy";
   const sort = normalizeSort(request.sort);
   const pageSize = normalizePageSize(request.limit);
   const page = normalizePage(request.page);
 
   const defs = makeFilters<Property>();
-  const filtered = applySort(applyFilters(applyQuery(getListings(), query), filters, defs), sort);
+  const filtered = applySort(applyFilters(applyMarket(applyQuery(getListings(), query), category, intent), filters, defs), sort);
   const { items, meta } = paginate(filtered, { page, pageSize });
 
   return {
     query,
     filters,
+    category,
+    intent,
     sort,
     count: filtered.length,
     source: "fixture-repository",
@@ -63,6 +71,8 @@ export function searchListingsFromSearchParams(params: URLSearchParams): SearchR
   return searchListings({
     q: params.get("q") ?? "",
     filters: parseFilterParam(params.get("filters")),
+    category: (params.get("category") as MarketCategory) || "all",
+    intent: params.get("intent") === "rent" ? "rent" : "buy",
     sort: normalizeSort(params.get("sort")),
     limit: normalizeLimit(params.get("limit")),
     page: Number.parseInt(params.get("page") ?? "", 10) || undefined,

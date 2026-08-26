@@ -11,12 +11,12 @@
     "lint": "eslint app client/src --max-warnings 200",
     "test": "vitest run",
     "format": "prettier --write .",
-    "test:seo": "next build && node scripts/seo/raw-html-smoke.mjs",
+    "test:seo": "pnpm build:ci && node scripts/seo/raw-html-smoke.mjs",
     "test:a11y": "playwright test --config playwright.a11y.config.ts",
     "storybook": "storybook dev --host 0.0.0.0 -p 6006",
     "storybook:smoke": "storybook dev --host 0.0.0.0 -p 6006 --ci --smoke-test",
     "build-storybook": "storybook build",
-    "test:perf": "next build && node scripts/performance/budget.mjs",
+    "test:perf": "pnpm build:ci && node scripts/performance/budget.mjs",
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
@@ -27,6 +27,8 @@
     "security:audit": "pnpm security:headers && pnpm legal:gates",
     "ops:audit": "node scripts/operations/readiness-audit.mjs",
     "release:audit": "node scripts/release/phase-1-release-audit.mjs",
+    "quality": "pnpm check && pnpm lint && pnpm test && pnpm db:validate",
+    "build:ci": "node scripts/build-ci.mjs",
     "production:plan:audit": "node scripts/release/production-enablement-audit.mjs",
     "env:audit": "node scripts/operations/environment-audit.mjs",
     "secrets:audit": "node scripts/operations/secrets-audit.mjs",
@@ -80,15 +82,6 @@
     "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
-  "pnpm": {
-    "overrides": {
-      "tailwindcss>nanoid": "3.3.7"
-    },
-    "onlyBuiltDependencies": [
-      "@tailwindcss/oxide",
-      "esbuild"
-    ]
-  },
   "prisma": {
     "seed": "node prisma/seed.mjs"
   }

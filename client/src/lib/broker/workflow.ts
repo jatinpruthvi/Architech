@@ -1,5 +1,6 @@
 import { demoBrokerSession, requirePermission, type AuthSession } from "@/lib/auth/roles";
 import { getLocalityBySlug } from "@/lib/repositories";
+import { isAvailabilityCode, isPropertyTypeCode, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 
 export type BrokerProfileInput = {
   organizationName: string;
@@ -18,7 +19,8 @@ export type ListingDraftInput = {
   priceInr: number;
   bhk: number;
   areaSqft: number;
-  availability: string;
+  propertyType: PropertyTypeCode;
+  availability: AvailabilityCode;
   description: string;
   reraNumber?: string;
   mediaRightsConfirmed: boolean;
@@ -74,7 +76,8 @@ export function validateListingDraft(input: Partial<ListingDraftInput>, session:
   if (!Number.isFinite(input.priceInr) || Number(input.priceInr) <= 0) errors.push("Price must be a positive INR value.");
   if (!Number.isFinite(input.bhk) || Number(input.bhk) < 1) errors.push("BHK must be at least 1.");
   if (!Number.isFinite(input.areaSqft) || Number(input.areaSqft) < 150) errors.push("Area must be at least 150 sq ft.");
-  if (!input.availability || input.availability.trim().length < 3) errors.push("Availability/status is required.");
+  if (!isPropertyTypeCode(input.propertyType)) errors.push("Choose a reviewed property type.");
+  if (!isAvailabilityCode(input.availability)) errors.push("Choose a reviewed availability status.");
   if (!input.description || input.description.trim().length < 30) errors.push("Description must be at least 30 characters.");
   if (!input.mediaRightsConfirmed) errors.push("Media rights confirmation is required before review.");
   return errors;
@@ -138,9 +141,10 @@ export function listBrokerDrafts(organizationId: string) {
 const draftMedia = new Map<string, Set<string>>();
 
 /** Attach a media id to a draft; requires the draft to exist. */
-export function attachMediaToDraft(draftId: string, mediaId: string): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
+export function attachMediaToDraft(draftId: string, mediaId: string, session: AuthSession | null = demoBrokerSession): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
   const draft = drafts.get(draftId);
   if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  if (!session || draft.organizationId !== session.organization?.id) return { ok: false, status: 403, errors: ["Organization mismatch."] };
   const current = draftMedia.get(draftId) ?? new Set<string>();
   current.add(mediaId);
   draftMedia.set(draftId, current);
@@ -148,16 +152,19 @@ export function attachMediaToDraft(draftId: string, mediaId: string): { ok: true
 }
 
 /** Detach a media id from a draft. */
-export function detachMediaFromDraft(draftId: string, mediaId: string): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
+export function detachMediaFromDraft(draftId: string, mediaId: string, session: AuthSession | null = demoBrokerSession): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
   const draft = drafts.get(draftId);
   if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  if (!session || draft.organizationId !== session.organization?.id) return { ok: false, status: 403, errors: ["Organization mismatch."] };
   const current = draftMedia.get(draftId) ?? new Set<string>();
   current.delete(mediaId);
   return { ok: true, mediaIds: [...current] };
 }
 
 /** List media ids attached to a draft. */
-export function listDraftMediaIds(draftId: string): string[] {
+export function listDraftMediaIds(draftId: string, session: AuthSession | null = demoBrokerSession): string[] {
+  const draft = drafts.get(draftId);
+  if (!draft || !session || draft.organizationId !== session.organization?.id) return [];
   return [...(draftMedia.get(draftId) ?? [])];
 }
 

@@ -21,15 +21,18 @@ export default function Footer() {
               <li><Link href="/search/" className="link-rail">{t.footer.links.search}</Link></li>
               <li><Link href="/guide/" className="link-rail">{t.footer.links.notes}</Link></li>
               <li><Link href="/list-property/" className="link-rail">{t.footer.links.listProperty}</Link></li>
+              <li><Link href="/home-loan/" className="link-rail">Home loan calculator</Link></li>
+              <li><Link href="/blogs/" className="link-rail">Blogs & field notes</Link></li>
             </ul>
           </nav>
-          <nav aria-label={t.footer.trust}>
-            <p className="stamp mb-5 text-cream/60">{t.footer.trust}</p>
+          <nav aria-label="Company and trust">
+            <p className="stamp mb-5 text-cream/60">Company & trust</p>
             <ul className="space-y-3 text-sm text-cream/80">
-              <li><Link href="/guide/" className="link-rail">{t.footer.links.verify}</Link></li>
-              <li><Link href="/guide/" className="link-rail">{t.footer.links.rera}</Link></li>
-              <li><Link href="/saved/" className="link-rail">{t.footer.links.saved}</Link></li>
-              <li><Link href="/saved-searches/" className="link-rail">{t.footer.links.savedSearches}</Link></li>
+              <li><Link href="/about-us/" className="link-rail">About Architech</Link></li>
+              <li><Link href="/contact-us/" className="link-rail">Contact desk</Link></li>
+              <li><Link href="/review/" className="link-rail">Give feedback</Link></li>
+              <li><Link href="/sitemap.html/" className="link-rail">HTML sitemap</Link></li>
+              <li><Link href="/privacy/" className="link-rail">Privacy & terms</Link></li>
             </ul>
           </nav>
           <div>
@@ -43,7 +46,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-cream/10">
         <div className="container flex flex-col items-start justify-between gap-3 py-6 md:flex-row md:items-center">
-          <p className="stamp text-cream/60">© 2026 Architech · Concept prototype — listings, stats & testimonials are illustrative</p>
+          <p className="stamp text-cream/60">© 2026 Architech · Concept prototype — listings, stats & sample records are illustrative</p>
           <p className="stamp text-cream/60">Brick · Plaster · Light — after Kahn, Corbusier & Adalaj</p>
         </div>
       </div>

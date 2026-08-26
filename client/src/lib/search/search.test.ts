@@ -33,4 +33,9 @@ describe("backend search contract", () => {
     const response = searchListings({ q: "prahlad nagar" });
     expect(response.results.some((property) => property.localitySlug === "prahlad-nagar")).toBe(true);
   });
+
+  it("applies reviewed property type and availability facets", () => {
+    expect(searchListings({ filters: ["type-villa"] }).results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
+    expect(searchListings({ filters: ["availability-new"] }).results.map((property) => property.id)).toEqual(["light-filled-home"]);
+  });
 });

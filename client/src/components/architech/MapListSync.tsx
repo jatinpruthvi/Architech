@@ -119,7 +119,7 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
   }, [selectedId]);
 
   return (
-    <aside className={`relative min-h-[480px] overflow-hidden border border-ink/12 bg-sand ${className}`} aria-label={copy.mapLabel}>
+    <aside className={`atlas-map relative min-h-[480px] overflow-hidden border border-ink/12 bg-sand ${className}`} aria-label={copy.mapLabel}>
       {!mapFailed && <div ref={containerRef} className="absolute inset-0" />}
       {mapFailed && (
         <div className="absolute inset-0 overflow-auto bg-sand p-5">

@@ -225,6 +225,8 @@ model Listing {
   pricePerSqft   String?
   bhk            Int?
   areaSqft       Int?
+  // Persisted as an uppercase AvailabilityCode from the application vocabulary;
+  // kept nullable String for backward-safe migration of legacy labels.
   availability   String?
   addressLocality String?
   latitude       Decimal? @db.Decimal(9, 6)
@@ -248,6 +250,8 @@ model Listing {
   updatedAt DateTime @updatedAt
 
   @@index([cityId, lifecycle])
+  @@index([cityId, localityId, lifecycle, meaningfulUpdatedAt])
+  @@index([brokerOrgId, lifecycle, updatedAt])
   @@index([localityId, lifecycle])
   @@index([verification])
   @@index([priceInr])

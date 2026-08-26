@@ -4,17 +4,19 @@ import { requestReraCorrectionForServer, markReraStaleForServer } from "./rera-s
 import { createMediaUploadForServer, completeMediaUploadForServer, moderateMediaForServer } from "./media-store";
 import { createListingDraftForServer, submitListingForReviewForServer, moderateListingForServer, getModerationQueueForServer, listBrokerDraftsForServer, attachMediaToDraftForServer, detachMediaFromDraftForServer, listDraftMediaForServer } from "./broker-store";
 import { resetBrokerWorkflowForTests } from "@/lib/broker/workflow";
+import type { ListingDraftInput } from "@/lib/broker/workflow";
 import { resetMediaStoreForTests } from "@/lib/media/upload";
 import { resetReraStoreForTests } from "@/lib/rera/rera";
 
-const draftInput = {
+const draftInput: ListingDraftInput = {
   organizationId: "org_demo",
   title: "A courtyard home in Paldi",
   localitySlug: "paldi",
   priceInr: 18_500_000,
   bhk: 3,
   areaSqft: 1482,
-  availability: "Ready to move",
+  propertyType: "APARTMENT",
+  availability: "READY_TO_MOVE",
   description: "Old trees, kota stone floors, and a courtyard that carries the whole house through the day.",
   mediaRightsConfirmed: true,
 };

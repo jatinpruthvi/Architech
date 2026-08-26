@@ -5,13 +5,15 @@ import { savedPath, searchPath } from "./urls";
 
 describe("SeoPage registry", () => {
   it("registers the current indexable public page set", () => {
-    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1 + getGuides().length + 1; // +1 list-property page
+    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1 + getGuides().length + 9; // +1 list-property + 3 marketplace pages + 5 public parity pages
     expect(seoPages).toHaveLength(expectedCount);
     expect(seoPages.map((page) => page.routeType)).toContain("home");
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);
     expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
-    expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(1 + getGuides().length);
+    expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(4 + getGuides().length); // guide index + developer index + investment lens + home loan context
     expect(seoPages.find((page) => page.id === "page:list-property")?.indexability).toBe("indexable");
+    expect(seoPages.find((page) => page.id === "page:sitemap-html")?.indexability).toBe("indexable");
+    expect(seoPages.find((page) => page.id === "page:review")?.indexability).toBe("noindex");
   });
 
   it("keeps registry IDs, paths, and canonicals unique", () => {
