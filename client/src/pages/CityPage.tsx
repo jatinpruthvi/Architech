@@ -8,6 +8,7 @@ import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
 import { getListings, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
+import { localityPriceTrends, compactInr } from "@/lib/realestate/price-trends";
 import { useLang } from "@/contexts/LangContext";
 
 export default function CityPage({ localitySlug }: { localitySlug: string }) {
@@ -54,6 +55,36 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
             </Reveal>
           </div>
         </div>
+      </section>
+
+      {/* Price trends by area */}
+      <section className="container py-14">
+        <div className="grid gap-6 border border-ink/15 bg-paper p-6 md:grid-cols-4">
+          {(() => {
+            const trends = localityPriceTrends(locality.slug);
+            return (
+              <>
+                <div className="border-l-4 border-brick pl-4 md:border-l-0 md:border-r md:border-ink/10 md:pl-0">
+                  <p className="stamp !text-[10px] text-ink/60">Homes tracked</p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{trends.count}</p>
+                </div>
+                <div className="border-l-4 border-brick pl-4">
+                  <p className="stamp !text-[10px] text-ink/60">Median price</p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{compactInr(trends.medianPriceInr)}</p>
+                </div>
+                <div className="border-l-4 border-brick pl-4">
+                  <p className="stamp !text-[10px] text-ink/60">Price range</p>
+                  <p className="mt-2 font-display text-xl font-semibold tracking-[-0.02em]">{compactInr(trends.minPriceInr)} – {compactInr(trends.maxPriceInr)}</p>
+                </div>
+                <div className="border-l-4 border-brick pl-4">
+                  <p className="stamp !text-[10px] text-ink/60">Avg / sq ft</p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{trends.avgPricePerSqftInr ? `₹${Math.round(trends.avgPricePerSqftInr).toLocaleString("en-IN")}` : "—"}</p>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+        <p className="stamp mt-2 !text-[9px] text-ink/55">Derived from {locality.name} inventory for this concept preview · {t.search.demoFixtures}</p>
       </section>
 
       {/* Feel of the place */}

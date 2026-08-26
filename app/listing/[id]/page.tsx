@@ -5,6 +5,8 @@ import { getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { httpDecisionForListing } from "@/lib/seo/lifecycle";
 import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
+import { buildAgentJsonLd, buildAgentProfile } from "@/lib/agent/profile";
+import { demoBrokerSession } from "@/lib/auth/roles";
 
 export function generateStaticParams() {
   return getListingStaticParams();
@@ -40,9 +42,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const locality = getLocalityBySlug(property.localitySlug);
   const [lat, lon] = (locality?.marker ?? "23.011,72.559").split(",");
   const trust = computeTrustScore(badgesToTrustInput(property.badge, property.status));
+  const agent = buildAgentJsonLd(buildAgentProfile(demoBrokerSession));
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      agent,
       {
         "@type": "Residence",
         name: property.title,
@@ -55,6 +59,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         additionalProperty: [
           { "@type": "PropertyValue", name: "trustScore", value: trust.score, unitText: "out of 100" },
           { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },
+          { "@type": "PropertyValue", name: "priceHistory", value: `${property.price}` },
           ...trust.signals.map((signal) => ({ "@type": "PropertyValue", name: signal.id, value: signal.met ? "verified" : "not-verified" })),
         ],
       },
