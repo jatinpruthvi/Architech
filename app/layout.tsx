@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     url: homeUrl(),
     title: "Architech — Find the place before the address.",
     description: "A high-trust way to discover Ahmedabad homes: verified RERA context, locality intelligence, and architecture-grade curation.",
-    images: [{ url: assetUrl("/images/hero-ahmedabad.jpg"), width: 1376, height: 768, alt: "Brick architecture of Ahmedabad at golden hour" }],
+    images: [{ url: "/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg", width: 1600, height: 900, alt: "Ahmedabad-inspired contemporary architecture at golden hour" }],
   },
   twitter: { card: "summary_large_image" },
 };
@@ -71,8 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link
           rel="preload"
           as="image"
-          href="/images/hero-ahmedabad.webp"
-          imageSrcSet="/images/hero-ahmedabad-800.webp 800w, /images/hero-ahmedabad.webp 1376w"
+          href="/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg"
           fetchPriority="high"
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
