@@ -197,3 +197,12 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Preserve deterministic hydration, keyboard search, intent tabs, motion, contrast, and responsive touch sizing.
 - [x] Verify desktop/mobile screenshots, search interaction, accessibility, build, and regression checks.
 - [ ] Save a checkpoint and report the visual change.
+
+
+## Minimum Addressbox Parity and GitHub Push
+
+- [ ] Audit minimum public and authenticated Addressbox functionality against the current Architech routes and interactions.
+- [ ] Research open GitHub repositories and license-safe real-estate assets or patterns that can improve Architech without importing untrusted code or unclear licenses.
+- [ ] Implement every confirmed minimum functionality gap and document any provider or credential gate.
+- [ ] Verify functionality, mobile behavior, accessibility, SEO, tests, production build, and deployment readiness.
+- [ ] Commit and push the completed changes to the configured GitHub repository.
