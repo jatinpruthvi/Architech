@@ -274,6 +274,16 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Add Storybook stories for gallery, cost panel, and card variants.
 - [x] Re-baseline route first-load raw + total-static-JS budgets (documented).
 
+## Locality intelligence & evidence provenance (Aug 2026)
+
+- [x] Derive locality market facts (current price range, ₹/sq ft, vs-city position) from structured listing facts only (`client/src/lib/realestate/locality-intel.ts`).
+- [x] Present provenance labels ("Based on N active verified buy listings · Updated <date>") instead of invented snapshot figures.
+- [x] Add inventory by configuration & budget, commute/nearby essentials, and new-projects bands to the locality hub.
+- [x] Fix pre-existing rent-mixing in the locality price band (monthly rent was being counted as a buy price).
+- [x] Add locality-intelligence unit tests (buy/rent separation, provenance, unknown-locality honesty).
+- [x] Add Storybook examples (English + Hindi).
+- [x] Re-baseline first-load gzip + total-static-JS budgets (documented, value-driven not feature-stripped).
+
 
 
 ## Push Current Architech Changes
