@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getListingById, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
 import { buildAgentProfile, SAMPLE_AGENT_REVIEWS } from "@/lib/agent/profile";
 import { comparableListings, derivePriceHistory, type PriceEvent } from "@/lib/listing/history";
@@ -14,12 +14,14 @@ import { demoBrokerSession } from "@/lib/auth/roles";
 import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import { TrustPanel } from "../components/architech/TrustPanel";
+import { ListingGallery } from "../components/architech/ListingGallery";
+import { StickyBar } from "../components/architech/StickyBar";
+import { OwnershipCost } from "../components/architech/OwnershipCost";
 import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
 import { useLang } from "@/contexts/LangContext";
 
-function LeadDialog({ propertyId, propertyTitle }: { propertyId: string; propertyTitle: string }) {
-  const [open, setOpen] = useState(false);
+function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propertyId: string; propertyTitle: string; open: boolean; onOpenChange: (open: boolean) => void }) {
   const [submitting, setSubmitting] = useState(false);
   const { t } = useLang();
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -42,7 +44,7 @@ function LeadDialog({ propertyId, propertyTitle }: { propertyId: string; propert
       });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "Lead failed");
-      setOpen(false);
+      onOpenChange(false);
       toast(t.listing.querySent, { description: `${t.listing.querySentDescription} · ${payload.lead.phoneMasked}` });
     } catch {
       toast(t.listing.queryFailed, { description: t.listing.queryFailedDescription });
@@ -51,11 +53,8 @@ function LeadDialog({ propertyId, propertyTitle }: { propertyId: string; propert
     }
   };
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className="btn-sweep motion-press mt-8 flex w-full items-center justify-center gap-2 bg-brick px-6 py-5 stamp !text-[12px] font-semibold text-cream"><MessageCircle size={16} /> {t.listing.ask}</button>
-      </DialogTrigger>
-      <DialogContent className="rounded-none border-ink/15 bg-paper sm:max-w-[440px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-2xl border-ink/15 bg-paper sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-medium tracking-[-0.02em]">{t.listing.dialogTitle}</DialogTitle>
           <DialogDescription className="text-sm leading-6 text-ink/60">
@@ -96,6 +95,7 @@ export default function ListingPage({ id }: { id: string }) {
 
   const saved = isSaved(property.id);
   const locality = getLocalityBySlug(property.localitySlug);
+  const [leadOpen, setLeadOpen] = useState(false);
 
   // Idempotent, server-safe view tracking (no PII). One view per browser session.
   const sessionKey = useMemo(() => (typeof window !== "undefined" ? (window.sessionStorage.getItem("architech.session") ?? crypto.randomUUID()) : ""), []);
@@ -165,27 +165,9 @@ export default function ListingPage({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* Gallery */}
-        <div className="mt-6 grid gap-4 md:grid-cols-[1.45fr_0.8fr]">
-          <Reveal>
-            <div className="img-hover grain relative min-h-[340px] overflow-hidden bg-sand md:min-h-[540px]">
-              <Pic name={property.image} alt={`${property.title} — primary view`} className="absolute inset-0 h-full w-full object-cover" sizes="(max-width: 768px) 100vw, 62vw" eager />
-              <span className="stamp absolute left-5 top-5 z-10 bg-paper/95 px-3 py-2 !text-[10px] font-semibold">{t.listing.verifiedView}</span>
-            </div>
-          </Reveal>
-          <div className="grid gap-4 md:grid-rows-2">
-            <Reveal delay={100}>
-              <div className="img-hover h-full min-h-[200px] overflow-hidden">
-                <Pic name="brick-arch" alt="Architectural character of the building" className="h-full w-full object-cover" sizes="(max-width: 768px) 100vw, 34vw" />
-              </div>
-            </Reveal>
-            <Reveal delay={180}>
-              <Link href={`/buy/ahmedabad/${property.localitySlug}/`} className="group relative block h-full min-h-[200px] overflow-hidden bg-night">
-                <Pic name="locality-street" alt={`Neighbourhood around ${property.locality}`} className="h-full w-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105 group-hover:opacity-75" sizes="(max-width: 768px) 100vw, 34vw" />
-                <span className="absolute inset-0 flex items-end p-5 text-sm font-semibold text-cream">{t.listing.neighbourhoodLink} <ArrowUpRight size={15} className="ml-1.5 text-ember transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></span>
-              </Link>
-            </Reveal>
-          </div>
+        {/* Gallery — primary-first lightbox experience */}
+        <div className="mt-6">
+          <ListingGallery property={property} />
         </div>
       </section>
 
@@ -237,6 +219,65 @@ export default function ListingPage({ id }: { id: string }) {
 
             {/* Trust dossier */}
             <TrustPanel property={property} />
+            <OwnershipCost property={property} />
+
+            {/* Price & history + agent trust */}
+            <div className="mt-10 grid gap-10 md:grid-cols-2">
+              <section aria-labelledby="price-history-heading">
+                <p className="kicker text-brick !text-[10px]">{t.listing.trail}</p>
+                <h3 id="price-history-heading" className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">Price <span className="text-brick">& history</span>.</h3>
+                <div className="mt-5 space-y-0 border-l-2 border-ink/12 pl-5">
+                  {priceHistory.events.map((event) => (
+                    <div key={event.id} className="relative pb-6 last:pb-0">
+                      <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-cream ${event.kind === "price_change" ? "bg-ember" : "bg-brick"}`} />
+                      <p className="stamp !text-[10px] text-ink/60">{event.date}</p>
+                      <p className="mt-1 text-sm font-medium text-ink/85">₹{event.priceInr.toLocaleString("en-IN")} · {event.note ?? event.kind.replace("_", " ")}</p>
+                    </div>
+                  ))}
+                </div>
+                {priceHistory.hasDecline && <p className="stamp mt-3 !text-[10px] text-ember">Price adjusted since listing.</p>}
+
+                <p className="kicker mt-8 text-brick !text-[10px]">{t.search.demoFixtures}</p>
+                <div className="mt-3 space-y-3">
+                  {comparables.map((comparable) => (
+                    <Link key={comparable.id} href={`/listing/${comparable.id}`} className="group flex items-center justify-between border border-ink/12 bg-card p-4 hover:border-brick">
+                      <div>
+                        <p className="font-display text-base font-medium leading-tight group-hover:text-brick">{comparable.title}</p>
+                        <p className="stamp mt-1 !text-[10px] text-ink/55">{comparable.locality} · {comparable.pricePerSqft}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-display text-base">₹{(comparable.priceNum / 10000000).toFixed(2)} Cr</p>
+                        <p className={`stamp !text-[10px] ${comparable.deltaPct >= 0 ? "" : "text-trust"}`}>{comparable.deltaPct >= 0 ? "+" : ""}{comparable.deltaPct}% vs this home</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+              <section aria-labelledby="agent-heading" className="h-fit border border-ink/15 bg-sand/50 p-6">
+                <p className="kicker text-brick !text-[10px]">Your partner</p>
+                <h3 id="agent-heading" className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">{agent.name}.</h3>
+                <p className="stamp mt-2 !text-[10px] text-trust">{agent.badge}</p>
+                {agent.rating > 0 ? (
+                  <p className="mt-4 flex items-center gap-2 text-sm">
+                    <span className="text-ember" aria-hidden="true">{"★".repeat(Math.round(agent.rating))}</span>
+                    <strong className="font-display text-ink">{agent.rating.toFixed(1)}</strong>
+                    <span className="text-ink/60">· {agent.reviewCount} verified review{agent.reviewCount === 1 ? "" : "s"}</span>
+                  </p>
+                ) : (
+                  <p className="mt-4 text-sm text-ink/60">Sample partner profile — ratings appear once verified buyer reviews are on file.</p>
+                )}
+                <div className="mt-5 space-y-3 border-t border-ink/10 pt-5">
+                  {agent.reviews.map((review) => (
+                    <div key={review.id} className="text-sm">
+                      <p className="text-ink/80">“{review.comment}”</p>
+                      <p className="stamp mt-1 !text-[10px] text-ink/55">{review.buyerName} · {review.role} · sample</p>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/guide/" className="mt-6 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick">How we verify partners <ArrowUpRight size={13} /></Link>
+              </section>
+            </div>
 
             {/* Price & history + agent trust */}
             <div className="mt-10 grid gap-10 md:grid-cols-2">
@@ -326,10 +367,19 @@ export default function ListingPage({ id }: { id: string }) {
                 </div>
               </div>
             </div>
-            <LeadDialog propertyId={property.id} propertyTitle={property.title} />
+            <button
+              onClick={() => setLeadOpen(true)}
+              className="btn-sweep motion-press mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-brick px-6 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep"
+            >
+              <MessageCircle size={16} /> {t.listing.ask}
+            </button>
+            <LeadDialog propertyId={property.id} propertyTitle={property.title} open={leadOpen} onOpenChange={setLeadOpen} />
             <p className="stamp mt-4 text-center !text-[10px] text-ink/60">{t.listing.usuallyReplies}</p>
           </aside>
         </div>
+
+        {/* Sticky conversion bar */}
+        <StickyBar property={property} saved={saved} onSave={onSave} onAsk={() => setLeadOpen(true)} />
 
         {/* More homes */}
         <div className="mt-20 border-t border-ink/12 pt-14">

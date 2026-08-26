@@ -72,6 +72,9 @@ export const strings = {
     },
     listing: {
       breadcrumbHome: "Home", sourceReviewed: "Source reviewed", guidePrice: "Guide price", verifiedView: "Verified view · Nº 01", neighbourhoodLink: "See the neighbourhood",
+      gallery: { photos: "Photos", openGallery: "Open gallery", close: "Close", prev: "Previous photo", next: "Next photo" },
+      stickyBar: { price: "Guide price", save: "Save", removeSaved: "Saved", ask: "Ask about this home" },
+      cost: { kicker: "Ownership lens", monthlyLabel: "Est. monthly EMI", loanLabel: "Loan (80% LTV)", tenureLabel: "Tenure", rateLabel: "Rate", stampLabel: "Stamp duty", registrationLabel: "Registration", cashLabel: "Cash required", note: "Educational estimate from your assumptions; not a lender quote or tax advice.", adjust: "Adjust" },
       reraDetails: "RERA verification details", reraTooltipKicker: "GJ/RERA/AHM/2026/04821 (sample)", reraTooltipCopy: "In production this is checked against the Gujarat RERA registry: registration, promoter, and completion status. Illustrative trail for the concept preview.",
       save: "Save listing", removeSaved: "Remove from saved", savedToast: "Saved to your shortlist", removedToast: "Removed from shortlist",
       noteSuffix: "The details here are assembled from the partner submission, the RERA registry, and the latest meaningful update — nothing is invented, and every fact carries its date.",
@@ -152,6 +155,9 @@ export const strings = {
     },
     listing: {
       breadcrumbHome: "होम", sourceReviewed: "स्रोत समीक्षा", guidePrice: "अनुमानित क़ीमत", verifiedView: "सत्यापित दृश्य · Nº 01", neighbourhoodLink: "इलाक़ा देखें",
+      gallery: { photos: "फ़ोटो", openGallery: "गैलरी खोलें", close: "बंद करें", prev: "पिछली फ़ोटो", next: "अगली फ़ोटो" },
+      stickyBar: { price: "अनुमानित क़ीमत", save: "सहेजें", removeSaved: "सहेजा गया", ask: "इस घर के बारे में पूछें" },
+      cost: { kicker: "स्वामित्व झलक", monthlyLabel: "अनुमानित मासिक EMI", loanLabel: "ऋण (80% LTV)", tenureLabel: "अवधि", rateLabel: "दर", stampLabel: "स्टाम्प शुल्क", registrationLabel: "पंजीकरण", cashLabel: "आवश्यक नकद", note: "आपकी मान्यताओं से शैक्षिक अनुमान; यह ऋणदाता उद्धरण या कर सलाह नहीं है।", adjust: "समायोजित करें" },
       reraDetails: "RERA सत्यापन विवरण", reraTooltipKicker: "GJ/RERA/AHM/2026/04821 (नमूना)", reraTooltipCopy: "प्रोडक्शन में यह गुजरात RERA registry से जाँचा जाएगा: registration, promoter और completion status. यह concept preview के लिए illustrative trail है।",
       save: "लिस्टिंग सहेजें", removeSaved: "सहेजे गए से हटाएँ", savedToast: "आपकी शॉर्टलिस्ट में सहेजा गया", removedToast: "शॉर्टलिस्ट से हटाया गया",
       noteSuffix: "विवरण partner submission, RERA registry और नवीनतम meaningful update से जोड़े गए हैं — कुछ भी invent नहीं किया गया, और हर तथ्य पर तारीख़ है।",

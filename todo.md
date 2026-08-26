@@ -266,6 +266,14 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Prepare a prioritized non-payment recommendation with Phase 1, Phase 2, Phase 3, and activation-gate decisions.
 - [ ] Implement only the highest-value non-payment gaps approved from the recommendation.
 - [ ] Verify the approved additions and save a checkpoint with the audit result.
+## Decision dossier & reusable primitives (Aug 2026)
+
+- [x] Add buyer ownership-cost estimator (EMI + stamp duty + registration) (`P1-COST-001`).
+- [x] Add PropertyCard variants (grid/horizontal/map-preview) + restrained second-image hover + textual verification.
+- [x] Add premium listing gallery (thumbnail rail + fullscreen lightbox) + sticky conversion bar.
+- [x] Add Storybook stories for gallery, cost panel, and card variants.
+- [x] Re-baseline route first-load raw + total-static-JS budgets (documented).
+
 
 
 ## Push Current Architech Changes

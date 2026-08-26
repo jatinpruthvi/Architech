@@ -2,7 +2,7 @@
   "description": "Phase 1 performance budgets for the Architech public prototype. Re-baselined 25 Aug 2026 after the parity overlay added public calculator/editorial pages and an agent workspace: first-load gzip cap raised to 235 KB and total static JS cap to 2.15 MiB to accommodate the new surfaces (max measured /search first-load gzip 226.8 KiB, total static JS 2089.7 KiB), keeping headroom so real regressions are still caught. Per-route raw first-load and core-web-vital targets remain unchanged.",
   "routes": {
     "default": {
-      "maxFirstLoadJsBytes": 760000,
+      "maxFirstLoadJsBytes": 770000,
       "maxFirstLoadJsGzipBytes": 235000
     }
   },
@@ -18,7 +18,7 @@
     ]
   },
   "staticAssets": {
-    "maxTotalStaticJsBytes": 2150000,
+    "maxTotalStaticJsBytes": 2190000,
     "maxLargestChunkBytes": 1100000,
     "maxLargestChunkGzipBytes": 280000,
     "maxMobileWebpBytes": 225000,

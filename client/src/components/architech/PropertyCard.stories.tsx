@@ -39,3 +39,13 @@ export const CardGrid: Story = {
     </StorySurface>
   ),
 };
+
+export const Horizontal: Story = {
+  args: { property: getListings()[0], index: 0, variant: "horizontal" },
+  render: (args) => <StorySurface><div className="max-w-[520px]"><PropertyCard {...args} /></div></StorySurface>,
+};
+
+export const MapPreview: Story = {
+  args: { property: getListings()[0], index: 0, variant: "map-preview" },
+  render: (args) => <StorySurface><div className="w-[220px]"><PropertyCard {...args} /></div></StorySurface>,
+};
