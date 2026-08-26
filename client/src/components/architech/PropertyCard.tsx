@@ -10,10 +10,11 @@ import { useSaved } from "@/contexts/SavedContext";
 import { useCompare } from "@/contexts/CompareContext";
 import { useLang } from "@/contexts/LangContext";
 import Pic from "./Pic";
-
-
+import { secondaryImage } from "@/lib/listing/media";
 
 export type { Property };
+
+export type PropertyCardVariant = "grid" | "horizontal" | "map-preview";
 
 function BadgeTooltip({ property }: { property: Property }) {
   const { t } = useLang();
@@ -32,12 +33,13 @@ function BadgeTooltip({ property }: { property: Property }) {
   );
 }
 
-export default function PropertyCard({ property, arch = false, index }: { property: Property; arch?: boolean; index?: number }) {
+export default function PropertyCard({ property, arch = false, index, variant = "grid" }: { property: Property; arch?: boolean; index?: number; variant?: PropertyCardVariant }) {
   const { isSaved, toggle } = useSaved();
   const { isCompared, toggle: toggleCompare } = useCompare();
   const { t } = useLang();
   const saved = isSaved(property.id);
   const compared = isCompared(property.id);
+  const hoverImage = secondaryImage(property);
 
   const onSave = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -52,12 +54,65 @@ export default function PropertyCard({ property, arch = false, index }: { proper
     toggleCompare(property.id);
   };
 
+  // Compact map-preview: price + locality bubble, height-constrained.
+  if (variant === "map-preview") {
+    return (
+      <article className="relative overflow-hidden rounded-xl border border-ink/12 bg-card shadow-sm">
+        <Link href={`/listing/${property.id}`} aria-label={`View ${property.title}, ${property.price}`} className="block">
+          <div className="img-hover relative h-24 bg-sand">
+            <Pic name={property.image} alt={`${property.title}, ${property.locality}`} className="h-full w-full object-cover" sizes="160px" />
+            <span className="absolute bottom-2 left-2 rounded-full bg-brick px-2.5 py-1 font-display text-xs font-semibold text-cream shadow-sm">{property.price}</span>
+          </div>
+          <div className="flex items-center justify-between p-2.5">
+            <p className="text-xs font-semibold text-ink/85">{property.locality} · {property.bhk} BHK</p>
+            <button
+              onClick={onSave}
+              aria-pressed={saved}
+              aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`}
+              className={`touch-44 grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${saved ? "bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick hover:text-cream"}`}
+            >
+              <Heart size={14} fill={saved ? "currentColor" : "none"} />
+            </button>
+          </div>
+        </Link>
+      </article>
+    );
+  }
+
+  // Horizontal variant: image left, content right.
+  if (variant === "horizontal") {
+    return (
+      <article className="group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
+        <div className="flex">
+          <Link href={`/listing/${property.id}`} className="relative block w-[200px] shrink-0 overflow-hidden bg-sand" aria-label={`View ${property.title}`}>
+            <div className="img-hover relative aspect-[4/3]">
+              <Pic name={property.image} alt={`${property.title}, ${property.locality}`} className="h-full w-full object-cover" sizes="200px" />
+              <img src={`/images/${hoverImage}.jpg`} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" loading="lazy" />
+            </div>
+          </Link>
+          <div className="flex flex-1 flex-col p-4">
+            <div className="flex items-start justify-between gap-2">
+              <strong className="font-display text-xl font-semibold leading-none tracking-[-0.02em]">{property.price}</strong>
+              <span className="flex items-center gap-1 text-xs font-semibold text-ink/70"><MapPin size={12} className="text-brick" /> {property.locality}</span>
+            </div>
+            <p className="stamp mt-1 !text-[9px] text-ink/55">{property.pricePerSqft}</p>
+            <h3 className="mt-2 font-display text-base font-medium leading-tight text-ink/85 group-hover:text-brick">{property.title}</h3>
+            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 stamp !text-[10px] text-ink/60"><span className="flex items-center gap-1"><BedDouble size={12} /> {property.meta}</span><span className="flex items-center gap-1"><Ruler size={12} /> {property.area}</span></p>
+            <p className="mt-3 flex items-center gap-1.5 stamp !text-[9px] text-trust"><ShieldCheck size={11} /> {property.badge}</p>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
       <Link href={`/listing/${property.id}`} className="block" aria-label={`View ${property.title}, ${property.price}, ${property.locality}`}>
         <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm overflow-hidden" : "rounded-t-2xl"}`}>
           <div className="aspect-[1.25]">
             <Pic name={property.image} alt={`${property.title}, ${property.locality}, Ahmedabad`} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+            {/* Restrained editorial hover: cross-fade a secondary shot, scale 1 -> 1.025 */}
+            <img src={`/images/${hoverImage}.jpg`} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-40" loading="lazy" />
           </div>
           <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-3.5">
             <BadgeTooltip property={property} />
@@ -97,10 +152,15 @@ export default function PropertyCard({ property, arch = false, index }: { proper
         </div>
         <p className="mt-3 hidden border-l-2 border-brick/50 pl-3 text-xs leading-5 text-ink/60 sm:block">{property.note}</p>
 
-        {/* TERTIARY: freshness + action */}
-        <div className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3.5">
-          <span className="stamp !text-[10px] text-trust">{property.status}</span>
-          <Link href={`/listing/${property.id}`} className="inline-flex min-h-[44px] items-center gap-1 stamp !text-[11px] font-semibold text-brick">{t.property.view} <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link>
+        {/* TERTIARY: verification + freshness + action */}
+        <div className="mt-4 flex items-center justify-between gap-2 border-t border-ink/10 pt-3.5">
+          <span className="flex min-w-0 flex-col">
+            <span className="stamp truncate !text-[10px] text-trust">
+              <ShieldCheck size={11} className="mr-1 inline" aria-hidden="true" /> {property.badge}
+            </span>
+            <span className="stamp !text-[9px] text-ink/50">{property.status}</span>
+          </span>
+          <Link href={`/listing/${property.id}`} className="inline-flex min-h-[44px] shrink-0 items-center gap-1 stamp !text-[11px] font-semibold text-brick">{t.property.view} <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link>
         </div>
       </div>
     </article>
