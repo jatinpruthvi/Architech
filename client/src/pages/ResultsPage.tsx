@@ -166,6 +166,7 @@ export default function ResultsPage() {
       {/* Header */}
       <section className="border-b border-ink/12 bg-sand/70 py-12 md:py-16">
         <div className="container">
+          <p className="ledger-stamp mb-4">AHM / DISCOVERY LEDGER / {intent === "rent" ? "RENT" : "BUY"} / {category === "all" ? "ALL INVENTORY" : category.toUpperCase()}</p>
           <p className="kicker text-brick">{t.search.kicker} · {t.common.ahmedabad}{query ? ` · “${query}”` : ""}</p>
           {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">{t.search.clearSearch} “{query}” <X size={12} /></button>}
           <div className="mt-6 max-w-[560px]">
@@ -203,7 +204,9 @@ export default function ResultsPage() {
             </div>
           </div>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
-            <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="text-ink/45">in</span> <em className="text-brick">{t.search.cityName}</em></h1>
+            <div className="field-rule">
+              <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="text-ink/45">in</span> <em>{t.search.cityName}</em></h1>
+            </div>
             <div className="flex gap-2">
               <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
                 <DrawerTrigger asChild>

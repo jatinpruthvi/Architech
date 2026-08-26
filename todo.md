@@ -310,32 +310,18 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 
 ## Current PR and Documentation Delivery
 
-- [x] Inventory all project Markdown files and create a GitHub-style file index.
-- [x] Inspect discovery-experience-v1 PR status and media storage/provider configuration.
-- [x] Add automated compare-route tests and media-rights contract tests.
-- [x] Validate or safely prepare live media storage; do not claim R2 activation without credentials.
-- [x] Run focused quality gates, push the branch, create the pull request, and report the result.
+- [ ] Inventory all project Markdown files and create a GitHub-style file index.
+- [ ] Inspect discovery-experience-v1 PR status and media storage/provider configuration.
+- [ ] Add automated compare-route tests and media-rights contract tests.
+- [ ] Validate or safely prepare live media storage; do not claim R2 activation without credentials.
+- [ ] Run focused quality gates, push the branch, create the pull request, and report the result.
 
 
-## Latest Repository Pull
+## Amdavad Modern UI Revision
 
-- [x] Inspect the local branch, remotes, and uncommitted changes.
-- [x] Fetch the latest public branches and inspect divergence.
-- [x] Synchronize the requested local branch without overwriting work.
-- [x] Verify and report the pulled branch state; `todo.md` remains intentionally uncommitted.
-
-
-## Hero Direction Evaluation
-
-- [x] Compare the five attached hero concepts and identify their visual and technical assumptions.
-- [x] Evaluate brand fit, conversion hierarchy, mobile crop behavior, accessibility, SEO, performance, and licensing.
-- [x] Document the recommended hero direction and whether to replace or complement the current hero.
-
-
-## Ahmedabad Hero Refresh Implementation
-
-- [x] Inspect the current hero asset pipeline, image component, and performance contract.
-- [x] Create or adapt an Ahmedabad-specific right-weighted hero asset treatment with a portrait crop strategy.
-- [x] Implement responsive art direction, accessibility, and eager image-loading behavior without changing search hierarchy.
-- [x] Run desktop/mobile visual checks plus accessibility, build, SEO, and regression gates; record the inherited `/search` raw-JS budget overage separately.
-- [ ] Save a recoverable checkpoint and report the hero refresh result.
+- [x] Reconcile the saved review with current CSS, header, hero, property-card, results, and listing-dossier implementations.
+- [x] Restore brick/plaster/ink/ember/trust semantic palette and typography hierarchy without breaking dark mode or contrast.
+- [x] Recompose the hero/header and add architectural field-journal motifs while preserving centered search and responsive art direction.
+- [x] Refine shared property cards, results decision rail, and listing dossier hierarchy; remove duplicated trust/history presentation.
+- [x] Verify desktop/mobile visuals, accessibility, SEO smoke, unit tests, typecheck, lint, and production build.
+- [ ] Save a checkpoint and report the live revision.

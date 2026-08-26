@@ -1,4 +1,5 @@
 "use client";
+
 /* Root error boundary for uncaught errors outside a route segment. Must set
    <html> and <body> itself (no layout providers here by design). */
 import { useEffect } from "react";

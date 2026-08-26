@@ -106,7 +106,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
   }
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
+    <article className="group relative overflow-hidden rounded-[1.25rem] border border-ink/15 border-t-2 border-t-brick/70 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
       <Link href={`/listing/${property.id}`} className="block" aria-label={`View ${property.title}, ${property.price}, ${property.locality}`}>
         <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm overflow-hidden" : "rounded-t-2xl"}`}>
           <div className="aspect-[1.25]">
@@ -135,6 +135,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
         </div>
       </Link>
       <div className="p-5 md:p-6">
+        <p className="stamp mb-3 !text-[9px] text-ink/45">AHM / {String(index !== undefined ? index + 1 : 1).padStart(2, "0")} · FIELD NOTE</p>
         {/* PRIMARY: price + location */}
         <div className="flex items-start justify-between gap-3">
           <strong className="font-display text-[26px] font-semibold leading-none tracking-[-0.025em] text-ink">{property.price}</strong>
