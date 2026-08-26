@@ -54,8 +54,8 @@ export function OwnershipCost({ property }: { property: Property }) {
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
-      <p className="stamp !text-[9px] text-ink/55">{label}</p>
-      <p className={`mt-1 font-display text-2xl font-semibold tracking-[-0.02em] ${accent ? "text-brick" : ""}`}>{value}</p>
+      <dt className="stamp !text-[9px] text-ink/55">{label}</dt>
+      <dd className={`mt-1 font-display text-2xl font-semibold tracking-[-0.02em] ${accent ? "text-brick" : ""}`}>{value}</dd>
     </div>
   );
 }

@@ -19,13 +19,10 @@ export function StickyBar({ property, saved, onSave, onAsk }: { property: Proper
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  if (!visible) return null;
+
   return (
-    <div
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 text-ink shadow-[0_-8px_30px_rgba(17,24,39,0.12)] backdrop-blur-md motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-safe:ease-out ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
-      }`}
-      aria-hidden={!visible}
-    >
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 text-ink shadow-[0_-8px_30px_rgba(17,24,39,0.12)] backdrop-blur-md motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-safe:ease-out translate-y-0 opacity-100">
       <div className="container flex items-center justify-between gap-4 py-3">
         <div className="min-w-0">
           <p className="stamp !text-[9px] text-ink/55">{t.listing.stickyBar.price} · {property.locality}</p>

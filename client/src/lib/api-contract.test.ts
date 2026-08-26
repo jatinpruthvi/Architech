@@ -16,6 +16,8 @@ import { GET as authorityAssetsGet, POST as authorityAssetsPost } from "../../..
 import { POST as authorityOutreachPost } from "../../../app/api/authority/outreach/route";
 import { GET as brokerDraftsGet, POST as brokerDraftsPost } from "../../../app/api/broker/listings/route";
 import { POST as draftMediaPost } from "../../../app/api/broker/listings/[draftId]/media/route";
+import { POST as mediaSignPost } from "../../../app/api/media/uploads/sign/route";
+import { POST as mediaCompletePost } from "../../../app/api/media/uploads/[uploadId]/complete/route";
 import { POST as errorsPost } from "../../../app/api/observability/errors/route";
 import { GET as savedSearchesGet, POST as savedSearchesPost } from "../../../app/api/saved-searches/route";
 import { GET as reraGet } from "../../../app/api/rera/gujarat/route";
@@ -165,6 +167,35 @@ describe("public API contract", () => {
     expect(response.status).toBe(200);
     const body = await json(response);
     expect((body as { lead: { status: string } }).lead.status).toBe("DELETED");
+  });
+
+  it("POST /api/media/uploads/sign and /complete preserve rights evidence and moderation state", async () => {
+    const invalid = await mediaSignPost(new Request("http://example.com/api/media/uploads/sign", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ listingDraftId: "draft-rights-contract", fileName: "courtyard.jpg", mimeType: "image/jpeg", sizeBytes: 1000, rightsConfirmed: false, licenseEvidence: "" }),
+    }));
+    expect(invalid.status).toBe(400);
+
+    const signed = await mediaSignPost(new Request("http://example.com/api/media/uploads/sign", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ listingDraftId: "draft-rights-contract", fileName: "courtyard.jpg", mimeType: "image/jpeg", sizeBytes: 1000, width: 1600, height: 1000, rightsConfirmed: true, licenseEvidence: "Broker owns publication rights." }),
+    }));
+    expect([200, 201]).toContain(signed.status);
+    const signedBody = await json(signed) as { ok: boolean; upload: { id: string; provider?: string; licenseEvidence: string; moderationStatus: string; auditTrail: { action: string }[]; derivatives: { status: string }[] } };
+    expect(signedBody.ok).toBe(true);
+    expect(signedBody.upload.licenseEvidence).toBe("Broker owns publication rights.");
+    expect(signedBody.upload.moderationStatus).toBe("PENDING");
+    expect(signedBody.upload.auditTrail.some((entry) => entry.action === "media.upload.signed")).toBe(true);
+
+    const completed = await mediaCompletePost(new Request(`http://example.com/api/media/uploads/${signedBody.upload.id}/complete`, { method: "POST" }), { params: Promise.resolve({ uploadId: signedBody.upload.id }) });
+    expect(completed.status).toBe(200);
+    const completedBody = await json(completed) as { ok: boolean; upload: { auditTrail: { action: string }[]; derivatives: { status: string }[]; moderationStatus: string } };
+    expect(completedBody.ok).toBe(true);
+    expect(completedBody.upload.moderationStatus).toBe("PENDING");
+    expect(completedBody.upload.derivatives.every((derivative) => derivative.status === "ready")).toBe(true);
+    expect(completedBody.upload.auditTrail.some((entry) => entry.action === "media.upload.completed")).toBe(true);
   });
 
   it("POST /api/broker/listings/:id/media attaches media ids", async () => {
