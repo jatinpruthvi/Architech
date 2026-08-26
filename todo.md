@@ -324,4 +324,10 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Recompose the hero/header and add architectural field-journal motifs while preserving centered search and responsive art direction.
 - [x] Refine shared property cards, results decision rail, and listing dossier hierarchy; remove duplicated trust/history presentation.
 - [x] Verify desktop/mobile visuals, accessibility, SEO smoke, unit tests, typecheck, lint, and production build.
-- [ ] Save a checkpoint and report the live revision.
+- [x] Save a checkpoint and report the live revision.
+
+## Public GitHub UI Push
+
+- [x] Inspect the current local branch, commit, remote, and public GitHub state.
+- [x] Reconcile the completed UI revision with public `main` without overwriting public history.
+- [x] Push the publish branch and open PR #38 for merge review.
