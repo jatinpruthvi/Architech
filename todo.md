@@ -217,10 +217,9 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 
 
 ## Merge Addressbox Parity PR
-
-- [ ] Confirm PR #31 is open, points to the intended base, and is mergeable.
-- [ ] Merge PR #31 using the existing authenticated GitHub session; never use the token pasted in chat.
-- [ ] Verify the public main commit and record the merged PR reference.
+- [x] Confirm PR #31 is open, points to the intended base, and is mergeable.
+- [x] Merge PR #31 using the existing authenticated GitHub session; never use the token pasted in chat.
+- [x] Verify the public main commit and record the merged PR reference.
 - [ ] Revoke the exposed GitHub token and replace it only if needed.
 
 
@@ -277,8 +276,23 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 
 
 ## Push Current Architech Changes
+- [x] Inspect repository instructions, branch, remote, and working-tree changes.
+- [x] Review the complete diff and commit all intended current changes.
+- [x] Push the commit to the configured public GitHub branch.
+- [x] Verify the remote commit and report the result.
 
-- [ ] Inspect repository instructions, branch, remote, and working-tree changes.
-- [ ] Review the complete diff and commit all intended current changes.
-- [ ] Push the commit to the configured public GitHub branch.
-- [ ] Verify the remote commit and report the result.
+
+## Awesome Real Estate Resource Audit
+
+- [x] Inspect etewiah/awesome-real-estate and the attached resource recommendations.
+- [x] Verify license, maintenance signals, resource type, Ahmedabad relevance, and integration risk for promising resources.
+- [x] Map safe recommendations to Architech’s existing design, data, SEO, broker, and operations architecture.
+- [x] Document what to adopt, study, defer, or reject without importing unreviewed code or assets.
+
+
+## Attached Discovery and Broker Improvement Brief
+
+- [ ] Pull the latest public main branch and inspect the attached brief against current routes and components.
+- [ ] Implement the approved production-safe discovery, map/list, quick-view, media, saved/compare, visit, and broker workflow improvements that are genuinely missing.
+- [ ] Preserve Ahmedabad-first scope, bilingual support, accessibility, SEO, provenance, and no-payment constraints.
+- [ ] Run quality gates, commit, push a dedicated branch, and report the review status.

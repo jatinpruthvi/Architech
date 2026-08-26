@@ -172,17 +172,17 @@ function HeroSearch() {
           onKeyDown={onKeyDown}
           placeholder={intent === "buy" ? t.hero.placeholderBuy : t.hero.placeholderRent}
           className="w-full bg-transparent py-5 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none"
-          aria-label={`Search ${intentLabel} by locality, project, or BHK`} role="combobox" aria-expanded={focused && (queryLen > 0 || true)} aria-controls="search-suggestions"
-          aria-activedescendant={highlight >= 0 ? `sug-${highlight}` : undefined} aria-autocomplete="list" autoComplete="off"
+          aria-label={`Search ${intentLabel} by locality, project, or BHK`} role="combobox" aria-expanded={focused && (queryLen > 0 || true)} aria-controls={focused ? "search-suggestions" : undefined}
+          aria-activedescendant={focused && highlight >= 0 ? `sug-${highlight}` : undefined} aria-autocomplete="list" autoComplete="off"
         />
         <button type="submit" className="shimmer-btn motion-press my-1.5 mr-1.5 ml-1 rounded-xl bg-brick px-6 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
 
       {/* Animated suggestions */}
-      <div className={`overflow-hidden transition-[opacity,transform,max-height] duration-300 ease-out ${focused && options.length ? "max-h-[420px] opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-2"}`}>
+      {focused && <div className="overflow-hidden transition-[opacity,transform,max-height] duration-300 ease-out max-h-[420px] translate-y-0 opacity-100">
         <div id="search-suggestions" className="mt-2 rounded-2xl border border-ink/15 bg-paper text-ink shadow-lg" role="listbox" aria-label="Search suggestions">
           {options.length ? (
-            <div className="max-h-[360px] overflow-y-auto p-3">
+            <div className="max-h-[360px] overflow-y-auto p-3" role="group" aria-label="Search suggestion choices">
               <p className="stamp px-1 !text-[9px] text-ink/50">{queryLen ? `Suggestions for “${query.trim()}”` : `${intentLabel} — start here`}{loadingSug ? " · loading…" : ""}</p>
               <div className="mt-2 grid gap-1 sm:grid-cols-2">
                 {options.slice(0, 12).map((label, i) => (
@@ -202,11 +202,11 @@ function HeroSearch() {
               </div>
             </div>
           ) : (
-            <div className="p-4 text-center text-sm text-ink/55">No matches — try a locality or BHK.</div>
+            <div role="group" aria-label="No search matches" className="p-4 text-center text-sm text-ink/55">No matches — try a locality or BHK.</div>
           )}
-          <p className="stamp border-t border-ink/10 px-4 py-2.5 !text-[9px] text-ink/50">↑↓ to move · Enter to search · Esc to close · {resultCount} {intentLabel} match{resultCount === 1 ? "" : "es"} for this scope</p>
+          <p role="group" aria-label="Search keyboard help" className="stamp border-t border-ink/10 px-4 py-2.5 !text-[9px] text-ink/50">↑↓ to move · Enter to search · Esc to close · {resultCount} {intentLabel} match{resultCount === 1 ? "" : "es"} for this scope</p>
         </div>
-      </div>
+      </div>}
 
       {/* Quick chips */}
       <div className="mt-4 flex flex-wrap items-center gap-2">

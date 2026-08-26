@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Property } from "@/lib/repositories";
 import { searchListings, type SearchResponse } from "@/lib/search/search";
 import MapListSync from "@/components/architech/MapListSync";
+import Pic from "@/components/architech/Pic";
 import { useSearchSuggestions } from "@/components/architech/useSearchSuggestions";
 
 const filterDefs = makeFilters<Property>();
@@ -96,6 +97,7 @@ export default function ResultsPage() {
   }, [activeKey, category, initialSearch, intent, query, sort]);
 
   const results = searchResponse.results;
+  const selectedProperty = results.find((property) => property.id === selectedId) ?? null;
   const marketLabel = category === "all" ? (results.length === 1 ? t.search.home : t.search.homes) : category === "residential" ? "homes" : category === "pg" ? "PG / co-living spaces" : `${category} listings`;
   const intentLabel = intent === "rent" ? "to rent" : "to buy";
 
@@ -283,6 +285,9 @@ export default function ResultsPage() {
                     <Reveal key={`${active.join()}-${sort}-${property.id}`} delay={i * 60}>
                       <div id={`listing-${property.id}`} onMouseEnter={() => setSelectedId(property.id)} onFocus={() => setSelectedId(property.id)} className={selectedId === property.id ? "ring-2 ring-brick ring-offset-4 ring-offset-paper" : undefined}>
                         <PropertyCard property={property} index={i} />
+                        <button type="button" onClick={() => { setSelectedId(property.id); setDrawerOpen(true); }} className="mt-2 min-h-[44px] w-full border border-ink/15 bg-paper px-4 py-2 text-left stamp !text-[10px] font-semibold text-brick transition-colors hover:border-brick hover:bg-sand/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brick" aria-label={`Quick view ${property.title}`}>
+                          Quick view · {property.locality} · {property.price}
+                        </button>
                       </div>
                     </Reveal>
                   ))}
@@ -339,6 +344,36 @@ export default function ResultsPage() {
           />
         </div>
       </section>
+
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent className="border-t-2 border-brick bg-paper text-ink sm:max-w-[520px] sm:ml-auto sm:rounded-none">
+          {selectedProperty && (
+            <div className="p-5 sm:p-7">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="kicker text-brick">Quick view · Ahmedabad</p>
+                  <h2 className="mt-2 font-display text-2xl font-medium leading-tight tracking-[-0.02em]">{selectedProperty.title}<span className="text-brick">.</span></h2>
+                </div>
+                <button type="button" onClick={() => setDrawerOpen(false)} className="touch-44 border border-ink/15 px-3 stamp !text-[10px] font-semibold text-ink/65 hover:border-brick hover:text-brick">Close</button>
+              </div>
+              <div className="mt-5 overflow-hidden border border-ink/12 bg-sand">
+                <Pic name={selectedProperty.image} alt={`${selectedProperty.title}, ${selectedProperty.locality}`} className="aspect-[1.6] h-full w-full object-cover" sizes="520px" />
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-4 border-y border-ink/12 py-4 sm:grid-cols-4">
+                <div><p className="stamp !text-[9px] text-ink/55">Price</p><p className="mt-1 font-display text-lg font-semibold">{selectedProperty.price}</p></div>
+                <div><p className="stamp !text-[9px] text-ink/55">Layout</p><p className="mt-1 text-sm font-semibold">{selectedProperty.meta}</p></div>
+                <div><p className="stamp !text-[9px] text-ink/55">Area</p><p className="mt-1 text-sm font-semibold">{selectedProperty.area}</p></div>
+                <div><p className="stamp !text-[9px] text-ink/55">Status</p><p className="mt-1 text-sm font-semibold text-trust">{selectedProperty.status}</p></div>
+              </div>
+              <p className="mt-5 text-sm leading-7 text-ink/65">{selectedProperty.note}</p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Link href={`/listing/${selectedProperty.id}`} onClick={() => setDrawerOpen(false)} className="btn-sweep touch-44 inline-flex flex-1 items-center justify-center bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Full details <ArrowUpRight size={13} className="ml-1" /></Link>
+                <Link href={`/requirements/?listing=${encodeURIComponent(selectedProperty.id)}`} onClick={() => setDrawerOpen(false)} className="touch-44 inline-flex flex-1 items-center justify-center border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-brick hover:border-brick">Schedule a visit</Link>
+              </div>
+            </div>
+          )}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
