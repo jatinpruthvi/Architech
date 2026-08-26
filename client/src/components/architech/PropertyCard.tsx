@@ -53,9 +53,9 @@ export default function PropertyCard({ property, arch = false, index }: { proper
   };
 
   return (
-    <article className="group relative border border-ink/12 bg-card motion-lift hover:editorial-shadow">
+    <article className="group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
       <Link href={`/listing/${property.id}`} className="block" aria-label={`View ${property.title}, ${property.price}, ${property.locality}`}>
-        <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm" : ""}`}>
+        <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm overflow-hidden" : "rounded-t-2xl"}`}>
           <div className="aspect-[1.25]">
             <Pic name={property.image} alt={`${property.title}, ${property.locality}, Ahmedabad`} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
           </div>

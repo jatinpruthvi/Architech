@@ -44,7 +44,7 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const iconBtn = `grid h-10 w-10 place-items-center border transition-colors ${onDark ? "border-cream/25 text-cream/85 hover:border-ember hover:text-ember" : "border-ink/15 text-ink/70 hover:border-brick hover:text-brick"}`;
+  const iconBtn = `grid h-10 w-10 place-items-center rounded-xl border transition-colors ${onDark ? "border-cream/25 text-cream/85 hover:border-ember hover:text-ember" : "border-ink/15 text-ink/70 hover:border-brick hover:text-brick"}`;
 
   return (
     <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${onDark ? "bg-transparent text-cream" : "border-b border-ink/10 bg-paper/95 text-ink backdrop-blur-xl"}`}>
