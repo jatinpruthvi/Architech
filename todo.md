@@ -83,6 +83,126 @@
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 
+## Chrome Follow-up Debugging
+
+- [x] Reproduce and inventory the user-reported non-working website parts in the open Chrome preview.
+- [x] Repair the confirmed Reveal/visibility defect without removing intended motion or crawlable content.
+- [x] Verify navigation, search, listing, saved, language, theme, and responsive flows in Chrome.
+- [x] Run typecheck, lint, unit/SEO checks, and production build after the fix.
+- [ ] Save a validated checkpoint and report remaining activation-gate limitations.
+
 ## Status
 
 All redesign and motion-revision tasks completed in the Amdavad Modern overhaul (Aug 2026). See `IMPROVEMENT-REVIEW.md` for the follow-up audit and its implementation. Use `PHASE-1-IMPLEMENTATION-PLAN.md` for the active Phase 1 backlog and acceptance tracking.
+
+## Repository Improvement Audit
+
+- [x] Inventory the latest app, client, governance, SEO, Prisma, testing, and deployment surfaces.
+- [x] Check current runtime health, scripts, dependency alignment, and build/lint/test status.
+- [x] Review UX and accessibility flows across the main public and broker routes.
+- [x] Review crawlability, metadata, structured data, internal linking, and AI-search readiness.
+- [x] Review security, authorization boundaries, media uploads, leads, and secrets handling.
+- [x] Review performance budgets, image strategy, caching, bundle size, and 4G behavior.
+- [x] Prioritize improvements by impact, risk, effort, and phase fit.
+- [x] Save a complete audit report with an actionable implementation sequence.
+
+## Audit Implementation
+
+- [x] Add centralized server-side session, permission, and organization-scope guards for every private API family.
+- [x] Disable demo sessions and fallback stores in production unless an explicit safe mode is enabled.
+- [x] Add route-level abuse controls: request size, rate limit, origin/CSRF, idempotency, and redacted audit logging.
+- [x] Make the Better Auth test hermetic and remove the lint warning.
+- [x] Add rendered-HTML SEO acceptance tests for public routes and lifecycle variants.
+- [x] Add an indexability gate that blocks demo/unapproved data from production metadata and sitemaps.
+- [x] Add SEO freshness, source, orphan, canonical, and sitemap observability checks.
+- [x] Improve image/font delivery and establish route bundle/build budgets.
+- [x] Harden production CSP and environment-specific headers.
+- [x] Add mutation idempotency/transaction tests and verify database indexes against query shapes.
+- [x] Reconcile README, historical reviews, tracker, and generated project status.
+- [x] Complete high-value UX states for save, compare, search, map/list, leads, media, moderation, and Hindi.
+- [x] Run full validation and update the tracker; external-account activation remains open.
+
+## Local Preview Recovery
+
+- [x] Inspect the active workspace, dev-server process, port 3000, and recent server/browser errors.
+- [x] Restart or repair the local Next.js preview without discarding project changes.
+- [x] Verify the root page and representative routes respond successfully in the browser preview.
+- [x] Record any remaining environment-specific or external-account blocker and report the working preview URL.
+
+## Localhost Connection Refusal
+
+- [x] Check whether port 3000 is listening and whether the managed preview process is alive.
+- [x] Inspect recent server output and deployment/preview metadata for the connection failure.
+- [x] Restart or repair the correct local development server without changing application source.
+- [x] Verify localhost and the proxied preview URL return the Architech homepage and a representative route.
+
+## Windows Localhost Startup
+
+- [x] Confirm the Windows project path and Node/pnpm availability.
+- [x] Start `pnpm dev` from the local Architech repository on the connected Windows computer.
+- [x] Verify Windows `127.0.0.1:3000` returns the Architech homepage.
+- [x] Report the local terminal state and the URL to open.
+
+
+## Addressbox Feature Parity
+
+- [x] Inspect the open Addressbox website in Chrome and inventory its public features and key flows.
+- [x] Map each observed feature to Architech, separating directly implementable UI behavior from live-service activation gates.
+- [x] Implement the agreed compatible feature set without copying Addressbox branding, text, or protected visual assets.
+- [x] Verify the new flows in Chrome, including responsive behavior, accessibility, and SEO/indexability safety.
+- [x] Save a checkpoint and report any remaining external-service requirements.
+
+
+## Addressbox Agent Dashboard Parity
+
+- [x] Inspect the provided Addressbox agent dashboard in Chrome and inventory its broker-facing features and states.
+- [x] Compare the observed workflow with Architech’s current broker dashboard, leads, listings, media, and moderation surfaces.
+- [x] Define secure role, organization-scope, persistence, and external-service activation gates for missing capabilities.
+- [x] Implement the missing compatible agent functionality without copying Addressbox branding, text, or protected assets.
+- [x] Verify agent flows, authorization boundaries, responsive UX, accessibility, and build quality.
+- [x] Save a checkpoint and report remaining live-service requirements.
+
+
+## Attached Hydration Mismatch
+
+- [x] Read and reproduce the `/dashboard/` hydration warning from the attached report.
+- [x] Verify whether `bis_skin_checked` is extension-injected markup or application-generated markup.
+- [x] Fix the stale `/dashboard/` route with a server-side redirect while preserving the existing `/broker/dashboard/` route.
+- [x] Verify `/dashboard/`, `/broker/dashboard/`, console output, responsive rendering, and regression checks.
+- [x] Save a corrected checkpoint and report any browser-extension limitation separately.
+
+## Addressbox Full Functionality Parity Expansion
+
+- [x] Audit all public Addressbox routes, navigation, search, content, conversion, and listing flows.
+- [x] Re-check authenticated dashboard, profile, requirements, subscriptions, inventory, AI, auction, tender, shortlist, contacted, and post-property flows.
+- [x] Map every capability to an Architech route, reusable domain contract, or explicit external-service gate.
+- [x] Implement safe missing functionality without copying Addressbox branding, protected assets, or unverifiable claims.
+- [x] Verify public and broker routes, mobile behavior, accessibility, SEO safety, authorization boundaries, and error states.
+- [ ] Save a checkpoint and report the remaining live-service requirements.
+
+
+## Homepage Hydration Mismatch Follow-up
+
+- [x] Confirm that `bis_skin_checked` is browser-injected markup rather than application-owned output.
+- [x] Trace the homepage client/server content mismatch to the hidden Radix TabsContent text and dynamic animation state.
+- [x] Remove the mismatching hidden text while preserving search, motion, accessibility, and SEO content.
+- [x] Verify the homepage in Chrome, including clean console, mobile layout, build, accessibility, and regression checks.
+- [ ] Save a corrected checkpoint and report any extension-only limitation separately.
+
+
+## Centered Hero Search Refinement
+
+- [x] Inspect the current first-viewport hero composition and compare the intended search prominence with Addressbox’s reference behavior.
+- [x] Center the search bar as the primary initial-viewport action without weakening the Ahmedabad editorial headline or trust cues.
+- [x] Preserve deterministic hydration, keyboard search, intent tabs, motion, contrast, and responsive touch sizing.
+- [x] Verify desktop/mobile screenshots, search interaction, accessibility, build, and regression checks.
+- [ ] Save a checkpoint and report the visual change.
+
+
+## Minimum Addressbox Parity and GitHub Push
+
+- [ ] Audit minimum public and authenticated Addressbox functionality against the current Architech routes and interactions.
+- [ ] Research open GitHub repositories and license-safe real-estate assets or patterns that can improve Architech without importing untrusted code or unclear licenses.
+- [ ] Implement every confirmed minimum functionality gap and document any provider or credential gate.
+- [ ] Verify functionality, mobile behavior, accessibility, SEO, tests, production build, and deployment readiness.
+- [ ] Commit and push the completed changes to the configured GitHub repository.

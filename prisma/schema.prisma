@@ -248,6 +248,8 @@ model Listing {
   updatedAt DateTime @updatedAt
 
   @@index([cityId, lifecycle])
+  @@index([cityId, localityId, lifecycle, meaningfulUpdatedAt])
+  @@index([brokerOrgId, lifecycle, updatedAt])
   @@index([localityId, lifecycle])
   @@index([verification])
   @@index([priceInr])

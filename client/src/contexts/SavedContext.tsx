@@ -1,3 +1,4 @@
+"use client";
 /* Shared saved-homes state, persisted to localStorage. */
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { loadSaved, persistSaved, toggleSaved } from "@/lib/saved";
@@ -13,12 +14,17 @@ export function SavedProvider({ children }: { children: ReactNode }) {
   );
 
   const toggle = useCallback((id: string) => {
+    const wasSaved = saved.includes(id);
     setSaved((prev) => {
       const next = toggleSaved(prev, id);
-      persistSaved(window.localStorage, next);
+      try {
+        if (typeof window !== "undefined") persistSaved(window.localStorage, next);
+      } catch {
+        // Private browsing and storage quotas should not block the shortlist UI.
+      }
       return next;
     });
-    return !saved.includes(id);
+    return !wasSaved;
   }, [saved]);
 
   const isSaved = useCallback((id: string) => saved.includes(id), [saved]);

@@ -62,6 +62,10 @@ function assertCommonSeo(html, route) {
   includes(html, "application/ld+json", route);
 }
 
+function assertNoindex(html, route) {
+  matches(html, /<meta[^>]+name=\"robots\"[^>]+content=\"[^\"]*noindex[^\"]*\"/i, route, "noindex robots meta");
+}
+
 const routeChecks = [
   {
     route: "/",
@@ -125,6 +129,36 @@ const routeChecks = [
       includes(html, "@type\":\"Residence", "/listing/garden-courtyard/");
       includes(html, "@type\":\"BreadcrumbList", "/listing/garden-courtyard/");
       matches(html, /<title>A garden courtyard in Paldi[^<]*₹1\.85 Cr[^<]*· Architech<\/title>/, "/listing/garden-courtyard/", "route title");
+    },
+  },
+  {
+    route: "/guide/",
+    check(html) {
+      assertCommonSeo(html, "/guide/");
+      includes(html, "Ahmedabad", "/guide/");
+      includes(html, "@type\":\"CollectionPage", "/guide/");
+    },
+  },
+  {
+    route: "/search/",
+    check(html) {
+      assertCommonSeo(html, "/search/");
+      assertNoindex(html, "/search/");
+      includes(html, "Search homes in Ahmedabad", "/search/");
+    },
+  },
+  {
+    route: "/privacy/",
+    check(html) {
+      assertCommonSeo(html, "/privacy/");
+      includes(html, "Privacy", "/privacy/");
+    },
+  },
+  {
+    route: "/terms/",
+    check(html) {
+      assertCommonSeo(html, "/terms/");
+      includes(html, "Terms", "/terms/");
     },
   },
 ];

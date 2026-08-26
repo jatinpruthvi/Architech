@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import ListProperty from "@/pages/ListProperty";
 import { homeUrl, listPropertyUrl } from "@/lib/seo/urls";
 
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "List your property — Architech",
   description: "Put your home on the market with its source trail attached: media rights, RERA context, and a freshness stamp. Submit for review and publish only what can be proven.",

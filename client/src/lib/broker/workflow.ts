@@ -138,9 +138,10 @@ export function listBrokerDrafts(organizationId: string) {
 const draftMedia = new Map<string, Set<string>>();
 
 /** Attach a media id to a draft; requires the draft to exist. */
-export function attachMediaToDraft(draftId: string, mediaId: string): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
+export function attachMediaToDraft(draftId: string, mediaId: string, session: AuthSession | null = demoBrokerSession): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
   const draft = drafts.get(draftId);
   if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  if (!session || draft.organizationId !== session.organization?.id) return { ok: false, status: 403, errors: ["Organization mismatch."] };
   const current = draftMedia.get(draftId) ?? new Set<string>();
   current.add(mediaId);
   draftMedia.set(draftId, current);
@@ -148,16 +149,19 @@ export function attachMediaToDraft(draftId: string, mediaId: string): { ok: true
 }
 
 /** Detach a media id from a draft. */
-export function detachMediaFromDraft(draftId: string, mediaId: string): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
+export function detachMediaFromDraft(draftId: string, mediaId: string, session: AuthSession | null = demoBrokerSession): { ok: true; mediaIds: string[] } | { ok: false; status: number; errors: string[] } {
   const draft = drafts.get(draftId);
   if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  if (!session || draft.organizationId !== session.organization?.id) return { ok: false, status: 403, errors: ["Organization mismatch."] };
   const current = draftMedia.get(draftId) ?? new Set<string>();
   current.delete(mediaId);
   return { ok: true, mediaIds: [...current] };
 }
 
 /** List media ids attached to a draft. */
-export function listDraftMediaIds(draftId: string): string[] {
+export function listDraftMediaIds(draftId: string, session: AuthSession | null = demoBrokerSession): string[] {
+  const draft = drafts.get(draftId);
+  if (!draft || !session || draft.organizationId !== session.organization?.id) return [];
   return [...(draftMedia.get(draftId) ?? [])];
 }
 

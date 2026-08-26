@@ -7,6 +7,7 @@ import { ArrowUpRight, Bookmark, Languages, Menu, Moon, Search, Sun, X } from "l
 import { useSaved } from "@/contexts/SavedContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLang } from "@/contexts/LangContext";
+import RequirementCapture from "@/components/architech/RequirementCapture";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -23,6 +24,7 @@ export default function Header() {
     { href: "/search/", label: t.nav.find },
     { href: "/guide/", label: t.nav.notes },
     { href: "/list-property/", label: t.nav.list },
+    { href: "/sitemap.html/", label: "More" },
   ];
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function Header() {
             <Bookmark size={14} strokeWidth={1.8} /> {t.nav.saved}
             {saved.length > 0 && <span className="grid h-4.5 min-w-[18px] place-items-center rounded-full bg-brick px-1 text-[10px] font-bold text-cream">{saved.length}</span>}
           </Link>
+          <RequirementCapture compact />
           <Link href="/search/" className="btn-sweep motion-press hidden items-center gap-2 bg-brick px-5 py-3 stamp !text-[12px] font-semibold text-cream md:inline-flex"><Search size={14} /> {t.nav.start}</Link>
           <button className={`grid h-11 w-11 place-items-center lg:hidden ${onDark ? "text-cream" : "text-ink"}`} onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
             {open ? <X size={24} /> : <Menu size={24} />}
@@ -81,7 +84,8 @@ export default function Header() {
                 {item.label} <ArrowUpRight size={20} className="text-brick" />
               </Link>
             ))}
-            <Link href="/saved/" className="mt-6 stamp font-semibold text-brick">{t.nav.saved} {saved.length > 0 ? `(${saved.length})` : ""} →</Link>
+            <Link href="/requirements/" className="mt-6 stamp font-semibold text-brick">Tell us what you need →</Link>
+            <Link href="/saved/" className="mt-3 stamp font-semibold text-brick">{t.nav.saved} {saved.length > 0 ? `(${saved.length})` : ""} →</Link>
           </nav>
         </div>
       )}

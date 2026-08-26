@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { enforceMutationSafety } from "@/lib/auth/request-safety";
 import type { LeadInput } from "@/lib/leads/lead";
 import { createLeadForServer } from "@/lib/leads/server";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const safetyResponse = enforceMutationSafety(request);
+  if (safetyResponse) return safetyResponse;
   let body: Partial<LeadInput>;
   try {
     body = await request.json();

@@ -3,7 +3,7 @@
    Magic-UI-style (NumberTicker, BorderBeam, Shimmer, TiltCard, WordReveal, Marquee),
    shadcn/ui (Tabs, Accordion), 21st.dev patterns (bento, testimonial rails),
    OpenStreetMap-sourced coordinates for every locality. */
-import { ArrowDown, ArrowUpRight, Compass, Quote, Search, ShieldCheck, Timer, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Compass, Search, ShieldCheck, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,22 +14,14 @@ import TiltCard from "../components/magicui/TiltCard";
 import WordReveal from "../components/magicui/WordReveal";
 import Marquee from "../components/magicui/Marquee";
 import Pic from "../components/architech/Pic";
+import MarketDirectory from "../components/architech/MarketDirectory";
 import useTitle from "../hooks/useTitle";
 import { getListings, getLocalities } from "@/lib/repositories";
 import { useLang } from "@/contexts/LangContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const tickerItems = ["Paldi", "Navrangpura", "Thaltej", "Bopal", "Satellite", "Ambawadi", "Vastrapur", "Maninagar", "Gulbai Tekra", "Sindhu Bhavan"];
-
-const testimonials = [
-  { quote: "The freshness stamps changed how I shortlisted. I stopped calling about homes that were already gone.", name: "Kinjal S.", role: "Bought in Paldi" },
-  { quote: "First portal where the RERA number was on the page, not behind a form.", name: "Rohan M.", role: "Bought in Thaltej" },
-  { quote: "Masked contact actually works. Zero spam calls in three months of searching.", name: "Devanshi P.", role: "Renting in Navrangpura" },
-  { quote: "As a broker, the verification badge earns me trust I used to spend weeks building.", name: "Nivasa Partners", role: "Verified partner" },
-  { quote: "The locality notes read like a friend who lives there wrote them.", name: "Arjun K.", role: "Exploring Bopal" },
-  { quote: "I chose the neighbourhood first, exactly like the site told me to. No regrets.", name: "Sana V.", role: "Bought in Satellite" },
-];
 
 const faqs = [
   { q: "How is every listing RERA-verified?", a: "Each listing is checked against the Gujarat RERA registry at publication — registration number, promoter, and completion status — and re-checked on every meaningful update. The registration number is displayed on the listing page, never behind a form." },
@@ -69,8 +61,6 @@ function HeroSearch() {
             <TabsTrigger key={v} value={v} className="rounded-none border-0 px-7 py-3 stamp !text-[11px] font-semibold text-cream/60 data-[state=active]:bg-brick data-[state=active]:text-cream data-[state=active]:shadow-none">{l}</TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value="buy" className="sr-only">Buy homes search mode</TabsContent>
-        <TabsContent value="rent" className="sr-only">Rent homes search mode</TabsContent>
       </Tabs>
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}
@@ -136,23 +126,27 @@ export default function Home() {
 
       {/* ================= HERO ================= */}
       <section className="relative min-h-[100svh] overflow-hidden bg-night text-cream">
-        <div className="grain absolute inset-0">
+        <div className="grain !absolute inset-0">
           <Pic name="hero-ahmedabad" alt="Brick architecture of Ahmedabad glowing at golden hour" className="hero-zoom h-full w-full object-cover opacity-75" sizes="100vw" eager />
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(21,17,13,0.92)_0%,rgba(21,17,13,0.55)_48%,rgba(21,17,13,0.15)_100%)]" />
-        <div className="relative z-10 container flex min-h-[100svh] flex-col justify-end pb-16 pt-36 md:pb-20">
-          <p className="kicker fade-rise text-ember" style={{ "--d": "150ms" } as React.CSSProperties}>{t.hero.kicker}</p>
-          <h1 className="display mt-8 text-[clamp(52px,9.2vw,132px)] text-cream">
-            <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="text-ember">{t.hero.h1em}</em></span></span>
-            <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
-          </h1>
-          <p className="fade-rise mt-8 max-w-[460px] text-[15px] leading-7 text-cream/70 md:text-base" style={{ "--d": "560ms" } as React.CSSProperties}>
-            {t.hero.sub}
-          </p>
-          <div className="mt-10">
-            <HeroSearch />
+        <div className="relative z-10 container flex min-h-[100svh] flex-col justify-start pb-14 pt-20 md:pb-16 md:pt-[clamp(8rem,13vh,11rem)]">
+          <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
+            <p className="kicker fade-rise text-ember" style={{ "--d": "150ms" } as React.CSSProperties}>{t.hero.kicker}</p>
+            <h1 className="display mt-7 text-[clamp(52px,9.2vw,132px)] leading-[0.92] text-cream md:mt-8">
+              <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="text-ember">{t.hero.h1em}</em></span></span>
+              <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
+            </h1>
+            <p className="fade-rise mt-7 max-w-[600px] text-[15px] leading-7 text-cream/70 md:mt-8 md:text-base" style={{ "--d": "560ms" } as React.CSSProperties}>
+              {t.hero.sub}
+            </p>
+            <div className="fade-rise mt-8 w-full max-w-[760px] border border-cream/20 bg-night/30 p-2.5 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-sm md:mt-9 md:p-3" style={{ "--d": "700ms" } as React.CSSProperties}>
+              <div className="mx-auto flex justify-center">
+                <HeroSearch />
+              </div>
+            </div>
           </div>
-          <div className="fade-rise mt-14 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-6" style={{ "--d": "850ms" } as React.CSSProperties}>
+          <div className="fade-rise mt-12 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-6 md:mt-14" style={{ "--d": "850ms" } as React.CSSProperties}>
             <div className="flex gap-10 md:gap-16">
               <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={281} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
               <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={14} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
@@ -252,6 +246,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================= MARKET DIRECTORY ================= */}
+      <MarketDirectory />
+
       {/* ================= LOCALITY INDEX (real OSM coords) ================= */}
       <section className="border-t border-ink/12 bg-sand/40 py-24 md:py-32">
         <div className="container">
@@ -319,40 +316,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= TESTIMONIAL RAILS ================= */}
-      <section className="overflow-hidden border-b border-ink/12 py-20 md:py-28">
-        <div className="container mb-12">
+      {/* ================= FEEDBACK / EVIDENCE ================= */}
+      <section className="border-b border-ink/12 bg-sand/60 py-20 md:py-28">
+        <div className="container grid gap-10 md:grid-cols-[0.8fr_1.2fr] md:items-end">
           <Reveal>
-            <p className="kicker text-brick">Word on the street</p>
-            <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">Trust, <em className="text-brick">earned</em> and repeated.</h2>
-            <p className="stamp mt-4 !text-[10px] text-ink/60">Illustrative voices for this concept preview — real reviews arrive with the live platform.</p>
+            <p className="kicker text-brick">Signal, not theatre</p>
+            <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">Trust is measured by the <em className="text-brick">trail.</em></h2>
           </Reveal>
-        </div>
-        <div className="space-y-5">
-          <Marquee speed={46}>
-            {testimonials.slice(0, 3).map((t) => (
-              <blockquote key={t.name} className="mx-2.5 w-[380px] shrink-0 border border-ink/12 bg-card p-6">
-                <Quote size={16} className="text-brick" />
-                <p className="mt-3 text-sm leading-6 text-ink/75">"{t.quote}"</p>
-                <footer className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3">
-                  <span className="text-sm font-semibold">{t.name}</span>
-                  <span className="stamp !text-[10px] text-trust">{t.role}</span>
-                </footer>
-              </blockquote>
-            ))}
-          </Marquee>
-          <Marquee speed={52} reverse>
-            {testimonials.slice(3).map((t) => (
-              <blockquote key={t.name} className="mx-2.5 w-[380px] shrink-0 border border-ink/12 bg-card p-6">
-                <Quote size={16} className="text-brick" />
-                <p className="mt-3 text-sm leading-6 text-ink/75">"{t.quote}"</p>
-                <footer className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3">
-                  <span className="text-sm font-semibold">{t.name}</span>
-                  <span className="stamp !text-[10px] text-trust">{t.role}</span>
-                </footer>
-              </blockquote>
-            ))}
-          </Marquee>
+          <Reveal delay={100} className="border-l-2 border-brick pl-6 md:pl-8">
+            <p className="max-w-2xl text-[15px] leading-7 text-ink/70">We do not publish invented reviews, ratings, or partner praise. The useful signal is already on the page: source, freshness, RERA context, and a clear next action.</p>
+            <div className="mt-7 flex flex-wrap gap-3"><Link href="/guide/" className="inline-flex items-center gap-2 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link><Link href="/review/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link></div>
+          </Reveal>
         </div>
       </section>
 

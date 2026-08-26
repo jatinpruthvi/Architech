@@ -13,7 +13,7 @@ import { GET as healthGet } from "../../../app/api/observability/health/route";
 import { GET as sloGet } from "../../../app/api/observability/slo/route";
 import { GET as statusGet } from "../../../app/api/observability/status/route";
 import { GET as authorityAssetsGet, POST as authorityAssetsPost } from "../../../app/api/authority/assets/route";
-import { GET as authorityOutreachGet, POST as authorityOutreachPost } from "../../../app/api/authority/outreach/route";
+import { POST as authorityOutreachPost } from "../../../app/api/authority/outreach/route";
 import { GET as brokerDraftsGet, POST as brokerDraftsPost } from "../../../app/api/broker/listings/route";
 import { POST as draftMediaPost } from "../../../app/api/broker/listings/[draftId]/media/route";
 import { POST as errorsPost } from "../../../app/api/observability/errors/route";
@@ -114,6 +114,11 @@ describe("public API contract", () => {
     expect(body.service).toBe("architech-web");
     expect((body as { slo: { status: string; results: unknown[] } }).slo.status).toBe("ok");
     expect((body as { endpoints: { health: string } }).endpoints.health).toBe("/api/observability/health");
+  });
+
+  it("GET /api/broker/listings rejects an anonymous request", async () => {
+    const response = await brokerDraftsGet(new Request("http://example.com/api/broker/listings?mode=none"));
+    expect(response.status).toBe(401);
   });
 
   it("GET /api/broker/listings returns the broker's drafts", async () => {

@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET } from "../../../../app/api/auth/session/route";
 import { canAccessBrokerDashboard, demoBrokerSession, hasRoleAtLeast, requirePermission } from "./roles";
 import { mapBetterAuthClaimsToSession } from "./live";
 import { getAuthSourceMode, validateBetterAuthEnvironment } from "./source";
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("auth and broker organization contract", () => {
   it("checks role hierarchy", () => {
@@ -42,6 +44,9 @@ describe("auth and broker organization contract", () => {
   });
 
   it("reports live Better Auth as not configured when secrets are missing", async () => {
+    vi.stubEnv("BETTER_AUTH_SECRET", "");
+    vi.stubEnv("BETTER_AUTH_URL", "");
+    vi.stubEnv("DATABASE_URL", "");
     const response = await GET(new Request("http://example.com/api/auth/session?source=better-auth"));
     expect(response.status).toBe(503);
     const body = await response.json();

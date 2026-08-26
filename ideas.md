@@ -71,6 +71,11 @@ The mark is a bold geometric “A” formed from two offset architectural planes
 - No purple gradients, no generic glassmorphism, no over-rounded everything, and no default Inter-only typography.
 - The homepage, locality page, results page, and listing detail page must share one visual grammar before the design is considered ready.
 - Motion is real but subordinate to content, Google crawlability, accessibility, and low-end performance.
+- Every non-homepage page must include one unique Amdavad Modern structural motif—an arch frame, stepwell layering, oversized index numeral, coordinate stamp, or field-note annotation—so utility routes do not rely on one repeated hero composition.
+- Contact, feedback, loan, and other utility surfaces are field-office ledgers: mono labels, ruled groups, clay dividers, explicit trust-green evidence cues, and visible consent/provider gates instead of generic beige form cards.
+- Empty or low-inventory search states are curated field notes with locality context, source/freshness explanation, nearby alternatives, and a clear next step rather than a blank message.
+- Trust green marks verified, source-reviewed, RERA, moderation, and freshness meaning; brick remains the action and editorial emphasis color.
+- Public feedback language must describe a real moderation gate and never imply fabricated or seeded reviews, ratings, or testimonials.
 
 
 ---

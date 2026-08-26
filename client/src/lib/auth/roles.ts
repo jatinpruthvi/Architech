@@ -40,7 +40,22 @@ export const demoBrokerSession: AuthSession = {
     name: "Nivasa Partners",
     verificationStatus: "VERIFIED_PARTNER",
   },
-  permissions: ["broker.dashboard.read", "listing.draft.create", "lead.inbox.read", "organization.profile.read"],
+  permissions: [
+    "broker.dashboard.read",
+    "listing.draft.create",
+    "lead.inbox.read",
+    "organization.profile.read",
+    "authority.registry.read",
+    "authority.registry.write",
+    "moderation.queue.read",
+    "moderation.listings.write",
+    "listing.review.moderate",
+    "media.moderation.write",
+    "rera.corrections.write",
+    "media.upload.write",
+    "saved-search.read",
+    "saved-search.write",
+  ],
   source: "better-auth-contract-demo",
 };
 
