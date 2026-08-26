@@ -1,9 +1,9 @@
 {
-  "description": "Phase 1 performance budgets for the Architech public prototype. Re-baselined 25 Aug 2026 after the parity overlay added public calculator/editorial pages and an agent workspace: first-load gzip cap raised to 235 KB and total static JS cap to 2.15 MiB to accommodate the new surfaces (max measured /search first-load gzip 226.8 KiB, total static JS 2089.7 KiB), keeping headroom so real regressions are still caught. Per-route raw first-load and core-web-vital targets remain unchanged.",
+  "description": "Phase 1 performance budgets for the Architech public prototype. Re-baselined 26 Aug 2026 after the locality-intelligence layer added a provenance-labeled evidence band (current price range, inventory by configuration & budget, commute/nearby, new projects) to the /buy/ahmedabad/:locality/ hub, replacing placeholder snapshot figures for a cross-route client component: first-load gzip cap raised to 240 KB and total static JS cap to 2.16 MiB (max measured /search first-load gzip 230.0 KiB, total static JS 2151.1 KiB), keeping headroom so genuine regressions are still caught. Per-route raw first-load and core-web-vital targets remain unchanged. Prior re-baselines: 25 Aug 2026 parity overlay (first-load gzip 235 KB, total 2.15 MiB).",
   "routes": {
     "default": {
       "maxFirstLoadJsBytes": 770000,
-      "maxFirstLoadJsGzipBytes": 235000
+      "maxFirstLoadJsGzipBytes": 240000
     }
   },
   "html": {
@@ -18,7 +18,7 @@
     ]
   },
   "staticAssets": {
-    "maxTotalStaticJsBytes": 2190000,
+    "maxTotalStaticJsBytes": 2212000,
     "maxLargestChunkBytes": 1100000,
     "maxLargestChunkGzipBytes": 280000,
     "maxMobileWebpBytes": 225000,

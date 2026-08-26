@@ -6,9 +6,12 @@ import Link from "next/link";
 import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
+import LocalityIntel from "../components/architech/LocalityIntel";
 import useTitle from "../hooks/useTitle";
 import { getListings, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
-import { localityPriceTrends, compactInr } from "@/lib/realestate/price-trends";
+import { compactInr } from "@/lib/realestate/price-trends";
+import { localityIntel, formatPsf } from "@/lib/realestate/locality-intel";
+import { localityTrustSummary } from "@/lib/trust/locality";
 import { useLang } from "@/contexts/LangContext";
 
 export default function CityPage({ localitySlug }: { localitySlug: string }) {
@@ -21,6 +24,13 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
   const localHomes = getListingsByLocality(locality.slug);
   const showcase = localHomes.length ? [...localHomes, ...getListings().filter((p) => p.localitySlug !== locality.slug)].slice(0, 4) : getListings();
   const nearby = getLocalities().filter((l) => l.slug !== locality.slug).slice(0, 4);
+
+  const intel = localityIntel(locality.slug);
+  const trust = localityTrustSummary(locality.slug);
+  const newProjects = localHomes.filter(
+    (p) => p.availability === "NEW_LAUNCH" || p.availability === "UNDER_CONSTRUCTION",
+  );
+  const riverfrontKm = locality.landmarks?.find(([place]) => place.toLowerCase().includes("riverfront"))?.[1] ?? "—";
 
   return (
     <div className="bg-paper pt-[78px] text-ink">
@@ -44,9 +54,14 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
             </div>
             <Reveal delay={100}>
               <div className="border-l-4 border-brick bg-paper p-6 editorial-shadow md:p-7">
-                <p className="stamp !text-[10px] text-ink/60">{t.locality.snapshot}</p>
+                <p className="stamp !text-[10px] text-ink/60">{t.locality.snapshot} · {t.intel.updatedOn} {intel.asOfLabel}</p>
                 <div className="mt-5 grid grid-cols-2 gap-6">
-                  {[[`${locality.homes * 3}`, t.locality.activeHomes], ["₹11.2k", t.locality.medianRate], ["4.8 km", t.locality.toRiverfront], ["92%", t.locality.reraCoverage]].map(([n, l]) => (
+                  {[
+                    [String(intel.buyCount), t.intel.activeBuy],
+                    [formatPsf(intel.avgPricePerSqftInr), t.locality.medianRate],
+                    [riverfrontKm, t.locality.toRiverfront],
+                    [`${trust.reraCoveragePct}%`, t.locality.reraCoverage],
+                  ].map(([n, l]) => (
                     <div key={l}><strong className="font-display text-[28px] font-medium tracking-[-0.02em]">{n}</strong><p className="stamp mt-1 !text-[10px] text-ink/60">{l}</p></div>
                   ))}
                 </div>
@@ -57,34 +72,34 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
         </div>
       </section>
 
-      {/* Price trends by area */}
-      <section className="container py-14">
+      {/* Current price range · configuration/budget · commute · new projects — provenance-true */}
+      <section className="container py-14 md:py-20">
+        <Reveal>
+          <LocalityIntel intel={intel} locality={locality} newProjects={newProjects} />
+        </Reveal>
+      </section>
+
+      {/* Historical price trend (aggregate, buy listings only) */}
+      <section className="container pb-14">
         <div className="grid gap-6 border border-ink/15 bg-paper p-6 md:grid-cols-4">
-          {(() => {
-            const trends = localityPriceTrends(locality.slug);
-            return (
-              <>
-                <div className="border-l-4 border-brick pl-4 md:border-l-0 md:border-r md:border-ink/10 md:pl-0">
-                  <p className="stamp !text-[10px] text-ink/60">Homes tracked</p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{trends.count}</p>
-                </div>
-                <div className="border-l-4 border-brick pl-4">
-                  <p className="stamp !text-[10px] text-ink/60">Median price</p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{compactInr(trends.medianPriceInr)}</p>
-                </div>
-                <div className="border-l-4 border-brick pl-4">
-                  <p className="stamp !text-[10px] text-ink/60">Price range</p>
-                  <p className="mt-2 font-display text-xl font-semibold tracking-[-0.02em]">{compactInr(trends.minPriceInr)} – {compactInr(trends.maxPriceInr)}</p>
-                </div>
-                <div className="border-l-4 border-brick pl-4">
-                  <p className="stamp !text-[10px] text-ink/60">Avg / sq ft</p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{trends.avgPricePerSqftInr ? `₹${Math.round(trends.avgPricePerSqftInr).toLocaleString("en-IN")}` : "—"}</p>
-                </div>
-              </>
-            );
-          })()}
+          <div className="border-l-4 border-brick pl-4 md:border-l-0 md:border-r md:border-ink/10 md:pl-0">
+            <p className="stamp !text-[10px] text-ink/60">{t.intel.activeBuy}</p>
+            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{intel.buyCount}</p>
+          </div>
+          <div className="border-l-4 border-brick pl-4">
+            <p className="stamp !text-[10px] text-ink/60">Median price</p>
+            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{compactInr(intel.medianPriceInr)}</p>
+          </div>
+          <div className="border-l-4 border-brick pl-4">
+            <p className="stamp !text-[10px] text-ink/60">Price range</p>
+            <p className="mt-2 font-display text-xl font-semibold tracking-[-0.02em]">{compactInr(intel.minPriceInr)} – {compactInr(intel.maxPriceInr)}</p>
+          </div>
+          <div className="border-l-4 border-brick pl-4">
+            <p className="stamp !text-[10px] text-ink/60">Avg / sq ft</p>
+            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em]">{formatPsf(intel.avgPricePerSqftInr)}</p>
+          </div>
         </div>
-        <p className="stamp mt-2 !text-[9px] text-ink/55">Derived from {locality.name} inventory for this concept preview · {t.search.demoFixtures}</p>
+        <p className="stamp mt-2 !text-[9px] text-ink/55">{t.intel.basedOn.replace("{n}", String(intel.buyCount))} · {t.intel.updatedOn} {intel.asOfLabel}</p>
       </section>
 
       {/* Feel of the place */}
