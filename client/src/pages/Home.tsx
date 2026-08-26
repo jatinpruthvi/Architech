@@ -1,8 +1,7 @@
 "use client";
-/* ARCHITECH — Home v2 "Amdavad Modern", upgraded with the MCP toolkit:
-   Magic-UI-style (NumberTicker, BorderBeam, Shimmer, TiltCard, WordReveal, Marquee),
-   shadcn/ui (Tabs, Accordion), 21st.dev patterns (bento, testimonial rails),
-   OpenStreetMap-sourced coordinates for every locality. */
+/* ARCHITECH — Home v2 "Amdavad Modern". Hero rule: preserve the centered search hierarchy,
+   use locally grounded right-weighted architecture, a calm text-safe zone, responsive art direction,
+   real HTML copy, and reduced-motion-safe movement. */
 import { ArrowDown, ArrowUpRight, Compass, MapPin, Search, ShieldCheck, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,6 +21,9 @@ import { useLang } from "@/contexts/LangContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const tickerItems = ["Paldi", "Navrangpura", "Thaltej", "Bopal", "Satellite", "Ambawadi", "Vastrapur", "Maninagar", "Gulbai Tekra", "Sindhu Bhavan"];
+
+const HERO_DESKTOP = "/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg";
+const HERO_MOBILE = "/manus-storage/architech-ahmedabad-hero-mobile_7577c7e9.jpg";
 
 const faqs = [
   { q: "How is every listing RERA-verified?", a: "Each listing is checked against the Gujarat RERA registry at publication — registration number, promoter, and completion status — and re-checked on every meaningful update. The registration number is displayed on the listing page, never behind a form." },
@@ -232,7 +234,7 @@ export default function Home() {
       {/* ================= HERO ================= */}
       <section className="relative min-h-[100svh] overflow-hidden bg-night text-cream">
         <div className="grain !absolute inset-0">
-          <Pic name="hero-ahmedabad" alt="Brick architecture of Ahmedabad glowing at golden hour" className="hero-zoom h-full w-full object-cover opacity-75" sizes="100vw" eager />
+          <Pic name="hero-ahmedabad" alt="" src={HERO_DESKTOP} mobileSrc={HERO_MOBILE} className="hero-zoom hero-art h-full w-full object-cover opacity-75" sizes="100vw" eager />
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(21,17,13,0.92)_0%,rgba(21,17,13,0.55)_48%,rgba(21,17,13,0.15)_100%)]" />
         <div className="relative z-10 container flex min-h-[100svh] flex-col justify-start pb-14 pt-20 md:pb-16 md:pt-[clamp(8rem,13vh,11rem)]">

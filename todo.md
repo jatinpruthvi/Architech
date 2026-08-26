@@ -273,6 +273,16 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Add Storybook stories for gallery, cost panel, and card variants.
 - [x] Re-baseline route first-load raw + total-static-JS budgets (documented).
 
+## Locality intelligence & evidence provenance (Aug 2026)
+
+- [x] Derive locality market facts (current price range, ₹/sq ft, vs-city position) from structured listing facts only (`client/src/lib/realestate/locality-intel.ts`).
+- [x] Present provenance labels ("Based on N active verified buy listings · Updated <date>") instead of invented snapshot figures.
+- [x] Add inventory by configuration & budget, commute/nearby essentials, and new-projects bands to the locality hub.
+- [x] Fix pre-existing rent-mixing in the locality price band (monthly rent was being counted as a buy price).
+- [x] Add locality-intelligence unit tests (buy/rent separation, provenance, unknown-locality honesty).
+- [x] Add Storybook examples (English + Hindi).
+- [x] Re-baseline first-load gzip + total-static-JS budgets (documented, value-driven not feature-stripped).
+
 
 
 ## Push Current Architech Changes
@@ -296,3 +306,36 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [ ] Implement the approved production-safe discovery, map/list, quick-view, media, saved/compare, visit, and broker workflow improvements that are genuinely missing.
 - [ ] Preserve Ahmedabad-first scope, bilingual support, accessibility, SEO, provenance, and no-payment constraints.
 - [ ] Run quality gates, commit, push a dedicated branch, and report the review status.
+
+
+## Current PR and Documentation Delivery
+
+- [x] Inventory all project Markdown files and create a GitHub-style file index.
+- [x] Inspect discovery-experience-v1 PR status and media storage/provider configuration.
+- [x] Add automated compare-route tests and media-rights contract tests.
+- [x] Validate or safely prepare live media storage; do not claim R2 activation without credentials.
+- [x] Run focused quality gates, push the branch, create the pull request, and report the result.
+
+
+## Latest Repository Pull
+
+- [x] Inspect the local branch, remotes, and uncommitted changes.
+- [x] Fetch the latest public branches and inspect divergence.
+- [x] Synchronize the requested local branch without overwriting work.
+- [x] Verify and report the pulled branch state; `todo.md` remains intentionally uncommitted.
+
+
+## Hero Direction Evaluation
+
+- [x] Compare the five attached hero concepts and identify their visual and technical assumptions.
+- [x] Evaluate brand fit, conversion hierarchy, mobile crop behavior, accessibility, SEO, performance, and licensing.
+- [x] Document the recommended hero direction and whether to replace or complement the current hero.
+
+
+## Ahmedabad Hero Refresh Implementation
+
+- [x] Inspect the current hero asset pipeline, image component, and performance contract.
+- [x] Create or adapt an Ahmedabad-specific right-weighted hero asset treatment with a portrait crop strategy.
+- [x] Implement responsive art direction, accessibility, and eager image-loading behavior without changing search hierarchy.
+- [x] Run desktop/mobile visual checks plus accessibility, build, SEO, and regression gates; record the inherited `/search` raw-JS budget overage separately.
+- [ ] Save a recoverable checkpoint and report the hero refresh result.
