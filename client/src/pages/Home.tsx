@@ -3,10 +3,10 @@
    Magic-UI-style (NumberTicker, BorderBeam, Shimmer, TiltCard, WordReveal, Marquee),
    shadcn/ui (Tabs, Accordion), 21st.dev patterns (bento, testimonial rails),
    OpenStreetMap-sourced coordinates for every locality. */
-import { ArrowDown, ArrowUpRight, Compass, Search, ShieldCheck, Timer, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Compass, MapPin, Search, ShieldCheck, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import NumberTicker from "../components/magicui/NumberTicker";
@@ -17,8 +17,8 @@ import Pic from "../components/architech/Pic";
 import MarketDirectory from "../components/architech/MarketDirectory";
 import useTitle from "../hooks/useTitle";
 import { getListings, getLocalities } from "@/lib/repositories";
+import { applyMarket, applyQuery, type MarketCategory, type MarketIntent } from "@/lib/filters";
 import { useLang } from "@/contexts/LangContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const tickerItems = ["Paldi", "Navrangpura", "Thaltej", "Bopal", "Satellite", "Ambawadi", "Vastrapur", "Maninagar", "Gulbai Tekra", "Sindhu Bhavan"];
@@ -33,87 +33,190 @@ const faqs = [
 const recentSearches = ["3 BHK near Law Garden", "Courtyard homes in Paldi"];
 const popularSearches = [["Prahlad Nagar", 68], ["Thaltej", 54], ["Bopal", 47], ["Under ₹1.5 Cr", 117]] as const;
 
+type HeroIntent = MarketIntent;
+type HeroCategory = Exclude<MarketCategory, "all">;
+
 function HeroSearch() {
   const router = useRouter();
   const navigate = (url: string) => router.push(url);
   const { t } = useLang();
+  const [intent, setIntent] = useState<HeroIntent>("buy");
+  const [category, setCategory] = useState<HeroCategory>("residential");
   const [query, setQuery] = useState("");
-  const [intent, setIntent] = useState("buy");
   const [focused, setFocused] = useState(false);
   const [highlight, setHighlight] = useState(-1);
-  const options = [...recentSearches, ...popularSearches.map(([l]) => l)];
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const queryLen = query.trim().length;
 
-  const go = (q: string) => navigate(`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  // Build the search URL, ALWAYS carrying intent + category so the toggle works.
+  const buildParams = useMemo(() => {
+    const p = new URLSearchParams();
+    if (intent !== "buy") p.set("intent", intent);
+    if (category !== "residential") p.set("category", category);
+    return p;
+  }, [intent, category]);
+
+  const go = (q: string) => {
+    const p = new URLSearchParams(buildParams);
+    if (q.trim()) p.set("q", q.trim());
+    navigate(`/search?${p.toString()}`);
+  };
+
+  // Server-backed, debounced suggestion ranking from the canonical alias module.
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSug, setLoadingSug] = useState(false);
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length === 0) {
+      setSuggestions([...recentSearches, ...popularSearches.map(([l]) => l as string)]);
+      setLoadingSug(false);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoadingSug(true);
+      try {
+        const r = await fetch(`/api/search/suggest?q=${encodeURIComponent(trimmed)}`, { signal: ctrl.signal });
+        const data = await r.json();
+        if (Array.isArray(data.suggestions)) setSuggestions(data.suggestions.map((s: { query: string }) => s.query));
+      } catch {
+        /* ignore aborted */
+      } finally {
+        if (!ctrl.signal.aborted) setLoadingSug(false);
+      }
+    }, 160);
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [query]);
+
+  // Reset keyboard/visual selection when the input list changes.
+  useEffect(() => { setHighlight(-1); }, [suggestions]);
+
+  // Keep selection within bounds.
+  const options = suggestions;
+  const optionCount = options.length;
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (!focused) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setHighlight((i) => (i + 1) % options.length); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setHighlight((i) => (i <= 0 ? options.length - 1 : i - 1)); }
-    else if (e.key === "Enter" && highlight >= 0) { e.preventDefault(); go(options[highlight]); }
-    else if (e.key === "Escape") { setFocused(false); setHighlight(-1); }
+    if (e.key === "ArrowDown") { e.preventDefault(); setHighlight((i) => (i + 1) % Math.max(1, optionCount)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHighlight((i) => (i <= 0 ? Math.max(0, optionCount - 1) : i - 1)); }
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlight >= 0 && options[highlight]) go(options[highlight]);
+      else go(query);
+      setFocused(false);
+    } else if (e.key === "Escape") { setFocused(false); setHighlight(-1); }
   };
 
+  // Close on outside click but keep selection when interacting with the panel.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setFocused(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const setIntentAndFocus = (v: HeroIntent) => { setIntent(v); setHighlight(-1); inputRef.current?.focus(); };
+
+  const intentLabel = intent === "rent" ? t.hero.rent : t.hero.buy;
+  const resultCount = useMemo(() => {
+    const listings = getListings();
+    const cat: MarketCategory = category;
+    return applyQuery(applyMarket(listings, cat, intent), query.trim()).length;
+  }, [intent, category, query]);
+
   return (
-    <div className="fade-rise relative w-full max-w-[640px]" style={{ "--d": "700ms" } as React.CSSProperties}>
-      <Tabs value={intent} onValueChange={setIntent}>
-        <TabsList className="h-auto rounded-none border border-b-0 border-cream/25 bg-paper/10 p-0 backdrop-blur-md">
-          {[["buy", t.hero.buy], ["rent", t.hero.rent]].map(([v, l]) => (
-            <TabsTrigger key={v} value={v} className="rounded-none border-0 px-7 py-3 stamp !text-[11px] font-semibold text-cream/60 data-[state=active]:bg-brick data-[state=active]:text-cream data-[state=active]:shadow-none">{l}</TabsTrigger>
+    <div ref={wrapRef} className="fade-rise relative w-full max-w-[700px]" style={{ "--d": "700ms" } as React.CSSProperties}>
+      {/* Intent + category controls */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="inline-flex rounded-2xl border border-cream/25 bg-paper/10 p-1 backdrop-blur-md" role="tablist" aria-label="Buy or rent">
+          {(["buy", "rent"] as HeroIntent[]).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setIntentAndFocus(v)}
+              role="tab"
+              aria-selected={intent === v}
+              className={`relative rounded-xl px-6 py-2.5 stamp !text-[11px] font-semibold transition-all duration-300 ${intent === v ? "text-cream" : "text-cream/60 hover:text-cream"}`}
+            >
+              {intent === v && <span className="absolute inset-0 rounded-xl bg-brick motion-spring-in" aria-hidden="true" />}
+              <span className="relative z-10">{v === "buy" ? t.hero.buy : t.hero.rent}</span>
+            </button>
           ))}
-        </TabsList>
-        <TabsContent value="buy" className="hidden" aria-hidden="true" />
-        <TabsContent value="rent" className="hidden" aria-hidden="true" />
-      </Tabs>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {(["residential", "commercial", "pg", "plot", "land", "auction"] as HeroCategory[]).map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => { setCategory(c); setHighlight(-1); }}
+              aria-pressed={category === c}
+              className={`rounded-full px-3 py-1.5 stamp !text-[10px] font-semibold transition-colors duration-200 ${category === c ? "bg-cream/20 text-cream ring-1 ring-cream/30" : "text-cream/55 hover:bg-cream/10 hover:text-cream"}`}
+            >
+              {c === "residential" ? t.hero.buy : c}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}
-        className="flex items-stretch border border-cream/25 bg-paper/10 backdrop-blur-md transition-colors focus-within:border-cream/60"
-        role="search" aria-label="Search homes in Ahmedabad">
+        className="mt-3 flex items-stretch rounded-2xl border border-cream/25 bg-paper/10 backdrop-blur-md transition-all duration-300 focus-within:border-brick focus-within:bg-paper/15 focus-within:shadow-[0_14px_40px_rgba(0,0,0,0.28)]"
+        role="search" aria-label={`Search ${intentLabel} in Ahmedabad`}>
         <span className="grid w-14 place-items-center text-cream/60"><Search size={19} /></span>
         <input
-          value={query} onChange={(e) => { setQuery(e.target.value); setHighlight(-1); }}
-          onFocus={() => setFocused(true)} onBlur={() => { setFocused(false); setHighlight(-1); }}
+          ref={inputRef}
+          value={query} onChange={(e) => { setQuery(e.target.value); }}
+          onFocus={() => setFocused(true)} onBlur={() => { /* keep open until outside click */ }}
           onKeyDown={onKeyDown}
           placeholder={intent === "buy" ? t.hero.placeholderBuy : t.hero.placeholderRent}
           className="w-full bg-transparent py-5 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none"
-          aria-label="Search query" role="combobox" aria-expanded={focused} aria-controls="search-suggestions"
-          aria-activedescendant={highlight >= 0 ? `sug-${highlight}` : undefined} aria-autocomplete="list"
+          aria-label={`Search ${intentLabel} by locality, project, or BHK`} role="combobox" aria-expanded={focused && (queryLen > 0 || true)} aria-controls={focused ? "search-suggestions" : undefined}
+          aria-activedescendant={focused && highlight >= 0 ? `sug-${highlight}` : undefined} aria-autocomplete="list" autoComplete="off"
         />
-        <button type="submit" className="shimmer-btn motion-press m-2 bg-brick px-6 stamp !text-[12px] font-semibold text-cream">{t.hero.search}</button>
+        <button type="submit" className="shimmer-btn motion-press my-1.5 mr-1.5 ml-1 rounded-xl bg-brick px-6 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
-      {focused && (
-        <div id="search-suggestions" className="absolute inset-x-0 top-full z-30 mt-2 border border-ink/15 bg-paper text-ink editorial-shadow" role="listbox" aria-label="Search suggestions">
-          <div className="p-4">
-            <p className="stamp !text-[10px] text-ink/60">Recent searches</p>
-            {recentSearches.map((s, i) => (
-              <button key={s} id={`sug-${i}`} onMouseDown={(e) => { e.preventDefault(); go(s); }}
-                className={`mt-1.5 flex w-full items-center gap-2.5 px-2 py-2.5 text-left text-sm transition-colors ${highlight === i ? "bg-sand text-brick" : "text-ink/80 hover:bg-sand/70 hover:text-brick"}`}
-                role="option" aria-selected={highlight === i}>
-                <Search size={13} className="text-ink/55" /> {s}
-              </button>
-            ))}
-          </div>
-          <div className="border-t border-ink/10 p-4">
-            <p className="stamp !text-[10px] text-ink/60">Popular right now</p>
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              {popularSearches.map(([label, count], j) => {
-                const idx = recentSearches.length + j;
-                return (
-                  <button key={label} id={`sug-${idx}`} onMouseDown={(e) => { e.preventDefault(); go(label); }}
-                    className={`inline-flex items-center gap-2 border px-3 py-2 stamp !text-[11px] transition-colors ${highlight === idx ? "border-brick text-brick" : "border-ink/15 text-ink/75 hover:border-brick hover:text-brick"}`}
-                    role="option" aria-selected={highlight === idx}>
-                    {label} <span className="text-brick">{count}</span>
+
+      {/* Animated suggestions */}
+      {focused && <div className="overflow-hidden transition-[opacity,transform,max-height] duration-300 ease-out max-h-[420px] translate-y-0 opacity-100">
+        <div id="search-suggestions" className="mt-2 rounded-2xl border border-ink/15 bg-paper text-ink shadow-lg" role="listbox" aria-label="Search suggestions">
+          {options.length ? (
+            <div className="max-h-[360px] overflow-y-auto p-3" role="group" aria-label="Search suggestion choices">
+              <p className="stamp px-1 !text-[9px] text-ink/50">{queryLen ? `Suggestions for “${query.trim()}”` : `${intentLabel} — start here`}{loadingSug ? " · loading…" : ""}</p>
+              <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                {options.slice(0, 12).map((label, i) => (
+                  <button
+                    key={`${label}-${i}`}
+                    id={`sug-${i}`}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); go(label); }}
+                    onMouseEnter={() => setHighlight(i)}
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors duration-150 ${highlight === i ? "bg-sand text-brick" : "text-ink/80 hover:bg-sand/70 hover:text-brick"}`}
+                    role="option" aria-selected={highlight === i}
+                  >
+                    <MapPin size={14} className={`shrink-0 ${highlight === i ? "text-brick" : "text-ink/40"}`} />
+                    <span className="truncate">{label}</span>
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-            <p className="stamp mt-3 !text-[9px] text-ink/60">Counts are illustrative · use ↑↓ and Enter</p>
-          </div>
+          ) : (
+            <div role="group" aria-label="No search matches" className="p-4 text-center text-sm text-ink/55">No matches — try a locality or BHK.</div>
+          )}
+          <p role="group" aria-label="Search keyboard help" className="stamp border-t border-ink/10 px-4 py-2.5 !text-[9px] text-ink/50">↑↓ to move · Enter to search · Esc to close · {resultCount} {intentLabel} match{resultCount === 1 ? "" : "es"} for this scope</p>
         </div>
-      )}
+      </div>}
+
+      {/* Quick chips */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="stamp !text-[10px] text-cream/60">{t.hero.beginWith}</span>
         {["Paldi", "Thaltej", "Navrangpura", "Bopal"].map((l) => (
-          <Link key={l} href={`/search?q=${encodeURIComponent(l)}`} className="border border-cream/25 px-3 py-1.5 stamp !text-[11px] text-cream/85 transition-colors hover:border-ember hover:text-ember">{l}</Link>
+          <Link
+            key={l}
+            href={`/search?q=${encodeURIComponent(l)}&${buildParams.toString()}`}
+            className="rounded-full border border-cream/25 px-3 py-1.5 stamp !text-[11px] text-cream/85 transition-all duration-200 hover:-translate-y-0.5 hover:border-ember hover:bg-cream/10 hover:text-ember"
+          >{l}</Link>
         ))}
       </div>
     </div>

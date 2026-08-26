@@ -38,4 +38,17 @@ describe("backend search contract", () => {
     expect(searchListings({ filters: ["type-villa"] }).results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
     expect(searchListings({ filters: ["availability-new"] }).results.map((property) => property.id)).toEqual(["light-filled-home"]);
   });
+
+  it("carries intent and category through URL params (home buy/rent toggle)", () => {
+    // Rent intent is honoured and now returns the added rent fixtures.
+    const rent = searchListings({ intent: "rent" });
+    expect(rent.results.length).toBeGreaterThan(0);
+    expect(rent.results.every((p) => p.transaction === "rent")).toBe(true);
+    expect(searchListingsFromSearchParams(new URLSearchParams("intent=rent")).intent).toBe("rent");
+    expect(searchListingsFromSearchParams(new URLSearchParams("intent=buy")).intent).toBe("buy");
+
+    const withCat = searchListingsFromSearchParams(new URLSearchParams("intent=buy&category=residential"));
+    expect(withCat.category).toBe("residential");
+    expect(withCat.results.length).toBeGreaterThan(0);
+  });
 });

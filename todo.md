@@ -80,6 +80,14 @@
 - [x] Implement discoverable "List your property" seller/owner entry point (`P1-BROKER-001`, `P1-SEO-002`).
 - [x] Implement authority/outreach registry + API endpoints (`P1-OFF-001`).
 - [x] Harden broker media-attach flow with audit events (`P1-BROKER-001`, `P1-MEDIA-001`).
+- [x] Implement agent/broker profile & reviews (`P1-AGENT-001`).
+- [x] Implement listing price history & comparable sales (`P1-DATA-006`).
+- [x] Implement listing performance tracking (`P1-OBS-003`).
+- [x] Write product feature gap analysis (`docs/product/product-feature-gap-analysis.md`).
+- [x] Implement investment metrics (cap rate / cash-on-cash / GRM) (`P1-INVEST-001`).
+- [x] Implement price trends by area (`P1-DATA-007`).
+- [x] Implement deterministic lead scoring (`P1-LEAD-002`).
+- [x] Write product gap alignment doc (`docs/product/product-gap-alignment.md`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 
@@ -209,10 +217,9 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 
 
 ## Merge Addressbox Parity PR
-
-- [ ] Confirm PR #31 is open, points to the intended base, and is mergeable.
-- [ ] Merge PR #31 using the existing authenticated GitHub session; never use the token pasted in chat.
-- [ ] Verify the public main commit and record the merged PR reference.
+- [x] Confirm PR #31 is open, points to the intended base, and is mergeable.
+- [x] Merge PR #31 using the existing authenticated GitHub session; never use the token pasted in chat.
+- [x] Verify the public main commit and record the merged PR reference.
 - [ ] Revoke the exposed GitHub token and replace it only if needed.
 
 
@@ -241,3 +248,51 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Implement one bounded wizard improvement without importing external code, assets, or dependencies.
 - [x] Run type, lint, unit, build, SEO, and database checks; record the Playwright browser prerequisite for accessibility.
 - [x] Document license, security, provenance, and accessibility gates for all external patterns.
+
+
+## Current Localhost Preview Repair
+
+- [ ] Inspect the managed dev server status, port 3000 binding, and recent logs.
+- [ ] Restore or document the correct Windows localhost access path.
+- [ ] Verify HTTP 200 responses for localhost and the managed preview URL.
+- [ ] Report the working validation URLs and any remaining limitation.
+
+
+## Non-Payment Functionality Audit
+
+- [x] Map all three attached checklists to existing Architech routes, APIs, data contracts, and broker workflows.
+- [x] Classify genuine gaps for Ahmedabad-first launch versus US-centric, rental-management, payment, or external-provider items.
+- [x] Prepare a prioritized non-payment recommendation with Phase 1, Phase 2, Phase 3, and activation-gate decisions.
+- [ ] Implement only the highest-value non-payment gaps approved from the recommendation.
+- [ ] Verify the approved additions and save a checkpoint with the audit result.
+## Decision dossier & reusable primitives (Aug 2026)
+
+- [x] Add buyer ownership-cost estimator (EMI + stamp duty + registration) (`P1-COST-001`).
+- [x] Add PropertyCard variants (grid/horizontal/map-preview) + restrained second-image hover + textual verification.
+- [x] Add premium listing gallery (thumbnail rail + fullscreen lightbox) + sticky conversion bar.
+- [x] Add Storybook stories for gallery, cost panel, and card variants.
+- [x] Re-baseline route first-load raw + total-static-JS budgets (documented).
+
+
+
+## Push Current Architech Changes
+- [x] Inspect repository instructions, branch, remote, and working-tree changes.
+- [x] Review the complete diff and commit all intended current changes.
+- [x] Push the commit to the configured public GitHub branch.
+- [x] Verify the remote commit and report the result.
+
+
+## Awesome Real Estate Resource Audit
+
+- [x] Inspect etewiah/awesome-real-estate and the attached resource recommendations.
+- [x] Verify license, maintenance signals, resource type, Ahmedabad relevance, and integration risk for promising resources.
+- [x] Map safe recommendations to Architech’s existing design, data, SEO, broker, and operations architecture.
+- [x] Document what to adopt, study, defer, or reject without importing unreviewed code or assets.
+
+
+## Attached Discovery and Broker Improvement Brief
+
+- [ ] Pull the latest public main branch and inspect the attached brief against current routes and components.
+- [ ] Implement the approved production-safe discovery, map/list, quick-view, media, saved/compare, visit, and broker workflow improvements that are genuinely missing.
+- [ ] Preserve Ahmedabad-first scope, bilingual support, accessibility, SEO, provenance, and no-payment constraints.
+- [ ] Run quality gates, commit, push a dedicated branch, and report the review status.
