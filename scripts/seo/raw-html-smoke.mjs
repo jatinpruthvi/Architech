@@ -121,6 +121,9 @@ const routeChecks = [
       includes(html, "A garden courtyard in Paldi", "/listing/garden-courtyard/");
       includes(html, "₹1.85 Cr", "/listing/garden-courtyard/");
       includes(html, "\"name\":\"trustScore\"", "/listing/garden-courtyard/");
+      includes(html, "\"@type\":\"RealEstateAgent\"", "/listing/garden-courtyard/");
+      includes(html, "\"name\":\"priceHistory\"", "/listing/garden-courtyard/");
+
       includes(html, "\"additionalProperty\"", "/listing/garden-courtyard/");
       includes(html, "Trust score", "/listing/garden-courtyard/");
       includes(html, "RERA verified", "/listing/garden-courtyard/");

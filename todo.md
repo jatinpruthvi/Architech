@@ -80,6 +80,14 @@
 - [x] Implement discoverable "List your property" seller/owner entry point (`P1-BROKER-001`, `P1-SEO-002`).
 - [x] Implement authority/outreach registry + API endpoints (`P1-OFF-001`).
 - [x] Harden broker media-attach flow with audit events (`P1-BROKER-001`, `P1-MEDIA-001`).
+- [x] Implement agent/broker profile & reviews (`P1-AGENT-001`).
+- [x] Implement listing price history & comparable sales (`P1-DATA-006`).
+- [x] Implement listing performance tracking (`P1-OBS-003`).
+- [x] Write product feature gap analysis (`docs/product/product-feature-gap-analysis.md`).
+- [x] Implement investment metrics (cap rate / cash-on-cash / GRM) (`P1-INVEST-001`).
+- [x] Implement price trends by area (`P1-DATA-007`).
+- [x] Implement deterministic lead scoring (`P1-LEAD-002`).
+- [x] Write product gap alignment doc (`docs/product/product-gap-alignment.md`).
 - [ ] Execute production environment provisioning when accounts/secrets are available.
 - [ ] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available.
 

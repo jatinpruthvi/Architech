@@ -20,6 +20,9 @@ import { POST as errorsPost } from "../../../app/api/observability/errors/route"
 import { GET as savedSearchesGet, POST as savedSearchesPost } from "../../../app/api/saved-searches/route";
 import { GET as reraGet } from "../../../app/api/rera/gujarat/route";
 import { GET as aiAssistGet } from "../../../app/api/ai/search-assist/route";
+import { GET as listingStatsGet, POST as listingStatsPost } from "../../../app/api/listings/[id]/stats/route";
+import { GET as priceTrendsGet } from "../../../app/api/localities/[slug]/price-trends/route";
+import { POST as investmentMetricsPost } from "../../../app/api/investment/metrics/route";
 
 async function json(response: Response): Promise<Record<string, unknown>> {
   return (await response.json()) as Record<string, unknown>;
@@ -106,6 +109,28 @@ describe("public API contract", () => {
     expect((body as { provider: string }).provider).toBe("demo-rera-adapter");
   });
 
+  it("POST/GET /api/listings/:id/stats record and read idempotent metrics", async () => {
+    const post = await listingStatsPost(new Request("http://example.com/api/listings/garden-courtyard/stats", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ metric: "views", sessionKey: "api-contract-session" }),
+    }), { params: Promise.resolve({ id: "garden-courtyard" }) });
+    expect([200, 201]).toContain(post.status);
+    const body = await json(post);
+    expect((body as { stats: { views: number } }).stats.views).toBe(1);
+
+    const invalid = await listingStatsPost(new Request("http://example.com/api/listings/garden-courtyard/stats", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ metric: "nope" }),
+    }), { params: Promise.resolve({ id: "garden-courtyard" }) });
+    expect(invalid.status).toBe(400);
+
+    const get = await listingStatsGet(new Request("http://example.com/api/listings/garden-courtyard/stats"), { params: Promise.resolve({ id: "garden-courtyard" }) });
+    const getBody = await json(get);
+    expect((getBody as { stats: { listingId: string } }).stats.listingId).toBe("garden-courtyard");
+  });
+
   it("GET /api/observability/status returns consolidated service status", async () => {
     const response = await statusGet();
     expect(response.status).toBe(200);
@@ -175,6 +200,25 @@ describe("public API contract", () => {
       body: JSON.stringify({ date: "2026-08-25", target: "example.com", outcome: "accepted", reviewedBy: "" }),
     }));
     expect(rejected.status).toBe(400);
+  });
+
+
+  it("GET /api/localities/:slug/price-trends returns a derived price summary", async () => {
+    const response = await priceTrendsGet(new Request("http://example.com/api/localities/paldi/price-trends"), { params: Promise.resolve({ slug: "paldi" }) });
+    expect(response.status).toBe(200);
+    const body = await json(response);
+    expect((body as { summary: { count: number } }).summary.count).toBeGreaterThan(0);
+    expect((body as { summary: { medianPriceInr: number | null } }).summary.medianPriceInr).toBeGreaterThan(0);
+  });
+
+  it("POST /api/investment/metrics validates and computes investment metrics", async () => {
+    const ok = await investmentMetricsPost(new Request("http://example.com/api/investment/metrics", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ priceInr: 60000000, annualRentInr: 3600000, annualExpensesInr: 400000, downPaymentInr: 15000000 }) }));
+    expect(ok.status).toBe(200);
+    const body = await json(ok);
+    expect((body as { metrics: { capRatePct: number } }).metrics.capRatePct).toBeCloseTo(5.33, 1);
+
+    const invalid = await investmentMetricsPost(new Request("http://example.com/api/investment/metrics", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ priceInr: -1 }) }));
+    expect(invalid.status).toBe(400);
   });
 
   it("GET /api/ai/search-assist returns deterministic structured intent", async () => {

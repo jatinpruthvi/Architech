@@ -17,9 +17,9 @@ Current automated gates:
 | Budget | Limit |
 |---|---:|
 | Route first-load JS, raw | ≤ 760 KiB |
-| Route first-load JS, gzip | ≤ 230 KiB |
+| Route first-load JS, gzip | ≤ 235 KiB |
 | Sampled server HTML | ≤ 120 KiB |
-| Total `.next/static/chunks/*.js` | ≤ 2.1 MiB |
+| Total `.next/static/chunks/*.js` | ≤ 2.15 MiB |
 | Largest JS chunk, raw | ≤ 1.1 MiB |
 | Largest JS chunk, gzip | ≤ 280 KiB |
 | Mobile WebP image derivative | ≤ 225 KiB |
@@ -56,6 +56,8 @@ Largest current known public HTML artifact: home page, ~98 KiB.
 MapLibre is intentionally loaded as a lazy async chunk for the search map/list experience. Route first-load JS budgets remain tight; total/largest static JS budgets allow that lazy map chunk while still catching accidental bundle growth.
 
 **Re-baseline (25 Aug 2026):** the total-static-JS cap was raised from 2.0 to 2.1 MiB to accommodate two added authenticated product surfaces — a managed "Saved searches" page and a functional broker listing-draft form (each is a separate route-level chunk). Per-route first-load budgets and Core Web Vitals targets are unchanged and still strict.
+
+**Second re-baseline (25 Aug 2026, parity overlay):** the parity overlay added public calculator/editorial pages (`/home-loan`, `/investment`, `/blogs`, `/about-us`, `/contact-us`, `/requirements`) and an agent workspace, which pushed the measured max first-load gzip to 226.8 KiB (`/search`) and total static JS to 2089.7 KiB. The first-load gzip cap was raised 230→235 KiB and the total static JS cap 2.1→2.15 MiB, with headroom (≤9 KiB gzip, ≤10 KiB total) so genuine regressions are still caught. Raw per-route first-load and Core Web Vitals targets are unchanged and still strict. The `/saved` HTML sample was replaced with `/home-loan` because `/saved` is now a client-rendered noindex page that emits no standalone `.html`.
 
 ## Regression policy
 

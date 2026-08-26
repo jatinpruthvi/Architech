@@ -6,6 +6,7 @@ import { CheckCheck, Inbox, MessageCircle, Phone, ShieldOff, Trash2 } from "luci
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { LeadRecord, LeadStatus } from "@/lib/leads/lead";
+import { leadGradeLabel, scoreLead } from "@/lib/leads/scoring";
 import useTitle from "@/hooks/useTitle";
 
 type ReplyAction = Exclude<LeadStatus, "NEW" | "DELETED">;
@@ -19,6 +20,16 @@ const ACTION_LABELS: Record<ReplyAction, string> = {
 function StatusPill({ status }: { status: LeadStatus }) {
   const color = status === "NEW" ? "text-brick bg-brick/10" : status === "REPLIED" ? "text-trust bg-trust/10" : "text-ink/60 bg-sand";
   return <span className={`stamp px-2 py-1 !text-[9px] font-semibold ${color}`}>{status.toLowerCase()}</span>;
+}
+
+function ScoreBadge({ lead }: { lead: LeadRecord }) {
+  const scored = scoreLead(lead);
+  const color = scored.grade === "hot" ? "text-ember bg-ember/10" : scored.grade === "warm" ? "text-brick bg-brick/10" : "text-ink/60 bg-sand";
+  return (
+    <span className={`stamp px-2 py-1 !text-[9px] font-semibold ${color}`} title={scored.signals.join(" · ")}>
+      {leadGradeLabel(scored.grade)} · {scored.score}
+    </span>
+  );
 }
 
 export default function BrokerLeadInbox() {
@@ -103,7 +114,10 @@ export default function BrokerLeadInbox() {
                     <p className="stamp mt-0.5 !text-[10px] text-ink/60">{lead.listingTitle} · {lead.listingId}</p>
                   </div>
                 </div>
-                <StatusPill status={lead.status} />
+                <div className="flex items-center gap-2">
+                  <ScoreBadge lead={lead} />
+                  <StatusPill status={lead.status} />
+                </div>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-3">
