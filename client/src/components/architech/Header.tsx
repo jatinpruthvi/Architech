@@ -50,10 +50,10 @@ export default function Header() {
     <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${onDark ? "bg-transparent text-cream" : "border-b border-ink/10 bg-paper/95 text-ink backdrop-blur-xl"}`}>
       <div className="container flex h-[78px] items-center justify-between gap-3">
         <Link href="/" className="group flex items-center gap-3" aria-label="Architech home">
-          <span className="arch-mark grid h-11 w-11 place-items-center" aria-hidden="true"><span className="arch-mark-arch" /></span>
-          <span className="font-display text-[24px] font-medium tracking-[-0.03em]">Architech<span className="text-brick">.</span></span>
+          <span className="arch-mark grid h-12 w-12 place-items-center" aria-hidden="true"><span className="arch-mark-arch" /></span>
+          <span className="font-display text-[26px] font-medium tracking-[-0.04em]">Architech<span className="text-brick">.</span></span>
         </Link>
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary navigation">
+        <nav className="hidden items-center gap-9 lg:flex" aria-label="Primary navigation">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} className={`link-rail stamp !text-[12px] font-medium ${onDark ? "text-cream/85" : "text-ink/75"} hover:opacity-100`}>{item.label}</Link>
           ))}

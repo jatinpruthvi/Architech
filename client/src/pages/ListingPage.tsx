@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getListingById, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
-import { buildAgentProfile, SAMPLE_AGENT_REVIEWS } from "@/lib/agent/profile";
+import { buildAgentProfile } from "@/lib/agent/profile";
 import { comparableListings, derivePriceHistory, type PriceEvent } from "@/lib/listing/history";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import Reveal from "../components/architech/Reveal";
@@ -115,7 +115,8 @@ export default function ListingPage({ id }: { id: string }) {
   ], [property.priceNum, property.price]);
   const priceHistory = useMemo(() => derivePriceHistory(property.id, priceEvents), [property.id, priceEvents]);
   const comparables = useMemo(() => comparableListings({ id: property.id, localitySlug: property.localitySlug, priceNum: property.priceNum }, 3), [property.id, property.localitySlug, property.priceNum]);
-  const agent = useMemo(() => buildAgentProfile(demoBrokerSession, SAMPLE_AGENT_REVIEWS), []);
+  // Never render invented reviews or ratings; the section stays an honest empty state until verified data exists.
+  const agent = useMemo(() => buildAgentProfile(demoBrokerSession, []), []);
 
   const onSave = () => {
     const nowSaved = toggle(property.id);
@@ -279,63 +280,6 @@ export default function ListingPage({ id }: { id: string }) {
               </section>
             </div>
 
-            {/* Price & history + agent trust */}
-            <div className="mt-10 grid gap-10 md:grid-cols-2">
-              <section aria-labelledby="price-history-heading">
-                <p className="kicker text-brick !text-[10px]">{t.listing.trail}</p>
-                <h3 id="price-history-heading" className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">Price <span className="text-brick">& history</span>.</h3>
-                <div className="mt-5 space-y-0 border-l-2 border-ink/12 pl-5">
-                  {priceHistory.events.map((event) => (
-                    <div key={event.id} className="relative pb-6 last:pb-0">
-                      <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-cream ${event.kind === "price_change" ? "bg-ember" : "bg-brick"}`} />
-                      <p className="stamp !text-[10px] text-ink/60">{event.date}</p>
-                      <p className="mt-1 text-sm font-medium text-ink/85">₹{event.priceInr.toLocaleString("en-IN")} · {event.note ?? event.kind.replace("_", " ")}</p>
-                    </div>
-                  ))}
-                </div>
-                {priceHistory.hasDecline && <p className="stamp mt-3 !text-[10px] text-ember">Price adjusted since listing.</p>}
-
-                <p className="kicker mt-8 text-brick !text-[10px]">{t.search.demoFixtures}</p>
-                <div className="mt-3 space-y-3">
-                  {comparables.map((comparable) => (
-                    <Link key={comparable.id} href={`/listing/${comparable.id}`} className="group flex items-center justify-between border border-ink/12 bg-card p-4 hover:border-brick">
-                      <div>
-                        <p className="font-display text-base font-medium leading-tight group-hover:text-brick">{comparable.title}</p>
-                        <p className="stamp mt-1 !text-[10px] text-ink/55">{comparable.locality} · {comparable.pricePerSqft}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-display text-base">₹{(comparable.priceNum / 10000000).toFixed(2)} Cr</p>
-                        <p className={`stamp !text-[10px] ${comparable.deltaPct >= 0 ? "" : "text-trust"}`}>{comparable.deltaPct >= 0 ? "+" : ""}{comparable.deltaPct}% vs this home</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-
-              <section aria-labelledby="agent-heading" className="h-fit border border-ink/15 bg-sand/50 p-6">
-                <p className="kicker text-brick !text-[10px]">Your partner</p>
-                <h3 id="agent-heading" className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">{agent.name}.</h3>
-                <p className="stamp mt-2 !text-[10px] text-trust">{agent.badge}</p>
-                {agent.rating > 0 ? (
-                  <p className="mt-4 flex items-center gap-2 text-sm">
-                    <span className="text-ember" aria-hidden="true">{"★".repeat(Math.round(agent.rating))}</span>
-                    <strong className="font-display text-ink">{agent.rating.toFixed(1)}</strong>
-                    <span className="text-ink/60">· {agent.reviewCount} verified review{agent.reviewCount === 1 ? "" : "s"}</span>
-                  </p>
-                ) : (
-                  <p className="mt-4 text-sm text-ink/60">Sample partner profile — ratings appear once verified buyer reviews are on file.</p>
-                )}
-                <div className="mt-5 space-y-3 border-t border-ink/10 pt-5">
-                  {agent.reviews.map((review) => (
-                    <div key={review.id} className="text-sm">
-                      <p className="text-ink/80">“{review.comment}”</p>
-                      <p className="stamp mt-1 !text-[10px] text-ink/55">{review.buyerName} · {review.role} · sample</p>
-                    </div>
-                  ))}
-                </div>
-                <Link href="/guide/" className="mt-6 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick">How we verify partners <ArrowUpRight size={13} /></Link>
-              </section>
-            </div>
 
             {/* Real OSM neighbourhood map */}
             <div className="mt-12">

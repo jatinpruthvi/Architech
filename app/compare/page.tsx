@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { Scale } from "lucide-react";
 import { getListings } from "@/lib/repositories";
