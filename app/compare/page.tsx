@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Scale } from "lucide-react";
-import { getListings, type Property } from "@/lib/repositories";
+import { getListings } from "@/lib/repositories";
+import { COMPARE_ROWS, selectComparableListings } from "@/lib/compare";
 
 export const metadata: Metadata = {
   title: "Compare Ahmedabad homes | Architech",
@@ -9,21 +10,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-const rows: [string, (p: Property) => string][] = [
-  ["Price", (p) => p.price],
-  ["Rate", (p) => p.pricePerSqft],
-  ["Layout", (p) => p.meta],
-  ["Carpet area", (p) => p.area],
-  ["Locality", (p) => p.locality],
-  ["Verification", (p) => p.badge],
-  ["Availability", (p) => p.status],
-  ["Evidence", (p) => p.note],
-];
-
 export default async function Page({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
   const params = await searchParams;
-  const ids = (params.ids ?? "").split(",").map((id) => id.trim()).filter(Boolean).slice(0, 4);
-  const homes = getListings().filter((property) => ids.includes(property.id));
+  const homes = selectComparableListings(getListings(), params.ids);
 
   return (
     <main className="min-h-screen bg-paper pt-[110px] text-ink">
@@ -40,7 +29,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ i
             <div className="grid min-w-[720px] gap-x-5" style={{ gridTemplateColumns: `140px repeat(${homes.length}, minmax(150px, 1fr))` }}>
               <div className="bg-night p-4 stamp !text-[10px] text-cream/65">Compare</div>
               {homes.map((property) => <Link key={property.id} href={`/listing/${property.id}`} className="group bg-night p-4 text-cream"><span className="block aspect-[1.6] overflow-hidden"><img src={`/images/${property.image}.jpg`} alt={property.title} className="h-full w-full object-cover" width="260" height="160" /></span><span className="mt-3 block font-display text-base leading-tight group-hover:text-ember">{property.title}</span></Link>)}
-              {rows.map(([label, get]) => <div key={label} className="contents"><div className="border-t border-ink/10 bg-sand/45 px-4 py-4 stamp !text-[10px] text-ink/60">{label}</div>{homes.map((property) => <div key={`${label}-${property.id}`} className={`border-t border-ink/10 px-4 py-4 text-sm ${label === "Price" ? "font-display text-lg font-semibold" : "text-ink/80"}`}>{get(property)}</div>)}</div>)}
+              {COMPARE_ROWS.map(({ label, get }) => <div key={label} className="contents"><div className="border-t border-ink/10 bg-sand/45 px-4 py-4 stamp !text-[10px] text-ink/60">{label}</div>{homes.map((property) => <div key={`${label}-${property.id}`} className={`border-t border-ink/10 px-4 py-4 text-sm ${label === "Price" ? "font-display text-lg font-semibold" : "text-ink/80"}`}>{get(property)}</div>)}</div>)}
             </div>
           </div>
         )}

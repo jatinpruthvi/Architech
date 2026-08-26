@@ -296,3 +296,12 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [ ] Implement the approved production-safe discovery, map/list, quick-view, media, saved/compare, visit, and broker workflow improvements that are genuinely missing.
 - [ ] Preserve Ahmedabad-first scope, bilingual support, accessibility, SEO, provenance, and no-payment constraints.
 - [ ] Run quality gates, commit, push a dedicated branch, and report the review status.
+
+
+## Current PR and Documentation Delivery
+
+- [ ] Inventory all project Markdown files and create a GitHub-style file index.
+- [ ] Inspect discovery-experience-v1 PR status and media storage/provider configuration.
+- [ ] Add automated compare-route tests and media-rights contract tests.
+- [ ] Validate or safely prepare live media storage; do not claim R2 activation without credentials.
+- [ ] Run focused quality gates, push the branch, create the pull request, and report the result.
