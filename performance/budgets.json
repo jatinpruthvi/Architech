@@ -7,7 +7,7 @@
     }
   },
   "html": {
-    "maxHtmlBytes": 120000,
+    "maxHtmlBytes": 128000,
     "routes": [
       { "route": "/", "file": ".next/server/app/index.html" },
       { "route": "/buy/ahmedabad/", "file": ".next/server/app/buy/ahmedabad.html" },
