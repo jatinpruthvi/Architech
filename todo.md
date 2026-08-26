@@ -315,3 +315,19 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [ ] Add automated compare-route tests and media-rights contract tests.
 - [ ] Validate or safely prepare live media storage; do not claim R2 activation without credentials.
 - [ ] Run focused quality gates, push the branch, create the pull request, and report the result.
+
+
+## Amdavad Modern UI Revision
+
+- [x] Reconcile the saved review with current CSS, header, hero, property-card, results, and listing-dossier implementations.
+- [x] Restore brick/plaster/ink/ember/trust semantic palette and typography hierarchy without breaking dark mode or contrast.
+- [x] Recompose the hero/header and add architectural field-journal motifs while preserving centered search and responsive art direction.
+- [x] Refine shared property cards, results decision rail, and listing dossier hierarchy; remove duplicated trust/history presentation.
+- [x] Verify desktop/mobile visuals, accessibility, SEO smoke, unit tests, typecheck, lint, and production build.
+- [x] Save a checkpoint and report the live revision.
+
+## Public GitHub UI Push
+
+- [x] Inspect the current local branch, commit, remote, and public GitHub state.
+- [x] Reconcile the completed UI revision with public `main` without overwriting public history.
+- [x] Push the publish branch and open PR #38 for merge review.
