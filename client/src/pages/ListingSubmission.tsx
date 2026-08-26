@@ -6,11 +6,13 @@
    reads the same persisted drafts. */
 import { ArrowUpRight, CheckCircle2, FileCheck2, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useTitle from "@/hooks/useTitle";
 import { getLocalities } from "@/lib/repositories";
 import type { ListingDraftInput } from "@/lib/broker/workflow";
+import { AVAILABILITY_OPTIONS, PROPERTY_TYPE_OPTIONS } from "@/lib/listing-vocabulary";
+import type { SignedMediaUpload } from "@/lib/media/upload";
 
 const EMPTY: ListingDraftInput = {
   title: "",
@@ -18,7 +20,8 @@ const EMPTY: ListingDraftInput = {
   priceInr: 0,
   bhk: 2,
   areaSqft: 0,
-  availability: "",
+  propertyType: "APARTMENT",
+  availability: "READY_TO_MOVE",
   description: "",
   reraNumber: "",
   mediaRightsConfirmed: false,
@@ -32,6 +35,16 @@ export default function ListingSubmission() {
   const [submitting, setSubmitting] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
+  const [mediaLicenseEvidence, setMediaLicenseEvidence] = useState("");
+  const [mediaRightsConfirmed, setMediaRightsConfirmed] = useState(false);
+  const [mediaUpload, setMediaUpload] = useState<SignedMediaUpload | null>(null);
+  const [mediaSubmitting, setMediaSubmitting] = useState(false);
+
+  useEffect(() => () => {
+    if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+  }, [mediaPreviewUrl]);
 
   const completion = useMemo(() => {
     const checks = [
@@ -46,6 +59,90 @@ export default function ListingSubmission() {
   }, [draft]);
 
   const set = (key: keyof ListingDraftInput, value: string | number | boolean) => setDraft((current) => ({ ...current, [key]: value }));
+
+  const onMediaFile = (file: File | null) => {
+    setMediaUpload(null);
+    setMediaFile(file);
+    setMediaPreviewUrl(file ? URL.createObjectURL(file) : null);
+  };
+
+  const prepareMediaUpload = async () => {
+    if (!draftId || !mediaFile) {
+      setErrors(["Create the listing draft before attaching media."]);
+      return;
+    }
+    if (mediaLicenseEvidence.trim().length < 10) {
+      setErrors(["Media license evidence must be at least 10 characters."]);
+      return;
+    }
+    if (!mediaRightsConfirmed) {
+      setErrors(["Confirm media rights before attaching this file."]);
+      return;
+    }
+    setMediaSubmitting(true);
+    setErrors([]);
+    try {
+      const signResponse = await fetch("/api/media/uploads/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingDraftId: draftId,
+          fileName: mediaFile.name,
+          mimeType: mediaFile.type,
+          sizeBytes: mediaFile.size,
+          licenseEvidence: mediaLicenseEvidence,
+          rightsConfirmed: mediaRightsConfirmed,
+        }),
+      });
+      const signedPayload = await signResponse.json();
+      if (!signResponse.ok || !signedPayload.ok) throw new Error(signedPayload.errors?.join(" ") ?? "Could not prepare the media packet.");
+      let upload = signedPayload.upload as SignedMediaUpload;
+      const hasRealStorage = upload.storageProvider === "cloudflare-r2" && !upload.uploadUrl.includes("placeholder");
+      if (hasRealStorage) {
+        const transferResponse = await fetch(upload.uploadUrl, { method: "PUT", headers: upload.requiredHeaders, body: mediaFile });
+        if (!transferResponse.ok) throw new Error(`Storage upload failed (${transferResponse.status}).`);
+        const completeResponse = await fetch(`/api/media/uploads/${encodeURIComponent(upload.id)}/complete`, { method: "POST" });
+        const completePayload = await completeResponse.json();
+        if (!completeResponse.ok || !completePayload.ok) throw new Error(completePayload.errors?.join(" ") ?? "Could not complete the media packet.");
+        upload = completePayload.upload as SignedMediaUpload;
+      }
+      const attachResponse = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaId: upload.id, action: "attach" }),
+      });
+      const attachPayload = await attachResponse.json();
+      if (!attachResponse.ok || !attachPayload.ok) throw new Error(attachPayload.errors?.join(" ") ?? "Could not attach the media packet.");
+      setMediaUpload(upload);
+      toast("Media packet attached.", { description: hasRealStorage ? "Upload completed; rights evidence is queued for moderation." : "Local preview retained; storage completion waits for provider activation." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not prepare the media packet.";
+      setErrors([message]);
+      toast("Could not attach media.", { description: message });
+    } finally {
+      setMediaSubmitting(false);
+    }
+  };
+
+  const detachMedia = async () => {
+    if (!draftId || !mediaUpload || mediaSubmitting) return;
+    setMediaSubmitting(true);
+    try {
+      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaId: mediaUpload.id, action: "detach" }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "Could not detach the media packet.");
+      setMediaUpload(null);
+      toast("Media packet detached.");
+    } catch (error) {
+      toast("Could not detach media.", { description: error instanceof Error ? error.message : "Try again." });
+    } finally {
+      setMediaSubmitting(false);
+    }
+  };
 
   const postDraft = async () => {
     if (submitting) return;
@@ -142,7 +239,14 @@ export default function ListingSubmission() {
                 <input type="number" value={draft.areaSqft || ""} onChange={(e) => set("areaSqft", Number(e.target.value))} className={inputCls} placeholder="1482" />
               </Field>
               <Field label="Availability" required>
-                <input value={draft.availability} onChange={(e) => set("availability", e.target.value)} className={inputCls} placeholder="Ready to move" />
+                <select value={draft.availability} onChange={(e) => set("availability", e.target.value)} className={inputCls}>
+                  {AVAILABILITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </Field>
+              <Field label="Property type" required>
+                <select value={draft.propertyType} onChange={(e) => set("propertyType", e.target.value)} className={inputCls}>
+                  {PROPERTY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
               </Field>
               <Field label="RERA number">
                 <input value={draft.reraNumber ?? ""} onChange={(e) => set("reraNumber", e.target.value)} className={inputCls} placeholder="GJ/RERA/AHM/2026/04821" />
@@ -160,6 +264,24 @@ export default function ListingSubmission() {
               <input type="checkbox" checked={draft.mediaRightsConfirmed} onChange={(e) => set("mediaRightsConfirmed", e.target.checked)} className="mt-1 accent-[var(--brick)]" />
               <span>I confirm media rights for the images/plans and grant Architech publication rights.</span>
             </label>
+            <section className="border border-ink/12 bg-paper/45 p-4" aria-labelledby="media-packet-title">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-ink/12 pb-4">
+                <div><p id="media-packet-title" className="kicker text-brick !text-[10px]">Media packet</p><p className="mt-1 text-sm text-ink/60">Preview locally, record rights evidence, then queue the file for moderation.</p></div>
+                <span className="stamp text-ink/45">{mediaUpload ? mediaUpload.moderationStatus : "NOT ATTACHED"}</span>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-[180px_1fr]">
+                <div className="aspect-[4/3] overflow-hidden border border-ink/12 bg-sand/60">
+                  {mediaPreviewUrl && mediaFile?.type.startsWith("video/") ? <video src={mediaPreviewUrl} controls muted playsInline className="h-full w-full object-cover" aria-label="Selected media preview" /> : mediaPreviewUrl ? <img src={mediaPreviewUrl} alt={`Local preview of ${mediaFile?.name ?? "selected media"}`} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center p-4 text-center stamp !text-[10px] text-ink/45">Choose an image or video to preview it here.</div>}
+                </div>
+                <div className="grid gap-4">
+                  <label className="stamp !text-[10px] text-ink/60">Image or video<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" onChange={(e) => onMediaFile(e.target.files?.[0] ?? null)} className="mt-1.5 block w-full border border-ink/20 bg-paper/35 px-3 py-2 text-sm file:mr-3 file:border-0 file:bg-night file:px-3 file:py-2 file:text-xs file:text-cream" /></label>
+                  <label className="stamp !text-[10px] text-ink/60">Rights evidence<input value={mediaLicenseEvidence} onChange={(e) => setMediaLicenseEvidence(e.target.value)} className={inputCls} placeholder="Owner authorization or partner agreement reference" /></label>
+                  <label className="flex items-start gap-3 text-xs leading-5 text-ink/65"><input type="checkbox" checked={mediaRightsConfirmed} onChange={(e) => setMediaRightsConfirmed(e.target.checked)} className="mt-1 accent-[var(--brick)]" /><span>I confirm I own or am authorised to publish this specific file.</span></label>
+                  <button type="button" onClick={() => void prepareMediaUpload()} disabled={!draftId || !mediaFile || mediaSubmitting} className="btn-sweep touch-44 w-fit bg-night px-4 py-3 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-45">{mediaSubmitting ? "Preparing…" : "Sign & attach media"}</button>
+                </div>
+              </div>
+              {mediaUpload && <div className="mt-4 border-l-2 border-trust bg-trust/10 p-3 text-xs leading-5 text-ink/70"><div className="flex flex-wrap items-center justify-between gap-3"><span><strong className="font-semibold text-trust">Pending moderation.</strong> Rights evidence recorded; EXIF policy: {mediaUpload.exifPolicy}.</span><button type="button" onClick={() => void detachMedia()} className="stamp !text-[10px] font-semibold text-brick underline underline-offset-4">Detach</button></div><p className="mt-1 text-ink/55">Packet ID {mediaUpload.id} · {mediaUpload.licenseEvidence}</p></div>}
+            </section>
           </div>
 
           {errors.length > 0 && (

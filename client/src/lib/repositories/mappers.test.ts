@@ -30,6 +30,8 @@ describe("Prisma repository mappers", () => {
     expect(property.id).toBe("garden-courtyard");
     expect(property.badge).toBe("RERA verified");
     expect(property.image).toBe("prop-courtyard");
+    expect(property.propertyType).toBe("APARTMENT");
+    expect(property.availability).toBe("READY_TO_MOVE");
   });
 
   it("defaults to fixture mode unless explicitly configured", () => {

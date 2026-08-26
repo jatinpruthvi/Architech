@@ -12,10 +12,10 @@ const localities = [
 ];
 
 const listings = [
-  { stableId: "garden-courtyard", slug: "garden-courtyard", title: "A garden courtyard in Paldi", localitySlug: "paldi", priceLabel: "₹1.85 Cr", priceInr: 18_500_000, pricePerSqft: "₹12,480 / sq ft", bhk: 3, areaSqft: 1482, propertyType: "APARTMENT", availability: "Ready to move", verification: "RERA_VERIFIED", description: "Old trees, kota stone floors, and a courtyard that carries the whole house.", image: "prop-courtyard" },
-  { stableId: "light-filled-home", slug: "light-filled-home", title: "Light across every room", localitySlug: "prahlad-nagar", priceLabel: "₹1.24 Cr", priceInr: 12_400_000, pricePerSqft: "₹11,350 / sq ft", bhk: 2, areaSqft: 1092, propertyType: "APARTMENT", availability: "New launch", verification: "VERIFIED_PARTNER", description: "Morning sun through sheer curtains; a single brick wall keeps it grounded.", image: "prop-light" },
-  { stableId: "thaltej-dusk-house", slug: "thaltej-dusk-house", title: "A quieter edge of Thaltej", localitySlug: "thaltej", priceLabel: "₹2.40 Cr", priceInr: 24_000_000, pricePerSqft: "₹10,860 / sq ft", bhk: 4, areaSqft: 2210, propertyType: "VILLA", availability: "Resale", verification: "RERA_VERIFIED", description: "Brick and white plaster volumes glowing at blue hour, west of the city's rush.", image: "prop-thaltej" },
-  { stableId: "neem-lane-rowhouse", slug: "neem-lane-rowhouse", title: "Under the neem canopy", localitySlug: "navrangpura", priceLabel: "₹98 L", priceInr: 9_800_000, pricePerSqft: "₹10,420 / sq ft", bhk: 2, areaSqft: 940, propertyType: "ROWHOUSE", availability: "Resale", verification: "SOURCE_REVIEWED", description: "A tree-lined lane where the street itself is the amenity.", image: "locality-street" },
+  { stableId: "garden-courtyard", slug: "garden-courtyard", title: "A garden courtyard in Paldi", localitySlug: "paldi", priceLabel: "₹1.85 Cr", priceInr: 18_500_000, pricePerSqft: "₹12,480 / sq ft", bhk: 3, areaSqft: 1482, propertyType: "APARTMENT", availability: "READY_TO_MOVE", verification: "RERA_VERIFIED", description: "Old trees, kota stone floors, and a courtyard that carries the whole house.", image: "prop-courtyard" },
+  { stableId: "light-filled-home", slug: "light-filled-home", title: "Light across every room", localitySlug: "prahlad-nagar", priceLabel: "₹1.24 Cr", priceInr: 12_400_000, pricePerSqft: "₹11,350 / sq ft", bhk: 2, areaSqft: 1092, propertyType: "APARTMENT", availability: "NEW_LAUNCH", verification: "VERIFIED_PARTNER", description: "Morning sun through sheer curtains; a single brick wall keeps it grounded.", image: "prop-light" },
+  { stableId: "thaltej-dusk-house", slug: "thaltej-dusk-house", title: "A quieter edge of Thaltej", localitySlug: "thaltej", priceLabel: "₹2.40 Cr", priceInr: 24_000_000, pricePerSqft: "₹10,860 / sq ft", bhk: 4, areaSqft: 2210, propertyType: "VILLA", availability: "RESALE", verification: "RERA_VERIFIED", description: "Brick and white plaster volumes glowing at blue hour, west of the city's rush.", image: "prop-thaltej" },
+  { stableId: "neem-lane-rowhouse", slug: "neem-lane-rowhouse", title: "Under the neem canopy", localitySlug: "navrangpura", priceLabel: "₹98 L", priceInr: 9_800_000, pricePerSqft: "₹10,420 / sq ft", bhk: 2, areaSqft: 940, propertyType: "ROWHOUSE", availability: "RESALE", verification: "SOURCE_REVIEWED", description: "A tree-lined lane where the street itself is the amenity.", image: "locality-street" },
 ];
 
 async function main() {
@@ -115,7 +115,7 @@ async function main() {
       priceInr: 18_500_000,
       bhk: 3,
       areaSqft: 1482,
-      availability: "Ready to move",
+      availability: "READY_TO_MOVE",
       description: "Draft submission awaiting moderation review and source checks.",
       cityId: city.id,
       localityId: draftLocality.id,
@@ -134,7 +134,7 @@ async function main() {
       priceLabel: "₹1.85 Cr",
       bhk: 3,
       areaSqft: 1482,
-      availability: "Ready to move",
+      availability: "READY_TO_MOVE",
       cityId: city.id,
       localityId: draftLocality.id,
       brokerOrgId: broker.id,
