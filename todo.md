@@ -206,3 +206,38 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Implement every confirmed minimum functionality gap and document any provider or credential gate.
 - [x] Verify functionality, mobile behavior, accessibility, SEO, tests, production build, and deployment readiness.
 - [x] Commit and push the completed changes to the configured GitHub repository via the `architech-parity-overlay` branch and PR #31.
+
+
+## Merge Addressbox Parity PR
+
+- [ ] Confirm PR #31 is open, points to the intended base, and is mergeable.
+- [ ] Merge PR #31 using the existing authenticated GitHub session; never use the token pasted in chat.
+- [ ] Verify the public main commit and record the merged PR reference.
+- [ ] Revoke the exposed GitHub token and replace it only if needed.
+
+
+## Best Open-source Real-estate Repository Research
+
+- [x] Define evaluation criteria for property marketplace repositories, including license, maintenance, stack, search, maps, listing, account, agent, and data-source quality.
+- [x] Inspect multiple leading open-source real-estate application repositories and verify their licenses and recent activity.
+- [x] Score candidates for fit with Architech’s Next.js/Ahmedabad/evidence-first architecture and identify reuse risks.
+- [x] Save a referenced comparison and recommend the best repository or reference-only strategy.
+
+
+## Hozn Reference Reuse — Architech Foundation Preserved
+
+- [x] Verify Hozn’s MIT license, repository structure, recent activity, dependencies, and security-relevant implementation choices.
+- [x] Map Hozn’s auth, profile, property CRUD, buying/selling, and UI patterns to Architech’s existing contracts.
+- [x] Select only isolated, license-safe patterns that improve Architech without replacing its production foundation.
+- [x] Document the approved adaptation strategy with provenance notes and no copied assets, credentials, or unreviewed runtime dependencies.
+- [x] Preserve Architech as the production foundation; implementation changes are intentionally limited to documented pattern reuse until a specific improvement is approved.
+
+
+## Hozn and Online Booking Bounded Reuse
+
+- [x] Verify Online Booking Management license, maintenance, stack, UI patterns, and security-relevant dependencies.
+- [x] Create a formal Hozn-to-Architech property-field mapping with provenance, privacy, validation, and indexability decisions.
+- [x] Compare the broker draft wizard against Hozn and Online Booking patterns; identify only measurable UX gaps.
+- [x] Implement one bounded wizard improvement without importing external code, assets, or dependencies.
+- [x] Run type, lint, unit, build, SEO, and database checks; record the Playwright browser prerequisite for accessibility.
+- [x] Document license, security, provenance, and accessibility gates for all external patterns.

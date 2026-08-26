@@ -6,7 +6,7 @@
    reads the same persisted drafts. */
 import { ArrowUpRight, CheckCircle2, FileCheck2, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import useTitle from "@/hooks/useTitle";
 import { getLocalities } from "@/lib/repositories";
@@ -32,6 +32,18 @@ export default function ListingSubmission() {
   const [submitting, setSubmitting] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  const completion = useMemo(() => {
+    const checks = [
+      { label: "Title", complete: draft.title.trim().length >= 8 },
+      { label: "Price", complete: Number.isFinite(draft.priceInr) && draft.priceInr > 0 },
+      { label: "Area", complete: Number.isFinite(draft.areaSqft) && draft.areaSqft >= 150 },
+      { label: "Availability", complete: draft.availability.trim().length >= 3 },
+      { label: "Description", complete: draft.description.trim().length >= 30 },
+      { label: "Media rights", complete: draft.mediaRightsConfirmed },
+    ];
+    return { checks, complete: checks.filter((check) => check.complete).length, total: checks.length };
+  }, [draft]);
 
   const set = (key: keyof ListingDraftInput, value: string | number | boolean) => setDraft((current) => ({ ...current, [key]: value }));
 
@@ -108,6 +120,14 @@ export default function ListingSubmission() {
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink/12 pb-5"><div><p className="kicker text-brick !text-[10px]">Draft fields</p><p className="mt-2 text-sm text-ink/55">Packet 01 · editorial facts and source context</p></div><span className="stamp text-ink/45">PRIVATE UNTIL REVIEW</span></div>
           <div className="mt-6 grid gap-5">
             <div className="listing-field-note flex items-center gap-2 border-l-2 border-brick/50 bg-sand/40 px-3 py-2 stamp text-[10px] text-ink/55"><FileCheck2 size={13} className="text-brick" /> Every value becomes part of the reviewable source packet.</div>
+            <div className="border border-ink/12 bg-paper/45 p-4" aria-live="polite">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><p className="kicker text-brick !text-[10px]">Packet readiness</p><p className="mt-1 text-sm text-ink/60">Complete the required facts before creating a draft.</p></div>
+                <span className="stamp text-ink/55">{completion.complete} / {completion.total} complete</span>
+              </div>
+              <div className="mt-3 h-1.5 bg-ink/10" role="progressbar" aria-label="Required listing fields complete" aria-valuemin={0} aria-valuemax={completion.total} aria-valuenow={completion.complete}><div className="h-full bg-trust transition-[width] duration-300" style={{ width: `${(completion.complete / completion.total) * 100}%` }} /></div>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-ink/55">{completion.checks.map((check) => <span key={check.label} className="inline-flex items-center gap-1.5"><span className={`h-1.5 w-1.5 rounded-full ${check.complete ? "bg-trust" : "bg-ink/25"}`} aria-hidden="true" />{check.label}</span>)}</div>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Title" required>
                 <input value={draft.title} onChange={(e) => set("title", e.target.value)} className={inputCls} placeholder="A garden courtyard in Paldi" />
