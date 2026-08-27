@@ -19,6 +19,7 @@ import { StickyBar } from "../components/architech/StickyBar";
 import { OwnershipCost } from "../components/architech/OwnershipCost";
 import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
+import { propertyFactRows } from "@/lib/listing-details";
 import { useLang } from "@/contexts/LangContext";
 
 function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propertyId: string; propertyTitle: string; open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -217,6 +218,15 @@ export default function ListingPage({ id }: { id: string }) {
                 </div>
               ))}
             </div>
+
+            {/* Property features — explicit facts, no invented reviews */}
+            <section className="mt-12 border-y border-ink/12 py-10" aria-labelledby="property-features-heading">
+              <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="kicker text-brick !text-[10px]">Property features</p><h2 id="property-features-heading" className="mt-3 font-display text-3xl font-medium tracking-[-0.02em]">The useful facts, <span className="text-brick">together.</span></h2></div><span className="stamp text-ink/45">FACTS / {property.details.amenities?.length ?? 0} AMENITIES</span></div>
+              <div className="mt-7 grid grid-cols-2 gap-px border border-ink/10 bg-ink/10 sm:grid-cols-3">
+                {propertyFactRows(property.details).map(([label, value]) => <div key={label} className="bg-paper p-4 md:p-5"><p className="stamp !text-[9px] text-ink/50">{label}</p><p className="mt-2 font-display text-lg font-medium tracking-[-0.01em]">{value}</p></div>)}
+              </div>
+              <div className="mt-6"><p className="stamp !text-[9px] text-ink/50">Amenities selected in the source packet</p><div className="mt-3 flex flex-wrap gap-2">{(property.details.amenities ?? []).map((amenity) => <span key={amenity} className="border border-ink/12 bg-sand/45 px-3 py-2 text-xs text-ink/70">{amenity}</span>)}</div></div>
+            </section>
 
             {/* Trust dossier */}
             <TrustPanel property={property} />

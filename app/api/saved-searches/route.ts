@@ -5,7 +5,7 @@ import type { SavedSearchInput } from "@/lib/saved-search/saved-search";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request = new Request("http://architech.local/api/saved-searches")) {
+export async function GET(request: Request) {
   const access = await authorizeRequest(request, { permission: "saved-search.read" });
   if (!isAuthorized(access)) return access.response;
   const savedSearches = await listSavedSearchesForServer();

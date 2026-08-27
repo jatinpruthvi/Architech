@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context.
 
-Generated on 2026-08-26 from the repository Markdown tree.
+Generated on 2026-08-27 from the repository Markdown tree.
 
 ## Recommended Reading Order
 
@@ -64,12 +64,20 @@ Generated on 2026-08-26 from the repository Markdown tree.
 - [Prisma Backed Search](./docs/search/prisma-backed-search.md)
 - [Privacy Data Flow Map](./docs/security/privacy-data-flow-map.md)
 - [Security Headers](./docs/security/security-headers.md)
+- [Google Search Central Notes](./docs/seo/google-search-central-notes.md)
 - [Phase 1 Locality Trust](./docs/seo/phase-1-locality-trust.md)
 - [Phase 1 Trust Surface](./docs/seo/phase-1-trust-surface.md)
 - [Search Console Operations](./docs/seo/search-console-operations.md)
+- [Seo Recommendation Decision Register](./docs/seo/seo-recommendation-decision-register.md)
+- [Study Arena Round12 Decision Register](./docs/seo/study-arena-round12-decision-register.md)
+- [Design Tool Audit](./docs/tooling/design-tool-audit.md)
+- [Design Tooling Manifest](./docs/tooling/design-tooling-manifest.md)
 - [Phase 1 Trust Score](./docs/trust/phase-1-trust-score.md)
+- [Attached Ui Review Findings](./docs/ui/attached-ui-review-findings.md)
 - [Chisfis Theme](./docs/ui/chisfis-theme.md)
 - [Decision Dossier](./docs/ui/decision-dossier.md)
+- [Hero Direction Evaluation](./docs/ui/hero-direction-evaluation.md)
+- [Reference Screenshot Findings](./docs/ui/reference-screenshot-findings.md)
 
 ## Governance and Contracts
 
@@ -121,6 +129,7 @@ Generated on 2026-08-26 from the repository Markdown tree.
 - [Ideas](./ideas.md)
 - [IMPROVEMENT REVIEW 2](./IMPROVEMENT-REVIEW-2.md)
 - [IMPROVEMENT REVIEW](./IMPROVEMENT-REVIEW.md)
+- [MARKDOWN DOCUMENTATION INDEX](./MARKDOWN-DOCUMENTATION-INDEX.md)
 - [Non Payment Functionality Audit](./non-payment-functionality-audit.md)
 - [Online Booking Ui Audit](./online-booking-ui-audit.md)
 - [Open Source Asset Research](./open-source-asset-research.md)

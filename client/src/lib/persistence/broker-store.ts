@@ -1,5 +1,5 @@
 import "server-only";
-import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
+import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, updateListingDraft, resumeListingDraft, archiveListingDraft, deleteListingDraft, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
 import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { isPrismaPersistence } from "./source";
@@ -35,6 +35,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       propertyType: draft.propertyType,
       availability: draft.availability,
       description: draft.description,
+      sourceSummary: JSON.stringify(draft.details ?? {}),
       cityId: city.id,
       localityId: locality.id,
     },
@@ -53,6 +54,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       areaSqft: draft.areaSqft,
       availability: draft.availability,
       brokerOrgId: draft.organizationId,
+      sourceSummary: JSON.stringify(draft.details ?? {}),
       cityId: city.id,
       localityId: locality.id,
     },
@@ -68,6 +70,50 @@ export async function createListingDraftForServer(input: ListingDraftInput, sess
     await db.auditEvent.create({
       data: { action: "listing.draft.created", entityType: "Listing", entityId: result.draft.stableId, metadata: { localitySlug: input.localitySlug, source: "api.broker.listings.prisma" } },
     });
+  }
+  return result;
+}
+
+export async function updateListingDraftForServer(draftId: string, input: ListingDraftInput, session: AuthSession = demoBrokerSession) {
+  const result = updateListingDraft(draftId, input, session);
+  if (!result.ok) return result;
+  if (isPrismaPersistence()) {
+    const db = prisma();
+    await upsertDraftListing(db, result.draft);
+    await db.auditEvent.create({ data: { action: "listing.draft.updated", entityType: "Listing", entityId: result.draft.stableId, metadata: { source: "api.broker.listings.update.prisma" } } });
+  }
+  return result;
+}
+
+export async function resumeListingDraftForServer(draftId: string, session: AuthSession = demoBrokerSession) {
+  const result = resumeListingDraft(draftId, session);
+  if (!result.ok) return result;
+  if (isPrismaPersistence()) {
+    const db = prisma();
+    await db.listing.updateMany({ where: { stableId: result.draft.stableId, brokerOrgId: session.organization?.id ?? result.draft.organizationId }, data: { lifecycle: "DRAFT" } });
+    await db.auditEvent.create({ data: { action: "listing.draft.resumed", entityType: "Listing", entityId: result.draft.stableId, metadata: { source: "api.broker.listings.resume.prisma" } } });
+  }
+  return result;
+}
+
+export async function archiveListingDraftForServer(draftId: string, session: AuthSession = demoBrokerSession) {
+  const result = archiveListingDraft(draftId, session);
+  if (!result.ok) return result;
+  if (isPrismaPersistence()) {
+    const db = prisma();
+    await db.listing.updateMany({ where: { stableId: result.draft.stableId, brokerOrgId: session.organization?.id ?? result.draft.organizationId }, data: { lifecycle: "ARCHIVED" } });
+    await db.auditEvent.create({ data: { action: "listing.draft.archived", entityType: "Listing", entityId: result.draft.stableId, metadata: { source: "api.broker.listings.archive.prisma" } } });
+  }
+  return result;
+}
+
+export async function deleteListingDraftForServer(draftId: string, session: AuthSession = demoBrokerSession) {
+  const result = deleteListingDraft(draftId, session);
+  if (!result.ok) return result;
+  if (isPrismaPersistence()) {
+    const db = prisma();
+    await db.listing.updateMany({ where: { stableId: draftId, brokerOrgId: session.organization?.id ?? "" }, data: { lifecycle: "REMOVED" } });
+    await db.auditEvent.create({ data: { action: "listing.draft.deleted", entityType: "Listing", entityId: draftId, metadata: { source: "api.broker.listings.delete.prisma" } } });
   }
   return result;
 }
@@ -145,6 +191,16 @@ export async function listDraftMediaForServer(draftId: string, session: AuthSess
   return listDraftMediaIds(draftId, session);
 }
 
+function parseDetails(value: unknown) {
+  if (typeof value !== "string") return {};
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function contractFromRow(row: Record<string, unknown>): ListingDraft {
   return {
     id: String(row.id ?? ""),
@@ -158,6 +214,7 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     propertyType: isPropertyTypeCode(row.propertyType) ? row.propertyType as PropertyTypeCode : "APARTMENT",
     description: String(row.description ?? ""),
     mediaRightsConfirmed: true,
+    details: parseDetails(row.sourceSummary),
     organizationId: String(row.brokerOrgId ?? ""),
     status: (String(row.lifecycle ?? "IN_REVIEW") as ListingDraft["status"]) || "IN_REVIEW",
     auditTrail: [],

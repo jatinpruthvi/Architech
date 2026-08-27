@@ -97,7 +97,7 @@ describe("public API contract", () => {
     expect(body.ok).toBe(true);
     expect((body as { savedSearch: { notify: boolean } }).savedSearch.notify).toBe(true);
 
-    const list = await savedSearchesGet();
+    const list = await savedSearchesGet(new Request("http://example.com/api/saved-searches"));
     expect(list.status).toBe(200);
     const listBody = await json(list);
     expect((listBody as { savedSearches: unknown[] }).savedSearches.length).toBeGreaterThanOrEqual(1);
@@ -149,7 +149,7 @@ describe("public API contract", () => {
   });
 
   it("GET /api/broker/listings returns the broker's drafts", async () => {
-    const response = await brokerDraftsGet();
+    const response = await brokerDraftsGet(new Request("http://example.com/api/broker/listings"));
     expect(response.status).toBe(200);
     const body = await json(response);
     expect(body.ok).toBe(true);
@@ -219,7 +219,7 @@ describe("public API contract", () => {
     }));
     expect([200, 201]).toContain(created.status);
 
-    const list = await authorityAssetsGet();
+    const list = await authorityAssetsGet(new Request("http://example.com/api/authority/assets"));
     const body = await json(list);
     expect(Array.isArray((body as { assets: unknown[] }).assets)).toBe(true);
   });

@@ -7,7 +7,7 @@ import type { ListingDraftInput } from "@/lib/broker/workflow";
 export const runtime = "nodejs";
 
 /** The broker's own drafts (all statuses), newest-edit-first. */
-export async function GET(request: Request = new Request("http://architech.local/api/broker/listings")) {
+export async function GET(request: Request) {
   const access = await authorizeRequest(request, { permission: "broker.dashboard.read" });
   if (!isAuthorized(access)) return access.response;
   const organizationId = access.session.organization?.id ?? demoBrokerSession.organization?.id ?? "demo-org-nivasa-partners";

@@ -1,4 +1,5 @@
 "use client";
+
 /* Route-segment error boundary. Lets a user retry a route without a hard
    reload, keeps the editorial shell, and mirrors the site's tone. The stack
    is never shown to users. */

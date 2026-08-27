@@ -13,6 +13,8 @@ export type ListingLifecycle =
   | "DUPLICATE"
   | "ARCHIVED";
 
+export type LifecycleOptions = { continuingValue?: boolean };
+
 export type HttpBehavior =
   | { status: 200; indexable: boolean; redirectTo?: undefined }
   | { status: 410; indexable: false; redirectTo?: undefined }
@@ -39,8 +41,9 @@ export const LIFECYCLE_RULES: Record<ListingLifecycle, LifecycleRule> = {
 };
 
 /** Map a lifecycle to its HTTP/indexability behavior. */
-export function behaviorForLifecycle(lifecycle: ListingLifecycle): HttpBehavior {
+export function behaviorForLifecycle(lifecycle: ListingLifecycle, options: LifecycleOptions = {}): HttpBehavior {
   const rule = LIFECYCLE_RULES[lifecycle];
+  if (lifecycle === "EXPIRED" && options.continuingValue) return { status: 200, indexable: false };
   if (rule.status === 301 && rule.redirectTo) return { status: 301, indexable: false, redirectTo: rule.redirectTo };
   if (rule.status === 410) return { status: 410, indexable: false };
   if (rule.status === 404) return { status: 404, indexable: false };
@@ -67,10 +70,10 @@ export function parseLifecycle(value?: string | null): ListingLifecycle | "UNKNO
 }
 
 /** Build the HTTP decision for a requested listing, treating unknown states as 404. */
-export function httpDecisionForListing(lifecycle?: string | null, canonicalId?: string): HttpBehavior {
+export function httpDecisionForListing(lifecycle?: string | null, canonicalId?: string, options: LifecycleOptions = {}): HttpBehavior {
   const parsed = parseLifecycle(lifecycle);
   if (parsed === "UNKNOWN") return { status: 404, indexable: false };
-  const behavior = behaviorForLifecycle(parsed);
+  const behavior = behaviorForLifecycle(parsed, options);
   if (behavior.status === 301 && behavior.redirectTo === "canonical" && canonicalId) {
     return { status: 301, indexable: false, redirectTo: canonicalId };
   }

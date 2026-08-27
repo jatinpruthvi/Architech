@@ -2,6 +2,7 @@
 /* ARCHITECH — Property card v4: shared persistent saves, responsive WebP images,
    price-first hierarchy, honest demo labels, 44px touch targets. */
 import { ArrowUpRight, BedDouble, Heart, MapPin, Ruler, Scale, ShieldCheck } from "lucide-react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,6 +12,7 @@ import { useCompare } from "@/contexts/CompareContext";
 import { useLang } from "@/contexts/LangContext";
 import Pic from "./Pic";
 import { secondaryImage } from "@/lib/listing/media";
+import { labelForFurnishing } from "@/lib/listing-details";
 
 export type { Property };
 
@@ -65,14 +67,17 @@ export default function PropertyCard({ property, arch = false, index, variant = 
           </div>
           <div className="flex items-center justify-between p-2.5">
             <p className="text-xs font-semibold text-ink/85">{property.locality} · {property.bhk} BHK</p>
-            <button
+            <motion.button
               onClick={onSave}
+              whileTap={{ transform: "scale(0.94)" }}
+              animate={saved ? { transform: ["scale(1)", "scale(1.12)", "scale(1)"] } : { transform: "scale(1)" }}
+              transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
               aria-pressed={saved}
               aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`}
               className={`touch-44 grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${saved ? "bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick hover:text-cream"}`}
             >
               <Heart size={14} fill={saved ? "currentColor" : "none"} />
-            </button>
+            </motion.button>
           </div>
         </Link>
       </article>
@@ -123,12 +128,15 @@ export default function PropertyCard({ property, arch = false, index, variant = 
                 aria-label={compared ? `${t.property.removeCompare} ${property.title}` : `${t.property.compare} ${property.title}`} aria-pressed={compared}>
                 <Scale size={15} strokeWidth={1.8} />
               </button>
-              <button
+              <motion.button
                 onClick={onSave}
-                className={`touch-44 grid place-items-center rounded-full transition-all duration-200 ${saved ? "scale-110 bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick hover:text-cream"}`}
+                whileTap={{ transform: "scale(0.94)" }}
+                animate={saved ? { transform: ["scale(1)", "scale(1.1)", "scale(1)"] } : { transform: "scale(1)" }}
+                transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
+                className={`touch-44 grid place-items-center rounded-full transition-all duration-200 ${saved ? "bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick hover:text-cream"}`}
                 aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`} aria-pressed={saved}>
                 <Heart size={16} strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
-              </button>
+              </motion.button>
             </div>
           </div>
           {typeof index === "number" && <span className="stamp absolute bottom-3 left-4 z-10 bg-night/80 px-2 py-1 !text-[10px] text-cream/90">Nº {String(index + 1).padStart(2, "0")}</span>}
@@ -150,6 +158,11 @@ export default function PropertyCard({ property, arch = false, index, variant = 
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 stamp !text-[11px] text-ink/60">
           <span className="flex items-center gap-1.5"><BedDouble size={13} /> {property.meta}</span>
           <span className="flex items-center gap-1.5"><Ruler size={13} /> {property.area}</span>
+        </div>
+        <div className="mt-4 grid grid-cols-3 divide-x divide-ink/10 border-y border-ink/10 py-3">
+          <span className="px-2 first:pl-0"><span className="block stamp !text-[9px] text-ink/45">Baths</span><strong className="mt-1 block text-xs font-semibold text-ink/80">{property.details.bathrooms ?? "—"}</strong></span>
+          <span className="px-2"><span className="block stamp !text-[9px] text-ink/45">Parking</span><strong className="mt-1 block text-xs font-semibold text-ink/80">{property.details.parkingSpaces ? `${property.details.parkingSpaces} ${property.details.parkingSpaces === 1 ? "space" : "spaces"}` : "No parking"}</strong></span>
+          <span className="px-2"><span className="block stamp !text-[9px] text-ink/45">Furnishing</span><strong className="mt-1 block truncate text-xs font-semibold text-ink/80">{labelForFurnishing(property.details.furnishing)}</strong></span>
         </div>
         <p className="mt-3 hidden border-l-2 border-brick/50 pl-3 text-xs leading-5 text-ink/60 sm:block">{property.note}</p>
 

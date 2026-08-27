@@ -4,7 +4,7 @@ import { listLeadsForServer } from "@/lib/leads/server";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request = new Request("http://architech.local/api/broker/leads")) {
+export async function GET(request: Request) {
   const access = await authorizeRequest(request, { permission: "lead.inbox.read" });
   if (!isAuthorized(access)) return access.response;
   const leads = await listLeadsForServer();

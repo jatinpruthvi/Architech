@@ -19,6 +19,7 @@ import { searchListings, type SearchResponse } from "@/lib/search/search";
 import MapListSync from "@/components/architech/MapListSync";
 import Pic from "@/components/architech/Pic";
 import { useSearchSuggestions } from "@/components/architech/useSearchSuggestions";
+import { labelForFacing, labelForFurnishing, propertyFactRows } from "@/lib/listing-details";
 
 const filterDefs = makeFilters<Property>();
 const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
@@ -368,7 +369,11 @@ export default function ResultsPage() {
                 <div><p className="stamp !text-[9px] text-ink/55">Area</p><p className="mt-1 text-sm font-semibold">{selectedProperty.area}</p></div>
                 <div><p className="stamp !text-[9px] text-ink/55">Status</p><p className="mt-1 text-sm font-semibold text-trust">{selectedProperty.status}</p></div>
               </div>
+              <div className="mt-5 grid grid-cols-2 gap-px border border-ink/10 bg-ink/10 sm:grid-cols-3">
+                {propertyFactRows(selectedProperty.details).map(([label, value]) => <div key={label} className="bg-paper p-3"><p className="stamp !text-[9px] text-ink/50">{label}</p><p className="mt-1 text-sm font-semibold text-ink/80">{value}</p></div>)}
+              </div>
               <p className="mt-5 text-sm leading-7 text-ink/65">{selectedProperty.note}</p>
+              <p className="mt-4 border-l-2 border-brick/50 pl-3 text-xs leading-5 text-ink/60"><span className="font-semibold text-ink/80">Amenities.</span> {selectedProperty.details.amenities?.join(" · ") || "Not specified"} · {labelForFurnishing(selectedProperty.details.furnishing)} · {labelForFacing(selectedProperty.details.facing)}</p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link href={`/listing/${selectedProperty.id}`} onClick={() => setDrawerOpen(false)} className="btn-sweep touch-44 inline-flex flex-1 items-center justify-center bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Full details <ArrowUpRight size={13} className="ml-1" /></Link>
                 <Link href={`/requirements/?listing=${encodeURIComponent(selectedProperty.id)}`} onClick={() => setDrawerOpen(false)} className="touch-44 inline-flex flex-1 items-center justify-center border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-brick hover:border-brick">Schedule a visit</Link>

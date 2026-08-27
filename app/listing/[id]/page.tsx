@@ -16,10 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const property = getListingById(id);
   if (!property) return { title: "Not found" };
+  const metadataDecision = httpDecisionForListing(property.lifecycle, property.id, { continuingValue: property.continuingSeoValue });
   return {
     title: `${property.title} — ${property.price}`,
     description: `${property.meta} · ${property.area} · ${property.locality}, Ahmedabad. ${property.note} ${property.badge}, ${property.status.toLowerCase()}.`,
     alternates: { canonical: listingUrl(property.id) },
+    robots: { index: metadataDecision.indexable, follow: true },
     openGraph: { title: `${property.title} — ${property.price}`, url: listingUrl(property.id), images: [{ url: assetUrl(`/images/${property.image}.jpg`) }] },
   };
 }
@@ -33,7 +35,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   // listing resolves to notFound (404) / a permanent redirect here; a DUPLICATE
   // listing redirects to its canonical stable id. Fixtures default to ACTIVE so
   // this is a safety net for future lifecycle-aware data.
-  const decision = httpDecisionForListing(property.lifecycle, property.id);
+  const decision = httpDecisionForListing(property.lifecycle, property.id, { continuingValue: property.continuingSeoValue });
   if (decision.status === 301 && "redirectTo" in decision && decision.redirectTo) {
     redirect(listingUrl(decision.redirectTo));
   }
@@ -43,26 +45,52 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const [lat, lon] = (locality?.marker ?? "23.011,72.559").split(",");
   const trust = computeTrustScore(badgesToTrustInput(property.badge, property.status));
   const agent = buildAgentJsonLd(buildAgentProfile(demoBrokerSession));
+  const schemaPrice = property.transaction === "rent" ? Number(property.price.replace(/[^0-9]/g, "")) : property.priceNum;
+  const residence = {
+    "@type": "Residence",
+    "@id": `${listingUrl(property.id)}#residence`,
+    name: property.title,
+    description: `${property.note} (Concept-preview demonstration listing — not a real offer.)`,
+    numberOfRooms: property.bhk,
+    numberOfBathroomsTotal: property.details.bathrooms,
+    floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitText: "sq ft" },
+    address: { "@type": "PostalAddress", addressLocality: property.locality, addressRegion: "Gujarat", addressCountry: "IN" },
+    geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
+    image: assetUrl(`/images/${property.image}.jpg`),
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "propertyType", value: property.subtype },
+      { "@type": "PropertyValue", name: "parkingSpaces", value: property.details.parkingSpaces },
+      { "@type": "PropertyValue", name: "furnishing", value: property.details.furnishing },
+      { "@type": "PropertyValue", name: "facing", value: property.details.facing },
+      { "@type": "PropertyValue", name: "amenities", value: property.details.amenities?.join(", ") ?? "" },
+      { "@type": "PropertyValue", name: "trustScore", value: trust.score, unitText: "out of 100" },
+      { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },
+      { "@type": "PropertyValue", name: "priceHistory", value: `${property.price}` },
+      ...trust.signals.map((signal) => ({ "@type": "PropertyValue", name: signal.id, value: signal.met ? "verified" : "not-verified" })),
+    ],
+  };
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       agent,
       {
-        "@type": "Residence",
+        "@type": "RealEstateListing",
+        "@id": `${listingUrl(property.id)}#listing`,
+        url: listingUrl(property.id),
         name: property.title,
-        description: `${property.note} (Concept-preview demonstration listing — not a real offer.)`,
-        numberOfRooms: property.bhk,
-        floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitText: "sq ft" },
-        address: { "@type": "PostalAddress", addressLocality: property.locality, addressRegion: "Gujarat", addressCountry: "IN" },
-        geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
-        image: assetUrl(`/images/${property.image}.jpg`),
-        additionalProperty: [
-          { "@type": "PropertyValue", name: "trustScore", value: trust.score, unitText: "out of 100" },
-          { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },
-          { "@type": "PropertyValue", name: "priceHistory", value: `${property.price}` },
-          ...trust.signals.map((signal) => ({ "@type": "PropertyValue", name: signal.id, value: signal.met ? "verified" : "not-verified" })),
-        ],
+        description: property.meta,
+        about: residence,
+        image: [assetUrl(`/images/${property.image}.jpg`)],
+        offers: {
+          "@type": "Offer",
+          price: schemaPrice,
+          priceCurrency: "INR",
+          availability: property.lifecycle === "SOLD" || property.lifecycle === "EXPIRED" ? "https://schema.org/Discontinued" : "https://schema.org/InStock",
+          businessFunction: property.transaction === "rent" ? "http://purl.org/goodrelations/v1#LeaseOut" : "http://purl.org/goodrelations/v1#Sell",
+          url: listingUrl(property.id),
+        },
       },
+      residence,
       {
         "@type": "BreadcrumbList",
         itemListElement: [

@@ -31,6 +31,11 @@ export default function GuideArticle({ guide }: { guide: Guide }) {
 
       <section className="container grid gap-12 py-14 lg:grid-cols-[1fr_340px] md:py-20">
         <article className="space-y-10">
+          <section className="border-l-4 border-brick bg-card p-6 md:p-7" aria-labelledby="methodology-heading">
+            <p className="kicker text-brick !text-[10px]">Editorial method</p>
+            <h2 id="methodology-heading" className="mt-3 font-display text-2xl font-medium">Useful context before a decision.</h2>
+            <p className="mt-3 max-w-[680px] text-sm leading-7 text-ink/65">This field note separates observed facts from interpretation. Sources, reviewer status, and the last meaningful update are shown above and alongside the article; claims that need live government, market, legal, or professional verification remain clearly marked.</p>
+          </section>
           <Reveal>
             <div className="arch-frame-sm img-hover grain editorial-shadow">
               <Pic name={guide.image} alt="" className="aspect-[1.7] w-full object-cover" sizes="(max-width: 768px) 100vw, 70vw" />

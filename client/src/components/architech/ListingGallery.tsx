@@ -68,7 +68,7 @@ export function ListingGallery({ property }: { property: Property }) {
     <>
       <div className="grid gap-4 md:grid-cols-[1.45fr_0.8fr]">
         {/* Lead slide */}
-        <div className="img-hover grain relative min-h-[340px] overflow-hidden bg-sand md:min-h-[540px]">
+        <div className="img-hover grain relative min-h-[230px] overflow-hidden bg-sand sm:min-h-[280px] md:min-h-[360px]">
           <Pic name={slides[0].name} alt={slides[0].alt} className="absolute inset-0 h-full w-full object-cover" sizes="(max-width: 768px) 100vw, 62vw" eager />
           <span className="stamp absolute left-5 top-5 z-10 rounded-full bg-paper/95 px-3 py-1.5 !text-[10px] font-semibold">{t.listing.verifiedView}</span>
           <button
@@ -87,7 +87,7 @@ export function ListingGallery({ property }: { property: Property }) {
               key={slide.name}
               type="button"
               onClick={() => setLightbox(true)}
-              className="img-hover relative block h-full min-h-[160px] overflow-hidden bg-sand md:min-h-[200px]"
+              className="img-hover relative block h-full min-h-[110px] overflow-hidden bg-sand sm:min-h-[135px] md:min-h-[170px]"
               aria-label={`${slide.label} — ${t.listing.gallery.openGallery}`}
             >
               <Pic name={slide.name} alt={slide.alt} className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.025]" sizes="(max-width: 768px) 100vw, 34vw" />
@@ -106,11 +106,11 @@ export function ListingGallery({ property }: { property: Property }) {
               key={slide.name}
               type="button"
               onClick={() => scrollTo(i)}
-              className={`snap-start relative h-16 w-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-200 ${active === i ? "border-brick" : "border-transparent opacity-70 hover:opacity-100"}`}
+              className={`snap-start relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200 ${active === i ? "border-brick" : "border-transparent opacity-70 hover:opacity-100"}`}
               aria-label={`${slide.label} ${i + 1} of ${slides.length}`}
               aria-current={active === i ? "true" : undefined}
             >
-              <Pic name={slide.name} alt="" className="h-full w-full object-cover" sizes="96px" />
+              <Pic name={slide.name} alt="" className="h-full w-full object-cover" sizes="80px" />
             </button>
           ))}
         </div>

@@ -1,4 +1,5 @@
 "use client";
+
 import { useReportWebVitals } from "next/web-vitals";
 import { formatWebVitalPayload } from "@/lib/observability/web-vitals";
 
