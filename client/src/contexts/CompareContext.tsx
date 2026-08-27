@@ -1,4 +1,5 @@
 "use client";
+
 /* ARCHITECH — Amdavad Modern compare state: anonymous persistence, max four homes, reversible feedback. */
 import { createContext, useCallback, useEffect, useContext, useState, type ReactNode } from "react";
 import { toast } from "sonner";

@@ -1,5 +1,6 @@
 import type { Locality } from "@/lib/localities";
 import type { Property } from "@/lib/properties";
+import type { PropertyDetails } from "@/lib/listing-details";
 import { isPropertyTypeCode, labelForAvailability, normalizeAvailability, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 
 type DecimalLike = { toString(): string } | string | number | null | undefined;
@@ -42,6 +43,8 @@ export type DbListingRow = {
   propertyType?: string | null;
   projectName?: string | null;
   developerName?: string | null;
+  sourceSummary?: string | null;
+  details?: PropertyDetails | null;
 };
 
 function decimalToNumber(value: DecimalLike): number | undefined {
@@ -58,6 +61,16 @@ function coords(latitude?: DecimalLike, longitude?: DecimalLike) {
     coords: `${lat.toFixed(3)}° N · ${lon.toFixed(3)}° E`,
     marker: `${lat.toFixed(3)},${lon.toFixed(3)}`,
   };
+}
+
+function parseDetails(value?: string | null): PropertyDetails {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === "object" ? parsed as PropertyDetails : {};
+  } catch {
+    return {};
+  }
 }
 
 function imageNameFromMedia(media?: DbListingRow["media"]): string {
@@ -128,5 +141,6 @@ export function dbListingToProperty(row: DbListingRow): Property {
     subtype,
     project: row.projectName ?? row.title,
     developer: row.developerName ?? "Verified partner",
+    details: row.details ?? parseDetails(row.sourceSummary),
   };
 }

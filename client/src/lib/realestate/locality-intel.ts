@@ -15,6 +15,7 @@ import { compactInr } from "@/lib/realestate/price-trends";
 /** Human-readable date the underlying facts were last refreshed.
     Fixtures are static; production sources stamp each update. */
 const PRICE_AS_OF = "26 Aug 2026";
+const PRICE_AS_OF_ISO = "2026-08-26";
 
 export type BudgetBand = { id: string; label: string; min: number; max: number | null; count: number };
 export type BhkSplit = { bhk: number; label: string; count: number };
@@ -43,6 +44,7 @@ export type LocalityIntel = {
   position: LocalityPosition;
   commute: CommuteStop[];
   asOfLabel: string;
+  asOfDate: string;
 };
 
 const BUDGET_BANDS = [
@@ -149,6 +151,7 @@ export function localityIntel(slug: string): LocalityIntel {
     position,
     commute,
     asOfLabel: PRICE_AS_OF,
+    asOfDate: PRICE_AS_OF_ISO,
   };
 }
 

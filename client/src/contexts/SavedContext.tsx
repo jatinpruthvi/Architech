@@ -1,4 +1,5 @@
 "use client";
+
 /* Shared saved-homes state, persisted to localStorage. */
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { loadSaved, persistSaved, toggleSaved } from "@/lib/saved";

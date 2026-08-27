@@ -1,4 +1,5 @@
 "use client";
+
 /* Area-level trust band for city and locality hubs. Renders RERA coverage,
    source review, and the average trust score derived from structured facts. */
 import { ShieldCheck } from "lucide-react";

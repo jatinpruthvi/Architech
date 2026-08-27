@@ -4,6 +4,7 @@ import CityPage from "@/pages/CityPage";
 import { getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, localityUrl } from "@/lib/seo/urls";
 import { localityTrustSummary } from "@/lib/trust/locality";
+import { localityIntel } from "@/lib/realestate/locality-intel";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
 
 export function generateStaticParams() {
@@ -29,6 +30,7 @@ export default async function Page({ params }: { params: Promise<{ locality: str
 
   const [lat, lon] = locality.marker.split(",");
   const trust = localityTrustSummary(slug);
+  const intel = localityIntel(slug);
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -36,6 +38,7 @@ export default async function Page({ params }: { params: Promise<{ locality: str
         "@type": "Place",
         name: `${locality.name}, Ahmedabad`,
         alternateName: locality.hindi,
+        dateModified: intel.asOfDate,
         geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
         containedInPlace: { "@type": "City", name: "Ahmedabad" },
         additionalProperty: [

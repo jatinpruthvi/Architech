@@ -1,5 +1,6 @@
 import { demoBrokerSession, requirePermission, type AuthSession } from "@/lib/auth/roles";
 import { getLocalityBySlug } from "@/lib/repositories";
+import type { PropertyDetails } from "@/lib/listing-details";
 import { isAvailabilityCode, isPropertyTypeCode, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 
 export type BrokerProfileInput = {
@@ -24,10 +25,11 @@ export type ListingDraftInput = {
   description: string;
   reraNumber?: string;
   mediaRightsConfirmed: boolean;
+  details?: PropertyDetails;
 };
 
 export type ModerationDecision = "approve" | "request_changes" | "reject";
-export type DraftStatus = "DRAFT" | "IN_REVIEW" | "ACTIVE" | "CHANGES_REQUESTED" | "REJECTED";
+export type DraftStatus = "DRAFT" | "IN_REVIEW" | "ACTIVE" | "CHANGES_REQUESTED" | "REJECTED" | "ARCHIVED";
 
 export type ListingDraft = ListingDraftInput & {
   id: string;
@@ -98,7 +100,7 @@ export function createListingDraft(input: ListingDraftInput, session: AuthSessio
     status: "DRAFT",
     createdAt: now,
     updatedAt: now,
-    auditTrail: [audit("listing.draft.created", session!.user.email, { localitySlug: input.localitySlug })],
+    auditTrail: [audit("listing.draft.created", session!.user.email, { localitySlug: input.localitySlug, details: input.details ?? {} })],
   };
   drafts.set(id, draft);
   return { ok: true as const, draft };
@@ -134,6 +136,58 @@ export function listBrokerDrafts(organizationId: string) {
   return [...drafts.values()]
     .filter((draft) => draft.organizationId === organizationId)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+function ownedDraft(draftId: string, session: AuthSession | null) {
+  const draft = drafts.get(draftId);
+  if (!draft) return { ok: false as const, status: 404, errors: ["Draft not found."] };
+  if (!session || draft.organizationId !== session.organization?.id) return { ok: false as const, status: 403, errors: ["Organization mismatch."] };
+  return { ok: true as const, draft };
+}
+
+const editableStatuses: DraftStatus[] = ["DRAFT", "CHANGES_REQUESTED", "REJECTED", "ARCHIVED"];
+
+export function updateListingDraft(draftId: string, input: ListingDraftInput, session: AuthSession | null = demoBrokerSession) {
+  const owned = ownedDraft(draftId, session);
+  if (!owned.ok) return owned;
+  if (!editableStatuses.includes(owned.draft.status)) return { ok: false as const, status: 409, errors: ["Only drafts needing work can be edited."] };
+  const errors = validateListingDraft(input, session);
+  if (errors.length) return { ok: false as const, status: 400, errors };
+  const previousStatus = owned.draft.status;
+  const now = new Date().toISOString();
+  Object.assign(owned.draft, input, { status: "DRAFT" as const, updatedAt: now });
+  owned.draft.auditTrail.push(audit("listing.draft.updated", session!.user.email, { resumedFrom: previousStatus }));
+  return { ok: true as const, draft: owned.draft };
+}
+
+export function resumeListingDraft(draftId: string, session: AuthSession | null = demoBrokerSession) {
+  const owned = ownedDraft(draftId, session);
+  if (!owned.ok) return owned;
+  if (!editableStatuses.includes(owned.draft.status)) return { ok: false as const, status: 409, errors: ["This listing cannot be resumed from its current status."] };
+  const previousStatus = owned.draft.status;
+  owned.draft.status = "DRAFT";
+  owned.draft.updatedAt = new Date().toISOString();
+  owned.draft.auditTrail.push(audit("listing.draft.resumed", session!.user.email, { previousStatus }));
+  return { ok: true as const, draft: owned.draft };
+}
+
+export function archiveListingDraft(draftId: string, session: AuthSession | null = demoBrokerSession) {
+  const owned = ownedDraft(draftId, session);
+  if (!owned.ok) return owned;
+  if (!["DRAFT", "CHANGES_REQUESTED", "REJECTED"].includes(owned.draft.status)) return { ok: false as const, status: 409, errors: ["Only inactive drafts can be archived."] };
+  owned.draft.status = "ARCHIVED";
+  owned.draft.updatedAt = new Date().toISOString();
+  owned.draft.auditTrail.push(audit("listing.draft.archived", session!.user.email));
+  return { ok: true as const, draft: owned.draft };
+}
+
+export function deleteListingDraft(draftId: string, session: AuthSession | null = demoBrokerSession) {
+  const owned = ownedDraft(draftId, session);
+  if (!owned.ok) return owned;
+  if (!["DRAFT", "CHANGES_REQUESTED", "REJECTED", "ARCHIVED"].includes(owned.draft.status)) return { ok: false as const, status: 409, errors: ["Only inactive drafts can be deleted."] };
+  drafts.delete(draftId);
+  draftMedia.delete(draftId);
+  return { ok: true as const, deletedId: draftId };
 }
 
 /** Per-draft attached media ids (memory store; a real contract until media is

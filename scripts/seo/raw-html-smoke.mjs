@@ -130,6 +130,9 @@ const routeChecks = [
 
       includes(html, "Paldi", "/listing/garden-courtyard/");
       includes(html, "@type\":\"Residence", "/listing/garden-courtyard/");
+      includes(html, "@type\":\"RealEstateListing\"", "/listing/garden-courtyard/");
+      includes(html, "@type\":\"Offer\"", "/listing/garden-courtyard/");
+      includes(html, "numberOfBathroomsTotal", "/listing/garden-courtyard/");
       includes(html, "@type\":\"BreadcrumbList", "/listing/garden-courtyard/");
       matches(html, /<title>A garden courtyard in Paldi[^<]*₹1\.85 Cr[^<]*· Architech<\/title>/, "/listing/garden-courtyard/", "route title");
     },
@@ -140,6 +143,16 @@ const routeChecks = [
       assertCommonSeo(html, "/guide/");
       includes(html, "Ahmedabad", "/guide/");
       includes(html, "@type\":\"CollectionPage", "/guide/");
+      matches(html, /"url":"https:\/\/[^\"]+\/guide\//, "/guide/", "absolute guide ItemList URL");
+    },
+  },
+  {
+    route: "/guide/city/ahmedabad/home-buying-guide/",
+    check(html) {
+      assertCommonSeo(html, "/guide/city/ahmedabad/home-buying-guide/");
+      includes(html, "@type\":\"Article", "/guide/city/ahmedabad/home-buying-guide/");
+      includes(html, "Editorial method", "/guide/city/ahmedabad/home-buying-guide/");
+      matches(html, /\"image\":\"https:\/\/[^\"]+\"/, "/guide/city/ahmedabad/home-buying-guide/", "absolute Article image URL");
     },
   },
   {
@@ -148,6 +161,15 @@ const routeChecks = [
       assertCommonSeo(html, "/search/");
       assertNoindex(html, "/search/");
       includes(html, "Search homes in Ahmedabad", "/search/");
+    },
+  },
+  {
+    route: "/collections/",
+    check(html) {
+      assertCommonSeo(html, "/collections/");
+      assertNoindex(html, "/collections/");
+      includes(html, "Private working set", "/collections/");
+      includes(html, "No collections yet", "/collections/");
     },
   },
   {

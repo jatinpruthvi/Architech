@@ -1,24 +1,7 @@
 "use client";
 
-/* Root error boundary for uncaught errors outside a route segment. Must set
-   <html> and <body> itself (no layout providers here by design). */
-import { useEffect } from "react";
-
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        void fetch("/api/observability/errors", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: error.message || "Global error", severity: "error", route: window.location.pathname, buildTag: "phase-1" }),
-        });
-      }
-    } catch {
-      /* non-blocking */
-    }
-  }, [error.message]);
-
+/* Root error boundary for uncaught errors outside a route segment. */
+export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body style={{ margin: 0, background: "#f4eee2", color: "#1b1612" }}>

@@ -5,7 +5,7 @@ import type { AuthorityAsset } from "@/lib/governance/authority";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request = new Request("http://architech.local/api/authority/assets")) {
+export async function GET(request: Request) {
   const access = await authorizeRequest(request, { permission: "authority.registry.read" });
   if (!isAuthorized(access)) return access.response;
   const assets = await listRegistryAssetsForServer();

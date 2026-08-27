@@ -40,6 +40,7 @@ const nextConfig: NextConfig = {
     "*.manus.computer",
     "3000-ic1kcjb43qdag8kqqfuag-1217bc80.sg1.manus.computer",
     "3000-i3hdv4omcwxuvbaopwpw2-bed17bd0.sg1.manus.computer",
+    "3000-ixa0ycaohqn3uu7gchacy-2d2aebe2.sg1.manus.computer",
     "localhost",
     "127.0.0.1",
   ],

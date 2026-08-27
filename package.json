@@ -5,8 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
-    "build": "next build",
-    "start": "next start -H 0.0.0.0 -p 3000",
+    "build": "node scripts/build-publish.mjs",
+    "start": "node dist/index.js",
     "check": "tsc --noEmit",
     "lint": "eslint app client/src --max-warnings 200",
     "test": "vitest run",
@@ -47,6 +47,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.453.0",
     "maplibre-gl": "^6.5.0",
+    "motion": "^13.1.1",
     "next": "^16.3.2",
     "next-themes": "^0.4.6",
     "pino": "^10.3.1",

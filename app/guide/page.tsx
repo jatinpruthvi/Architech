@@ -23,7 +23,7 @@ export default function Page() {
         "@type": "ListItem",
         position: index + 1,
         name: guide.title,
-        url: guide.path,
+        url: guideUrl(guide.path.replace(/^\/guide\//, "").replace(/\/$/, "")),
       })),
     },
   };

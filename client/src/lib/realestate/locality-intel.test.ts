@@ -16,6 +16,7 @@ describe("locality intelligence", () => {
     }
     // An as-of label is always present so readers can assess freshness.
     expect(intel.asOfLabel).toMatch(/\d{1,2} [A-Za-z]{3} \d{4}/);
+    expect(intel.asOfDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     // Position is only reported against a real city baseline.
     expect(typeof intel.position.deltaPct).toBe("number");
   });

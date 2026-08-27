@@ -4,7 +4,7 @@ import { getModerationQueueForServer } from "@/lib/persistence/broker-store";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request = new Request("http://architech.local/api/admin/moderation/listings")) {
+export async function GET(request: Request) {
   const access = await authorizeRequest(request, { permission: "moderation.queue.read" });
   if (!isAuthorized(access)) return access.response;
   const drafts = await getModerationQueueForServer();

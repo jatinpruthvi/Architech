@@ -1,4 +1,5 @@
 "use client";
+
 /* Amdavad Modern public parity surfaces: editorial authority, consent-aware forms,
    and utility interactions without copied branding, fabricated reviews, or lender claims. */
 import Link from "next/link";

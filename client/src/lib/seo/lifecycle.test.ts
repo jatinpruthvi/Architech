@@ -13,6 +13,11 @@ describe("listing lifecycle HTTP & indexability", () => {
     expect(behaviorForLifecycle("REMOVED")).toEqual({ status: 410, indexable: false });
   });
 
+  it("keeps an expired listing viewable but noindex when continuing value is verified", () => {
+    expect(behaviorForLifecycle("EXPIRED", { continuingValue: true })).toEqual({ status: 200, indexable: false });
+    expect(httpDecisionForListing("EXPIRED", undefined, { continuingValue: true })).toEqual({ status: 200, indexable: false });
+  });
+
   it("serves 404 for non-public and 301 redirect for DUPLICATE", () => {
     expect(behaviorForLifecycle("DRAFT").status).toBe(404);
     expect(behaviorForLifecycle("IN_REVIEW").status).toBe(404);

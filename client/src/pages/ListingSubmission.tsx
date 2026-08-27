@@ -13,6 +13,7 @@ import { getLocalities } from "@/lib/repositories";
 import type { ListingDraftInput } from "@/lib/broker/workflow";
 import { AVAILABILITY_OPTIONS, PROPERTY_TYPE_OPTIONS } from "@/lib/listing-vocabulary";
 import type { SignedMediaUpload } from "@/lib/media/upload";
+import { AMENITY_OPTIONS, BATHROOM_OPTIONS, FACING_OPTIONS, FURNISHING_OPTIONS, PARKING_OPTIONS } from "@/lib/listing-details";
 
 const EMPTY: ListingDraftInput = {
   title: "",
@@ -25,6 +26,7 @@ const EMPTY: ListingDraftInput = {
   description: "",
   reraNumber: "",
   mediaRightsConfirmed: false,
+  details: { bathrooms: 2, parkingSpaces: 1, furnishing: "UNFURNISHED", facing: "EAST", amenities: [] },
 };
 
 export default function ListingSubmission() {
@@ -54,11 +56,17 @@ export default function ListingSubmission() {
       { label: "Availability", complete: draft.availability.trim().length >= 3 },
       { label: "Description", complete: draft.description.trim().length >= 30 },
       { label: "Media rights", complete: draft.mediaRightsConfirmed },
+      { label: "Property facts", complete: Boolean(draft.details?.bathrooms && draft.details?.furnishing && draft.details?.facing) },
     ];
     return { checks, complete: checks.filter((check) => check.complete).length, total: checks.length };
   }, [draft]);
 
   const set = (key: keyof ListingDraftInput, value: string | number | boolean) => setDraft((current) => ({ ...current, [key]: value }));
+  const setDetail = (key: keyof NonNullable<ListingDraftInput["details"]>, value: string | number | string[] | undefined) => setDraft((current) => ({ ...current, details: { ...(current.details ?? {}), [key]: value } }));
+  const toggleAmenity = (amenity: string) => setDraft((current) => {
+    const amenities = current.details?.amenities ?? [];
+    return { ...current, details: { ...(current.details ?? {}), amenities: amenities.includes(amenity) ? amenities.filter((item) => item !== amenity) : [...amenities, amenity] } };
+  });
 
   const onMediaFile = (file: File | null) => {
     setMediaUpload(null);
@@ -192,6 +200,7 @@ export default function ListingSubmission() {
     if (draft.availability.trim().length < 3) next.push("Availability/status is required.");
     if (draft.description.trim().length < 30) next.push("Description must be at least 30 characters.");
     if (!draft.mediaRightsConfirmed) next.push("Media rights confirmation is required before review.");
+    if (!draft.details?.bathrooms || !draft.details?.furnishing || !draft.details?.facing) next.push("Complete the required property facts using the reviewed selections.");
     setErrors(next);
     return next.length === 0;
   };
@@ -257,6 +266,21 @@ export default function ListingSubmission() {
                 </select>
               </Field>
             </div>
+            <section className="border border-ink/12 bg-sand/35 p-5" aria-labelledby="property-facts-title">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-ink/12 pb-4">
+                <div><p id="property-facts-title" className="kicker text-brick !text-[10px]">Property facts</p><p className="mt-1 text-sm text-ink/60">Select what is true. These facts appear in the public dossier and search cards.</p></div>
+                <span className="stamp text-ink/45">CONTROLLED / REVIEWED</span>
+              </div>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Field label="Bathrooms" required><select value={draft.details?.bathrooms ?? ""} onChange={(e) => setDetail("bathrooms", Number(e.target.value))} className={inputCls}><option value="" disabled>Choose count</option>{BATHROOM_OPTIONS.map((value) => <option key={value} value={value}>{value}</option>)}</select></Field>
+                <Field label="Parking" required><select value={draft.details?.parkingSpaces ?? ""} onChange={(e) => setDetail("parkingSpaces", Number(e.target.value))} className={inputCls}><option value="" disabled>Choose spaces</option>{PARKING_OPTIONS.map((value) => <option key={value} value={value}>{value === 0 ? "No parking" : `${value} ${value === 1 ? "space" : "spaces"}`}</option>)}</select></Field>
+                <Field label="Furnishing" required><select value={draft.details?.furnishing ?? ""} onChange={(e) => setDetail("furnishing", e.target.value)} className={inputCls}><option value="" disabled>Choose status</option>{FURNISHING_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+                <Field label="Facing" required><select value={draft.details?.facing ?? ""} onChange={(e) => setDetail("facing", e.target.value)} className={inputCls}><option value="" disabled>Choose direction</option>{FACING_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+                <Field label="Floor"><div className="grid grid-cols-2 gap-2"><input type="number" min={0} value={draft.details?.floorNumber ?? ""} onChange={(e) => setDetail("floorNumber", e.target.value === "" ? undefined : Number(e.target.value))} className={inputCls} placeholder="This floor" /><input type="number" min={1} value={draft.details?.totalFloors ?? ""} onChange={(e) => setDetail("totalFloors", e.target.value === "" ? undefined : Number(e.target.value))} className={inputCls} placeholder="Total floors" /></div></Field>
+                <Field label="Possession"><input value={draft.details?.possessionLabel ?? ""} onChange={(e) => setDetail("possessionLabel", e.target.value)} className={inputCls} placeholder="Ready to move" /></Field>
+              </div>
+              <fieldset className="mt-5 border-t border-ink/12 pt-4"><legend className="stamp !text-[10px] text-ink/60">Amenities · select all that apply</legend><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{AMENITY_OPTIONS.map((amenity) => { const selected = draft.details?.amenities?.includes(amenity) ?? false; return <label key={amenity} className={`flex min-h-11 cursor-pointer items-center gap-3 border px-3 py-2.5 text-sm transition-colors ${selected ? "border-brick bg-brick/10 text-ink" : "border-ink/12 bg-paper/45 text-ink/65 hover:border-brick/45"}`}><input type="checkbox" checked={selected} onChange={() => toggleAmenity(amenity)} className="h-4 w-4 accent-[var(--brick)]" /> <span>{amenity}</span></label>; })}</div></fieldset>
+            </section>
             <Field label="Description / source context" required>
               <textarea value={draft.description} onChange={(e) => set("description", e.target.value)} rows={4} className={inputCls} placeholder="Old trees, kota stone floors, and a courtyard that carries the whole house." />
             </Field>
