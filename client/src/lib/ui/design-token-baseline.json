@@ -47,7 +47,7 @@
   },
   "client/src/components/architech/PropertyCard.tsx": {
     "alphaText": 1,
-    "microText": 2,
+    "microText": 0,
     "nanoText": 0
   },
   "client/src/components/architech/RequirementCapture.tsx": {

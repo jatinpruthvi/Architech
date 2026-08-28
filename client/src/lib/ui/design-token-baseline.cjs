@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef, @typescript-eslint/no-require-imports */
+/* This helper is deliberately CommonJS: it runs under bare `node` in the repo's
+   ESLint config, which only knows ESM + TS. It is a maintenance tool, not app
+   code — the guard test reads the JSON it writes, never this file. */
 /* Regenerate design-token-baseline.json after paying down legacy type/colour debt.
    Run: node client/src/lib/ui/design-token-baseline.cjs --write
    The guard test compares against this file, so a cleanup that lowers a count
