@@ -145,6 +145,24 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--brick) 60%, white);
   outline-offset: 3px;
 }
+
+/* Composed fields — a bordered shell that wraps an icon, a text input and a
+   submit button (the hero search, the results search) — must read as ONE
+   control. A text input matches :focus-visible even on a plain mouse click,
+   so the base outline above used to draw a second offset ring inside the
+   shell's own border: two outer borders around one search bar. The shell now
+   owns the focus edge and the inner text control draws none. */
+.field-shell :is(input, textarea):focus,
+.field-shell :is(input, textarea):focus-visible { outline: none; }
+.field-shell:has(:is(input, textarea):focus) {
+  outline: 2px solid var(--field-focus, var(--brick));
+  outline-offset: 0;
+}
+/* Fallback for engines without :has() — keep a single visible focus edge. */
+@supports not selector(:has(input)) {
+  .field-shell:focus-within { outline: 2px solid var(--field-focus, var(--brick)); outline-offset: 0; }
+}
+
 a { color: inherit; text-decoration: none; }
 ::selection { background: var(--brick); color: var(--paper); }
 

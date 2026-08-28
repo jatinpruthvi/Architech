@@ -217,7 +217,7 @@ export default function ResultsPage() {
           {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">{t.search.clearSearch} “{query}” <X size={12} /></button>}
           <div className="mt-6 max-w-[560px]">
             <div className="relative">
-              <form onSubmit={(e) => { e.preventDefault(); runQuery(qInput); }} className="flex items-stretch border border-ink/20 bg-paper focus-within:border-brick" role="search" aria-label="Search homes">
+              <form onSubmit={(e) => { e.preventDefault(); runQuery(qInput); }} className="field-shell flex items-stretch border border-ink/20 bg-paper focus-within:border-brick" role="search" aria-label="Search homes">
                 <span className="grid w-12 place-items-center text-ink/55"><Search size={16} /></span>
                 <input
                   value={qInput}
