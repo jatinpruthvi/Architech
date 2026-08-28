@@ -33,6 +33,16 @@ Adding a city is a registry edit: routes (`/buy/[city]/[locality]/`), `generateS
 
 Ahmedabad keeps hand-authored editorial fixtures (they model the edge cases behavioural tests rely on, such as a rent-only locality). Inventory for every other city is derived deterministically in `client/src/lib/property-generator.ts` from the city price band and a locality price index, and remains illustrative demo data.
 
+### PIN code queries
+
+Every city carries its India Post sorting-district prefixes (`pincodePrefixes`) and every locality carries the PIN codes it serves (`pincodes`). The relationship is many-to-many in both directions — Thaltej spans 380059 and 380054, while 395007 covers both Vesu and Piplod — so both sides are lists rather than single columns.
+
+PIN codes are a **query dimension, not a URL key**: canonical URLs stay slug-based (`/buy/{city}/{locality}/`) because slugs are stable, readable, and already indexed. `client/src/lib/pincodes.ts` resolves a PIN in layers and refuses to guess: an exact PIN returns the localities that claim it, an unclaimed PIN falls back to its three-digit district's city, and anything outside every covered district returns `null`.
+
+Search accepts `?pincode=380007` and also recognises a bare six-digit token typed into `?q=` (`3 bhk 411057` works). Locality pages state their PINs as a visible fact and emit `postalCode` in the `PostalAddress` JSON-LD. In the database, `Locality.pincodes` is a GIN-indexed `String[]`, `City.pincodePrefixes` a `String[]`, and `Listing.postalCode` a nullable indexed column (migration `202608270001_pincode_registry`).
+
+> PIN codes in the prototype are **illustrative demo data** pending reconciliation against an authoritative India Post source with a retrieval date, exactly like the RERA fixtures.
+
 > All listings, statistics, testimonials, and RERA numbers in the prototype are **illustrative demo data**. The production build (Next.js 16, per this architecture) replaces them with verified sources.
 
 Engineering teams and AI coding systems should use the normative documents as the authoritative design reference, and inspect the working application when extending an already-implemented contract. Historical reviews are context only and are not active implementation instructions.

@@ -67,6 +67,7 @@ async function main() {
         bhk: listing.bhk,
         areaSqft: listing.areaSqft,
         availability: listing.availability,
+        postalCode: locality.pincodes?.[0] ?? null,
         cityId: city.id,
         localityId: locality.id,
         brokerOrgId: broker.id,
@@ -90,6 +91,7 @@ async function main() {
         areaSqft: listing.areaSqft,
         availability: listing.availability,
         addressLocality: locality.name,
+        postalCode: locality.pincodes?.[0] ?? null,
         cityId: city.id,
         localityId: locality.id,
         brokerOrgId: broker.id,
@@ -156,7 +158,7 @@ async function main() {
       action: "seed.phase1_domain_schema",
       entityType: "database",
       entityId: "phase1-demo-fixtures",
-      metadata: { localities: localities.length, listings: listings.length, source: "prisma/seed.mjs" },
+      metadata: { localities: LOCALITIES.length, listings: listings.length, source: "prisma/seed.mjs" },
     },
   });
 

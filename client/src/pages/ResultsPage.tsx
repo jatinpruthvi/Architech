@@ -15,6 +15,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, Drawer
 import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCities, getCityBySlug, type Property } from "@/lib/repositories";
+import { parsePincode, resolvePincode, PINCODE_PROVENANCE } from "@/lib/pincodes";
 import { searchListings, type SearchResponse } from "@/lib/search/search";
 import MapListSync from "@/components/architech/MapListSync";
 import Pic from "@/components/architech/Pic";
@@ -70,19 +71,24 @@ export default function ResultsPage() {
   // City scope: a known city slug narrows every result, "all" searches India.
   const citySlug = getCityBySlug(params.get("city") ?? undefined)?.slug ?? "all";
   const activeCity = citySlug === "all" ? undefined : getCityBySlug(citySlug);
+  // PIN scope: narrows to localities that serve the PIN. A malformed value is
+  // dropped rather than returning an empty page.
+  const pincode = parsePincode(params.get("pincode"));
+  const pincodeMatch = pincode ? resolvePincode(pincode) : null;
 
   const [mapMode, setMapMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeKey = active.join(",");
-  const initialSearch = useMemo(() => searchListings({ q: query, city: citySlug, filters: active, category, intent, sort }), [activeKey, category, citySlug, intent, query, sort]);
+  const initialSearch = useMemo(() => searchListings({ q: query, city: citySlug, pincode: pincode ?? undefined, filters: active, category, intent, sort }), [activeKey, category, citySlug, intent, pincode, query, sort]);
   const [searchResponse, setSearchResponse] = useState<SearchResponse>(initialSearch);
 
   useEffect(() => {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
     if (citySlug !== "all") p.set("city", citySlug);
+    if (pincode) p.set("pincode", pincode);
     if (category !== "all") p.set("category", category);
     if (intent !== "buy") p.set("intent", intent);
     if (active.length) p.set("filters", serializeFilters(active));
@@ -99,7 +105,7 @@ export default function ResultsPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [activeKey, category, citySlug, initialSearch, intent, query, sort]);
+  }, [activeKey, category, citySlug, initialSearch, intent, pincode, query, sort]);
 
   const results = searchResponse.results;
   const selectedProperty = results.find((property) => property.id === selectedId) ?? null;
@@ -110,6 +116,7 @@ export default function ResultsPage() {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
     if (citySlug !== "all") p.set("city", citySlug);
+    if (pincode) p.set("pincode", pincode);
     if (category !== "all") p.set("category", category);
     if (intent !== "buy") p.set("intent", intent);
     if (nextFilters.length) p.set("filters", serializeFilters(nextFilters));
@@ -124,6 +131,7 @@ export default function ResultsPage() {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
     if (citySlug !== "all") p.set("city", citySlug);
+    if (pincode) p.set("pincode", pincode);
     if (nextCategory !== "all") p.set("category", nextCategory);
     if (nextIntent !== "buy") p.set("intent", nextIntent);
     if (active.length) p.set("filters", serializeFilters(active));
@@ -135,6 +143,7 @@ export default function ResultsPage() {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
     if (nextCity !== "all") p.set("city", nextCity);
+    if (pincode) p.set("pincode", pincode);
     if (category !== "all") p.set("category", category);
     if (intent !== "buy") p.set("intent", intent);
     if (active.length) p.set("filters", serializeFilters(active));
@@ -240,6 +249,26 @@ export default function ResultsPage() {
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
             <div className="field-rule">
               <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="text-ink/45">in</span> <em>{activeCity ? `${activeCity.name}.` : t.search.cityName}</em></h1>
+              {pincode && (
+                /* A PIN filter is stated plainly, with the places it resolved to
+                   and a way out, so the smaller result count is never a mystery. */
+                <p className="stamp mt-4 !text-[11px] text-ink/60">
+                  PIN {pincode}
+                  {pincodeMatch?.localities.length
+                    ? ` · ${pincodeMatch.localities.map((locality) => locality.name).join(", ")}, ${pincodeMatch.city.name}`
+                    : pincodeMatch
+                      ? ` · ${pincodeMatch.city.name} (no locality in the demo registry claims this PIN)`
+                      : " · outside every covered postal district"}
+                  <button
+                    type="button"
+                    onClick={() => { const p = new URLSearchParams(params); p.delete("pincode"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }}
+                    className="ml-3 underline decoration-brick underline-offset-4 hover:text-brick"
+                  >
+                    Clear PIN
+                  </button>
+                  <span className="ml-3 text-ink/45">{PINCODE_PROVENANCE}</span>
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>

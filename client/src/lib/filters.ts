@@ -1,5 +1,6 @@
 /* Pure, testable multi-select filter + sort logic for search. */
 import { localityMatchesToken, localityNameMatchesToken } from "@/lib/search/aliases";
+import { listingMatchesPincode, parsePincode } from "@/lib/pincodes";
 import type { AvailabilityCode, PropertyTypeCode } from "@/lib/listing-vocabulary";
 
 export type MarketCategory = "all" | "residential" | "commercial" | "pg" | "plot" | "land" | "auction";
@@ -68,12 +69,19 @@ export function matchesQuery<T extends QueryableProperty>(p: T, query: string): 
   const tokenMatchesLocality = (token: string) =>
     (slug ? localityMatchesToken(slug, token) : false) || localityNameMatchesToken(p.locality, token);
 
+  // A six-digit PIN typed anywhere in the query narrows to localities that
+  // actually serve it. Digits are stripped from the residual token pass below,
+  // so the PIN must be handled explicitly or it would silently match everything.
+  const pincode = parsePincode(q);
+  if (pincode && (!slug || !listingMatchesPincode(slug, pincode))) return false;
+
   // BHK pattern anywhere in the query
   const bhkMatch = q.match(/(\d+)\s*bhk/);
   // "under X cr" / "under X crore"
   const underMatch = q.match(/under\s*₹?\s*([\d.]+)\s*(cr|crore|l|lakh)/);
 
   const residual = q
+    .replace(/(?<![0-9])[1-9][0-9]{5}(?![0-9])/g, " ")
     .replace(/(\d+)\s*bhk/g, " ")
     .replace(/under\s*₹?\s*([\d.]+)\s*(cr|crore|l|lakh)/g, " ")
     .replace(/near|in|homes?|flats?|apartments?|the/g, " ");

@@ -59,7 +59,7 @@ export const strings = {
     locality: {
       breadcrumbHome: "Home", breadcrumbCity: "Buy in {city}", kicker: "A locality, in context", titleCity: "{city}.",
       introSuffix: "Explore homes with the whole place around them — streets, distances, and sources included.", snapshot: "Locality snapshot · demo data",
-      activeHomes: "active homes", medianRate: "median / sq ft", toRiverfront: "to riverfront", reraCoverage: "RERA coverage", updatedSources: "Updated 21 Aug 2026 · Sources reviewed",
+      activeHomes: "active homes", pincodeLabel: "PIN", pincodeNote: "PIN codes are illustrative demo data pending India Post verification", medianRate: "median / sq ft", toRiverfront: "to riverfront", reraCoverage: "RERA coverage", updatedSources: "Updated 21 Aug 2026 · Sources reviewed",
       feelKicker: "What the place feels like", feelTitle1: "A neighbourhood with a front door and a", feelTitleEm: "backstory", nearby: "Nearby —",
       measured: "Measured, not guessed", distancesFrom: "Distances from", geodata: "Geodata via OpenStreetMap · straight-line distances",
       homesIn: "Homes in", sourceTrailTitle: "Every home carries a", sourceTrailEm: "source trail", refine: "Refine in search",
@@ -164,7 +164,7 @@ export const strings = {
     },
     locality: {
       breadcrumbHome: "होम", breadcrumbCity: "{city} में ख़रीदें", kicker: "इलाक़ा, संदर्भ सहित", titleCity: "{city}।",
-      introSuffix: "घर के साथ पूरी जगह समझें — सड़कें, दूरी और स्रोत सहित।", snapshot: "इलाक़ा स्नैपशॉट · डेमो डेटा", activeHomes: "सक्रिय घर", medianRate: "मीडियन / sq ft", toRiverfront: "रिवरफ्रंट तक", reraCoverage: "RERA कवरेज", updatedSources: "21 अगस्त 2026 अपडेट · स्रोत समीक्षा",
+      introSuffix: "घर के साथ पूरी जगह समझें — सड़कें, दूरी और स्रोत सहित।", snapshot: "इलाक़ा स्नैपशॉट · डेमो डेटा", activeHomes: "सक्रिय घर", pincodeLabel: "पिन कोड", pincodeNote: "पिन कोड केवल डेमो डेटा हैं — भारतीय डाक से सत्यापन बाक़ी है", medianRate: "मीडियन / sq ft", toRiverfront: "रिवरफ्रंट तक", reraCoverage: "RERA कवरेज", updatedSources: "21 अगस्त 2026 अपडेट · स्रोत समीक्षा",
       feelKicker: "जगह कैसी महसूस होती है", feelTitle1: "एक इलाक़ा जिसका अपना दरवाज़ा और", feelTitleEm: "कहानी", nearby: "पास में —",
       measured: "नापा हुआ, अंदाज़ा नहीं", distancesFrom: "दूरी —", geodata: "जियोडेटा OpenStreetMap से · सीधी-रेखा दूरी",
       homesIn: "घर —", sourceTrailTitle: "हर घर के साथ", sourceTrailEm: "स्रोत ट्रेल", refine: "खोज में सुधारें",

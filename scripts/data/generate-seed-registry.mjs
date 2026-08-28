@@ -44,6 +44,7 @@ try {
     country: "IN",
     latitude: coord(city.marker, 0),
     longitude: coord(city.marker, 1),
+    pincodePrefixes: city.pincodePrefixes,
   }));
 
   const LOCALITIES = localities.map((locality) => ({
@@ -56,6 +57,7 @@ try {
     latitude: coord(locality.marker, 0),
     longitude: coord(locality.marker, 1),
     bbox: locality.bbox,
+    pincodes: locality.pincodes,
     ...(locality.landmarks ? { landmarks: locality.landmarks } : {}),
   }));
 

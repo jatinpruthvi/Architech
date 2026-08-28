@@ -18,6 +18,7 @@ export type DbLocalityRow = {
   longitude?: DecimalLike;
   bbox?: string | null;
   landmarks?: unknown;
+  pincodes?: string[] | null;
 };
 
 export type DbListingRow = {
@@ -123,6 +124,7 @@ export function dbLocalityToLocality(row: DbLocalityRow): Locality {
     citySlug: row.city?.slug ?? DEFAULT_CITY_SLUG,
     cityName: row.city?.name ?? "India",
     priceIndex: row.priceIndex ?? 1,
+    pincodes: row.pincodes ?? [],
     landmarks: Array.isArray(row.landmarks) ? row.landmarks as [string, string][] : undefined,
   };
 }

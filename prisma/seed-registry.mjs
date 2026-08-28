@@ -14,7 +14,11 @@ export const CITIES = [
     "state": "Gujarat",
     "country": "IN",
     "latitude": "23.022500",
-    "longitude": "72.571400"
+    "longitude": "72.571400",
+    "pincodePrefixes": [
+      "380",
+      "382"
+    ]
   },
   {
     "slug": "mumbai",
@@ -23,7 +27,10 @@ export const CITIES = [
     "state": "Maharashtra",
     "country": "IN",
     "latitude": "19.076000",
-    "longitude": "72.877700"
+    "longitude": "72.877700",
+    "pincodePrefixes": [
+      "400"
+    ]
   },
   {
     "slug": "delhi",
@@ -32,7 +39,10 @@ export const CITIES = [
     "state": "Delhi",
     "country": "IN",
     "latitude": "28.613900",
-    "longitude": "77.209000"
+    "longitude": "77.209000",
+    "pincodePrefixes": [
+      "110"
+    ]
   },
   {
     "slug": "bengaluru",
@@ -41,7 +51,10 @@ export const CITIES = [
     "state": "Karnataka",
     "country": "IN",
     "latitude": "12.971600",
-    "longitude": "77.594600"
+    "longitude": "77.594600",
+    "pincodePrefixes": [
+      "560"
+    ]
   },
   {
     "slug": "hyderabad",
@@ -50,7 +63,11 @@ export const CITIES = [
     "state": "Telangana",
     "country": "IN",
     "latitude": "17.385000",
-    "longitude": "78.486700"
+    "longitude": "78.486700",
+    "pincodePrefixes": [
+      "500",
+      "501"
+    ]
   },
   {
     "slug": "chennai",
@@ -59,7 +76,10 @@ export const CITIES = [
     "state": "Tamil Nadu",
     "country": "IN",
     "latitude": "13.082700",
-    "longitude": "80.270700"
+    "longitude": "80.270700",
+    "pincodePrefixes": [
+      "600"
+    ]
   },
   {
     "slug": "pune",
@@ -68,7 +88,11 @@ export const CITIES = [
     "state": "Maharashtra",
     "country": "IN",
     "latitude": "18.520400",
-    "longitude": "73.856700"
+    "longitude": "73.856700",
+    "pincodePrefixes": [
+      "411",
+      "412"
+    ]
   },
   {
     "slug": "kolkata",
@@ -77,7 +101,11 @@ export const CITIES = [
     "state": "West Bengal",
     "country": "IN",
     "latitude": "22.572600",
-    "longitude": "88.363900"
+    "longitude": "88.363900",
+    "pincodePrefixes": [
+      "700",
+      "711"
+    ]
   },
   {
     "slug": "gurugram",
@@ -86,7 +114,10 @@ export const CITIES = [
     "state": "Haryana",
     "country": "IN",
     "latitude": "28.459500",
-    "longitude": "77.026600"
+    "longitude": "77.026600",
+    "pincodePrefixes": [
+      "122"
+    ]
   },
   {
     "slug": "noida",
@@ -95,7 +126,10 @@ export const CITIES = [
     "state": "Uttar Pradesh",
     "country": "IN",
     "latitude": "28.535500",
-    "longitude": "77.391000"
+    "longitude": "77.391000",
+    "pincodePrefixes": [
+      "201"
+    ]
   },
   {
     "slug": "surat",
@@ -104,7 +138,11 @@ export const CITIES = [
     "state": "Gujarat",
     "country": "IN",
     "latitude": "21.170200",
-    "longitude": "72.831100"
+    "longitude": "72.831100",
+    "pincodePrefixes": [
+      "394",
+      "395"
+    ]
   },
   {
     "slug": "jaipur",
@@ -113,7 +151,10 @@ export const CITIES = [
     "state": "Rajasthan",
     "country": "IN",
     "latitude": "26.912400",
-    "longitude": "75.787300"
+    "longitude": "75.787300",
+    "pincodePrefixes": [
+      "302"
+    ]
   }
 ];
 
@@ -128,6 +169,9 @@ export const LOCALITIES = [
     "latitude": "23.011000",
     "longitude": "72.559000",
     "bbox": "72.5350,22.9950,72.5850,23.0270",
+    "pincodes": [
+      "380007"
+    ],
     "landmarks": [
       [
         "Law Garden",
@@ -161,6 +205,9 @@ export const LOCALITIES = [
     "latitude": "23.039000",
     "longitude": "72.561000",
     "bbox": "72.5400,23.0250,72.5820,23.0530",
+    "pincodes": [
+      "380009"
+    ],
     "landmarks": [
       [
         "Gujarat College",
@@ -189,7 +236,10 @@ export const LOCALITIES = [
     "demoHomeCount": 68,
     "latitude": "23.011000",
     "longitude": "72.507000",
-    "bbox": "72.4880,22.9970,72.5260,23.0250"
+    "bbox": "72.4880,22.9970,72.5260,23.0250",
+    "pincodes": [
+      "380015"
+    ]
   },
   {
     "citySlug": "ahmedabad",
@@ -200,7 +250,11 @@ export const LOCALITIES = [
     "demoHomeCount": 54,
     "latitude": "23.052000",
     "longitude": "72.509000",
-    "bbox": "72.4900,23.0380,72.5280,23.0660"
+    "bbox": "72.4900,23.0380,72.5280,23.0660",
+    "pincodes": [
+      "380059",
+      "380054"
+    ]
   },
   {
     "citySlug": "ahmedabad",
@@ -211,7 +265,10 @@ export const LOCALITIES = [
     "demoHomeCount": 47,
     "latitude": "23.033000",
     "longitude": "72.464000",
-    "bbox": "72.4450,23.0190,72.4830,23.0470"
+    "bbox": "72.4450,23.0190,72.4830,23.0470",
+    "pincodes": [
+      "380058"
+    ]
   },
   {
     "citySlug": "ahmedabad",
@@ -222,7 +279,10 @@ export const LOCALITIES = [
     "demoHomeCount": 39,
     "latitude": "23.023000",
     "longitude": "72.519000",
-    "bbox": "72.5000,23.0090,72.5380,23.0370"
+    "bbox": "72.5000,23.0090,72.5380,23.0370",
+    "pincodes": [
+      "380015"
+    ]
   },
   {
     "citySlug": "mumbai",
@@ -234,6 +294,9 @@ export const LOCALITIES = [
     "latitude": "19.059600",
     "longitude": "72.829500",
     "bbox": "72.8105,19.0456,72.8485,19.0736",
+    "pincodes": [
+      "400050"
+    ],
     "landmarks": [
       [
         "Bandra Bandstand",
@@ -259,6 +322,10 @@ export const LOCALITIES = [
     "latitude": "19.136400",
     "longitude": "72.829600",
     "bbox": "72.8106,19.1224,72.8486,19.1504",
+    "pincodes": [
+      "400058",
+      "400053"
+    ],
     "landmarks": [
       [
         "Andheri Station",
@@ -284,6 +351,9 @@ export const LOCALITIES = [
     "latitude": "19.117600",
     "longitude": "72.906000",
     "bbox": "72.8870,19.1036,72.9250,19.1316",
+    "pincodes": [
+      "400076"
+    ],
     "landmarks": [
       [
         "Powai Lake",
@@ -308,7 +378,11 @@ export const LOCALITIES = [
     "demoHomeCount": 51,
     "latitude": "19.052200",
     "longitude": "72.900500",
-    "bbox": "72.8815,19.0382,72.9195,19.0662"
+    "bbox": "72.8815,19.0382,72.9195,19.0662",
+    "pincodes": [
+      "400071",
+      "400074"
+    ]
   },
   {
     "citySlug": "mumbai",
@@ -319,7 +393,11 @@ export const LOCALITIES = [
     "demoHomeCount": 73,
     "latitude": "19.166300",
     "longitude": "72.852600",
-    "bbox": "72.8336,19.1523,72.8716,19.1803"
+    "bbox": "72.8336,19.1523,72.8716,19.1803",
+    "pincodes": [
+      "400063",
+      "400065"
+    ]
   },
   {
     "citySlug": "mumbai",
@@ -330,7 +408,12 @@ export const LOCALITIES = [
     "demoHomeCount": 112,
     "latitude": "19.218300",
     "longitude": "72.978100",
-    "bbox": "72.9591,19.2043,72.9971,19.2323"
+    "bbox": "72.9591,19.2043,72.9971,19.2323",
+    "pincodes": [
+      "400601",
+      "400604",
+      "400607"
+    ]
   },
   {
     "citySlug": "delhi",
@@ -342,6 +425,10 @@ export const LOCALITIES = [
     "latitude": "28.592100",
     "longitude": "77.046000",
     "bbox": "77.0270,28.5781,77.0650,28.6061",
+    "pincodes": [
+      "110075",
+      "110078"
+    ],
     "landmarks": [
       [
         "Dwarka Sector 21 Metro",
@@ -363,6 +450,9 @@ export const LOCALITIES = [
     "latitude": "28.524500",
     "longitude": "77.206600",
     "bbox": "77.1876,28.5105,77.2256,28.5385",
+    "pincodes": [
+      "110017"
+    ],
     "landmarks": [
       [
         "Select Citywalk",
@@ -383,7 +473,10 @@ export const LOCALITIES = [
     "demoHomeCount": 37,
     "latitude": "28.520000",
     "longitude": "77.159100",
-    "bbox": "77.1401,28.5060,77.1781,28.5340"
+    "bbox": "77.1401,28.5060,77.1781,28.5340",
+    "pincodes": [
+      "110070"
+    ]
   },
   {
     "citySlug": "delhi",
@@ -394,7 +487,11 @@ export const LOCALITIES = [
     "demoHomeCount": 79,
     "latitude": "28.749500",
     "longitude": "77.056500",
-    "bbox": "77.0375,28.7355,77.0755,28.7635"
+    "bbox": "77.0375,28.7355,77.0755,28.7635",
+    "pincodes": [
+      "110085",
+      "110089"
+    ]
   },
   {
     "citySlug": "delhi",
@@ -405,7 +502,11 @@ export const LOCALITIES = [
     "demoHomeCount": 56,
     "latitude": "28.608900",
     "longitude": "77.295200",
-    "bbox": "77.2762,28.5949,77.3142,28.6229"
+    "bbox": "77.2762,28.5949,77.3142,28.6229",
+    "pincodes": [
+      "110091",
+      "110096"
+    ]
   },
   {
     "citySlug": "delhi",
@@ -416,7 +517,10 @@ export const LOCALITIES = [
     "demoHomeCount": 41,
     "latitude": "28.666300",
     "longitude": "77.131000",
-    "bbox": "77.1120,28.6523,77.1500,28.6803"
+    "bbox": "77.1120,28.6523,77.1500,28.6803",
+    "pincodes": [
+      "110026"
+    ]
   },
   {
     "citySlug": "bengaluru",
@@ -428,6 +532,9 @@ export const LOCALITIES = [
     "latitude": "12.978400",
     "longitude": "77.640800",
     "bbox": "77.6218,12.9644,77.6598,12.9924",
+    "pincodes": [
+      "560038"
+    ],
     "landmarks": [
       [
         "100 Feet Road",
@@ -452,7 +559,11 @@ export const LOCALITIES = [
     "demoHomeCount": 62,
     "latitude": "12.935200",
     "longitude": "77.624500",
-    "bbox": "77.6055,12.9212,77.6435,12.9492"
+    "bbox": "77.6055,12.9212,77.6435,12.9492",
+    "pincodes": [
+      "560034",
+      "560095"
+    ]
   },
   {
     "citySlug": "bengaluru",
@@ -464,6 +575,9 @@ export const LOCALITIES = [
     "latitude": "12.969800",
     "longitude": "77.750000",
     "bbox": "77.7310,12.9558,77.7690,12.9838",
+    "pincodes": [
+      "560066"
+    ],
     "landmarks": [
       [
         "ITPL",
@@ -484,7 +598,10 @@ export const LOCALITIES = [
     "demoHomeCount": 84,
     "latitude": "12.911600",
     "longitude": "77.647400",
-    "bbox": "77.6284,12.8976,77.6664,12.9256"
+    "bbox": "77.6284,12.8976,77.6664,12.9256",
+    "pincodes": [
+      "560102"
+    ]
   },
   {
     "citySlug": "bengaluru",
@@ -495,7 +612,10 @@ export const LOCALITIES = [
     "demoHomeCount": 59,
     "latitude": "13.035800",
     "longitude": "77.597000",
-    "bbox": "77.5780,13.0218,77.6160,13.0498"
+    "bbox": "77.5780,13.0218,77.6160,13.0498",
+    "pincodes": [
+      "560024"
+    ]
   },
   {
     "citySlug": "bengaluru",
@@ -506,7 +626,10 @@ export const LOCALITIES = [
     "demoHomeCount": 103,
     "latitude": "12.845200",
     "longitude": "77.660200",
-    "bbox": "77.6412,12.8312,77.6792,12.8592"
+    "bbox": "77.6412,12.8312,77.6792,12.8592",
+    "pincodes": [
+      "560100"
+    ]
   },
   {
     "citySlug": "hyderabad",
@@ -518,6 +641,9 @@ export const LOCALITIES = [
     "latitude": "17.440100",
     "longitude": "78.348900",
     "bbox": "78.3299,17.4261,78.3679,17.4541",
+    "pincodes": [
+      "500032"
+    ],
     "landmarks": [
       [
         "Financial District",
@@ -538,7 +664,10 @@ export const LOCALITIES = [
     "demoHomeCount": 77,
     "latitude": "17.443500",
     "longitude": "78.377200",
-    "bbox": "78.3582,17.4295,78.3962,17.4575"
+    "bbox": "78.3582,17.4295,78.3962,17.4575",
+    "pincodes": [
+      "500081"
+    ]
   },
   {
     "citySlug": "hyderabad",
@@ -549,7 +678,10 @@ export const LOCALITIES = [
     "demoHomeCount": 86,
     "latitude": "17.461500",
     "longitude": "78.362000",
-    "bbox": "78.3430,17.4475,78.3810,17.4755"
+    "bbox": "78.3430,17.4475,78.3810,17.4755",
+    "pincodes": [
+      "500084"
+    ]
   },
   {
     "citySlug": "hyderabad",
@@ -560,7 +692,10 @@ export const LOCALITIES = [
     "demoHomeCount": 38,
     "latitude": "17.412600",
     "longitude": "78.439200",
-    "bbox": "78.4202,17.3986,78.4582,17.4266"
+    "bbox": "78.4202,17.3986,78.4582,17.4266",
+    "pincodes": [
+      "500034"
+    ]
   },
   {
     "citySlug": "hyderabad",
@@ -571,7 +706,10 @@ export const LOCALITIES = [
     "demoHomeCount": 33,
     "latitude": "17.423900",
     "longitude": "78.473800",
-    "bbox": "78.4548,17.4099,78.4928,17.4379"
+    "bbox": "78.4548,17.4099,78.4928,17.4379",
+    "pincodes": [
+      "500033"
+    ]
   },
   {
     "citySlug": "hyderabad",
@@ -582,7 +720,10 @@ export const LOCALITIES = [
     "demoHomeCount": 94,
     "latitude": "17.484900",
     "longitude": "78.413800",
-    "bbox": "78.3948,17.4709,78.4328,17.4989"
+    "bbox": "78.3948,17.4709,78.4328,17.4989",
+    "pincodes": [
+      "500072"
+    ]
   },
   {
     "citySlug": "chennai",
@@ -594,6 +735,9 @@ export const LOCALITIES = [
     "latitude": "13.006700",
     "longitude": "80.257000",
     "bbox": "80.2380,12.9927,80.2760,13.0207",
+    "pincodes": [
+      "600020"
+    ],
     "landmarks": [
       [
         "Adyar Estuary",
@@ -614,7 +758,10 @@ export const LOCALITIES = [
     "demoHomeCount": 61,
     "latitude": "13.085000",
     "longitude": "80.210100",
-    "bbox": "80.1911,13.0710,80.2291,13.0990"
+    "bbox": "80.1911,13.0710,80.2291,13.0990",
+    "pincodes": [
+      "600040"
+    ]
   },
   {
     "citySlug": "chennai",
@@ -625,7 +772,10 @@ export const LOCALITIES = [
     "demoHomeCount": 72,
     "latitude": "12.975000",
     "longitude": "80.221000",
-    "bbox": "80.2020,12.9610,80.2400,12.9890"
+    "bbox": "80.2020,12.9610,80.2400,12.9890",
+    "pincodes": [
+      "600042"
+    ]
   },
   {
     "citySlug": "chennai",
@@ -636,7 +786,10 @@ export const LOCALITIES = [
     "demoHomeCount": 89,
     "latitude": "12.940100",
     "longitude": "80.234000",
-    "bbox": "80.2150,12.9261,80.2530,12.9541"
+    "bbox": "80.2150,12.9261,80.2530,12.9541",
+    "pincodes": [
+      "600097"
+    ]
   },
   {
     "citySlug": "chennai",
@@ -647,7 +800,10 @@ export const LOCALITIES = [
     "demoHomeCount": 35,
     "latitude": "13.041800",
     "longitude": "80.234100",
-    "bbox": "80.2151,13.0278,80.2531,13.0558"
+    "bbox": "80.2151,13.0278,80.2531,13.0558",
+    "pincodes": [
+      "600017"
+    ]
   },
   {
     "citySlug": "chennai",
@@ -658,7 +814,10 @@ export const LOCALITIES = [
     "demoHomeCount": 66,
     "latitude": "13.035900",
     "longitude": "80.156500",
-    "bbox": "80.1375,13.0219,80.1755,13.0499"
+    "bbox": "80.1375,13.0219,80.1755,13.0499",
+    "pincodes": [
+      "600116"
+    ]
   },
   {
     "citySlug": "pune",
@@ -670,6 +829,9 @@ export const LOCALITIES = [
     "latitude": "18.551500",
     "longitude": "73.947000",
     "bbox": "73.9280,18.5375,73.9660,18.5655",
+    "pincodes": [
+      "411014"
+    ],
     "landmarks": [
       [
         "EON IT Park",
@@ -690,7 +852,10 @@ export const LOCALITIES = [
     "demoHomeCount": 78,
     "latitude": "18.559000",
     "longitude": "73.786800",
-    "bbox": "73.7678,18.5450,73.8058,18.5730"
+    "bbox": "73.7678,18.5450,73.8058,18.5730",
+    "pincodes": [
+      "411045"
+    ]
   },
   {
     "citySlug": "pune",
@@ -701,7 +866,10 @@ export const LOCALITIES = [
     "demoHomeCount": 118,
     "latitude": "18.591300",
     "longitude": "73.738900",
-    "bbox": "73.7199,18.5773,73.7579,18.6053"
+    "bbox": "73.7199,18.5773,73.7579,18.6053",
+    "pincodes": [
+      "411057"
+    ]
   },
   {
     "citySlug": "pune",
@@ -712,7 +880,10 @@ export const LOCALITIES = [
     "demoHomeCount": 92,
     "latitude": "18.597500",
     "longitude": "73.762500",
-    "bbox": "73.7435,18.5835,73.7815,18.6115"
+    "bbox": "73.7435,18.5835,73.7815,18.6115",
+    "pincodes": [
+      "411057"
+    ]
   },
   {
     "citySlug": "pune",
@@ -723,7 +894,10 @@ export const LOCALITIES = [
     "demoHomeCount": 54,
     "latitude": "18.507400",
     "longitude": "73.807700",
-    "bbox": "73.7887,18.4934,73.8267,18.5214"
+    "bbox": "73.7887,18.4934,73.8267,18.5214",
+    "pincodes": [
+      "411038"
+    ]
   },
   {
     "citySlug": "pune",
@@ -734,7 +908,10 @@ export const LOCALITIES = [
     "demoHomeCount": 63,
     "latitude": "18.567900",
     "longitude": "73.914300",
-    "bbox": "73.8953,18.5539,73.9333,18.5819"
+    "bbox": "73.8953,18.5539,73.9333,18.5819",
+    "pincodes": [
+      "411014"
+    ]
   },
   {
     "citySlug": "kolkata",
@@ -745,7 +922,10 @@ export const LOCALITIES = [
     "demoHomeCount": 57,
     "latitude": "22.576000",
     "longitude": "88.433000",
-    "bbox": "88.4140,22.5620,88.4520,22.5900"
+    "bbox": "88.4140,22.5620,88.4520,22.5900",
+    "pincodes": [
+      "700091"
+    ]
   },
   {
     "citySlug": "kolkata",
@@ -756,7 +936,11 @@ export const LOCALITIES = [
     "demoHomeCount": 104,
     "latitude": "22.580000",
     "longitude": "88.460000",
-    "bbox": "88.4410,22.5660,88.4790,22.5940"
+    "bbox": "88.4410,22.5660,88.4790,22.5940",
+    "pincodes": [
+      "700135",
+      "700156"
+    ]
   },
   {
     "citySlug": "kolkata",
@@ -767,7 +951,10 @@ export const LOCALITIES = [
     "demoHomeCount": 39,
     "latitude": "22.529000",
     "longitude": "88.365000",
-    "bbox": "88.3460,22.5150,88.3840,22.5430"
+    "bbox": "88.3460,22.5150,88.3840,22.5430",
+    "pincodes": [
+      "700019"
+    ]
   },
   {
     "citySlug": "kolkata",
@@ -778,7 +965,10 @@ export const LOCALITIES = [
     "demoHomeCount": 48,
     "latitude": "22.498000",
     "longitude": "88.343000",
-    "bbox": "88.3240,22.4840,88.3620,22.5120"
+    "bbox": "88.3240,22.4840,88.3620,22.5120",
+    "pincodes": [
+      "700033"
+    ]
   },
   {
     "citySlug": "kolkata",
@@ -789,7 +979,10 @@ export const LOCALITIES = [
     "demoHomeCount": 67,
     "latitude": "22.499000",
     "longitude": "88.316000",
-    "bbox": "88.2970,22.4850,88.3350,22.5130"
+    "bbox": "88.2970,22.4850,88.3350,22.5130",
+    "pincodes": [
+      "700034"
+    ]
   },
   {
     "citySlug": "kolkata",
@@ -800,7 +993,10 @@ export const LOCALITIES = [
     "demoHomeCount": 71,
     "latitude": "22.595800",
     "longitude": "88.263600",
-    "bbox": "88.2446,22.5818,88.2826,22.6098"
+    "bbox": "88.2446,22.5818,88.2826,22.6098",
+    "pincodes": [
+      "711101"
+    ]
   },
   {
     "citySlug": "gurugram",
@@ -811,7 +1007,10 @@ export const LOCALITIES = [
     "demoHomeCount": 69,
     "latitude": "28.421100",
     "longitude": "77.096100",
-    "bbox": "77.0771,28.4071,77.1151,28.4351"
+    "bbox": "77.0771,28.4071,77.1151,28.4351",
+    "pincodes": [
+      "122002"
+    ]
   },
   {
     "citySlug": "gurugram",
@@ -822,7 +1021,10 @@ export const LOCALITIES = [
     "demoHomeCount": 52,
     "latitude": "28.439000",
     "longitude": "77.103000",
-    "bbox": "77.0840,28.4250,77.1220,28.4530"
+    "bbox": "77.0840,28.4250,77.1220,28.4530",
+    "pincodes": [
+      "122009"
+    ]
   },
   {
     "citySlug": "gurugram",
@@ -833,7 +1035,10 @@ export const LOCALITIES = [
     "demoHomeCount": 83,
     "latitude": "28.408900",
     "longitude": "77.037800",
-    "bbox": "77.0188,28.3949,77.0568,28.4229"
+    "bbox": "77.0188,28.3949,77.0568,28.4229",
+    "pincodes": [
+      "122018"
+    ]
   },
   {
     "citySlug": "gurugram",
@@ -844,7 +1049,10 @@ export const LOCALITIES = [
     "demoHomeCount": 58,
     "latitude": "28.467400",
     "longitude": "77.070800",
-    "bbox": "77.0518,28.4534,77.0898,28.4814"
+    "bbox": "77.0518,28.4534,77.0898,28.4814",
+    "pincodes": [
+      "122009"
+    ]
   },
   {
     "citySlug": "gurugram",
@@ -855,7 +1063,10 @@ export const LOCALITIES = [
     "demoHomeCount": 97,
     "latitude": "28.376000",
     "longitude": "76.950000",
-    "bbox": "76.9310,28.3620,76.9690,28.3900"
+    "bbox": "76.9310,28.3620,76.9690,28.3900",
+    "pincodes": [
+      "122004"
+    ]
   },
   {
     "citySlug": "gurugram",
@@ -866,7 +1077,10 @@ export const LOCALITIES = [
     "demoHomeCount": 44,
     "latitude": "28.479500",
     "longitude": "77.080500",
-    "bbox": "77.0615,28.4655,77.0995,28.4935"
+    "bbox": "77.0615,28.4655,77.0995,28.4935",
+    "pincodes": [
+      "122002"
+    ]
   },
   {
     "citySlug": "noida",
@@ -877,7 +1091,10 @@ export const LOCALITIES = [
     "demoHomeCount": 74,
     "latitude": "28.426500",
     "longitude": "77.488000",
-    "bbox": "77.4690,28.4125,77.5070,28.4405"
+    "bbox": "77.4690,28.4125,77.5070,28.4405",
+    "pincodes": [
+      "201310"
+    ]
   },
   {
     "citySlug": "noida",
@@ -888,7 +1105,10 @@ export const LOCALITIES = [
     "demoHomeCount": 53,
     "latitude": "28.627000",
     "longitude": "77.372000",
-    "bbox": "77.3530,28.6130,77.3910,28.6410"
+    "bbox": "77.3530,28.6130,77.3910,28.6410",
+    "pincodes": [
+      "201309"
+    ]
   },
   {
     "citySlug": "noida",
@@ -899,7 +1119,10 @@ export const LOCALITIES = [
     "demoHomeCount": 81,
     "latitude": "28.509000",
     "longitude": "77.403000",
-    "bbox": "77.3840,28.4950,77.4220,28.5230"
+    "bbox": "77.3840,28.4950,77.4220,28.5230",
+    "pincodes": [
+      "201305"
+    ]
   },
   {
     "citySlug": "noida",
@@ -910,7 +1133,10 @@ export const LOCALITIES = [
     "demoHomeCount": 88,
     "latitude": "28.568000",
     "longitude": "77.383000",
-    "bbox": "77.3640,28.5540,77.4020,28.5820"
+    "bbox": "77.3640,28.5540,77.4020,28.5820",
+    "pincodes": [
+      "201305"
+    ]
   },
   {
     "citySlug": "noida",
@@ -921,7 +1147,10 @@ export const LOCALITIES = [
     "demoHomeCount": 132,
     "latitude": "28.610000",
     "longitude": "77.430000",
-    "bbox": "77.4110,28.5960,77.4490,28.6240"
+    "bbox": "77.4110,28.5960,77.4490,28.6240",
+    "pincodes": [
+      "201306"
+    ]
   },
   {
     "citySlug": "noida",
@@ -932,7 +1161,10 @@ export const LOCALITIES = [
     "demoHomeCount": 47,
     "latitude": "28.477000",
     "longitude": "77.510000",
-    "bbox": "77.4910,28.4630,77.5290,28.4910"
+    "bbox": "77.4910,28.4630,77.5290,28.4910",
+    "pincodes": [
+      "201310"
+    ]
   },
   {
     "citySlug": "surat",
@@ -943,7 +1175,10 @@ export const LOCALITIES = [
     "demoHomeCount": 76,
     "latitude": "21.141800",
     "longitude": "72.771000",
-    "bbox": "72.7520,21.1278,72.7900,21.1558"
+    "bbox": "72.7520,21.1278,72.7900,21.1558",
+    "pincodes": [
+      "395007"
+    ]
   },
   {
     "citySlug": "surat",
@@ -954,7 +1189,10 @@ export const LOCALITIES = [
     "demoHomeCount": 84,
     "latitude": "21.195900",
     "longitude": "72.793300",
-    "bbox": "72.7743,21.1819,72.8123,21.2099"
+    "bbox": "72.7743,21.1819,72.8123,21.2099",
+    "pincodes": [
+      "395009"
+    ]
   },
   {
     "citySlug": "surat",
@@ -965,7 +1203,10 @@ export const LOCALITIES = [
     "demoHomeCount": 62,
     "latitude": "21.178000",
     "longitude": "72.762000",
-    "bbox": "72.7430,21.1640,72.7810,21.1920"
+    "bbox": "72.7430,21.1640,72.7810,21.1920",
+    "pincodes": [
+      "395009"
+    ]
   },
   {
     "citySlug": "surat",
@@ -976,7 +1217,10 @@ export const LOCALITIES = [
     "demoHomeCount": 49,
     "latitude": "21.154000",
     "longitude": "72.776000",
-    "bbox": "72.7570,21.1400,72.7950,21.1680"
+    "bbox": "72.7570,21.1400,72.7950,21.1680",
+    "pincodes": [
+      "395007"
+    ]
   },
   {
     "citySlug": "surat",
@@ -987,7 +1231,10 @@ export const LOCALITIES = [
     "demoHomeCount": 58,
     "latitude": "21.155000",
     "longitude": "72.796000",
-    "bbox": "72.7770,21.1410,72.8150,21.1690"
+    "bbox": "72.7770,21.1410,72.8150,21.1690",
+    "pincodes": [
+      "395017"
+    ]
   },
   {
     "citySlug": "surat",
@@ -998,7 +1245,10 @@ export const LOCALITIES = [
     "demoHomeCount": 41,
     "latitude": "21.120000",
     "longitude": "72.730000",
-    "bbox": "72.7110,21.1060,72.7490,21.1340"
+    "bbox": "72.7110,21.1060,72.7490,21.1340",
+    "pincodes": [
+      "394518"
+    ]
   },
   {
     "citySlug": "jaipur",
@@ -1009,7 +1259,10 @@ export const LOCALITIES = [
     "demoHomeCount": 68,
     "latitude": "26.912400",
     "longitude": "75.740000",
-    "bbox": "75.7210,26.8984,75.7590,26.9264"
+    "bbox": "75.7210,26.8984,75.7590,26.9264",
+    "pincodes": [
+      "302021"
+    ]
   },
   {
     "citySlug": "jaipur",
@@ -1020,7 +1273,10 @@ export const LOCALITIES = [
     "demoHomeCount": 92,
     "latitude": "26.850000",
     "longitude": "75.760000",
-    "bbox": "75.7410,26.8360,75.7790,26.8640"
+    "bbox": "75.7410,26.8360,75.7790,26.8640",
+    "pincodes": [
+      "302020"
+    ]
   },
   {
     "citySlug": "jaipur",
@@ -1031,7 +1287,10 @@ export const LOCALITIES = [
     "demoHomeCount": 57,
     "latitude": "26.854000",
     "longitude": "75.806000",
-    "bbox": "75.7870,26.8400,75.8250,26.8680"
+    "bbox": "75.7870,26.8400,75.8250,26.8680",
+    "pincodes": [
+      "302017"
+    ]
   },
   {
     "citySlug": "jaipur",
@@ -1042,7 +1301,10 @@ export const LOCALITIES = [
     "demoHomeCount": 73,
     "latitude": "26.821000",
     "longitude": "75.856000",
-    "bbox": "75.8370,26.8070,75.8750,26.8350"
+    "bbox": "75.8370,26.8070,75.8750,26.8350",
+    "pincodes": [
+      "302017"
+    ]
   },
   {
     "citySlug": "jaipur",
@@ -1053,7 +1315,10 @@ export const LOCALITIES = [
     "demoHomeCount": 29,
     "latitude": "26.908000",
     "longitude": "75.794000",
-    "bbox": "75.7750,26.8940,75.8130,26.9220"
+    "bbox": "75.7750,26.8940,75.8130,26.9220",
+    "pincodes": [
+      "302001"
+    ]
   },
   {
     "citySlug": "jaipur",
@@ -1064,6 +1329,9 @@ export const LOCALITIES = [
     "demoHomeCount": 64,
     "latitude": "26.890000",
     "longitude": "75.730000",
-    "bbox": "75.7110,26.8760,75.7490,26.9040"
+    "bbox": "75.7110,26.8760,75.7490,26.9040",
+    "pincodes": [
+      "302019"
+    ]
   }
 ];

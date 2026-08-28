@@ -36,6 +36,12 @@ export type City = {
   pricePerSqft: number;
   /** State RERA authority that governs listings in this city. */
   reraAuthority: string;
+  /**
+   * India Post PIN prefixes served by this city (a PIN's first three digits
+   * identify its sorting district). Used to resolve an unknown PIN to a city
+   * even when no locality in the registry claims it exactly.
+   */
+  pincodePrefixes: string[];
   /** Launch state — only `live` cities are indexable and routable. */
   status: "live" | "planned";
 };
@@ -54,6 +60,7 @@ export const cities: City[] = [
     bbox: "72.4400,22.9400,72.7000,23.1200",
     pricePerSqft: 7000,
     reraAuthority: "GujRERA",
+    pincodePrefixes: ["380", "382"],
     status: "live",
   },
   {
@@ -69,6 +76,7 @@ export const cities: City[] = [
     bbox: "72.7700,18.8900,73.0300,19.2800",
     pricePerSqft: 28000,
     reraAuthority: "MahaRERA",
+    pincodePrefixes: ["400"],
     status: "live",
   },
   {
@@ -84,6 +92,7 @@ export const cities: City[] = [
     bbox: "76.9400,28.4100,77.3500,28.8800",
     pricePerSqft: 18000,
     reraAuthority: "Delhi RERA",
+    pincodePrefixes: ["110"],
     status: "live",
   },
   {
@@ -99,6 +108,7 @@ export const cities: City[] = [
     bbox: "77.4600,12.8200,77.7800,13.1400",
     pricePerSqft: 11000,
     reraAuthority: "K-RERA",
+    pincodePrefixes: ["560"],
     status: "live",
   },
   {
@@ -114,6 +124,7 @@ export const cities: City[] = [
     bbox: "78.2600,17.2700,78.6000,17.5600",
     pricePerSqft: 8500,
     reraAuthority: "TG RERA",
+    pincodePrefixes: ["500", "501"],
     status: "live",
   },
   {
@@ -129,6 +140,7 @@ export const cities: City[] = [
     bbox: "80.1200,12.8800,80.3200,13.2000",
     pricePerSqft: 9500,
     reraAuthority: "TN RERA",
+    pincodePrefixes: ["600"],
     status: "live",
   },
   {
@@ -144,6 +156,7 @@ export const cities: City[] = [
     bbox: "73.7000,18.4300,73.9900,18.6500",
     pricePerSqft: 10000,
     reraAuthority: "MahaRERA",
+    pincodePrefixes: ["411", "412"],
     status: "live",
   },
   {
@@ -159,6 +172,7 @@ export const cities: City[] = [
     bbox: "88.2400,22.4600,88.4900,22.6600",
     pricePerSqft: 7500,
     reraAuthority: "WB HIRA / RERA",
+    pincodePrefixes: ["700", "711"],
     status: "live",
   },
   {
@@ -174,6 +188,7 @@ export const cities: City[] = [
     bbox: "76.9200,28.3400,77.1600,28.5200",
     pricePerSqft: 12000,
     reraAuthority: "HARERA Gurugram",
+    pincodePrefixes: ["122"],
     status: "live",
   },
   {
@@ -189,6 +204,7 @@ export const cities: City[] = [
     bbox: "77.3100,28.4000,77.5400,28.6600",
     pricePerSqft: 8000,
     reraAuthority: "UP RERA",
+    pincodePrefixes: ["201"],
     status: "live",
   },
   {
@@ -204,6 +220,7 @@ export const cities: City[] = [
     bbox: "72.7100,21.0800,72.9100,21.2500",
     pricePerSqft: 6000,
     reraAuthority: "GujRERA",
+    pincodePrefixes: ["394", "395"],
     status: "live",
   },
   {
@@ -219,6 +236,7 @@ export const cities: City[] = [
     bbox: "75.6800,26.7900,75.8900,26.9800",
     pricePerSqft: 5500,
     reraAuthority: "RERA Rajasthan",
+    pincodePrefixes: ["302"],
     status: "live",
   },
 ];

@@ -14,7 +14,13 @@ describe("prisma seed registry stays in sync with the place registry", () => {
     expect(CITIES.map((city: { slug: string }) => city.slug)).toEqual(cities.map((city) => city.slug));
     for (const city of cities) {
       const seeded = CITIES.find((entry: { slug: string }) => entry.slug === city.slug);
-      expect(seeded).toMatchObject({ name: city.name, hindiName: city.hindi, state: city.state, country: "IN" });
+      expect(seeded).toMatchObject({
+        name: city.name,
+        hindiName: city.hindi,
+        state: city.state,
+        country: "IN",
+        pincodePrefixes: city.pincodePrefixes,
+      });
     }
   });
 
@@ -29,7 +35,14 @@ describe("prisma seed registry stays in sync with the place registry", () => {
         note: locality.note,
         demoHomeCount: locality.homes,
         bbox: locality.bbox,
+        pincodes: locality.pincodes,
       });
+    }
+  });
+
+  it("seeds a PIN for every locality", () => {
+    for (const seeded of LOCALITIES as { slug: string; pincodes: string[] }[]) {
+      expect(seeded.pincodes.length, `${seeded.slug} has no PIN`).toBeGreaterThan(0);
     }
   });
 

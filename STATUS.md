@@ -33,6 +33,8 @@ Registry-driven surfaces: locality/city routes and `generateStaticParams`, the `
 
 Ahmedabad retains hand-authored editorial fixtures; other cities use deterministic generated demo inventory derived from a city price band and locality price index. All of it remains illustrative demo data.
 
+Places are also **PIN-code addressable**. Cities carry their three-digit India Post sorting-district prefixes and localities carry the PIN codes they serve, both as lists because the relationship is many-to-many in both directions. `client/src/lib/pincodes.ts` resolves a PIN to localities, falls back to the city that owns the district when no locality claims it, and returns `null` rather than guessing. PIN codes never appear in canonical URLs; they are exposed as `?pincode=` on search, as a recognised six-digit token in `?q=`, as a visible fact on locality pages, and as `postalCode` in `PostalAddress` JSON-LD. Schema support lands in migration `202608270001_pincode_registry` (`Locality.pincodes` GIN-indexed, `City.pincodePrefixes`, `Listing.postalCode`). The PIN data itself is illustrative demo data pending India Post verification.
+
 ## Source-of-truth order
 
 Read [`README.md`](README.md), [`architecture/normative/final-three-phase-architecture.md`](architecture/normative/final-three-phase-architecture.md), [`governance/contracts/DOMAIN-CONTRACTS.md`](governance/contracts/DOMAIN-CONTRACTS.md), [`PHASE-1-IMPLEMENTATION-PLAN.md`](PHASE-1-IMPLEMENTATION-PLAN.md), and [`docs/runtime-activation-gates.md`](docs/runtime-activation-gates.md). Historical improvement reviews describe earlier repository states and should not override the current application or normative contracts.

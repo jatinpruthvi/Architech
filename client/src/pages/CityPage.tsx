@@ -56,6 +56,14 @@ export default function CityPage({ localitySlug, citySlug = DEFAULT_CITY_SLUG }:
                 {locality.note}. {t.locality.introSuffix}
               </p>
               <p className="stamp mt-5 !text-[10px] text-ink/60">{locality.coords} · © OpenStreetMap contributors</p>
+              {locality.pincodes.length > 0 && (
+                /* A locality can serve several PINs, so all of them are stated
+                   rather than picking one and implying it is the whole story. */
+                <p className="stamp mt-2 !text-[10px] text-ink/60">
+                  {t.locality.pincodeLabel} {locality.pincodes.join(" · ")}
+                  <span className="ml-2 text-ink/45">{t.locality.pincodeNote}</span>
+                </p>
+              )}
             </div>
             <Reveal delay={100}>
               <div className="border-l-4 border-brick bg-paper p-6 editorial-shadow md:p-7">
