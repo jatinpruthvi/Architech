@@ -3,10 +3,10 @@ import { HomeLoanPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
-  title: "Home loan EMI calculator — Ahmedabad | Architech",
-  description: "Use Architech’s educational Ahmedabad home-loan EMI calculator to explore indicative principal, tenure, rate, interest, and total payable outputs.",
+  title: "Home loan EMI calculator — India | Architech",
+  description: "Use Architech’s educational home-loan EMI calculator to explore indicative principal, tenure, rate, interest, and total payable outputs.",
   alternates: { canonical: canonicalUrl("/home-loan/") },
-  openGraph: { title: "Home loan EMI calculator — Ahmedabad | Architech", url: canonicalUrl("/home-loan/"), type: "website" },
+  openGraph: { title: "Home loan EMI calculator — India | Architech", url: canonicalUrl("/home-loan/"), type: "website" },
 };
 
 export default function Page() {

@@ -131,8 +131,8 @@ export default function ListingPage({ id }: { id: string }) {
         {/* Breadcrumb */}
         <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
           <Link href="/" className="link-rail hover:text-brick">{t.listing.breadcrumbHome}</Link><span>/</span>
-          <Link href="/buy/ahmedabad/" className="link-rail hover:text-brick">Ahmedabad</Link><span>/</span>
-          <Link href={`/buy/ahmedabad/${property.localitySlug}/`} className="link-rail hover:text-brick">{property.locality}</Link><span>/</span>
+          <Link href={`/buy/${property.citySlug}/`} className="link-rail hover:text-brick">{property.city}</Link><span>/</span>
+          <Link href={`/buy/${property.citySlug}/${property.localitySlug}/`} className="link-rail hover:text-brick">{property.locality}</Link><span>/</span>
           <span className="text-ink/80">{property.title}</span>
         </nav>
 

@@ -14,7 +14,7 @@ import { makeFilters, parseFilterParam, serializeFilters, type MarketCategory, t
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Property } from "@/lib/repositories";
+import { getCities, getCityBySlug, type Property } from "@/lib/repositories";
 import { searchListings, type SearchResponse } from "@/lib/search/search";
 import MapListSync from "@/components/architech/MapListSync";
 import Pic from "@/components/architech/Pic";
@@ -56,7 +56,7 @@ function FilterChips({ active, onToggle, vertical = false }: { active: string[];
 }
 
 export default function ResultsPage() {
-  useTitle("Search homes in Ahmedabad");
+  useTitle("Search homes across India");
   const { t } = useLang();
   const sp = useSearchParams();
   const router = useRouter();
@@ -67,18 +67,22 @@ export default function ResultsPage() {
   const query = params.get("q") ?? "";
   const category: MarketCategory = ["all", "residential", "commercial", "pg", "plot", "land", "auction"].includes(params.get("category") ?? "") ? params.get("category") as MarketCategory : "all";
   const intent: MarketIntent = params.get("intent") === "rent" ? "rent" : "buy";
+  // City scope: a known city slug narrows every result, "all" searches India.
+  const citySlug = getCityBySlug(params.get("city") ?? undefined)?.slug ?? "all";
+  const activeCity = citySlug === "all" ? undefined : getCityBySlug(citySlug);
 
   const [mapMode, setMapMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeKey = active.join(",");
-  const initialSearch = useMemo(() => searchListings({ q: query, filters: active, category, intent, sort }), [activeKey, category, intent, query, sort]);
+  const initialSearch = useMemo(() => searchListings({ q: query, city: citySlug, filters: active, category, intent, sort }), [activeKey, category, citySlug, intent, query, sort]);
   const [searchResponse, setSearchResponse] = useState<SearchResponse>(initialSearch);
 
   useEffect(() => {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
+    if (citySlug !== "all") p.set("city", citySlug);
     if (category !== "all") p.set("category", category);
     if (intent !== "buy") p.set("intent", intent);
     if (active.length) p.set("filters", serializeFilters(active));
@@ -95,7 +99,7 @@ export default function ResultsPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [activeKey, category, initialSearch, intent, query, sort]);
+  }, [activeKey, category, citySlug, initialSearch, intent, query, sort]);
 
   const results = searchResponse.results;
   const selectedProperty = results.find((property) => property.id === selectedId) ?? null;
@@ -105,6 +109,7 @@ export default function ResultsPage() {
   const updateUrl = (nextFilters: string[], nextSort: SortId = sort) => {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
+    if (citySlug !== "all") p.set("city", citySlug);
     if (category !== "all") p.set("category", category);
     if (intent !== "buy") p.set("intent", intent);
     if (nextFilters.length) p.set("filters", serializeFilters(nextFilters));
@@ -118,12 +123,25 @@ export default function ResultsPage() {
   const updateMarket = (nextIntent: MarketIntent, nextCategory: MarketCategory) => {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
+    if (citySlug !== "all") p.set("city", citySlug);
     if (nextCategory !== "all") p.set("category", nextCategory);
     if (nextIntent !== "buy") p.set("intent", nextIntent);
     if (active.length) p.set("filters", serializeFilters(active));
     if (sort !== "fresh") p.set("sort", sort);
     router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false });
   };
+  /** Switching city keeps the query, market, filters and sort intact. */
+  const updateCity = (nextCity: string) => {
+    const p = new URLSearchParams();
+    if (query) p.set("q", query);
+    if (nextCity !== "all") p.set("city", nextCity);
+    if (category !== "all") p.set("category", category);
+    if (intent !== "buy") p.set("intent", intent);
+    if (active.length) p.set("filters", serializeFilters(active));
+    if (sort !== "fresh") p.set("sort", sort);
+    router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false });
+  };
+
   const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => t.search.filters[f.id] ?? f.label).join(" + ") : t.search.allHomes;
 
   const [savingSearch, setSavingSearch] = useState(false);
@@ -197,6 +215,21 @@ export default function ResultsPage() {
             </div>
           </div>
           <div className="mt-5 flex flex-col gap-3 border-y border-ink/15 py-4 md:flex-row md:items-center md:gap-4">
+            {/* City scope — the search is nationwide until a city is chosen. */}
+            <div className="flex min-w-0 items-center gap-2">
+              <label htmlFor="search-city" className="stamp shrink-0 !text-[10px] text-ink/55">City</label>
+              <select
+                id="search-city"
+                value={citySlug}
+                onChange={(event) => updateCity(event.target.value)}
+                className="touch-44 min-w-0 max-w-[190px] border border-ink/15 bg-transparent px-3 py-2 stamp !text-[10px] font-semibold text-ink/75 transition-colors hover:border-brick hover:text-brick focus:border-brick focus:outline-none"
+              >
+                <option value="all">All India</option>
+                {getCities().map((option) => (
+                  <option key={option.slug} value={option.slug}>{option.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex gap-2" role="group" aria-label="Transaction type">
               {(["buy", "rent"] as MarketIntent[]).map((value) => <button key={value} type="button" onClick={() => updateMarket(value, category)} aria-pressed={intent === value} className={`touch-44 px-4 py-2 stamp !text-[10px] font-semibold transition-colors ${intent === value ? "bg-brick text-cream" : "border border-ink/15 text-ink/65 hover:border-brick hover:text-brick"}`}>{value === "buy" ? "Buy" : "Rent"}</button>)}
             </div>
@@ -206,7 +239,7 @@ export default function ResultsPage() {
           </div>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
             <div className="field-rule">
-              <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="text-ink/45">in</span> <em>{t.search.cityName}</em></h1>
+              <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="text-ink/45">in</span> <em>{activeCity ? `${activeCity.name}.` : t.search.cityName}</em></h1>
             </div>
             <div className="flex gap-2">
               <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>

@@ -1,5 +1,5 @@
 /* Locality intelligence — provenance-labeled market facts for the
-   /buy/ahmedabad/:locality/ hub.
+   /buy/:city/:locality/ hub.
 
    Every figure is aggregated only from structured listing facts (price, area,
    BHK, transaction, availability). Nothing is invented, and every figure

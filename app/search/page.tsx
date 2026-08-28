@@ -4,8 +4,8 @@ import ResultsPage from "@/pages/ResultsPage";
 import { searchUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
-  title: "Search homes in Ahmedabad",
-  description: "Search RERA-checked homes across Ahmedabad with combinable filters, honest freshness stamps, and a live map.",
+  title: "Search homes across India",
+  description: "Search RERA-checked homes across 12 Indian cities with combinable filters, a city scope, honest freshness stamps, and a live map.",
   alternates: { canonical: searchUrl() },
   robots: { index: false, follow: true }, // faceted-navigation rule: search results stay unindexed
 };

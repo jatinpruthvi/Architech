@@ -5,7 +5,7 @@
    average price-per-sqft, count, and availability mix. Never invents a price or
    a trend; a locality with no listings returns an empty summary. */
 
-import { getListings, getListingsByLocality, type Property } from "@/lib/repositories";
+import { DEFAULT_CITY_SLUG, getCityBySlug, getListingsByCity, getListingsByLocality, type Property } from "@/lib/repositories";
 
 export type PriceTrendSummary = {
   slug: string;
@@ -49,15 +49,16 @@ function summarize(slug: string, name: string, listings: Property[]): PriceTrend
   };
 }
 
-/** Price-trend summary for all homes in a locality. */
-export function localityPriceTrends(slug: string): PriceTrendSummary {
-  const listings = getListingsByLocality(slug);
+/** Price-trend summary for all homes in a locality, scoped to its city. */
+export function localityPriceTrends(slug: string, citySlug?: string): PriceTrendSummary {
+  const listings = getListingsByLocality(slug, citySlug);
   return summarize(slug, listings[0]?.locality ?? slug, listings);
 }
 
-/** City-wide price-trend summary across the whole inventory. */
-export function cityPriceTrends(): PriceTrendSummary {
-  return summarize("ahmedabad", "Ahmedabad", getListings());
+/** City-wide price-trend summary across one city's inventory. */
+export function cityPriceTrends(citySlug: string = DEFAULT_CITY_SLUG): PriceTrendSummary {
+  const city = getCityBySlug(citySlug);
+  return summarize(citySlug, city?.name ?? citySlug, getListingsByCity(citySlug));
 }
 
 /** Human-readable INR label for a price value. */

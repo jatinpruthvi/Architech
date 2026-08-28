@@ -17,7 +17,7 @@ export default function Footer() {
           <nav aria-label={t.footer.explore}>
             <p className="stamp mb-5 text-cream/60">{t.footer.explore}</p>
             <ul className="space-y-3 text-sm text-cream/80">
-              <li><Link href="/buy/ahmedabad/" className="link-rail">{t.footer.links.buy}</Link></li>
+              <li><Link href="/buy/" className="link-rail">{t.footer.links.buy}</Link></li>
               <li><Link href="/search/" className="link-rail">{t.footer.links.search}</Link></li>
               <li><Link href="/guide/" className="link-rail">{t.footer.links.notes}</Link></li>
               <li><Link href="/list-property/" className="link-rail">{t.footer.links.listProperty}</Link></li>

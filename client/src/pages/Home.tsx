@@ -14,7 +14,7 @@ import TiltCard from "../components/magicui/TiltCard";
 import Pic from "../components/architech/Pic";
 import MarketDirectory from "../components/architech/MarketDirectory";
 import useTitle from "../hooks/useTitle";
-import { getListings, getLocalities } from "@/lib/repositories";
+import { getCities, getFeaturedListings, getListings, getLocalities } from "@/lib/repositories";
 import { applyMarket, applyQuery, type MarketCategory, type MarketIntent } from "@/lib/filters";
 import { useLang } from "@/contexts/LangContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -26,7 +26,7 @@ const faqs = [
   { q: "How is every listing RERA-verified?", a: "Each listing is checked against the Gujarat RERA registry at publication — registration number, promoter, and completion status — and re-checked on every meaningful update. The registration number is displayed on the listing page, never behind a form." },
   { q: "What does the freshness stamp mean?", a: "It is the date a human or automated pipeline last confirmed the price, availability, and facts of the listing. Data that hasn't been re-confirmed within 14 days is flagged, and stale listings are withdrawn from search." },
   { q: "Will brokers get my phone number?", a: "No. Contact is masked by default: partners reply to your query through the platform, and your number is shared only when you explicitly choose to share it." },
-  { q: "Which parts of Ahmedabad do you cover?", a: "14 localities today — including Paldi, Navrangpura, Prahlad Nagar, Thaltej, Bopal, and Satellite — with locality intelligence built from public records and OpenStreetMap data. New localities are added once we can verify them properly." },
+  { q: "Which cities do you cover?", a: `${getCities().length} cities today — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — covering ${getLocalities().length} localities, each with intelligence built from public records and OpenStreetMap data. A new city goes live only once we can verify its localities properly.` },
 ];
 
 const recentSearches = ["3 BHK near Law Garden", "Courtyard homes in Paldi"];
@@ -213,7 +213,7 @@ function HeroSearch() {
       {/* Quick chips */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="stamp !text-[10px] text-cream/60">{t.hero.beginWith}</span>
-        {["Paldi", "Thaltej", "Navrangpura", "Bopal"].map((l) => (
+        {getCities().slice(0, 4).map((city) => city.name).map((l) => (
           <Link
             key={l}
             href={`/search?q=${encodeURIComponent(l)}&${buildParams.toString()}`}
@@ -259,8 +259,8 @@ export default function Home() {
           </div>
           <div className="fade-rise mt-7 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-4 md:mt-9" style={{ "--d": "760ms" } as React.CSSProperties}>
             <div className="flex gap-10 md:gap-16">
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={281} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={14} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getListings().length} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getLocalities().length} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
               <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[2]}</p></div>
             </div>
             <p className="hidden items-center gap-2 stamp !text-[10px] text-cream/60 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
@@ -279,7 +279,7 @@ export default function Home() {
           <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.sections.all281Homes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
         </Reveal>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {getListings().map((property, i) => (
+          {getFeaturedListings(6).map((property, i) => (
             <Reveal key={property.id} delay={i * 90}>
               <TiltCard><PropertyCard property={property} index={i} arch={i === 0} /></TiltCard>
             </Reveal>
@@ -290,7 +290,7 @@ export default function Home() {
       {/* ================= MARKET DIRECTORY ================= */}
       <MarketDirectory />
 
-      {/* ================= LOCALITY INDEX (real OSM coords) ================= */}
+      {/* ================= CITY INDEX (real OSM coords) ================= */}
       <section className="border-t border-ink/12 bg-sand/40 py-24 md:py-32">
         <div className="container">
           <Reveal className="flex items-end justify-between gap-6">
@@ -301,23 +301,26 @@ export default function Home() {
             <p className="stamp hidden !text-[10px] text-ink/60 md:block">Coordinates © OpenStreetMap contributors</p>
           </Reveal>
           <div className="mt-14 border-t border-ink/15">
-            {getLocalities().map((place, i) => (
-              <Reveal key={place.slug} delay={i * 50}>
-                <Link href={`/buy/ahmedabad/${place.slug}/`} className="group grid grid-cols-[48px_1fr_auto] items-center gap-4 border-b border-ink/15 py-6 transition-colors hover:bg-paper md:grid-cols-[90px_1.1fr_0.9fr_auto] md:gap-8 md:py-7">
+            {getCities().map((city, i) => (
+              <Reveal key={city.slug} delay={i * 40}>
+                <Link href={`/buy/${city.slug}/`} className="group grid grid-cols-[48px_1fr_auto] items-center gap-4 border-b border-ink/15 py-6 transition-colors hover:bg-paper md:grid-cols-[90px_1.1fr_0.9fr_auto] md:gap-8 md:py-7">
                   <span className="index-num text-[28px] text-ink/25 transition-colors group-hover:text-brick md:text-[44px]">{String(i + 1).padStart(2, "0")}</span>
                   <div>
-                    <p className="font-display text-[26px] font-medium tracking-[-0.02em] transition-transform duration-300 group-hover:translate-x-2 md:text-[34px]">{place.name} <span className="ml-2 align-middle font-sans text-sm text-ink/55">{place.hindi}</span></p>
-                    <p className="stamp mt-1 !text-[10px] text-ink/60">{place.coords}</p>
+                    <p className="font-display text-[26px] font-medium tracking-[-0.02em] transition-transform duration-300 group-hover:translate-x-2 md:text-[34px]">{city.name} <span className="ml-2 align-middle font-sans text-sm text-ink/55">{city.hindi}</span></p>
+                    <p className="stamp mt-1 !text-[10px] text-ink/60">{city.state} · {city.coords}</p>
                   </div>
-                  <p className="hidden text-sm text-ink/55 md:block">{place.note}</p>
+                  <p className="hidden text-sm text-ink/55 md:block">{city.tagline}</p>
                   <div className="flex items-center gap-4">
-                    <span className="stamp !text-[11px] text-ink/60">{place.homes} {t.sections.homesCount}</span>
+                    <span className="stamp !text-[11px] text-ink/60">{getLocalities(city.slug).length} localities</span>
                     <span className="grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300 group-hover:border-brick group-hover:bg-brick group-hover:text-cream"><ArrowUpRight size={16} /></span>
                   </div>
                 </Link>
               </Reveal>
             ))}
           </div>
+          <p className="mt-8 text-sm text-ink/60">
+            <Link href="/buy/" className="link-rail text-brick">See every city and locality Architech covers</Link>
+          </p>
         </div>
       </section>
 
@@ -378,7 +381,7 @@ export default function Home() {
           </Reveal>
           <Reveal delay={150} className="flex flex-col gap-4 sm:flex-row">
             <Link href="/search" className="shimmer-btn motion-press inline-flex items-center gap-3 bg-paper px-8 py-5 stamp !text-[12px] font-semibold text-ink transition-transform hover:-translate-y-1">{t.cta.start} <ArrowUpRight size={16} className="text-brick" /></Link>
-            <Link href="/buy/ahmedabad/" className="motion-press inline-flex items-center gap-3 border border-cream/40 px-8 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:border-cream hover:bg-paper/10">{t.cta.browse}</Link>
+            <Link href="/buy/" className="motion-press inline-flex items-center gap-3 border border-cream/40 px-8 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:border-cream hover:bg-paper/10">{t.cta.browse}</Link>
           </Reveal>
         </div>
       </section>

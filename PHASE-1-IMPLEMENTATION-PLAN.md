@@ -129,6 +129,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
+| P1-DATA-003 | India-wide city registry and multi-city place hierarchy | validated | City registry, city-keyed localities, `/buy/`, `/buy/[city]/`, `/buy/[city]/[locality]/` routes, registry-driven SEO pages/sitemap, search city scope, generated seed mirror, and coverage/drift tests exist. Validation: `pnpm check`, `pnpm lint`, `pnpm test` (320 passed), `pnpm build:ci`, `node scripts/seo/raw-html-smoke.mjs` (14 routes). | Replace generated demo inventory with verified per-city sources; add per-city editorial guides and locality intelligence. |
 | P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | partial | Prisma 7 schema, initial migration SQL, representative seed script, validation command, repository facade, server-only Prisma repository adapter, mapper tests, schema/repository contract tests, and docs exist. | Run migration deploy and seed against provisioned PostgreSQL/PostGIS environment; switch selected server routes to Prisma mode after staging DB validation. |
 | P1-DATA-002 | Audit, provenance, lifecycle, deletion, retention model | partial | Lead API now creates idempotent lead records with consent text, masked phone, and audit-event metadata; Prisma schema has Lead/AuditEvent models. | Persist audit/deletion/retention workflows in PostgreSQL after DB provisioning and legal gate records. |
 

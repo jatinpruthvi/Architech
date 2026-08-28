@@ -49,9 +49,9 @@ export function HomeLoanPage() {
 }
 
 const sitemapGroups = [
-  ["Discover", [["Buy homes in Ahmedabad", "/buy/ahmedabad/"], ["Search all homes", "/search/"], ["Developers", "/developers/"], ["Investment context", "/investment/"]]],
+  ["Discover", [["Buy homes across India", "/buy/"], ["Search all homes", "/search/"], ["Developers", "/developers/"], ["Investment context", "/investment/"]]],
   ["Trust & context", [["Field notes", "/guide/"], ["Requirements", "/requirements/"], ["Saved homes", "/saved/"], ["Saved searches", "/saved-searches/"]]],
-  ["Property paths", [["List a property", "/list-property/"], ["Ahmedabad localities", "/buy/ahmedabad/"], ["Home loan calculator", "/home-loan/"], ["Blogs / field notes", "/blogs/"]]],
+  ["Property paths", [["List a property", "/list-property/"], ["City & locality hubs", "/buy/"], ["Home loan calculator", "/home-loan/"], ["Blogs / field notes", "/blogs/"]]],
   ["Company", [["About Architech", "/about-us/"], ["Contact desk", "/contact-us/"], ["Feedback", "/review/"], ["Privacy", "/privacy/"]]],
 ] as const;
 

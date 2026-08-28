@@ -1,11 +1,13 @@
 import { applyFilters, applyMarket, applyQuery, applySort, makeFilters, parseFilterParam, type MarketCategory, type MarketIntent, type SortId } from "@/lib/filters";
-import { getListings, type Property } from "@/lib/repositories";
+import { getCityBySlug, getListings, type Property } from "@/lib/repositories";
 import { normalizePage, normalizePageSize, paginate, type PaginationMeta } from "./pagination";
 
 export type SearchSource = "fixture-repository" | "postgres-fts-trigram";
 
 export type SearchRequest = {
   q?: string;
+  /** Restrict results to one city slug; omit or "all" to search all of India. */
+  city?: string;
   filters?: string[];
   category?: MarketCategory;
   intent?: MarketIntent;
@@ -16,6 +18,8 @@ export type SearchRequest = {
 
 export type SearchResponse = {
   query: string;
+  /** Echoes the resolved city scope: a city slug, or "all" for nationwide. */
+  city: string;
   filters: string[];
   category: MarketCategory;
   intent: MarketIntent;
@@ -49,12 +53,18 @@ export function searchListings(request: SearchRequest = {}): SearchResponse {
   const pageSize = normalizePageSize(request.limit);
   const page = normalizePage(request.page);
 
+  // A city scope is honoured only when it names a known city, so an unknown
+  // ?city= value degrades to a nationwide search rather than an empty page.
+  const city = getCityBySlug(request.city)?.slug ?? "all";
+  const scoped = city === "all" ? getListings() : getListings().filter((listing) => listing.citySlug === city);
+
   const defs = makeFilters<Property>();
-  const filtered = applySort(applyFilters(applyMarket(applyQuery(getListings(), query), category, intent), filters, defs), sort);
+  const filtered = applySort(applyFilters(applyMarket(applyQuery(scoped, query), category, intent), filters, defs), sort);
   const { items, meta } = paginate(filtered, { page, pageSize });
 
   return {
     query,
+    city,
     filters,
     category,
     intent,
@@ -70,6 +80,7 @@ export function searchListings(request: SearchRequest = {}): SearchResponse {
 export function searchListingsFromSearchParams(params: URLSearchParams): SearchResponse {
   return searchListings({
     q: params.get("q") ?? "",
+    city: params.get("city") ?? undefined,
     filters: parseFilterParam(params.get("filters")),
     category: (params.get("category") as MarketCategory) || "all",
     intent: params.get("intent") === "rent" ? "rent" : "buy",

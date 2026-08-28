@@ -1,7 +1,7 @@
 # Architech implementation status
 
 **Current revision:** `a77e526` plus the repository-audit hardening and Amdavad Modern UX revision in the active workspace.  
-**Product:** Ahmedabad-first, Google-first real-estate discovery platform.  
+**Product:** India-wide, Google-first real-estate discovery platform (12 live cities, 72 localities).  
 **Implementation mode:** Next.js 16 App Router reference implementation with fixture adapters available for local preview.
 
 ## Current gates
@@ -24,6 +24,14 @@ Private broker, admin, moderation, authority, media, RERA-correction, and saved-
 Sitemap and robots generation now stop advertising public pages until the explicit production indexability flag is enabled. A Next.js proxy adds `X-Robots-Tag: noindex, nofollow` as a final production safety net. Rendered-HTML SEO smoke coverage now includes guide, search-noindex, privacy, and terms route families and passes for 9 routes. The repository also contains a GitHub Actions quality workflow for frozen dependency installation, checks, tests, Prisma validation, and build.
 
 The current UX revision adds a stronger geometric A mark with a terracotta doorway notch, atlas-grid map surfaces with coordinate annotations, a search-page Atlas Lens evidence band, partner-facing broker language, dynamic boundaries for client-only authenticated surfaces, and a bounded Reveal fallback so inventory cannot remain invisible when an observer does not fire. Desktop and mobile visual QA covered the home, search, locality, listing, and broker dashboard routes.
+
+## India-wide coverage (August 2026 revision)
+
+The platform is no longer Ahmedabad-only. A city registry (`client/src/lib/cities.ts`) is now the top of the place hierarchy, localities are keyed to a city, and the public route grammar is `/buy/` → `/buy/{city}/` → `/buy/{city}/{locality}/`. Twelve cities across ten states are live; `/buy/ahmedabad/...` URLs are unchanged, so no redirects were required and existing canonicals, sitemap entries, and Search Console history stay valid.
+
+Registry-driven surfaces: locality/city routes and `generateStaticParams`, the `SeoPage` registry and sitemap partitions, city and locality JSON-LD (including state and RERA authority), the search city scope (`?city=`), the home city index, related-listing selection, broker onboarding and listing-draft validation, requirement capture, and the Prisma seed (via a generated registry mirror with a drift test).
+
+Ahmedabad retains hand-authored editorial fixtures; other cities use deterministic generated demo inventory derived from a city price band and locality price index. All of it remains illustrative demo data.
 
 ## Source-of-truth order
 

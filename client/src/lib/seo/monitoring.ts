@@ -77,7 +77,7 @@ export function buildSearchConsoleSetup(siteUrl: string, sitemap = sitemapUrl())
     `Create a Google Search Console Domain property for ${new URL(siteUrl).hostname}.`,
     "Verify ownership using DNS TXT record at the domain registrar/DNS host.",
     `Submit sitemap: ${sitemap}.`,
-    "Run URL Inspection on the home page, Ahmedabad city hub, one locality page, and one listing page.",
+    "Run URL Inspection on the home page, the /buy/ national hub, one city hub, one locality page, and one listing page.",
     "Export first baseline snapshot after Google discovers the sitemap.",
   ];
 }

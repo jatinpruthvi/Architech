@@ -3,10 +3,10 @@ import { HtmlSitemapPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
-  title: "Sitemap — Architech Ahmedabad property discovery",
-  description: "Crawlable HTML sitemap for Architech: discover Ahmedabad homes, localities, developers, investment context, and methodology.",
+  title: "Sitemap — Architech India property discovery",
+  description: "Crawlable HTML sitemap for Architech: discover homes across Indian cities, localities, developers, investment context, and methodology.",
   alternates: { canonical: canonicalUrl("/sitemap.html/") },
-  openGraph: { title: "Sitemap — Architech Ahmedabad property discovery", url: canonicalUrl("/sitemap.html/"), type: "website" },
+  openGraph: { title: "Sitemap — Architech India property discovery", url: canonicalUrl("/sitemap.html/"), type: "website" },
 };
 
 export default function Page() {

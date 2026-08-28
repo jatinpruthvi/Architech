@@ -1,6 +1,6 @@
 /* Ownership cost estimator (P1-COST-001).
    Pure, server-safe calculator that turns a property price into the real monthly
-   and one-time costs of buying in Ahmedabad: monthly EMI (reducing balance),
+   and one-time costs of buying in India: monthly EMI (reducing balance),
    stamp duty, and registration. Like the investment/metrics module it is an
    *educational calculator*, never a lender quote or legal advice, and every
    output depends on the assumptions the caller supplies. */

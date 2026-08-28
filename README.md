@@ -2,7 +2,7 @@
 
 ## AI-Readable Real-Estate Platform Architecture
 
-Architech is the architecture and implementation-planning repository for a premium India-focused real-estate discovery platform. It defines the product, user experience, technical stack, page-authority model, Google-first SEO system, AI-search readiness, broker operations, RERA verification, media pipeline, security posture, localization strategy, infrastructure, testing, and three-phase delivery plan.
+Architech is the architecture and implementation-planning repository for a premium India-wide real-estate discovery platform. It defines the product, user experience, technical stack, page-authority model, Google-first SEO system, AI-search readiness, broker operations, RERA verification, media pipeline, security posture, localization strategy, infrastructure, testing, and three-phase delivery plan.
 
 This repository is the **normative architecture, governance package, and working reference implementation**. The architecture and governance documents define the contracts; the Next.js application under `app/`, `client/`, `prisma/`, `seo/`, and `governance/` demonstrates those contracts and is the active implementation surface.
 
@@ -23,7 +23,15 @@ pnpm start      # production server
 
 SEO now real: server-rendered HTML for every public page, per-route titles/canonicals, `Place`/`Residence`/`BreadcrumbList` JSON-LD, `sitemap.xml`, `robots.txt` (search/saved unindexed per faceted-navigation rules), true HTTP 404s, and stable trailing-slash URLs per the architecture's grammar. Dark mode: token-level theme with pre-paint script. Hindi: reviewed-strings foundation via `client/src/lib/i18n.ts` (ASCII slugs unchanged).
 
-Pages: Home (`/`), locality pages (`/buy/ahmedabad/{paldi|navrangpura|prahlad-nagar|thaltej|bopal|satellite}/`), search (`/search` — URL-synced multi-select filters), listing dossiers (`/listing/:id`), field notes (`/guide`), saved shortlist (`/saved`, persisted locally).
+Pages: Home (`/`), the national hub (`/buy/` — every city Architech covers), city hubs (`/buy/{city}/`), locality pages (`/buy/{city}/{locality}/`), search (`/search` — URL-synced multi-select filters plus a city scope), listing dossiers (`/listing/:id`), field notes (`/guide`), saved shortlist (`/saved`, persisted locally).
+
+### India-wide coverage
+
+Coverage is registry-driven. `client/src/lib/cities.ts` holds the city registry (slug, native name, state, centroid, viewport, price band, state RERA authority, launch status) and `client/src/lib/localities.ts` holds localities keyed to a city. Twelve cities are live — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — across ten states and 72 localities.
+
+Adding a city is a registry edit: routes (`/buy/[city]/[locality]/`), `generateStaticParams`, the `SeoPage` registry, sitemap partitions, the search city scope, the home city index, and broker/requirement city validation all read from the registry. Run `node scripts/data/generate-seed-registry.mjs` afterwards so `prisma db seed` provisions the same places; `client/src/lib/seed-sync.test.ts` fails if the two drift.
+
+Ahmedabad keeps hand-authored editorial fixtures (they model the edge cases behavioural tests rely on, such as a rent-only locality). Inventory for every other city is derived deterministically in `client/src/lib/property-generator.ts` from the city price band and a locality price index, and remains illustrative demo data.
 
 > All listings, statistics, testimonials, and RERA numbers in the prototype are **illustrative demo data**. The production build (Next.js 16, per this architecture) replaces them with verified sources.
 

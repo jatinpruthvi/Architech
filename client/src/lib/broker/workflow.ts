@@ -1,5 +1,5 @@
 import { demoBrokerSession, requirePermission, type AuthSession } from "@/lib/auth/roles";
-import { getLocalityBySlug } from "@/lib/repositories";
+import { getLiveCityBySlug, getLocalityBySlug } from "@/lib/repositories";
 import type { PropertyDetails } from "@/lib/listing-details";
 import { isAvailabilityCode, isPropertyTypeCode, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 
@@ -16,6 +16,8 @@ export type BrokerProfileInput = {
 export type ListingDraftInput = {
   organizationId?: string;
   title: string;
+  /** Optional city scope; when omitted the locality slug resolves its own city. */
+  citySlug?: string;
   localitySlug: string;
   priceInr: number;
   bhk: number;
@@ -65,7 +67,7 @@ export function validateBrokerProfile(input: Partial<BrokerProfileInput>): strin
   const errors: string[] = [];
   if (!input.organizationName || input.organizationName.trim().length < 2) errors.push("Organization name is required.");
   if (!input.email || !/^\S+@\S+\.\S+$/.test(input.email)) errors.push("Valid organization email is required.");
-  if (!input.citySlug || input.citySlug !== "ahmedabad") errors.push("Phase 1 broker onboarding is Ahmedabad-only.");
+  if (!input.citySlug || !getLiveCityBySlug(input.citySlug)) errors.push("Choose a city Architech currently covers.");
   if (!input.consentText || input.consentText.length < 12) errors.push("Consent and media-rights acknowledgement is required.");
   return errors;
 }
@@ -74,7 +76,7 @@ export function validateListingDraft(input: Partial<ListingDraftInput>, session:
   const errors: string[] = [];
   if (!session || !requirePermission(session, "listing.draft.create")) errors.push("Broker listing permission is required.");
   if (!input.title || input.title.trim().length < 8) errors.push("Listing title must be at least 8 characters.");
-  if (!input.localitySlug || !getLocalityBySlug(input.localitySlug)) errors.push("Choose a valid Ahmedabad locality.");
+  if (!input.localitySlug || !getLocalityBySlug(input.localitySlug, input.citySlug)) errors.push("Choose a locality inside the selected city.");
   if (!Number.isFinite(input.priceInr) || Number(input.priceInr) <= 0) errors.push("Price must be a positive INR value.");
   if (!Number.isFinite(input.bhk) || Number(input.bhk) < 1) errors.push("BHK must be at least 1.");
   if (!Number.isFinite(input.areaSqft) || Number(input.areaSqft) < 150) errors.push("Area must be at least 150 sq ft.");

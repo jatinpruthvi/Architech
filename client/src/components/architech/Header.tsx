@@ -20,7 +20,7 @@ export default function Header() {
   const onDark = pathname === "/" && !scrolled;
 
   const navItems = [
-    { href: "/buy/ahmedabad/", label: t.nav.explore },
+    { href: "/buy/", label: t.nav.explore },
     { href: "/search/", label: t.nav.find },
     { href: "/guide/", label: t.nav.notes },
     { href: "/list-property/", label: t.nav.list },

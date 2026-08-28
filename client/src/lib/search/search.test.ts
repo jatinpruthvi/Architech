@@ -35,8 +35,9 @@ describe("backend search contract", () => {
   });
 
   it("applies reviewed property type and availability facets", () => {
-    expect(searchListings({ filters: ["type-villa"] }).results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
-    expect(searchListings({ filters: ["availability-new"] }).results.map((property) => property.id)).toEqual(["light-filled-home"]);
+    // Facets are asserted within one city scope; nationwide search spans every market.
+    expect(searchListings({ city: "ahmedabad", filters: ["type-villa"] }).results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
+    expect(searchListings({ city: "ahmedabad", filters: ["availability-new"] }).results.map((property) => property.id)).toEqual(["light-filled-home"]);
   });
 
   it("carries intent and category through URL params (home buy/rent toggle)", () => {
