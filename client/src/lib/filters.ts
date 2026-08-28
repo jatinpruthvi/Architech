@@ -92,7 +92,8 @@ export function matchesQuery<T extends QueryableProperty>(p: T, query: string): 
     const limit = underMatch[2].startsWith("l") ? n * 100_000 : n * 10_000_000;
     if (p.priceNum >= limit) return false;
   }
-  const tokens = residual.split(/[^\p{L}]+/u).filter((t) => t.length > 2);
+  // \p{M} keeps Devanagari vowel signs attached to their consonant.
+  const tokens = residual.split(/[^\p{L}\p{M}]+/u).filter((t) => t.length > 2);
   return tokens.every((t) => haystack.includes(t) || tokenMatchesLocality(t));
 }
 

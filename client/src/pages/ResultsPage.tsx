@@ -16,6 +16,8 @@ import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCities, getCityBySlug, type Property } from "@/lib/repositories";
 import { parsePincode, resolvePincode, PINCODE_PROVENANCE } from "@/lib/pincodes";
+import { applyParsedQueryToParams, describeParsedQuery, parseSearchQuery } from "@/lib/search/parse-query";
+import { popularQueries } from "@/lib/search/suggest";
 import { searchListings, type SearchResponse } from "@/lib/search/search";
 import MapListSync from "@/components/architech/MapListSync";
 import Pic from "@/components/architech/Pic";
@@ -23,7 +25,6 @@ import { useSearchSuggestions } from "@/components/architech/useSearchSuggestion
 import { labelForFacing, labelForFurnishing, propertyFactRows } from "@/lib/listing-details";
 
 const filterDefs = makeFilters<Property>();
-const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
 
 function SkeletonCard() {
   return (
@@ -158,17 +159,34 @@ export default function ResultsPage() {
   // Server-backed quick search (debounced, abortable) for refining the query.
   const [qInput, setQInput] = useState(query);
   const [qFocused, setQFocused] = useState(false);
-  const { suggestions: qSuggestions } = useSearchSuggestions(qInput);
+  const { suggestions: qSuggestions } = useSearchSuggestions(qInput, citySlug);
   useEffect(() => { setQInput(query); }, [query]);
+  /**
+   * Run a typed query. It is parsed into structured scope first — city, PIN,
+   * intent, category and filter ids become real URL parameters — and anything
+   * a parameter cannot carry stays as free text, so nothing typed is lost.
+   */
   const runQuery = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    const p = new URLSearchParams(searchStr);
-    p.set("q", trimmed);
-    router.replace(`/search?${p.toString()}`, { scroll: false });
+    const parsed = parseSearchQuery(trimmed, citySlug);
+    const base = new URLSearchParams(searchStr);
+    const p = parsed.understood ? applyParsedQueryToParams(parsed, base) : (base.set("q", trimmed), base);
+    router.replace(`/search/${p.toString() ? `?${p.toString()}` : ""}`, { scroll: false });
     setQInput(trimmed);
     setQFocused(false);
   };
+
+  /* What the box will do with the current text, shown before it runs. */
+  const typedPreview = useMemo(() => {
+    const trimmed = qInput.trim();
+    if (trimmed.length < 3 || trimmed === query) return "";
+    const parsed = parseSearchQuery(trimmed, citySlug);
+    return parsed.understood ? describeParsedQuery(parsed) : "";
+  }, [citySlug, qInput, query]);
+
+  /* Recovery chips derived from real inventory in the active scope. */
+  const trending = useMemo(() => popularQueries({ citySlug }, 4), [citySlug]);
 
   const saveSearch = async () => {
     if (savingSearch) return;
@@ -212,11 +230,16 @@ export default function ResultsPage() {
                 />
                 <button type="submit" className="btn-sweep touch-44 m-1.5 bg-brick px-5 stamp !text-[11px] font-semibold text-cream">{t.hero.search}</button>
               </form>
+              {typedPreview && <p className="mt-2 stamp !text-[10px] text-brick">Reads as: {typedPreview}</p>}
               {qFocused && qSuggestions.length > 0 && (
                 <div className="absolute inset-x-0 top-full z-30 mt-1 border border-ink/15 bg-paper text-ink editorial-shadow" role="listbox" aria-label="Search suggestions">
                   {qSuggestions.map((s, i) => (
-                    <button key={`${s.kind}-${i}`} onMouseDown={(e) => { e.preventDefault(); runQuery(s.query); }} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-ink/80 hover:bg-sand/70 hover:text-brick" role="option" aria-selected={false}>
-                      <Search size={12} className="text-ink/55" /> {s.label}
+                    <button key={`${s.kind}-${i}`} onMouseDown={(e) => { e.preventDefault(); runQuery(s.query); }} className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-sm text-ink/80 hover:bg-sand/70 hover:text-brick" role="option" aria-selected={false}>
+                      <Search size={12} className="mt-1 shrink-0 text-ink/55" />
+                      <span className="min-w-0">
+                        <span className="block truncate">{s.label}</span>
+                        {s.hint && <span className="mt-0.5 block truncate stamp !text-[9px] text-ink/45">{s.hint}</span>}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -322,7 +345,7 @@ export default function ResultsPage() {
           <div className="container grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
               <p className="kicker text-ember">{t.search.liveCartography}</p>
-              <h2 id="atlas-lens-title" className="mt-4 max-w-[620px] font-display text-[clamp(28px,4vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]">Search by the <em className="text-ember">shape</em> of Ahmedabad.</h2>
+              <h2 id="atlas-lens-title" className="mt-4 max-w-[620px] font-display text-[clamp(28px,4vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]">Search by the <em className="text-ember">shape</em> of {activeCity ? activeCity.name : "India"}.</h2>
               <p className="mt-4 max-w-[560px] text-sm leading-7 text-cream/65">{t.search.mapCopy}</p>
             </div>
             <dl className="grid grid-cols-3 border-t border-cream/15 pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
@@ -375,8 +398,19 @@ export default function ResultsPage() {
                   </div>
                 </div>
                 <div className="relative mt-8 flex flex-wrap gap-2 border-t border-ink/12 pt-6">
-                  {trending.map((t) => (
-                    <button key={t} onClick={clearFilters} className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick">Try {t}</button>
+                  {/* These used to be four hardcoded Ahmedabad strings wired to
+                      clearFilters — the button said "Try 3 BHK in Paldi" and then
+                      did something else entirely. They are now derived from the
+                      inventory in scope and actually run what they promise. */}
+                  {trending.map((suggestion) => (
+                    <button
+                      key={suggestion.query}
+                      onClick={() => runQuery(suggestion.query)}
+                      title={suggestion.hint}
+                      className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick"
+                    >
+                      Try {suggestion.label}
+                    </button>
                   ))}
                 </div>
                 <div className="relative mt-7 flex flex-col gap-3 sm:flex-row">

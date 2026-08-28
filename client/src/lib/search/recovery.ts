@@ -6,7 +6,7 @@
 import { localities } from "@/lib/localities";
 import { getListings } from "@/lib/repositories";
 import { normalizeSearchTokens } from "./sql";
-import { POPULAR_QUERIES, type SearchSuggestion } from "./suggest";
+import { popularQueries, type SearchSuggestion } from "./suggest";
 
 export type RecoveryPlan = {
   /** Low-constraint alternative queries that should return results. */
@@ -43,7 +43,7 @@ function knownLocalityFromQuery(query: string): SearchSuggestion | undefined {
  * @param query   the search query the user typed
  * @param filters active filter ids
  */
-export function buildSearchRecovery(query: string, filters: string[] = []): RecoveryPlan {
+export function buildSearchRecovery(query: string, filters: string[] = [], citySlug?: string): RecoveryPlan {
   const alternativeQueries: SearchSuggestion[] = [];
   const relatedLocalities: SearchSuggestion[] = [];
 
@@ -51,7 +51,10 @@ export function buildSearchRecovery(query: string, filters: string[] = []): Reco
   if (namedLocality) relatedLocalities.push(namedLocality);
 
   // Add the localities with inventory, preferring ones with the most homes.
-  const byInventory = [...localities].sort((a, b) => b.homes - a.homes);
+  // Inside a city scope, only that city's localities are honest alternatives —
+  // offering Mumbai to someone searching Pune is a dead end with extra steps.
+  const inScope = citySlug && citySlug !== "all" ? localities.filter((locality) => locality.citySlug === citySlug) : localities;
+  const byInventory = [...(inScope.length ? inScope : localities)].sort((a, b) => b.homes - a.homes);
   for (const locality of byInventory) {
     if (relatedLocalities.length >= 4) break;
     const suggestion = localitySuggestion(locality.slug);
@@ -60,11 +63,13 @@ export function buildSearchRecovery(query: string, filters: string[] = []): Reco
     }
   }
 
-  // Popular queries that match the intent, minus anything already offered.
-  for (const popular of POPULAR_QUERIES) {
+  // Inventory-derived popular queries for the scope, minus anything already
+  // offered. Derived rather than authored, so every alternative returns homes.
+  for (const popular of popularQueries({ citySlug }, 6)) {
     if (alternativeQueries.length >= 3) break;
-    if (alternativeQueries.some((item) => item.query === popular)) continue;
-    alternativeQueries.push({ kind: "popular", label: popular, query: popular });
+    if (alternativeQueries.some((item) => item.query === popular.query)) continue;
+    if (relatedLocalities.some((item) => item.query === popular.query)) continue;
+    alternativeQueries.push(popular);
   }
   if (alternativeQueries.length === 0 && getListings().length > 0) {
     alternativeQueries.unshift({ kind: "popular", label: "All homes", query: "" });

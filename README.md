@@ -43,6 +43,15 @@ Search accepts `?pincode=380007` and also recognises a bare six-digit token type
 
 > PIN codes in the prototype are **illustrative demo data** pending reconciliation against an authoritative India Post source with a retrieval date, exactly like the RERA fixtures.
 
+### Search understanding
+
+The search box parses what is typed instead of forwarding it as an opaque string. `client/src/lib/search/parse-query.ts` is a deterministic grammar over the place registry and the filter vocabulary: it reads BHK, budget ("under 1.5 cr", "below 80 lakh"), buy/rent intent, category, property type, availability, RERA, city, locality and PIN, and reports what it did not understand rather than guessing.
+
+Recognised parts become real URL parameters (`city`, `pincode`, `intent`, `category`, `filters`) and anything a parameter cannot carry — a locality name, a budget above the exposed price filter — stays in `q`, so rewriting a query is lossless. The interpretation is shown above the results ("Reads as: 3 BHK · in Koramangala · under ₹2 Cr") before the search runs.
+
+Suggestions are ranked, not filtered: exact > prefix > word-prefix > substring > bounded typo correction, tie-broken by real inventory, with a boost for the active city. Typing a PIN suggests the localities that serve it. Popular and trending queries are derived from the listings that actually exist in the current scope, with the counts shown beside them; recent searches live in `localStorage` on the reader's own device.
+
+
 > All listings, statistics, testimonials, and RERA numbers in the prototype are **illustrative demo data**. The production build (Next.js 16, per this architecture) replaces them with verified sources.
 
 Engineering teams and AI coding systems should use the normative documents as the authoritative design reference, and inspect the working application when extending an already-implemented contract. Historical reviews are context only and are not active implementation instructions.
