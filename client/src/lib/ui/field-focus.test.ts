@@ -14,7 +14,7 @@ import { readFileSync } from "node:fs";
  * The contract now: a composed field (`.field-shell`) owns exactly one focus
  * edge, and the text control inside it draws none.
  */
-const css = readFileSync("client/src/index.css", "utf8");
+const css = readFileSync("client/src/theme.css", "utf8");
 const home = readFileSync("client/src/pages/Home.tsx", "utf8");
 const results = readFileSync("client/src/pages/ResultsPage.tsx", "utf8");
 

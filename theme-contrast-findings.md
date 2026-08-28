@@ -106,3 +106,37 @@ grain editorial-shadow` + `Pic` + a stamp caption), reusing assets already in
 `public/images`: the Adalaj stepwell in a 4:5 portrait frame beside "Trust is
 measured by the trail", and the brick-arch courtyard in a 4:3 frame beside the
 listing CTA. No new binaries were added to the repository.
+
+
+## Why the fix kept "not working": a stale client bundle, not the CSS
+
+Three server-side verifications all said the button colours were correct, while
+the browser kept showing the old ones. The dev server log finally gave the
+answer — a React hydration mismatch on every page:
+
+```
+<a
++  className="btn-sweep motion-press hidden items-center gap-2 bg-brick ..."   (client render)
+-  className="clay-fill btn-sweep motion-press hidden items-center gap-2 ..."  (server HTML)
+-  <figure className="mt-8">                                                   (server only)
+```
+
+The server was sending the corrected markup; the browser was running an **older
+client bundle** that still produced the pre-fix JSX, so React discarded the
+server DOM and re-rendered without `clay-fill` and without the new figures. The
+labels then fell back to inheriting their section colour — the original symptom,
+reproduced client-side long after the CSS was fixed.
+
+Cause: Turbopack dev serves path-derived chunk URLs (`_0m6utap._.css`,
+`client_src_*.js`) that never change between edits, so anything caching in front
+of the sandbox can pin them indefinitely. Nothing on the server side can
+invalidate a URL that never changes.
+
+Fix: serve a production build for the preview. `next build` emits
+content-hashed assets (`35rswqjelm12s.css`, `0ex9loeupgleo.css`), so every
+change produces a URL that has never been cached. The stylesheet entry was also
+renamed `index.css` → `theme.css`, which changes its module identity as well.
+
+Verified on the production bundle: all three fill archetypes resolve to their
+own label colour, the client chunks contain the fill classes (so hydration
+matches the server HTML), and both figures are in the served markup.

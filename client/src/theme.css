@@ -311,8 +311,11 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    that is exactly how the light theme ended up with dark-on-dark CTAs. These
    are class rules (0,1,0), so they outrank the element-level `a { color:
    inherit }` reset on specificity alone, whatever layer that reset lives in. */
-.clay-fill, .night-fill { color: var(--cream); }
-.paper-fill { color: var(--ink); }
+/* Literal fallbacks matter: if a token were ever undefined, `color: var(--x)`
+   is invalid at computed-value time and the property silently falls back to
+   the INHERITED colour — which is the exact failure mode being fixed here. */
+.clay-fill, .night-fill { color: var(--cream, #fff8ee); }
+.paper-fill { color: var(--ink, #241c18); }
 
 .dark .clay-fill { background: var(--brick-deep); }
 .dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }

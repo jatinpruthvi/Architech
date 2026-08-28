@@ -12,7 +12,7 @@ import { globSync } from "node:fs";
  * over any layered rule regardless of specificity — so `text-cream` on a link
  * was silently discarded. These tests pin the fix and the contrast budget.
  */
-const css = readFileSync("client/src/index.css", "utf8");
+const css = readFileSync("client/src/theme.css", "utf8");
 
 const hex = (value: string) => value.match(/^#([0-9a-f]{6})$/i)?.[1] ?? "";
 const luminance = (value: string) => {
@@ -83,8 +83,8 @@ describe("a solid fill owns its label colour", () => {
   })();
 
   it("declares label colours for every fill outside any cascade layer", () => {
-    expect(unlayered).toContain(".clay-fill, .night-fill { color: var(--cream); }");
-    expect(unlayered).toContain(".paper-fill { color: var(--ink); }");
+    expect(unlayered).toContain(".clay-fill, .night-fill { color: var(--cream, #fff8ee); }");
+    expect(unlayered).toContain(".paper-fill { color: var(--ink, #241c18); }");
   });
 
   it("never lets a fill-tagged control carry a state text colour it cannot win", () => {
