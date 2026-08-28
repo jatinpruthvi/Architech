@@ -114,7 +114,7 @@ export default function RequirementCapture({ compact = false }: Props) {
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-trust text-cream"><Check size={23} /></div>
                 <h3 className="display mt-6 text-4xl">Brief received.</h3>
                 <p className="mt-3 max-w-lg text-sm leading-7 text-ink/65">We have recorded your requirement with masked contact details. A verified Architech partner can follow up after review.</p>
-                <button type="button" onClick={() => setOpen(false)} className="mt-7 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Close</button>
+                <button type="button" onClick={() => setOpen(false)} className="night-fill mt-7 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Close</button>
               </div>
             ) : (
               <form onSubmit={submit} className="grid gap-7 p-5 md:grid-cols-2 md:p-8">

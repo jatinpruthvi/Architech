@@ -306,6 +306,14 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    surface in dark mode only (5.06:1) rather than lightening the shared --brick
    token, which would break clay text elsewhere. Light theme already passes at
    5.69:1 and is left untouched. */
+/* A solid fill declares its surface AND its label together, as one component.
+   A label must never be left to inherit the colour of the section behind it —
+   that is exactly how the light theme ended up with dark-on-dark CTAs. These
+   are class rules (0,1,0), so they outrank the element-level `a { color:
+   inherit }` reset on specificity alone, whatever layer that reset lives in. */
+.clay-fill, .night-fill { color: var(--cream); }
+.paper-fill { color: var(--ink); }
+
 .dark .clay-fill { background: var(--brick-deep); }
 .dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }
 .dark .clay-fill.btn-sweep::before { background: color-mix(in srgb, var(--brick-deep) 74%, #000); }

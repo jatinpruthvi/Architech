@@ -67,6 +67,41 @@ describe("solid surface contrast budget (WCAG AA, 4.5:1 for the 11-12px bold sta
   });
 });
 
+describe("a solid fill owns its label colour", () => {
+  // The label must not depend on cascade-layer ordering to beat `a { color:
+  // inherit }`. Class rules (0,1,0) outrank that element rule (0,0,1) on
+  // specificity alone, so these must stay unlayered class declarations.
+  const unlayered = (() => {
+    let depth = 0;
+    const out: string[] = [];
+    for (const line of css.split("\n")) {
+      const trimmed = line.trim();
+      if (depth === 0 && trimmed && !trimmed.startsWith("@") && !trimmed.startsWith("/*")) out.push(trimmed);
+      depth += (line.match(/\{/g) ?? []).length - (line.match(/\}/g) ?? []).length;
+    }
+    return out.join("\n");
+  })();
+
+  it("declares label colours for every fill outside any cascade layer", () => {
+    expect(unlayered).toContain(".clay-fill, .night-fill { color: var(--cream); }");
+    expect(unlayered).toContain(".paper-fill { color: var(--ink); }");
+  });
+
+  it("never lets a fill-tagged control carry a state text colour it cannot win", () => {
+    const files = globSync("client/src/**/*.tsx").concat(globSync("app/**/*.tsx"));
+    const conflicts: string[] = [];
+    for (const file of files) {
+      for (const m of readFileSync(file, "utf8").matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+        const tokens = (m[1] ?? m[2] ?? "").split(/\s+/).filter(Boolean);
+        if (!tokens.some((t) => /-fill$/.test(t))) continue;
+        const states = tokens.filter((t) => /^(hover|focus|active|group-hover):!?text-(ink|cream|brick|ember|paper|night|trust)/.test(t));
+        if (states.length) conflicts.push(`${file}: ${states.join(" ")}`);
+      }
+    }
+    expect(conflicts).toEqual([]);
+  });
+});
+
 describe("solid action markup contracts", () => {
   const files = globSync("client/src/**/*.tsx").concat(globSync("app/**/*.tsx")).filter((f) => !f.includes(".stories."));
   const classAttrs = (src: string) =>
@@ -87,6 +122,21 @@ describe("solid action markup contracts", () => {
       }
     }
     expect(untagged).toEqual([]);
+  });
+
+  it("gives every solid night/paper control an explicit label colour", () => {
+    const missing: string[] = [];
+    for (const file of files) {
+      const src = readFileSync(file, "utf8");
+      for (const m of src.matchAll(/<(Link|a|button)\s[^>]*?className=(?:"([^"]*)"|\{`([^`]*)`\})/gs)) {
+        const tokens = (m[2] ?? m[3] ?? "").split(/\s+/).filter(Boolean);
+        const night = tokens.includes("bg-night") && tokens.some((t) => t.replace(/^!/, "") === "text-cream");
+        const paper = tokens.includes("bg-paper") && tokens.some((t) => t.replace(/^!/, "") === "text-ink");
+        if (night && !tokens.includes("night-fill")) missing.push(`${file}: night`);
+        if (paper && !tokens.includes("paper-fill")) missing.push(`${file}: paper`);
+      }
+    }
+    expect(missing).toEqual([]);
   });
 
   it("never fades a solid action to an unreadable ghost when disabled", () => {

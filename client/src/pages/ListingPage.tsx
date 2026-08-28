@@ -79,7 +79,7 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
             <input required type="checkbox" className="mt-1 accent-[var(--brick)]" />
             <span>{t.listing.consentText}</span>
           </label>
-          <button type="submit" disabled={submitting} className="btn-sweep btn-solid touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">{submitting ? t.listing.sending : t.listing.send}</button>
+          <button type="submit" disabled={submitting} className="night-fill btn-sweep btn-solid touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">{submitting ? t.listing.sending : t.listing.send}</button>
           <p className="stamp text-center !text-[9px] text-ink/60">{t.listing.noRealMessage}</p>
         </form>
       </DialogContent>

@@ -400,10 +400,16 @@ export default function Home() {
           <Reveal>
             <p className="kicker text-brick">Signal, not theatre</p>
             <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">Trust is measured by the <em className="text-brick">trail.</em></h2>
+            <figure className="mt-8">
+              <div className="arch-frame-sm img-hover grain editorial-shadow">
+                <Pic name="stepwell" alt="Descending stone steps of the Adalaj stepwell, each level cut and recorded in sequence" className="aspect-[4/5] w-full object-cover" sizes="(max-width: 768px) 100vw, 32vw" />
+              </div>
+              <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Adalaj — evidence, level by level</span><span>Study frame</span></figcaption>
+            </figure>
           </Reveal>
           <Reveal delay={100} className="border-l-2 border-brick pl-6 md:pl-8">
             <p className="max-w-2xl text-[15px] leading-7 text-ink/70">We do not publish invented reviews, ratings, or partner praise. The useful signal is already on the page: source, freshness, RERA context, and a clear next action.</p>
-            <div className="mt-7 flex flex-wrap gap-3"><Link href="/guide/" className="inline-flex items-center gap-2 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link><Link href="/review/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link></div>
+            <div className="mt-7 flex flex-wrap gap-3"><Link href="/guide/" className="night-fill inline-flex items-center gap-2 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link><Link href="/review/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link></div>
           </Reveal>
         </div>
       </section>
@@ -429,14 +435,20 @@ export default function Home() {
 
       {/* ================= List your property ================= */}
       <section className="border-t border-ink/12 bg-sand/40 py-16 md:py-24">
-        <div className="container grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+        <div className="container grid gap-10 md:grid-cols-[1.15fr_0.85fr] md:items-center">
           <Reveal>
             <p className="kicker text-brick">{t.list.kicker}</p>
             <h2 className="display mt-5 max-w-[640px] text-[clamp(30px,4vw,54px)]">{t.list.title} <em className="text-brick">{t.list.titleEm}</em>{t.list.titleSuffix}</h2>
             <p className="mt-4 max-w-[520px] text-[15px] leading-7 text-ink/65">{t.list.copy}</p>
+            <Link href="/list-property/" className="night-fill btn-sweep motion-press mt-8 inline-flex items-center gap-2 bg-night px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
           </Reveal>
           <Reveal delay={120}>
-            <Link href="/list-property/" className="btn-sweep motion-press inline-flex items-center gap-2 bg-night px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
+            <figure>
+              <div className="arch-frame-sm img-hover grain editorial-shadow">
+                <Pic name="prop-courtyard" alt="Sunlit inner courtyard of an Ahmedabad home, brick walls opening to a planted verandah" className="aspect-[4/3] w-full object-cover" sizes="(max-width: 768px) 100vw, 40vw" />
+              </div>
+              <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Courtyard, western Ahmedabad</span><span>Owner submission</span></figcaption>
+            </figure>
           </Reveal>
         </div>
       </section>
@@ -450,7 +462,7 @@ export default function Home() {
             <h2 className="display mt-6 max-w-[620px] text-[clamp(40px,6vw,84px)] text-cream">{t.cta.title1}<em>{t.cta.title2}</em>.</h2>
           </Reveal>
           <Reveal delay={150} className="flex flex-col gap-4 sm:flex-row">
-            <Link href="/search" className="shimmer-btn motion-press inline-flex items-center gap-3 bg-paper px-8 py-5 stamp !text-[12px] font-semibold text-ink transition-transform hover:-translate-y-1">{t.cta.start} <ArrowUpRight size={16} className="text-brick" /></Link>
+            <Link href="/search" className="paper-fill shimmer-btn motion-press inline-flex items-center gap-3 bg-paper px-8 py-5 stamp !text-[12px] font-semibold text-ink transition-transform hover:-translate-y-1">{t.cta.start} <ArrowUpRight size={16} className="text-brick" /></Link>
             <Link href="/buy/" className="motion-press inline-flex items-center gap-3 border border-cream/40 px-8 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:border-cream hover:bg-paper/10">{t.cta.browse}</Link>
           </Reveal>
         </div>

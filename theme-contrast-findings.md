@@ -67,3 +67,42 @@ unavailable. The hover sweep is suppressed while disabled.
 the palette, asserts the anchor reset stays layered, and fails if any solid clay
 control is missing `clay-fill` or if a solid action reintroduces an opacity
 fade. Verified to fail on a deliberate violation, not just pass vacuously.
+
+
+## Follow-up: why the fix was not visible, and making it specificity-proof
+
+The layered fix was correct on the server — a cascade resolver run against the
+stylesheet the dev server was actually serving (layer order → specificity →
+source order) showed `.text-cream` (utilities) beating `a { color: inherit }`
+(base). The browser tab was still painting the old rules: Turbopack keeps a
+stable stylesheet URL in dev, and a tab that was open across a server restart
+loses its HMR socket, so it never refetched. A reload is required to see it.
+
+Relying on layer order for something this load-bearing is fragile anyway, so
+solid actions no longer depend on it. `.clay-fill`, `.night-fill` and
+`.paper-fill` declare surface and label together as one component, unlayered:
+
+```
+.clay-fill, .night-fill { color: var(--cream); }
+.paper-fill             { color: var(--ink); }
+```
+
+A class rule scores 0,1,0 against the 0,0,1 of the `a` element reset, so the
+label wins on specificity **whatever layer either rule lives in** — verified by
+re-running the resolver against a synthetic stylesheet where the reset is
+unlayered again. Verified winners on the live CSS:
+
+| Element | Winning rule | Value |
+| --- | --- | --- |
+| `a.night-fill.bg-night` | `.night-fill` (unlayered) | `var(--cream)` |
+| `a.paper-fill.bg-paper` | `.paper-fill` (unlayered) | `var(--ink)` |
+| `a.clay-fill.bg-brick` | `.clay-fill` (unlayered) | `var(--cream)` |
+
+## Imagery
+
+The evidence section and the "list your property" section were pure text. Both
+now carry the site's existing editorial figure pattern (`arch-frame-sm img-hover
+grain editorial-shadow` + `Pic` + a stamp caption), reusing assets already in
+`public/images`: the Adalaj stepwell in a 4:5 portrait frame beside "Trust is
+measured by the trail", and the brick-arch courtyard in a 4:3 frame beside the
+listing CTA. No new binaries were added to the repository.
