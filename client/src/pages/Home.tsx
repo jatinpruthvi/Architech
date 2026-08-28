@@ -22,9 +22,6 @@ import { readRecentSearches, rememberRecentSearch } from "@/lib/search/recent";
 import { useLang } from "@/contexts/LangContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const HERO_DESKTOP = "/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg";
-const HERO_MOBILE = "/manus-storage/architech-ahmedabad-hero-mobile_7577c7e9.jpg";
-
 const faqs = [
   { q: "How is every listing RERA-verified?", a: "Each listing is checked against the Gujarat RERA registry at publication — registration number, promoter, and completion status — and re-checked on every meaningful update. The registration number is displayed on the listing page, never behind a form." },
   { q: "What does the freshness stamp mean?", a: "It is the date a human or automated pipeline last confirmed the price, availability, and facts of the listing. Data that hasn't been re-confirmed within 14 days is flagged, and stale listings are withdrawn from search." },
@@ -220,18 +217,18 @@ function HeroSearch() {
         onSubmit={(e) => { e.preventDefault(); go(query); }}
         className="search-composer field-shell [--field-focus:var(--ember)] mt-3 flex items-stretch rounded-2xl border border-cream/25 bg-paper/10 backdrop-blur-md transition-all duration-300 focus-within:border-ember focus-within:bg-paper/20 focus-within:shadow-[0_14px_40px_rgba(0,0,0,0.32)]"
         role="search" aria-label={`Search ${intentLabel} across India`}>
-        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/15 text-cream/60 sm:w-[150px] sm:place-items-start sm:px-4"><span className="hidden sm:block"><span className="block stamp !text-[9px] text-cream/45">{searchContext}</span><span className="mt-1 block font-display text-sm text-cream/90">All India</span></span><Search size={19} className="sm:hidden" /></span>
+        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/15 text-cream/60 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="block stamp !text-[9px] text-cream/45">{searchContext}</span><span className="mt-1 block font-display text-sm text-cream/90">All India</span></span><Search size={19} className="sm:hidden" /></span>
         <input
           ref={inputRef}
           value={query} onChange={(e) => { setQuery(e.target.value); }}
           onFocus={() => setFocused(true)} onBlur={() => { /* keep open until outside click */ }}
           onKeyDown={onKeyDown}
           placeholder={`Try “${heroExample}”, a PIN code, or any city…`}
-          className="w-full bg-transparent py-4 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
+          className="w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
           aria-label={`Search ${intentLabel} by locality, project, or BHK`} role="combobox" aria-expanded={focused && (queryLen > 0 || true)} aria-controls={focused ? "search-suggestions" : undefined}
           aria-activedescendant={focused && highlight >= 0 ? `sug-${highlight}` : undefined} aria-autocomplete="list" autoComplete="off"
         />
-        <button type="submit" className="clay-fill shimmer-btn motion-press my-1.5 mr-1.5 ml-1 rounded-xl bg-brick px-6 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
+        <button type="submit" className="clay-fill shimmer-btn motion-press mx-1.5 my-1.5 inline-flex items-center justify-center rounded-xl bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
 
       {/* Animated suggestions */}
@@ -308,7 +305,7 @@ export default function Home() {
       {/* ================= HERO ================= */}
       <section className="relative min-h-[540px] overflow-hidden bg-night text-cream md:min-h-[620px]">
         <div className="grain !absolute inset-0">
-          <Pic name="hero-ahmedabad" alt="" src={HERO_DESKTOP} mobileSrc={HERO_MOBILE} className="hero-zoom hero-art h-full w-full object-cover opacity-75" sizes="100vw" eager />
+          <Pic name="hero-ahmedabad" alt="" className="hero-zoom hero-art h-full w-full object-cover opacity-75" sizes="100vw" eager />
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(34,24,21,0.94)_0%,rgba(34,24,21,0.66)_42%,rgba(34,24,21,0.18)_100%)]" />
         <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">

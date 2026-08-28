@@ -90,10 +90,22 @@ function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+function imageNamesFromMedia(media?: DbListingRow["media"]): string[] {
+  return (media ?? [])
+    .map((item) => item?.url ?? "")
+    .map((url) => url.split("/").pop()?.replace(/\.(jpg|jpeg|png|webp)$/i, "") ?? "")
+    .filter((name) => name.length > 0);
+}
+
 function imageNameFromMedia(media?: DbListingRow["media"]): string {
-  const url = media?.[0]?.url;
-  if (!url) return "locality-street";
-  return url.split("/").pop()?.replace(/\.(jpg|jpeg|png|webp)$/i, "") || "locality-street";
+  return imageNamesFromMedia(media)[0] ?? "locality-street";
+}
+
+/** Additional real photographs of the same listing (everything past the
+    primary). Empty when a row only carries one photo — callers must not
+    substitute an unrelated image in that case. */
+function galleryFromMedia(media?: DbListingRow["media"]): string[] {
+  return imageNamesFromMedia(media).slice(1);
 }
 
 function badgeFromVerification(verification?: string | null): string {
@@ -153,6 +165,7 @@ export function dbListingToProperty(row: DbListingRow): Property {
     area: area ? `${area.toLocaleString("en-IN")} sq ft` : "Area on request",
     areaNum: area,
     image: imageNameFromMedia(row.media),
+    gallery: galleryFromMedia(row.media),
     badge: badgeFromVerification(row.verification),
     status: freshnessLabel(row.meaningfulUpdatedAt),
     note: row.description,

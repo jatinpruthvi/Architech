@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { createCollection, deleteCollection, loadCollections, persistCollections, toggleCollectionListing, updateCollection, type Collection } from "@/lib/collections";
 
 type CollectionsContextValue = {
@@ -14,7 +14,10 @@ type CollectionsContextValue = {
 const Context = createContext<CollectionsContextValue>({ collections: [], add: () => undefined, update: () => undefined, toggleListing: () => undefined, remove: () => undefined });
 
 export function CollectionsProvider({ children }: { children: ReactNode }) {
-  const [collections, setCollections] = useState<Collection[]>(() => typeof window === "undefined" ? [] : loadCollections(window.localStorage));
+  /* Same hydration rule as SavedProvider: server and client first render must
+     agree, so localStorage is read after mount, not in the initializer. */
+  const [collections, setCollections] = useState<Collection[]>([]);
+  useEffect(() => { setCollections(loadCollections(window.localStorage)); }, []);
   const commit = useCallback((next: Collection[]) => {
     setCollections(next);
     if (typeof window !== "undefined") persistCollections(window.localStorage, next);

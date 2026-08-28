@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     url: homeUrl(),
     title: "Architech — Find the place before the address.",
     description: "A high-trust way to discover homes across India: verified RERA context, locality intelligence, and architecture-grade curation.",
-    images: [{ url: "/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg", width: 1600, height: 900, alt: "Indian contemporary architecture at golden hour" }],
+    images: [{ url: "/images/hero-ahmedabad.jpg", width: 1600, height: 900, alt: "Indian contemporary architecture at golden hour" }],
   },
   twitter: { card: "summary_large_image" },
 };
@@ -54,26 +54,24 @@ const websiteJsonLd = {
   ],
 };
 
-/* Pre-paint theme script: applies stored/system dark class before first paint. */
-const themeScript = `try{var t=localStorage.getItem("architech.theme");if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`;
+/* Theme flash prevention lives in ThemeProvider (a pre-paint layout effect),
+   not in an inline <script> here: React dev builds warn on inline scripts
+   rendered through the component tree, and next/script's inline queue is
+   still such a script. */
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500&display=swap"
           rel="stylesheet"
         />
-        <link
-          rel="preload"
-          as="image"
-          href="/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg"
-          fetchPriority="high"
-        />
+        {/* The hero <img> is eager + high-priority, which is the preload; a
+            separate <link rel="preload"> for a URL that can 404 only adds a
+            console error. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
       </head>
       {/* <body> carries suppressHydrationWarning because browser/DOM-instrumentation

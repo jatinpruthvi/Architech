@@ -53,7 +53,19 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    const rules = [{ source: "/:path*", headers: securityHeaders }];
+    if (!isProduction) {
+      // Turbopack dev chunk URLs are stable across edits; if a proxy or the
+      // browser cache retains an old chunk, a "reload" silently re-runs stale
+      // JS (zombie hydration errors, "(stale)" dev badge). Force revalidation
+      // in dev so every load executes the current code. Production chunks are
+      // content-hashed and stay cacheable.
+      rules.push({
+        source: "/_next/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
+      });
+    }
+    return rules;
   },
 };
 

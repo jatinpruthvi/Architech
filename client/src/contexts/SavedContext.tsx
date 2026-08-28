@@ -1,7 +1,7 @@
 "use client";
 
 /* Shared saved-homes state, persisted to localStorage. */
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { loadSaved, persistSaved, toggleSaved } from "@/lib/saved";
 
 type SavedCtx = { saved: string[]; isSaved: (id: string) => boolean; toggle: (id: string) => boolean };
@@ -9,10 +9,13 @@ type SavedCtx = { saved: string[]; isSaved: (id: string) => boolean; toggle: (id
 const Ctx = createContext<SavedCtx>({ saved: [], isSaved: () => false, toggle: () => false });
 
 export function SavedProvider({ children }: { children: ReactNode }) {
-  /* Lazy init: no empty-state flash on /saved (guarded for future SSR) */
-  const [saved, setSaved] = useState<string[]>(() =>
-    typeof window === "undefined" ? [] : loadSaved(window.localStorage),
-  );
+  /* Start empty on server AND client, then load after mount. Reading
+     localStorage in the useState initializer made the client's first render
+     differ from the SSR HTML (saved badge present vs absent), which aborted
+     hydration with "Hydration failed because the server rendered HTML didn't
+     match the client". */
+  const [saved, setSaved] = useState<string[]>([]);
+  useEffect(() => { setSaved(loadSaved(window.localStorage)); }, []);
 
   const toggle = useCallback((id: string) => {
     const wasSaved = saved.includes(id);

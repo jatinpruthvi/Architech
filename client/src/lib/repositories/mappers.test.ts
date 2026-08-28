@@ -34,6 +34,22 @@ describe("Prisma repository mappers", () => {
     expect(property.availability).toBe("READY_TO_MOVE");
   });
 
+  it("keeps every real photograph of a listing, primary first", () => {
+    const property = dbListingToProperty({
+      stableId: "two-photos",
+      slug: "two-photos",
+      title: "Two real photos",
+      description: "Primary plus one more of the same home.",
+      priceLabel: "₹1.00 Cr",
+      priceInr: 10000000,
+      locality: { slug: "paldi", name: "Paldi" },
+      city: { name: "Ahmedabad" },
+      media: [{ url: "/images/prop-courtyard.jpg" }, { url: "/images/prop-light.webp" }],
+    });
+    expect(property.image).toBe("prop-courtyard");
+    expect(property.gallery).toEqual(["prop-light"]);
+  });
+
   it("defaults to fixture mode unless explicitly configured", () => {
     expect(getDataSourceMode(undefined)).toBe("fixture");
     expect(getDataSourceMode("prisma")).toBe("prisma");

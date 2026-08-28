@@ -41,6 +41,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
   const { t } = useLang();
   const saved = isSaved(property.id);
   const compared = isCompared(property.id);
+  // A real second photograph of THIS listing, or null. Never a stock stand-in.
   const hoverImage = secondaryImage(property);
 
   const onSave = (e: React.MouseEvent) => {
@@ -91,8 +92,12 @@ export default function PropertyCard({ property, arch = false, index, variant = 
         <div className="flex">
           <Link href={`/listing/${property.id}`} className="relative block w-[200px] shrink-0 overflow-hidden bg-sand" aria-label={`View ${property.title}`}>
             <div className="img-hover relative aspect-[4/3]">
-              <Pic name={property.image} alt={`${property.title}, ${property.locality}`} className="h-full w-full object-cover" sizes="200px" />
-              <img src={`/images/${hoverImage}.jpg`} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" loading="lazy" />
+              <Pic name={property.image} alt={`${property.title}, ${property.locality}, ${property.city}`} className="h-full w-full object-cover" sizes="200px" />
+              {/* Cross-fade on hover ONLY when this listing really has another
+                  photo of itself. One photo = no swap, ever. */}
+              {hoverImage ? (
+                <Pic name={hoverImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" sizes="200px" />
+              ) : null}
             </div>
           </Link>
           <div className="flex flex-1 flex-col p-4">
@@ -115,9 +120,14 @@ export default function PropertyCard({ property, arch = false, index, variant = 
       <Link href={`/listing/${property.id}`} className="block" aria-label={`View ${property.title}, ${property.price}, ${property.locality}`}>
         <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm overflow-hidden" : "rounded-t-2xl"}`}>
           <div className="aspect-[1.25]">
-            <Pic name={property.image} alt={`${property.title}, ${property.locality}, Ahmedabad`} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
-            {/* Restrained editorial hover: cross-fade a secondary shot, scale 1 -> 1.025 */}
-            <img src={`/images/${hoverImage}.jpg`} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-40" loading="lazy" />
+            <Pic name={property.image} alt={`${property.title}, ${property.locality}, ${property.city}`} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+            {/* Restrained editorial hover: scale 1 -> 1.05 (see .img-hover), and
+                cross-fade a second photo — but only a real one of THIS listing.
+                A single-photo listing keeps its own image; it never ghosts an
+                unrelated stock shot over it. */}
+            {hoverImage ? (
+              <Pic name={hoverImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+            ) : null}
           </div>
           <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-3.5">
             <BadgeTooltip property={property} />
