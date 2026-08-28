@@ -196,14 +196,15 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .kicker::before { content: ""; width: 44px; height: 2px; background: currentColor; }
 
 /* Mono data stamp */
-/* `.stamp` owns size AND colour together: 240 call sites had `text-ink/45`
-   baked into the markup, which measured 2.81:1 on the warm card. Muted-foreground
-   is 5.75 light / 6.33 dark, so the pair can never disagree again. */
 .stamp { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
-/* `.stamp` owns its colour as well as its size: 240 call sites had `text-ink/45`
-   baked into the markup, which measured 2.81:1 on the warm card. Muted-foreground
-   is 5.75 light / 6.33 dark, so size and colour can never disagree again. */
-.stamp { color: var(--muted-foreground); }
+/* The DEFAULT colour is wrapped in `:where()` so it carries zero specificity.
+   240 call sites had `text-ink/45` baked into the markup (2.81:1 on the warm
+   card), which `.stamp` now supplies instead — but 149 other call sites pair
+   `.stamp` with a real semantic colour (`text-trust` on a verification stamp,
+   `text-brick` on a link). An unlayered rule beats a layered utility no matter
+   how specific the utility is, so an unwrapped colour here silently mutes every
+   one of those. Size stays a hard rule; colour stays a suggestion. */
+:where(.stamp) { color: var(--muted-foreground); }
 
 /* Big index numerals */
 .index-num { font-family: var(--font-display); font-variation-settings: "opsz" 144; font-weight: 300; line-height: 0.85; letter-spacing: -0.04em; }
@@ -545,8 +546,10 @@ button:focus-visible, a:focus-visible, input:focus-visible {
      desk) can retarget it later without touching a call site — which is exactly
      what the opacity ladder (`text-ink/60`) could not do: it fails at 45% in
      light (2.81:1) while passing at the same number in dark (3.73:1). */
-  .ink-2 { color: var(--ink-2, #51453d); }
-  .ink-3 { color: var(--ink-3, #6e6058); }
+  /* :where() keeps these overridable by a later utility in the same layer,
+     and by any explicit text-* a call site still needs. */
+  :where(.ink-2) { color: var(--ink-2, #51453d); }
+  :where(.ink-3) { color: var(--ink-3, #6e6058); }
 }
 
 :root {

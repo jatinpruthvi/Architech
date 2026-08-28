@@ -87,10 +87,19 @@ describe("micro type is gone, not just relabelled", () => {
     expect(size).toBeGreaterThanOrEqual(12);
   });
 
-  it("paints .stamp with the muted token rather than an alpha number", () => {
+  it("gives .stamp a default colour that CANNOT beat an explicit one", () => {
     // The stamp used to hardcode `text-ink/45` at each call site — 240 places
-    // all agreeing on a 2.81:1 label. `.ink-2`/`.ink-3` replace that per usage.
-    expect(css).toContain(".stamp { color: var(--muted-foreground); }");
+    // all agreeing on a 2.81:1 label. `.stamp` supplies the default now. But
+    // 149 sites legitimately pair it with `text-trust` / `text-brick`, and an
+    // UNLAYERED rule outranks a layered utility regardless of specificity, so
+    // an unwrapped colour on `.stamp` mutes all 149. `:where()` keeps the
+    // default and the override both true. (This is the same trap as the
+    // `a { color: inherit }` bug pinned in surface-contrast.test.ts — it
+    // arrived here as MY fix, which is why it is pinned rather than reviewed.)
+    expect(css).toContain(":where(.stamp) { color: var(--muted-foreground); }");
+    expect(css).not.toMatch(/^\.stamp \{[^}]*color:/m);
+    expect(css).toContain(":where(.ink-2) { color: var(--ink-2, #51453d); }");
+    expect(css).toContain(":where(.ink-3) { color: var(--ink-3, #6e6058); }");
   });
 });
 
