@@ -73,7 +73,7 @@ export function ListingGallery({ property }: { property: Property }) {
           <span className="stamp absolute left-5 top-5 z-10 rounded-full bg-paper/95 px-3 py-1.5 !text-[10px] font-semibold">{t.listing.verifiedView}</span>
           <button
             onClick={() => setLightbox(true)}
-            className="absolute bottom-4 right-4 z-10 inline-flex touch-44 items-center gap-2 rounded-full bg-night/80 px-4 py-2 stamp !text-[10px] font-semibold text-cream backdrop-blur transition-colors hover:bg-brick"
+            className="clay-fill absolute bottom-4 right-4 z-10 inline-flex touch-44 items-center gap-2 rounded-full bg-night/80 px-4 py-2 stamp !text-[10px] font-semibold text-cream backdrop-blur transition-colors hover:bg-brick"
             aria-label={`${t.listing.gallery.openGallery} (${imageCountLabel(slides.length)})`}
           >
             <Maximize2 size={13} /> {imageCountLabel(slides.length)} · {t.listing.gallery.photos}

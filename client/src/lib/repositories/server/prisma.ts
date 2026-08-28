@@ -42,13 +42,45 @@ const listingInclude = {
   media: { orderBy: { sortOrder: "asc" as const }, take: 1 },
 };
 
-export async function getListingsForServer() {
-  if (!isPrismaDataSource()) return getListings();
+export type ListingScope = {
+  /** Narrow to one city slug. Unscoped reads are the expensive case. */
+  citySlug?: string;
+  /**
+   * Hard ceiling on rows read. A nationwide search with no scope must not be
+   * able to pull the whole table into memory; when the ceiling is reached the
+   * caller reports a bounded result rather than pretending it is complete.
+   */
+  limit?: number;
+};
+
+export const MAX_UNSCOPED_LISTING_ROWS = 5000;
+
+/**
+ * Read the active inventory for a scope.
+ *
+ * Before the facet rebuild this issued `findMany({ where: { lifecycle } })`
+ * with no scope and no bound, and every caller then filtered the result in JS —
+ * i.e. one unbounded table read per search, growing with the feed. The city is
+ * now pushed into the query and an explicit ceiling caps the nationwide case.
+ */
+export async function getListingsForServer(scope: ListingScope = {}) {
+  if (!isPrismaDataSource()) {
+    const all = getListings();
+    const cityScoped = scope.citySlug ? all.filter((listing) => listing.citySlug === scope.citySlug) : all;
+    const ceiling = scope.limit ?? (scope.citySlug ? undefined : MAX_UNSCOPED_LISTING_ROWS);
+    return ceiling ? cityScoped.slice(0, ceiling) : cityScoped;
+  }
   const prisma = getPrismaClient();
   const rows = await prisma.listing.findMany({
-    where: { lifecycle: "ACTIVE" },
+    where: {
+      lifecycle: "ACTIVE",
+      ...(scope.citySlug ? { city: { slug: scope.citySlug } } : {}),
+    },
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
+    ...(scope.limit ?? (!scope.citySlug ? MAX_UNSCOPED_LISTING_ROWS : undefined)
+      ? { take: scope.limit ?? MAX_UNSCOPED_LISTING_ROWS }
+      : {}),
   });
   return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
 }

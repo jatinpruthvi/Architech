@@ -379,7 +379,7 @@ export default function Home() {
                   <p className="hidden text-sm text-ink/55 md:block">{city.tagline}</p>
                   <div className="flex items-center gap-4">
                     <span className="stamp !text-[11px] text-ink/60">{getLocalities(city.slug).length} localities</span>
-                    <span className="grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300 group-hover:border-brick group-hover:bg-brick group-hover:text-cream"><ArrowUpRight size={16} /></span>
+                    <span className="clay-fill group-hover:border-brick group-hover:bg-brick grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300"><ArrowUpRight size={16} /></span>
                   </div>
                 </Link>
               </Reveal>
@@ -451,7 +451,7 @@ export default function Home() {
       </section>
 
       {/* ================= CTA ================= */}
-      <section className="grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
+      <section className="clay-fill grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
         <span className="pointer-events-none absolute -right-24 -top-40 h-[480px] w-[300px] rounded-t-full bg-ember/20 md:-right-10" aria-hidden="true" />
         <div className="container relative z-10 flex flex-col items-start gap-10 md:flex-row md:items-end md:justify-between">
           <Reveal>

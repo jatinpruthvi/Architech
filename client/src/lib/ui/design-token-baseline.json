@@ -1,0 +1,193 @@
+{
+  "_readme": "Ratchet baseline for design-token-discipline.test.ts. Each number is the CURRENT count of a legacy pattern in that file. The test fails only when a file EXCEEDS its baseline, so debt can be paid down but never grows. Regenerate after a cleanup with: node client/src/lib/ui/design-token-baseline.cjs --write",
+  "client/src/components/architech/CompareTray.tsx": {
+    "alphaText": 6,
+    "microText": 5,
+    "nanoText": 0
+  },
+  "client/src/components/architech/Footer.tsx": {
+    "alphaText": 10,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "client/src/components/architech/Header.tsx": {
+    "alphaText": 6,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "client/src/components/architech/ListingGallery.tsx": {
+    "alphaText": 5,
+    "microText": 4,
+    "nanoText": 1
+  },
+  "client/src/components/architech/LocalityIntel.tsx": {
+    "alphaText": 22,
+    "microText": 22,
+    "nanoText": 1
+  },
+  "client/src/components/architech/LocalityTrust.tsx": {
+    "alphaText": 7,
+    "microText": 6,
+    "nanoText": 0
+  },
+  "client/src/components/architech/MapListSync.tsx": {
+    "alphaText": 4,
+    "microText": 4,
+    "nanoText": 1
+  },
+  "client/src/components/architech/MarketDirectory.tsx": {
+    "alphaText": 7,
+    "microText": 7,
+    "nanoText": 1
+  },
+  "client/src/components/architech/OwnershipCost.tsx": {
+    "alphaText": 4,
+    "microText": 3,
+    "nanoText": 2
+  },
+  "client/src/components/architech/PropertyCard.tsx": {
+    "alphaText": 1,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "client/src/components/architech/RequirementCapture.tsx": {
+    "alphaText": 16,
+    "microText": 14,
+    "nanoText": 1
+  },
+  "client/src/components/architech/StickyBar.tsx": {
+    "alphaText": 2,
+    "microText": 1,
+    "nanoText": 1
+  },
+  "client/src/components/architech/TrustPanel.tsx": {
+    "alphaText": 9,
+    "microText": 6,
+    "nanoText": 1
+  },
+  "client/src/pages/AgentWorkspace.tsx": {
+    "alphaText": 38,
+    "microText": 18,
+    "nanoText": 4
+  },
+  "client/src/pages/BrokerLeadInbox.tsx": {
+    "alphaText": 14,
+    "microText": 5,
+    "nanoText": 5
+  },
+  "client/src/pages/BrokerOnboarding.tsx": {
+    "alphaText": 3,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "client/src/pages/CityPage.tsx": {
+    "alphaText": 23,
+    "microText": 15,
+    "nanoText": 3
+  },
+  "client/src/pages/Collections.tsx": {
+    "alphaText": 10,
+    "microText": 3,
+    "nanoText": 0
+  },
+  "client/src/pages/DeveloperIndexPage.tsx": {
+    "alphaText": 6,
+    "microText": 4,
+    "nanoText": 1
+  },
+  "client/src/pages/Guide.tsx": {
+    "alphaText": 3,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "client/src/pages/GuideArticle.tsx": {
+    "alphaText": 8,
+    "microText": 4,
+    "nanoText": 0
+  },
+  "client/src/pages/Home.tsx": {
+    "alphaText": 38,
+    "microText": 16,
+    "nanoText": 6
+  },
+  "client/src/pages/InvestmentPage.tsx": {
+    "alphaText": 10,
+    "microText": 3,
+    "nanoText": 2
+  },
+  "client/src/pages/ListProperty.tsx": {
+    "alphaText": 7,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "client/src/pages/ListingPage.tsx": {
+    "alphaText": 32,
+    "microText": 28,
+    "nanoText": 5
+  },
+  "client/src/pages/ListingSubmission.tsx": {
+    "alphaText": 30,
+    "microText": 12,
+    "nanoText": 0
+  },
+  "client/src/pages/ModerationQueue.tsx": {
+    "alphaText": 8,
+    "microText": 3,
+    "nanoText": 2
+  },
+  "client/src/pages/NotFound.tsx": {
+    "alphaText": 1,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "client/src/pages/PublicParity.tsx": {
+    "alphaText": 34,
+    "microText": 21,
+    "nanoText": 3
+  },
+  "client/src/pages/RequirementsPage.tsx": {
+    "alphaText": 5,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "client/src/pages/Saved.tsx": {
+    "alphaText": 5,
+    "microText": 3,
+    "nanoText": 0
+  },
+  "client/src/pages/SavedSearches.tsx": {
+    "alphaText": 9,
+    "microText": 3,
+    "nanoText": 0
+  },
+  "app/buy/[city]/page.tsx": {
+    "alphaText": 10,
+    "microText": 4,
+    "nanoText": 0
+  },
+  "app/buy/page.tsx": {
+    "alphaText": 9,
+    "microText": 5,
+    "nanoText": 0
+  },
+  "app/compare/page.tsx": {
+    "alphaText": 5,
+    "microText": 3,
+    "nanoText": 0
+  },
+  "app/error.tsx": {
+    "alphaText": 2,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "app/privacy/page.tsx": {
+    "alphaText": 6,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "app/terms/page.tsx": {
+    "alphaText": 2,
+    "microText": 0,
+    "nanoText": 0
+  }
+}

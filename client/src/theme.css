@@ -196,7 +196,14 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .kicker::before { content: ""; width: 44px; height: 2px; background: currentColor; }
 
 /* Mono data stamp */
-.stamp { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+/* `.stamp` owns size AND colour together: 240 call sites had `text-ink/45`
+   baked into the markup, which measured 2.81:1 on the warm card. Muted-foreground
+   is 5.75 light / 6.33 dark, so the pair can never disagree again. */
+.stamp { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+/* `.stamp` owns its colour as well as its size: 240 call sites had `text-ink/45`
+   baked into the markup, which measured 2.81:1 on the warm card. Muted-foreground
+   is 5.75 light / 6.33 dark, so size and colour can never disagree again. */
+.stamp { color: var(--muted-foreground); }
 
 /* Big index numerals */
 .index-num { font-family: var(--font-display); font-variation-settings: "opsz" 144; font-weight: 300; line-height: 0.85; letter-spacing: -0.04em; }
@@ -315,6 +322,13 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    is invalid at computed-value time and the property silently falls back to
    the INHERITED colour — which is the exact failure mode being fixed here. */
 .clay-fill, .night-fill { color: var(--cream, #fff8ee); }
+/* Hover fills need the same guarantee. A cream label on `hover:bg-brick` is the
+   same 3.31:1 dark-theme failure as the static case, and `hover:clay-fill` is
+   not a valid utility (these are component classes, not Tailwind utilities) —
+   so hover-only clay surfaces carry `clay-fill` and get the label from here. */
+.clay-fill:hover, .clay-fill:focus-visible { color: var(--cream, #fff8ee); }
+.dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 92%, #000); }
+
 .paper-fill { color: var(--ink, #241c18); }
 
 .dark .clay-fill { background: var(--brick-deep); }
@@ -448,6 +462,119 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .desk-kpi-primary { min-height: 270px; }
   .desk-kpi { min-height: 142px; }
 }
+
+/* ---------- Facet surface (filter rebuild) ----------
+   Selection is a SAND FILL + BRICK EDGE + CHECK, not a solid clay field with a
+   cream label. Why: `.dark .clay-fill` deepens the clay surface, but a raw
+   `bg-brick` chip does not get that treatment — so the same chip is 5.69:1 in
+   light and 3.31:1 in dark, and the fix for one breaks the other. A fill+edge
+   pattern is legible in every theme, needs no label to inherit anything, and
+   reads as "selected" without relying on a colour jump.
+   Type sizes are declared HERE (layered, no `!important`): the previous
+   `!text-[9px]` / `!text-[10px]` call-site overrides existed only because
+   `.stamp` and `.kicker` sat in an unlayered block. They must not come back —
+   `client/src/lib/ui/design-token-discipline.test.ts` fails the build on them. */
+@layer components {
+  .facet-group + .facet-group { border-top: 1px solid var(--rule-soft, rgb(17 24 39 / 0.1)); }
+  .facet-group { padding-block: 18px; }
+  .facet-group:first-child { padding-top: 4px; }
+  .facet-group-title { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+  .facet-option {
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
+    padding: 9px 12px; border-radius: 0.625rem; text-align: left;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
+    border: 1px solid var(--rule, rgb(17 24 39 / 0.14)); background: transparent; color: var(--ink);
+    transition: background var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease;
+  }
+  .facet-option:hover:not([aria-disabled="true"]) { border-color: var(--brick); color: var(--brick); }
+  .facet-option[aria-pressed="true"] { background: var(--sand); border-color: var(--brick); color: var(--ink); }
+  /* Disabled, never removed: an option that resolves to zero still has to be
+     visible, otherwise the filter looks broken instead of the inventory scarce.
+     `--ink-3` resolves warm in both themes; no opacity is involved, so the
+     light and dark ladders cannot diverge the way `text-ink/45` did. */
+  .facet-option[aria-disabled="true"] { color: var(--muted-foreground); border-style: dashed; cursor: not-allowed; }
+  .facet-count { margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.85; }
+  .facet-hint { font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+  .facet-field {
+    width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 0.625rem;
+    border: 1px solid var(--input, rgb(17 24 39 / 0.16)); background: var(--card); color: var(--foreground);
+    font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .facet-field:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  /* Histogram bars are layout-safe at zero height: a flex column with a
+     min-height floor, so an empty bucket still shows the axis. */
+  .facet-histogram { display: flex; align-items: flex-end; gap: 2px; height: 56px; }
+  .facet-histogram-bar { flex: 1 1 0; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--sand); }
+  .facet-histogram-bar[data-inrange="true"] { background: color-mix(in srgb, var(--brick) 34%, var(--sand)); }
+  .facet-link {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--facet-link);
+    min-height: 44px;
+    padding-inline: 8px;
+    border-radius: 8px;
+    text-underline-offset: 4px;
+  }
+  .facet-link:hover { text-decoration: underline; }
+  .facet-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--facet-border);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+  }
+  .facet-control:hover { border-color: var(--facet-link); color: var(--facet-link); }
+  .facet-control[aria-pressed="true"] { border-color: var(--brick); background: var(--sand); color: var(--ink); }
+  .facet-applied {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 10px 6px 12px;
+    border-radius: 999px; border: 1px solid var(--brick); background: var(--sand);
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; color: var(--ink);
+  }
+  /* Warm ink ramp for secondary text. Defined once so a surface (consumer vs
+     desk) can retarget it later without touching a call site — which is exactly
+     what the opacity ladder (`text-ink/60`) could not do: it fails at 45% in
+     light (2.81:1) while passing at the same number in dark (3.73:1). */
+  .ink-2 { color: var(--ink-2, #51453d); }
+  .ink-3 { color: var(--ink-3, #6e6058); }
+}
+
+:root {
+  --ink-2: #51453d;
+  --ink-3: #6e6058;
+  --rule: rgba(17, 24, 39, 0.14);
+  --rule-soft: rgba(17, 24, 39, 0.1);
+  --facet-link: var(--brick);
+  --facet-border: rgba(17, 24, 39, 0.18);
+}
+/* --brick alone is 4.16:1 on the dark card — fine for a 26px display price,
+   short for a 12px mono label, and the theme cannot have two answers for one
+   usage. The action colour is therefore split: `--facet-link` lightens to
+   5.31:1 where the text is small, while large display numerals keep --brick. */
+.dark {
+  --ink-2: #c9b8ab;
+  --ink-3: #a9998d;
+  --rule: rgba(226, 232, 240, 0.16);
+  --rule-soft: rgba(226, 232, 240, 0.1);
+  --facet-link: color-mix(in srgb, var(--brick) 82%, #fff);
+  --facet-border: rgba(226, 232, 240, 0.2);
+}
+
+/* Dark `--muted-foreground` was slate blue #94a3b8 — an unretouched shadcn
+   default on a warm brown palette. Warm it so disabled text matches its
+   neighbours instead of reading as a foreign grey. Contrast on the dark card
+   (#33251f): 7.12:1. */
+.dark { --muted-foreground: #b7a79b; }
 
 @media (prefers-reduced-motion: reduce) {
   .desk-kpi, .desk-capability { transition: none; }
