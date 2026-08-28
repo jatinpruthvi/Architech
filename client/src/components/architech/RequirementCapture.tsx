@@ -114,7 +114,7 @@ export default function RequirementCapture({ compact = false }: Props) {
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-trust text-cream"><Check size={23} /></div>
                 <h3 className="display mt-6 text-4xl">Brief received.</h3>
                 <p className="mt-3 max-w-lg text-sm leading-7 text-ink/65">We have recorded your requirement with masked contact details. A verified Architech partner can follow up after review.</p>
-                <button type="button" onClick={() => setOpen(false)} className="mt-7 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Close</button>
+                <button type="button" onClick={() => setOpen(false)} className="night-fill mt-7 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Close</button>
               </div>
             ) : (
               <form onSubmit={submit} className="grid gap-7 p-5 md:grid-cols-2 md:p-8">
@@ -147,7 +147,7 @@ export default function RequirementCapture({ compact = false }: Props) {
                 <label className="stamp !text-[10px] font-semibold text-ink/60">Mobile number<input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="+91 00000 00000" inputMode="tel" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" /></label>
                 <label className="flex gap-3 text-xs leading-5 text-ink/60 md:col-span-2"><input type="checkbox" required className="mt-1 h-4 w-4 accent-[#b8472e]" defaultChecked />I agree that Architech may contact me about this requirement. Contact is masked by default and can be revoked.</label>
                 {errors.length > 0 && <p role="alert" className="border border-brick/30 bg-brick/5 p-3 text-sm text-brick md:col-span-2">{errors.join(" ")}</p>}
-                <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"><p className="stamp !text-[9px] text-ink/50">No payment. No public phone number. Demo routing until production partners are connected.</p><button type="submit" disabled={status === "submitting"} className="bg-brick px-6 py-3 stamp !text-[11px] font-semibold text-cream disabled:opacity-60">{status === "submitting" ? "Saving…" : "Send my requirement"}</button></div>
+                <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"><p className="stamp !text-[9px] text-ink/50">No payment. No public phone number. Demo routing until production partners are connected.</p><button type="submit" disabled={status === "submitting"} className="clay-fill btn-solid bg-brick px-6 py-3 stamp !text-[11px] font-semibold text-cream">{status === "submitting" ? "Saving…" : "Send my requirement"}</button></div>
               </form>
             )}
           </section>

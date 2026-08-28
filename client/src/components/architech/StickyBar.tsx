@@ -37,7 +37,7 @@ export function StickyBar({ property, saved, onSave, onAsk }: { property: Proper
           >
             <Heart size={17} fill={saved ? "currentColor" : "none"} />
           </button>
-          <button onClick={onAsk} className="btn-sweep touch-44 inline-flex items-center gap-2 rounded-xl bg-brick px-5 py-3 stamp !text-[11px] font-semibold text-cream">
+          <button onClick={onAsk} className="clay-fill btn-sweep touch-44 inline-flex items-center gap-2 rounded-xl bg-brick px-5 py-3 stamp !text-[11px] font-semibold text-cream">
             <MessageCircle size={14} /> {t.listing.stickyBar.ask}
           </button>
         </div>

@@ -62,7 +62,7 @@ export default function SavedSearches() {
             <BellRing size={28} className="mx-auto text-ink/40" />
             <p className="mt-4 font-display text-2xl font-medium">No saved searches yet</p>
             <p className="mx-auto mt-2 max-w-[360px] text-sm leading-6 text-ink/60">Run a search, then tap “Save this search” — it will wait here and alert you when a matching home arrives.</p>
-            <Link href="/search" className="btn-sweep motion-press mt-7 inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Search homes <Search size={15} /></Link>
+            <Link href="/search" className="clay-fill btn-sweep motion-press mt-7 inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Search homes <Search size={15} /></Link>
           </div>
         )}
 
@@ -78,7 +78,7 @@ export default function SavedSearches() {
                   <p className="stamp mt-1 !text-[10px] text-ink/55">Updated {new Date(saved.updatedAt).toLocaleDateString("en-IN")}{saved.notify ? " · Notify on" : ""}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Link href={savedSearchRunUrl(saved)} className="btn-sweep touch-44 inline-flex items-center gap-2 bg-brick px-5 py-3 stamp !text-[11px] font-semibold text-cream">Run <Search size={13} /></Link>
+                  <Link href={savedSearchRunUrl(saved)} className="clay-fill btn-sweep touch-44 inline-flex items-center gap-2 bg-brick px-5 py-3 stamp !text-[11px] font-semibold text-cream">Run <Search size={13} /></Link>
                   <button onClick={() => void remove(saved.id)} aria-label={`Delete saved search ${saved.query || "all homes"}`} className="touch-44 grid h-11 w-11 place-items-center border border-ink/20 text-ink/60 hover:border-brick hover:text-brick"><Trash2 size={15} /></button>
                 </div>
               </article>

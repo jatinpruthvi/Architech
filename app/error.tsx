@@ -37,7 +37,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           The page couldn&apos;t be rendered just now. You can retry, or head back to a page that works.
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-4">
-          <button onClick={reset} className="btn-sweep touch-44 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream">Try again</button>
+          <button onClick={reset} className="clay-fill btn-sweep touch-44 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream">Try again</button>
           <Link href="/" className="touch-44 border border-ink/20 px-6 py-4 stamp !text-[12px] font-semibold text-ink/70 hover:border-brick hover:text-brick">Go home</Link>
         </div>
       </section>

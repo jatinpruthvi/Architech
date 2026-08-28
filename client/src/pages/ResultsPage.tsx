@@ -217,7 +217,7 @@ export default function ResultsPage() {
           {query && <button onClick={() => { const p = new URLSearchParams(searchStr); p.delete("q"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }} className="mt-3 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60 underline underline-offset-4 hover:text-brick">{t.search.clearSearch} “{query}” <X size={12} /></button>}
           <div className="mt-6 max-w-[560px]">
             <div className="relative">
-              <form onSubmit={(e) => { e.preventDefault(); runQuery(qInput); }} className="flex items-stretch border border-ink/20 bg-paper focus-within:border-brick" role="search" aria-label="Search homes">
+              <form onSubmit={(e) => { e.preventDefault(); runQuery(qInput); }} className="field-shell flex items-stretch border border-ink/20 bg-paper focus-within:border-brick" role="search" aria-label="Search homes">
                 <span className="grid w-12 place-items-center text-ink/55"><Search size={16} /></span>
                 <input
                   value={qInput}
@@ -228,7 +228,7 @@ export default function ResultsPage() {
                   placeholder={t.hero.placeholderBuy}
                   aria-label={t.search.kicker}
                 />
-                <button type="submit" className="btn-sweep touch-44 m-1.5 bg-brick px-5 stamp !text-[11px] font-semibold text-cream">{t.hero.search}</button>
+                <button type="submit" className="clay-fill btn-sweep touch-44 m-1.5 bg-brick px-5 stamp !text-[11px] font-semibold text-cream">{t.hero.search}</button>
               </form>
               {typedPreview && <p className="mt-2 stamp !text-[10px] text-brick">Reads as: {typedPreview}</p>}
               {qFocused && qSuggestions.length > 0 && (
@@ -308,7 +308,7 @@ export default function ResultsPage() {
                     <FilterChips active={active} onToggle={toggleFilter} vertical />
                     {active.length > 0 && <button onClick={clearFilters} className="touch-44 mt-3 w-full border border-ink/20 py-3 stamp !text-[11px] font-semibold text-ink/70">{t.search.clearAll}</button>}
                     <DrawerClose asChild>
-                      <button className="touch-44 mt-4 w-full bg-night py-3.5 stamp !text-[12px] font-semibold text-cream">{t.search.showHomes} · {results.length}</button>
+                      <button className="night-fill touch-44 mt-4 w-full bg-night py-3.5 stamp !text-[12px] font-semibold text-cream">{t.search.showHomes} · {results.length}</button>
                     </DrawerClose>
                   </div>
                 </DrawerContent>
@@ -414,7 +414,7 @@ export default function ResultsPage() {
                   ))}
                 </div>
                 <div className="relative mt-7 flex flex-col gap-3 sm:flex-row">
-                  <button onClick={() => void saveSearch()} disabled={savingSearch} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">{savingSearch ? "…" : t.search.saveSearch}</button>
+                  <button onClick={() => void saveSearch()} disabled={savingSearch} className="clay-fill btn-solid touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream disabled:cursor-wait">{savingSearch ? "…" : t.search.saveSearch}</button>
                   <Link href="/guide" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-brick">{t.search.readGuides} <ArrowUpRight size={13} /></Link>
                   <Link href="/requirements/" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-ink/70">Tell us what you need <ArrowUpRight size={13} /></Link>
                 </div>
@@ -471,7 +471,7 @@ export default function ResultsPage() {
               <p className="mt-5 text-sm leading-7 text-ink/65">{selectedProperty.note}</p>
               <p className="mt-4 border-l-2 border-brick/50 pl-3 text-xs leading-5 text-ink/60"><span className="font-semibold text-ink/80">Amenities.</span> {selectedProperty.details.amenities?.join(" · ") || "Not specified"} · {labelForFurnishing(selectedProperty.details.furnishing)} · {labelForFacing(selectedProperty.details.facing)}</p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Link href={`/listing/${selectedProperty.id}`} onClick={() => setDrawerOpen(false)} className="btn-sweep touch-44 inline-flex flex-1 items-center justify-center bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Full details <ArrowUpRight size={13} className="ml-1" /></Link>
+                <Link href={`/listing/${selectedProperty.id}`} onClick={() => setDrawerOpen(false)} className="night-fill btn-sweep touch-44 inline-flex flex-1 items-center justify-center bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Full details <ArrowUpRight size={13} className="ml-1" /></Link>
                 <Link href={`/requirements/?listing=${encodeURIComponent(selectedProperty.id)}`} onClick={() => setDrawerOpen(false)} className="touch-44 inline-flex flex-1 items-center justify-center border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-brick hover:border-brick">Schedule a visit</Link>
               </div>
             </div>

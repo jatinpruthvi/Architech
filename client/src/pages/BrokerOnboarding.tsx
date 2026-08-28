@@ -36,7 +36,7 @@ export default function BrokerOnboarding() {
               <p className="mt-2 text-sm leading-6 text-ink/60">{body as string}</p>
             </article>
           ))}
-          <Link href="/broker/listings/new" className="btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Create listing draft <ArrowUpRight size={15} /></Link>
+          <Link href="/broker/listings/new" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Create listing draft <ArrowUpRight size={15} /></Link>
         </div>
       </section>
     </div>

@@ -61,7 +61,7 @@ export default function GuideArticle({ guide }: { guide: Guide }) {
               </div>
             ))}
           </div>
-          <Link href="/search" className="btn-sweep motion-press mt-7 inline-flex items-center gap-2 bg-brick px-5 py-4 stamp !text-[12px] font-semibold text-cream">Use this in search <ArrowUpRight size={14} /></Link>
+          <Link href="/search" className="clay-fill btn-sweep motion-press mt-7 inline-flex items-center gap-2 bg-brick px-5 py-4 stamp !text-[12px] font-semibold text-cream">Use this in search <ArrowUpRight size={14} /></Link>
         </aside>
       </section>
     </div>

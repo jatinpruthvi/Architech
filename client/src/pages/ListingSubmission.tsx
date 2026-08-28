@@ -225,7 +225,7 @@ export default function ListingSubmission() {
         <div className="listing-packet border border-ink/12 bg-card p-7">
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink/12 pb-5"><div><p className="kicker text-brick !text-[10px]">Draft fields</p><p className="mt-2 text-sm text-ink/55">Packet 01 · editorial facts and source context</p></div><span className="stamp text-ink/45">PRIVATE UNTIL REVIEW</span></div>
           <div className="mt-6 grid gap-5">
-            <div className="listing-field-note flex items-center gap-2 border-l-2 border-brick/50 bg-sand/40 px-3 py-2 stamp text-[10px] text-ink/55"><FileCheck2 size={13} className="text-brick" /> Every value becomes part of the reviewable source packet.</div>
+            <div className="listing-field-note flex items-center gap-2 border-l-2 border-brick/50 bg-sand/40 px-3 py-2 stamp !text-[10px] text-ink/55"><FileCheck2 size={13} className="text-brick" /> Every value becomes part of the reviewable source packet.</div>
             <div className="border border-ink/12 bg-paper/45 p-4" aria-live="polite">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div><p className="kicker text-brick !text-[10px]">Packet readiness</p><p className="mt-1 text-sm text-ink/60">Complete the required facts before creating a draft.</p></div>
@@ -301,7 +301,7 @@ export default function ListingSubmission() {
                   <label className="stamp !text-[10px] text-ink/60">Image or video<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" onChange={(e) => onMediaFile(e.target.files?.[0] ?? null)} className="mt-1.5 block w-full border border-ink/20 bg-paper/35 px-3 py-2 text-sm file:mr-3 file:border-0 file:bg-night file:px-3 file:py-2 file:text-xs file:text-cream" /></label>
                   <label className="stamp !text-[10px] text-ink/60">Rights evidence<input value={mediaLicenseEvidence} onChange={(e) => setMediaLicenseEvidence(e.target.value)} className={inputCls} placeholder="Owner authorization or partner agreement reference" /></label>
                   <label className="flex items-start gap-3 text-xs leading-5 text-ink/65"><input type="checkbox" checked={mediaRightsConfirmed} onChange={(e) => setMediaRightsConfirmed(e.target.checked)} className="mt-1 accent-[var(--brick)]" /><span>I confirm I own or am authorised to publish this specific file.</span></label>
-                  <button type="button" onClick={() => void prepareMediaUpload()} disabled={!draftId || !mediaFile || mediaSubmitting} className="btn-sweep touch-44 w-fit bg-night px-4 py-3 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-45">{mediaSubmitting ? "Preparing…" : "Sign & attach media"}</button>
+                  <button type="button" onClick={() => void prepareMediaUpload()} disabled={!draftId || !mediaFile || mediaSubmitting} className="night-fill btn-sweep btn-solid touch-44 w-fit bg-night px-4 py-3 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed">{mediaSubmitting ? "Preparing…" : "Sign & attach media"}</button>
                 </div>
               </div>
               {mediaUpload && <div className="mt-4 border-l-2 border-trust bg-trust/10 p-3 text-xs leading-5 text-ink/70"><div className="flex flex-wrap items-center justify-between gap-3"><span><strong className="font-semibold text-trust">Pending moderation.</strong> Rights evidence recorded; EXIF policy: {mediaUpload.exifPolicy}.</span><button type="button" onClick={() => void detachMedia()} className="stamp !text-[10px] font-semibold text-brick underline underline-offset-4">Detach</button></div><p className="mt-1 text-ink/55">Packet ID {mediaUpload.id} · {mediaUpload.licenseEvidence}</p></div>}
@@ -315,11 +315,11 @@ export default function ListingSubmission() {
           )}
 
           <div className="mt-7 flex flex-wrap gap-4">
-            <button onClick={() => void onDraft()} disabled={submitting} className="btn-sweep touch-44 bg-night px-6 py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">
+            <button onClick={() => void onDraft()} disabled={submitting} className="night-fill btn-sweep btn-solid touch-44 bg-night px-6 py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">
               <span className="flex items-center gap-2">{submitting ? <Loader2 size={14} className="animate-spin" /> : <FileCheck2 size={14} />} Create draft</span>
             </button>
             {draftId && !submitted && (
-              <button onClick={() => void submitForReview()} disabled={submitting} className="btn-sweep touch-44 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">
+              <button onClick={() => void submitForReview()} disabled={submitting} className="clay-fill btn-sweep btn-solid touch-44 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">
                 <span className="flex items-center gap-2">{submitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Submit for review</span>
               </button>
             )}

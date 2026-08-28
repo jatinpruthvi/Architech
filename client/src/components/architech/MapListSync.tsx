@@ -137,7 +137,7 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
 
       <button
         onClick={() => toast(copy.searchingArea, { description: copy.searchingAreaDescription })}
-        className="touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp !text-[11px] font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
+        className="night-fill touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp !text-[11px] font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
         <Crosshair size={14} className="text-ember" /> {copy.searchArea}
       </button>
 

@@ -57,7 +57,7 @@ export default function CompareTray() {
           <button onClick={clear} className="hidden px-2 stamp !text-[10px] text-cream/60 underline underline-offset-4 hover:text-ember sm:block">Clear</button>
           <Drawer>
             <DrawerTrigger asChild>
-              <button disabled={homes.length < 2} className="touch-44 bg-brick px-5 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-40">Compare {homes.length >= 2 ? `${homes.length} homes` : ""}</button>
+              <button disabled={homes.length < 2} className="clay-fill btn-solid touch-44 bg-brick px-5 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed">Compare {homes.length >= 2 ? `${homes.length} homes` : ""}</button>
             </DrawerTrigger>
             <DrawerContent className="border-t-2 border-brick bg-paper text-ink">
               <DrawerHeader className="text-left">
