@@ -91,7 +91,7 @@ export default async function CityHub({ params }: { params: Promise<{ city: stri
               <p className="hidden text-sm text-ink/55 md:block">{place.note}</p>
               <div className="flex items-center gap-4">
                 <span className="stamp !text-[11px] text-ink/60">{place.homes} homes</span>
-                <span className="grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300 group-hover:border-brick group-hover:bg-brick group-hover:text-cream"><ArrowUpRight size={16} /></span>
+                <span className="clay-fill group-hover:border-brick group-hover:bg-brick grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300"><ArrowUpRight size={16} /></span>
               </div>
             </Link>
           ))}
