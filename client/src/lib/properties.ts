@@ -9,6 +9,10 @@ import { generatedListings } from "./property-generator";
 export type Property = {
   id: string; title: string; locality: string; localitySlug: string; city: string; citySlug: string; price: string; priceNum: number; pricePerSqft: string;
   meta: string; bhk: number; area: string; areaNum: number; image: string; badge: string; status: string; note: string;
+  /** Additional real photographs of THIS listing (`image` is the primary).
+      Optional: a listing with one photo simply omits it, and the UI must then
+      never substitute an unrelated image for it. */
+  gallery?: string[];
   propertyType: PropertyTypeCode; availability: AvailabilityCode;
   transaction: "buy" | "rent";
   category: "residential" | "commercial" | "pg" | "plot" | "land" | "auction";

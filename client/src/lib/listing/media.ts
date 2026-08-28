@@ -1,8 +1,8 @@
 /* Listing media / gallery slide model (P1-MEDIA-002).
    Pure, server-safe helper that composes a curated gallery for a listing from
-   its primary image plus intentional editorial shots (facade, neighbourhood,
-   architectural detail). Deterministic so the gallery, thumbnail rail, counter,
-   and JSON-LD all agree. Never invents media that doesn't exist. */
+   its own photographs, plus intentional editorial context shots (facade,
+   neighbourhood, architectural detail). Deterministic so the gallery, thumbnail
+   rail, counter, and JSON-LD all agree. Never invents media that doesn't exist. */
 
 import type { Property } from "@/lib/repositories";
 
@@ -12,23 +12,42 @@ export type ListingSlide = {
   label: string;
 };
 
+/* Shared context photography. These are NOT photographs of the listed home —
+   they are city/context shots, so they are always surfaced with an explicit
+   label and never used as a stand-in for a photo of the property itself. */
 const EDITORIAL_SHOTS = [
   { name: "brick-arch", label: "Facade & materiality" },
   { name: "locality-street", label: "Neighbourhood" },
   { name: "stepwell", label: "Architecture in context" },
 ] as const;
 
-/** Compose the gallery slides for a listing: the primary image first, then
-    shared editorial context shots, each with a meaningful label. */
+/** The listing's own photographs, primary first, de-duplicated and in source
+    order. A listing with a single photograph yields exactly one entry. */
+export function listingPhotos(property: Pick<Property, "image" | "gallery">): string[] {
+  const photos: string[] = [];
+  for (const name of [property.image, ...(property.gallery ?? [])]) {
+    if (!name || photos.includes(name)) continue;
+    photos.push(name);
+  }
+  return photos;
+}
+
+/** Compose the gallery slides for a listing: every real photograph of that
+    listing first (primary at the head), then shared editorial context shots,
+    each with a meaningful label. */
 export function listingSlides(property: Property): ListingSlide[] {
-  const slides: ListingSlide[] = [
-    { name: property.image, alt: `${property.title}, ${property.locality}, ${property.city}`, label: "Primary view" },
-  ];
+  const photos = listingPhotos(property);
+  const place = `${property.locality}, ${property.city}`;
+  const slides: ListingSlide[] = photos.map((name, index) => ({
+    name,
+    alt: index === 0 ? `${property.title}, ${place}` : `${property.title}, ${place} — view ${index + 1}`,
+    label: index === 0 ? "Primary view" : `View ${index + 1}`,
+  }));
   for (const shot of EDITORIAL_SHOTS) {
-    if (shot.name === property.image) continue;
+    if (slides.some((slide) => slide.name === shot.name)) continue;
     slides.push({
       name: shot.name,
-      alt: `${shot.label} near ${property.locality}, ${property.city}`,
+      alt: `${shot.label} near ${place}`,
       label: shot.label,
     });
   }
@@ -45,9 +64,10 @@ export function slideLabels(slides: ListingSlide[]): string[] {
   return slides.map((slide) => slide.label);
 }
 
-/** A deterministic secondary image for a property card's restrained hover
-    cross-fade: always a distinct editorial asset, never the primary image. */
-export function secondaryImage(property: Pick<Property, "image">): string {
-  const candidates = ["brick-arch", "locality-street", "stepwell"] as const;
-  return candidates.find((name) => name !== property.image) ?? "brick-arch";
+/** The one image a property card may cross-fade to on hover: a second real
+    photograph OF THAT LISTING. Returns null when the listing only has one
+    photo — a card must never swap in an unrelated stock image and pass it off
+    as the home being advertised. */
+export function secondaryImage(property: Pick<Property, "image" | "gallery">): string | null {
+  return listingPhotos(property)[1] ?? null;
 }
