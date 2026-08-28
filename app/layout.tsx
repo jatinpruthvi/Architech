@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import Script from "next/script";
 import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
@@ -55,18 +54,15 @@ const websiteJsonLd = {
   ],
 };
 
-/* Pre-paint theme script: applies stored/system dark class before first paint. */
-const themeScript = `try{var t=localStorage.getItem("architech.theme");if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`;
+/* Theme flash prevention lives in ThemeProvider (a pre-paint layout effect),
+   not in an inline <script> here: React dev builds warn on inline scripts
+   rendered through the component tree, and next/script's inline queue is
+   still such a script. */
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        {/* beforeInteractive: injected into the document HTML by Next and run
-            before first paint, but never rendered through the client React
-            tree — a plain inline <script> here makes React dev builds log
-            "Encountered a script tag while rendering React component". */}
-        <Script id="theme-pre-paint" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
