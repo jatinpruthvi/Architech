@@ -36,7 +36,7 @@ export default function Collections() {
           <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-t-full bg-brick/10 text-brick"><Plus size={17} /></span><div><p className="kicker text-brick">New collection</p><h2 className="mt-1 font-display text-2xl">Give the search a shape.</h2></div></div>
           <label className="mt-7 block"><span className="stamp text-ink/60">Collection name</span><input value={name} onChange={(event) => setName(event.target.value)} className="mt-2 min-h-11 w-full border border-ink/15 bg-paper px-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brick/20" placeholder="Saturday site visits" /></label>
           <label className="mt-4 block"><span className="stamp text-ink/60">Optional note</span><textarea value={note} onChange={(event) => setNote(event.target.value)} className="mt-2 min-h-24 w-full resize-y border border-ink/15 bg-paper px-3 py-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brick/20" placeholder="What should I compare here?" /></label>
-          <button type="submit" className="btn-sweep motion-press mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 bg-brick px-4 stamp !text-[11px] font-semibold text-cream">Create collection <ArrowUpRight size={14} /></button>
+          <button type="submit" className="clay-fill btn-sweep motion-press mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 bg-brick px-4 stamp !text-[11px] font-semibold text-cream">Create collection <ArrowUpRight size={14} /></button>
           <p className="mt-4 text-xs leading-5 text-ink/50">Collections are private, local, and excluded from search indexing.</p>
         </form>
         <div>

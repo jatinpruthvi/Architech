@@ -228,7 +228,7 @@ export default function ResultsPage() {
                   placeholder={t.hero.placeholderBuy}
                   aria-label={t.search.kicker}
                 />
-                <button type="submit" className="btn-sweep touch-44 m-1.5 bg-brick px-5 stamp !text-[11px] font-semibold text-cream">{t.hero.search}</button>
+                <button type="submit" className="clay-fill btn-sweep touch-44 m-1.5 bg-brick px-5 stamp !text-[11px] font-semibold text-cream">{t.hero.search}</button>
               </form>
               {typedPreview && <p className="mt-2 stamp !text-[10px] text-brick">Reads as: {typedPreview}</p>}
               {qFocused && qSuggestions.length > 0 && (
@@ -414,7 +414,7 @@ export default function ResultsPage() {
                   ))}
                 </div>
                 <div className="relative mt-7 flex flex-col gap-3 sm:flex-row">
-                  <button onClick={() => void saveSearch()} disabled={savingSearch} className="touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">{savingSearch ? "…" : t.search.saveSearch}</button>
+                  <button onClick={() => void saveSearch()} disabled={savingSearch} className="clay-fill btn-solid touch-44 bg-brick px-6 stamp !text-[11px] font-semibold text-cream disabled:cursor-wait">{savingSearch ? "…" : t.search.saveSearch}</button>
                   <Link href="/guide" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-brick">{t.search.readGuides} <ArrowUpRight size={13} /></Link>
                   <Link href="/requirements/" className="touch-44 inline-flex items-center gap-1.5 px-4 py-3 stamp !text-[11px] font-semibold text-ink/70">Tell us what you need <ArrowUpRight size={13} /></Link>
                 </div>

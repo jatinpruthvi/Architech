@@ -23,7 +23,7 @@ export default function Saved() {
           <h1 className="display mt-8 max-w-[560px] text-[clamp(34px,4.6vw,60px)]">{t.saved.emptyTitle1} <em className="text-brick">{t.saved.emptyTitleEm}</em>.</h1>
           <p className="mt-5 max-w-[400px] text-[15px] leading-7 text-ink/60">{t.saved.emptyCopy}</p>
           {t.common.translationNote && <p className="stamp mt-4 max-w-[420px] !text-[10px] text-ink/55">{t.common.translationNote}</p>}
-          <Link href="/search" className="btn-sweep motion-press mt-10 inline-flex items-center gap-2 bg-brick px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.saved.emptyCta} <ArrowUpRight size={15} /></Link>
+          <Link href="/search" className="clay-fill btn-sweep motion-press mt-10 inline-flex items-center gap-2 bg-brick px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.saved.emptyCta} <ArrowUpRight size={15} /></Link>
         </section>
       </div>
     );

@@ -26,7 +26,7 @@ export default function ListProperty() {
           <h1 className="display mt-6 max-w-[860px] text-[clamp(40px,6vw,84px)]">{t.list.title} <em className="text-brick">{t.list.titleEm}</em>{t.list.titleSuffix}</h1>
           <p className="mt-7 max-w-[600px] text-base leading-8 text-ink/65 md:text-lg">{t.list.copy}</p>
           <div className="mt-10 flex flex-wrap gap-4">
-            <Link href="/broker/listings/new" className="btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
+            <Link href="/broker/listings/new" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
             <Link href="/guide/" className="motion-press inline-flex items-center gap-2 border border-ink/25 px-8 py-5 stamp !text-[12px] font-semibold text-ink/75 transition-colors hover:border-brick hover:text-brick">{t.nav.notes} <ArrowUpRight size={16} /></Link>
           </div>
         </div>

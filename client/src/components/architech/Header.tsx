@@ -67,10 +67,10 @@ export default function Header() {
           </button>
           <Link href="/saved/" className={`relative hidden items-center gap-2 stamp !text-[12px] font-medium md:inline-flex ${onDark ? "text-cream/85" : "text-ink/75"} link-rail`}>
             <Bookmark size={14} strokeWidth={1.8} /> {t.nav.saved}
-            {saved.length > 0 && <span className="grid h-4.5 min-w-[18px] place-items-center rounded-full bg-brick px-1 text-[10px] font-bold text-cream">{saved.length}</span>}
+            {saved.length > 0 && <span className="clay-fill grid h-4.5 min-w-[18px] place-items-center rounded-full bg-brick px-1 text-[10px] font-bold text-cream">{saved.length}</span>}
           </Link>
           <RequirementCapture compact />
-          <Link href="/search/" className="btn-sweep motion-press hidden items-center gap-2 bg-brick px-5 py-3 stamp !text-[12px] font-semibold text-cream md:inline-flex"><Search size={14} /> {t.nav.start}</Link>
+          <Link href="/search/" className="clay-fill btn-sweep motion-press hidden items-center gap-2 bg-brick px-5 py-3 stamp !text-[12px] font-semibold text-cream md:inline-flex"><Search size={14} /> {t.nav.start}</Link>
           <button className={`grid h-11 w-11 place-items-center lg:hidden ${onDark ? "text-cream" : "text-ink"}`} onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
             {open ? <X size={24} /> : <Menu size={24} />}
           </button>

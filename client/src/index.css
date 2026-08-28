@@ -163,7 +163,15 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .field-shell:focus-within { outline: 2px solid var(--field-focus, var(--brick)); outline-offset: 0; }
 }
 
-a { color: inherit; text-decoration: none; }
+/* Links inherit the surrounding colour BY DEFAULT, but must stay overridable.
+   Unlayered, this rule outranked every Tailwind utility (utilities live in
+   @layer utilities and any unlayered declaration wins), so `text-cream` on a
+   solid CTA link was silently dropped and the label inherited the section
+   colour — dark-on-dark buttons in the light theme. Keeping it in @layer base
+   preserves the default while letting text-* and underline utilities apply. */
+@layer base {
+  a { color: inherit; text-decoration: none; }
+}
 ::selection { background: var(--brick); color: var(--paper); }
 
 .container { width: 100%; max-width: 1320px; margin-inline: auto; padding-inline: clamp(20px, 4vw, 48px); }
@@ -290,6 +298,34 @@ a { color: inherit; text-decoration: none; }
 .btn-sweep { position: relative; overflow: hidden; isolation: isolate; border-radius: 0.875rem; }
 .btn-sweep::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--brick-deep); transform: translateY(101%); transition: transform 360ms cubic-bezier(0.23, 1, 0.32, 1); }
 .btn-sweep:hover::before { transform: translateY(0); }
+
+/* Solid clay fills (primary actions, count badges).
+   The dark-theme clay #d36a48 is tuned for TEXT legibility on a dark canvas
+   (4.8:1 as a label) but as a *surface* it leaves the cream label at only
+   3.31:1 — under AA for the 11-12px bold stamps these controls use. Deepen the
+   surface in dark mode only (5.06:1) rather than lightening the shared --brick
+   token, which would break clay text elsewhere. Light theme already passes at
+   5.69:1 and is left untouched. */
+.dark .clay-fill { background: var(--brick-deep); }
+.dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }
+.dark .clay-fill.btn-sweep::before { background: color-mix(in srgb, var(--brick-deep) 74%, #000); }
+
+/* Disabled solid actions read as an inert chip, not a ghost. Fading a dark
+   button to 45% on the light plaster canvas turned it into a washed pink
+   rectangle whose label was unreadable; the label must stay legible while the
+   surface clearly says "not yet". Theme-aware through --ink. */
+.btn-solid:disabled,
+.btn-solid[aria-disabled="true"] {
+  opacity: 1;
+  background: color-mix(in srgb, var(--ink) 13%, transparent);
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-solid:disabled::before,
+.btn-solid[aria-disabled="true"]::before,
+.btn-solid:disabled::after,
+.btn-solid[aria-disabled="true"]::after { display: none; }
 
 /* logo mark: offset architectural planes forming an A with a clay doorway notch */
 .arch-mark { position: relative; overflow: hidden; background: var(--ink); box-shadow: inset 0 0 0 1px rgb(255 243 222 / 0.12); }

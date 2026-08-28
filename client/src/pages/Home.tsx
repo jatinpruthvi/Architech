@@ -231,7 +231,7 @@ function HeroSearch() {
           aria-label={`Search ${intentLabel} by locality, project, or BHK`} role="combobox" aria-expanded={focused && (queryLen > 0 || true)} aria-controls={focused ? "search-suggestions" : undefined}
           aria-activedescendant={focused && highlight >= 0 ? `sug-${highlight}` : undefined} aria-autocomplete="list" autoComplete="off"
         />
-        <button type="submit" className="shimmer-btn motion-press my-1.5 mr-1.5 ml-1 rounded-xl bg-brick px-6 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
+        <button type="submit" className="clay-fill shimmer-btn motion-press my-1.5 mr-1.5 ml-1 rounded-xl bg-brick px-6 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
 
       {/* Animated suggestions */}

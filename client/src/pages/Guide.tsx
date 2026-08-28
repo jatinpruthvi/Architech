@@ -51,7 +51,7 @@ export default function Guide() {
           <Reveal delay={200}>
             <div className="mt-14 flex flex-col items-start justify-between gap-6 border border-ink/12 bg-card p-8 md:flex-row md:items-center md:p-10">
               <p className="max-w-[520px] font-display text-2xl font-medium leading-snug tracking-[-0.015em]">Ready to put the method to work?</p>
-              <Link href="/search" className="btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Start exploring <ArrowUpRight size={15} /></Link>
+              <Link href="/search" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Start exploring <ArrowUpRight size={15} /></Link>
             </div>
           </Reveal>
         </div>

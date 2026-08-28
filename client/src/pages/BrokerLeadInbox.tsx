@@ -139,7 +139,7 @@ export default function BrokerLeadInbox() {
                     key={action}
                     onClick={() => void advance(lead.id, action)}
                     disabled={lead.status === action}
-                    className="btn-sweep touch-44 px-4 py-2 stamp !text-[10px] font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-50"
+                    className="btn-sweep btn-solid touch-44 px-4 py-2 stamp !text-[10px] font-semibold text-cream disabled:cursor-not-allowed"
                   >
                     <span className="flex items-center gap-2">
                       {action === "REPLIED" ? <MessageCircle size={12} /> : action === "CLOSED" ? <CheckCheck size={12} /> : null}

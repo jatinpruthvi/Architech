@@ -63,7 +63,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
         <Link href={`/listing/${property.id}`} aria-label={`View ${property.title}, ${property.price}`} className="block">
           <div className="img-hover relative h-24 bg-sand">
             <Pic name={property.image} alt={`${property.title}, ${property.locality}`} className="h-full w-full object-cover" sizes="160px" />
-            <span className="absolute bottom-2 left-2 rounded-full bg-brick px-2.5 py-1 font-display text-xs font-semibold text-cream shadow-sm">{property.price}</span>
+            <span className="clay-fill absolute bottom-2 left-2 rounded-full bg-brick px-2.5 py-1 font-display text-xs font-semibold text-cream shadow-sm">{property.price}</span>
           </div>
           <div className="flex items-center justify-between p-2.5">
             <p className="text-xs font-semibold text-ink/85">{property.locality} · {property.bhk} BHK</p>

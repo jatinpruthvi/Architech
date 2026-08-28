@@ -210,7 +210,7 @@ export default function CityPage({ localitySlug, citySlug = DEFAULT_CITY_SLUG }:
               <p className="font-display text-2xl font-medium tracking-[-0.015em]">{t.locality.trustTitlePrefix} {locality.name} {t.locality.trustTitleSuffix}</p>
               <p className="mt-2 max-w-[560px] text-sm leading-6 text-ink/60">{t.locality.trustCopy}</p>
             </div>
-            <Link href="/guide" className="btn-sweep motion-press inline-flex w-fit items-center gap-2 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream">{t.locality.verifyCta}</Link>
+            <Link href="/guide" className="clay-fill btn-sweep motion-press inline-flex w-fit items-center gap-2 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream">{t.locality.verifyCta}</Link>
           </div>
         </Reveal>
       </section>

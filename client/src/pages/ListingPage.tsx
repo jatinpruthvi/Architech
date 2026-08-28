@@ -79,7 +79,7 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
             <input required type="checkbox" className="mt-1 accent-[var(--brick)]" />
             <span>{t.listing.consentText}</span>
           </label>
-          <button type="submit" disabled={submitting} className="btn-sweep touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait disabled:opacity-60">{submitting ? t.listing.sending : t.listing.send}</button>
+          <button type="submit" disabled={submitting} className="btn-sweep btn-solid touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">{submitting ? t.listing.sending : t.listing.send}</button>
           <p className="stamp text-center !text-[9px] text-ink/60">{t.listing.noRealMessage}</p>
         </form>
       </DialogContent>
@@ -323,7 +323,7 @@ export default function ListingPage({ id }: { id: string }) {
             </div>
             <button
               onClick={() => setLeadOpen(true)}
-              className="btn-sweep motion-press mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-brick px-6 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep"
+              className="clay-fill btn-sweep motion-press mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-brick px-6 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep"
             >
               <MessageCircle size={16} /> {t.listing.ask}
             </button>
