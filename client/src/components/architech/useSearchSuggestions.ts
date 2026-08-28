@@ -16,7 +16,7 @@ export type SearchSuggestionsState = {
   error: string | null;
 };
 
-export function useSearchSuggestions(query: string): SearchSuggestionsState {
+export function useSearchSuggestions(query: string, citySlug?: string): SearchSuggestionsState {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,8 @@ export function useSearchSuggestions(query: string): SearchSuggestionsState {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/search/suggest?q=${encodeURIComponent(trimmed)}`, { signal: controller.signal });
+        const scope = citySlug && citySlug !== "all" ? `&city=${encodeURIComponent(citySlug)}` : "";
+        const response = await fetch(`/api/search/suggest/?q=${encodeURIComponent(trimmed)}${scope}`, { signal: controller.signal });
         if (!response.ok) throw new Error(`suggest ${response.status}`);
         const payload = await response.json();
         if (Array.isArray(payload.suggestions)) setSuggestions(payload.suggestions as SearchSuggestion[]);
@@ -54,7 +55,7 @@ export function useSearchSuggestions(query: string): SearchSuggestionsState {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query]);
+  }, [citySlug, query]);
 
   return { suggestions, loading, error };
 }

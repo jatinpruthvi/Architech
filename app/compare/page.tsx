@@ -7,8 +7,8 @@ import { getListings } from "@/lib/repositories";
 import { COMPARE_ROWS, selectComparableListings } from "@/lib/compare";
 
 export const metadata: Metadata = {
-  title: "Compare Ahmedabad homes | Architech",
-  description: "Compare selected Ahmedabad properties by price, area, availability, verification, and source evidence.",
+  title: "Compare homes across India | Architech",
+  description: "Compare selected properties by price, area, availability, verification, and source evidence.",
   robots: { index: false, follow: true },
 };
 
@@ -21,7 +21,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ i
       <div className="container pb-24">
         <Link href="/search/" className="stamp !text-[11px] font-semibold text-brick underline underline-offset-4">← Back to search</Link>
         <div className="mt-8 flex items-end justify-between gap-6 border-b border-ink/15 pb-8">
-          <div><p className="kicker text-brick">Shared shortlist · Ahmedabad</p><h1 className="display mt-3 text-[clamp(38px,6vw,76px)]">Decision dossier<span className="text-brick">.</span></h1><p className="mt-4 max-w-xl text-sm leading-7 text-ink/60">A source-aware comparison of {homes.length} selected {homes.length === 1 ? "home" : "homes"}. Prices and availability remain subject to the latest verified listing record.</p></div>
+          <div><p className="kicker text-brick">Shared shortlist</p><h1 className="display mt-3 text-[clamp(38px,6vw,76px)]">Decision dossier<span className="text-brick">.</span></h1><p className="mt-4 max-w-xl text-sm leading-7 text-ink/60">A source-aware comparison of {homes.length} selected {homes.length === 1 ? "home" : "homes"}. Prices and availability remain subject to the latest verified listing record.</p></div>
           <Scale className="hidden text-brick md:block" size={42} strokeWidth={1} aria-hidden="true" />
         </div>
         {homes.length < 2 ? (

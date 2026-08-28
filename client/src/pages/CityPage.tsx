@@ -1,6 +1,7 @@
 "use client";
-/* ARCHITECH — Locality authority page, parameterized: /buy/ahmedabad/:locality/
-   Real OSM coordinates & maps per locality; unknown slugs render 404. */
+/* ARCHITECH — Locality authority page, parameterized: /buy/:city/:locality/
+   Real OSM coordinates & maps per locality; unknown slugs render 404.
+   All city naming comes from the city registry, never a hardcoded city. */
 import { ArrowUpRight, Check, Clock3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import PropertyCard from "../components/architech/PropertyCard";
@@ -8,25 +9,29 @@ import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import LocalityIntel from "../components/architech/LocalityIntel";
 import useTitle from "../hooks/useTitle";
-import { getListings, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
+import { DEFAULT_CITY_SLUG, getCityBySlug, getListingsByCity, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
 import { compactInr } from "@/lib/realestate/price-trends";
 import { localityIntel, formatPsf } from "@/lib/realestate/locality-intel";
 import { localityTrustSummary } from "@/lib/trust/locality";
 import { useLang } from "@/contexts/LangContext";
+import { fillTokens } from "@/lib/i18n";
 
-export default function CityPage({ localitySlug }: { localitySlug: string }) {
-  const locality = getLocalityBySlug(localitySlug);
+export default function CityPage({ localitySlug, citySlug = DEFAULT_CITY_SLUG }: { localitySlug: string; citySlug?: string }) {
+  const locality = getLocalityBySlug(localitySlug, citySlug);
+  const city = getCityBySlug(locality?.citySlug ?? citySlug);
   const { t } = useLang();
-  useTitle(locality ? `${locality.name}, ${t.common.ahmedabad} — homes & locality context` : "Not found");
-  if (!locality) return null;
+  const cityLabel = city?.name ?? t.common.ahmedabad;
+  useTitle(locality ? `${locality.name}, ${cityLabel} — homes & locality context` : "Not found");
+  if (!locality || !city) return null;
 
   const isPaldi = locality.slug === "paldi";
-  const localHomes = getListingsByLocality(locality.slug);
-  const showcase = localHomes.length ? [...localHomes, ...getListings().filter((p) => p.localitySlug !== locality.slug)].slice(0, 4) : getListings();
-  const nearby = getLocalities().filter((l) => l.slug !== locality.slug).slice(0, 4);
+  const cityHomes = getListingsByCity(city.slug);
+  const localHomes = getListingsByLocality(locality.slug, city.slug);
+  const showcase = localHomes.length ? [...localHomes, ...cityHomes.filter((p) => p.localitySlug !== locality.slug)].slice(0, 4) : cityHomes.slice(0, 4);
+  const nearby = getLocalities(city.slug).filter((l) => l.slug !== locality.slug).slice(0, 4);
 
   const intel = localityIntel(locality.slug);
-  const trust = localityTrustSummary(locality.slug);
+  const trust = localityTrustSummary(locality.slug, city.slug);
   const newProjects = localHomes.filter(
     (p) => p.availability === "NEW_LAUNCH" || p.availability === "UNDER_CONSTRUCTION",
   );
@@ -40,17 +45,25 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
         <div className="container">
           <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
             <Link href="/" className="link-rail hover:text-brick">{t.locality.breadcrumbHome}</Link><span>/</span>
-            <Link href="/buy/ahmedabad/" className="link-rail hover:text-brick">{t.locality.breadcrumbCity}</Link><span>/</span>
+            <Link href={`/buy/${city.slug}/`} className="link-rail hover:text-brick">{fillTokens(t.locality.breadcrumbCity, { city: city.name })}</Link><span>/</span>
             <span className="text-ink/80">{locality.name}</span>
           </nav>
           <div className="mt-12 grid gap-12 md:grid-cols-[1.25fr_0.75fr] md:items-end">
             <div>
               <p className="kicker text-brick">{t.locality.kicker} · {locality.hindi}</p>
-              <h1 className="display mt-6 text-[clamp(44px,7vw,96px)]">{locality.name}, <em className="text-brick">{t.locality.titleCity}</em></h1>
+              <h1 className="display mt-6 text-[clamp(44px,7vw,96px)]">{locality.name}, <em className="text-brick">{city.name}</em></h1>
               <p className="mt-7 max-w-[560px] text-base leading-8 text-ink/65 md:text-lg">
                 {locality.note}. {t.locality.introSuffix}
               </p>
               <p className="stamp mt-5 !text-[10px] text-ink/60">{locality.coords} · © OpenStreetMap contributors</p>
+              {locality.pincodes.length > 0 && (
+                /* A locality can serve several PINs, so all of them are stated
+                   rather than picking one and implying it is the whole story. */
+                <p className="stamp mt-2 !text-[10px] text-ink/60">
+                  {t.locality.pincodeLabel} {locality.pincodes.join(" · ")}
+                  <span className="ml-2 text-ink/45">{t.locality.pincodeNote}</span>
+                </p>
+              )}
             </div>
             <Reveal delay={100}>
               <div className="border-l-4 border-brick bg-paper p-6 editorial-shadow md:p-7">
@@ -122,14 +135,14 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
           <div className="mt-10 flex flex-wrap gap-2">
             <span className="stamp mr-1 mt-2 !text-[10px] text-ink/60">{t.locality.nearby}</span>
             {nearby.map((n) => (
-              <Link key={n.slug} href={`/buy/ahmedabad/${n.slug}/`} className="border border-ink/20 px-3.5 py-2 stamp !text-[11px] text-ink/75 transition-colors hover:border-brick hover:text-brick">{n.name}</Link>
+              <Link key={n.slug} href={`/buy/${city.slug}/${n.slug}/`} className="border border-ink/20 px-3.5 py-2 stamp !text-[11px] text-ink/75 transition-colors hover:border-brick hover:text-brick">{n.name}</Link>
             ))}
           </div>
         </Reveal>
         <Reveal delay={140}>
           <figure>
             <div className="arch-frame-sm img-hover grain editorial-shadow">
-              <Pic name="locality-street" alt={`Tree-lined residential street in ${locality.name}, Ahmedabad`} className="aspect-[4/3] w-full object-cover" sizes="(max-width: 768px) 100vw, 55vw" />
+              <Pic name="locality-street" alt={`Tree-lined residential street in ${locality.name}, ${city.name}`} className="aspect-[4/3] w-full object-cover" sizes="(max-width: 768px) 100vw, 55vw" />
             </div>
             <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>{locality.name}, morning canopy</span><span>Study frame · Aug 2026</span></figcaption>
           </figure>
@@ -142,7 +155,7 @@ export default function CityPage({ localitySlug }: { localitySlug: string }) {
           <div className="grid gap-0 border border-ink/12 md:grid-cols-[1.3fr_0.7fr]">
             <div className="relative min-h-[380px] bg-sand">
               <iframe
-                title={`Map of ${locality.name}, Ahmedabad — OpenStreetMap`}
+                title={`Map of ${locality.name}, ${city.name} — OpenStreetMap`}
                 src={`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(locality.bbox.split(",").join("%2C")).replace(/%2C/g, "%2C")}&layer=mapnik&marker=${locality.marker}`}
                 className="map-frame absolute inset-0 h-full w-full border-0"
                 loading="lazy"

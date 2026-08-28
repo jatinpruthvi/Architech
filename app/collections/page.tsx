@@ -5,7 +5,7 @@ import { canonicalUrl } from "@/lib/seo/urls";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Collections — saved homes on this device | Architech",
-  description: "Organize saved Ahmedabad homes into private collections with notes for visits, comparisons, and follow-up.",
+  description: "Organize saved homes from any Indian city into private collections with notes for visits, comparisons, and follow-up.",
   alternates: { canonical: canonicalUrl("/collections/") },
   robots: { index: false, follow: true },
 };

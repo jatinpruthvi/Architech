@@ -3,10 +3,10 @@ import { ContactPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
-  title: "Contact Architech — Ahmedabad property desk",
-  description: "Contact Architech about Ahmedabad property discovery, partnerships, editorial context, or a moderated property brief.",
+  title: "Contact Architech — India property desk",
+  description: "Contact Architech about property discovery in any city we cover, partnerships, editorial context, or a moderated property brief.",
   alternates: { canonical: canonicalUrl("/contact-us/") },
-  openGraph: { title: "Contact Architech — Ahmedabad property desk", url: canonicalUrl("/contact-us/"), type: "website" },
+  openGraph: { title: "Contact Architech — India property desk", url: canonicalUrl("/contact-us/"), type: "website" },
 };
 
 export default function Page() {

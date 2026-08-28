@@ -1,7 +1,8 @@
 import "server-only";
 import { applyFilters, applyMarket, applyQuery, applySort, makeFilters, parseFilterParam, type MarketCategory, type MarketIntent } from "@/lib/filters";
 import { getListingsForServer } from "@/lib/repositories/server/prisma";
-import type { Property } from "@/lib/repositories";
+import { getCityBySlug, type Property } from "@/lib/repositories";
+import { listingMatchesPincode, parsePincode } from "@/lib/pincodes";
 import { buildPostgresSearchPlan } from "./sql";
 import { isPrismaSearchSource } from "./source";
 import { normalizePage, normalizePageSize, paginate } from "./pagination";
@@ -20,13 +21,20 @@ export async function searchListingsForServer(request: SearchRequest = {}): Prom
   const pageSize = normalizePageSize(request.limit);
   const page = normalizePage(request.page);
   const listings = await getListingsForServer();
+  // Unknown ?city= values fall back to a nationwide search (see search.ts).
+  const city = getCityBySlug(request.city)?.slug ?? "all";
+  const byCity = city === "all" ? listings : listings.filter((listing) => listing.citySlug === city);
+  const pincode = parsePincode(request.pincode);
+  const scoped = pincode ? byCity.filter((listing) => listingMatchesPincode(listing.localitySlug, pincode)) : byCity;
   const defs = makeFilters<Property>();
-  const filtered = applySort(applyFilters(applyMarket(applyQuery(listings, query), category, intent), filters, defs), sort);
+  const filtered = applySort(applyFilters(applyMarket(applyQuery(scoped, query), category, intent), filters, defs), sort);
   const { items, meta } = paginate(filtered, { page, pageSize });
   const prismaMode = isPrismaSearchSource();
 
   return {
     query,
+    city,
+    pincode,
     filters,
     category,
     intent,
@@ -43,6 +51,8 @@ export async function searchListingsForServer(request: SearchRequest = {}): Prom
 export function searchListingsFromSearchParamsForServer(params: URLSearchParams): Promise<ServerSearchResponse> {
   return searchListingsForServer({
     q: params.get("q") ?? "",
+    city: params.get("city") ?? undefined,
+    pincode: params.get("pincode") ?? undefined,
     filters: parseFilterParam(params.get("filters")),
     category: (params.get("category") as MarketCategory) || "all",
     intent: params.get("intent") === "rent" ? "rent" : "buy",

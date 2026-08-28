@@ -4,6 +4,7 @@ import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import { DEFAULT_CITY_SLUG, getLocalityBySlug } from "@/lib/repositories";
 
 type BrokerPrismaClient = ReturnType<typeof getPrismaClient> & {
   listing: { upsert(args: unknown): Promise<unknown>; updateMany(args: unknown): Promise<{ count: number }>; findMany(args: unknown): Promise<Array<Record<string, unknown>>> };
@@ -21,8 +22,11 @@ const LIFECYCLE_BY_DECISION: Record<ModerationDecision, "ACTIVE" | "CHANGES_REQU
 };
 
 async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
-  const locality = (await db.locality.findFirst({ where: { slug: draft.localitySlug } })) as { id: string } | null;
-  const city = (await db.city.findFirst({ where: { slug: "ahmedabad" } })) as { id: string } | null;
+  const locality = (await db.locality.findFirst({ where: { slug: draft.localitySlug } })) as { id: string; cityId?: string } | null;
+  // The city comes from the draft's locality, so a broker in any covered city
+  // persists against the right city row instead of a hardcoded one.
+  const citySlug = getLocalityBySlug(draft.localitySlug)?.citySlug ?? DEFAULT_CITY_SLUG;
+  const city = (await db.city.findFirst({ where: { slug: citySlug } })) as { id: string } | null;
   if (!locality || !city) return;
   await db.listing.upsert({
     where: { stableId: draft.stableId },

@@ -1,6 +1,6 @@
 "use client";
 /* Locality intelligence — the provenance-labeled evidence band for the
-   /buy/ahmedabad/:locality/ hub.
+   /buy/:city/:locality/ hub.
 
    Replaces promotional placeholder figures with facts derived only from
    structured listings, every one carrying the sample it came from. Bands:

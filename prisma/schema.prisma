@@ -79,6 +79,9 @@ model City {
   country   String   @default("IN")
   latitude  Decimal? @db.Decimal(9, 6)
   longitude Decimal? @db.Decimal(9, 6)
+  // Three-digit India Post sorting districts covered by this city. Used to
+  // resolve a PIN to a city when no locality claims that exact PIN.
+  pincodePrefixes String[] @default([])
 
   localities    Locality[]
   listings      Listing[]
@@ -105,6 +108,9 @@ model Locality {
   bbox          String?
   landmarks     Json?
   demoHomeCount Int      @default(0)
+  // A locality can span several PINs and a PIN can span several localities,
+  // so PIN membership is a list here rather than a single column.
+  pincodes      String[] @default([])
 
   city          City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
   listings      Listing[]
@@ -115,6 +121,7 @@ model Locality {
 
   @@unique([cityId, slug])
   @@index([name])
+  @@index([pincodes], type: Gin)
 }
 
 model BrokerOrganization {
@@ -229,6 +236,8 @@ model Listing {
   // kept nullable String for backward-safe migration of legacy labels.
   availability   String?
   addressLocality String?
+  // India Post PIN for the listing address; feeds PostalAddress.postalCode.
+  postalCode      String?
   latitude       Decimal? @db.Decimal(9, 6)
   longitude      Decimal? @db.Decimal(9, 6)
 
@@ -257,6 +266,7 @@ model Listing {
   @@index([priceInr])
   @@index([bhk])
   @@index([meaningfulUpdatedAt])
+  @@index([postalCode, lifecycle])
 }
 
 model PropertyMedia {

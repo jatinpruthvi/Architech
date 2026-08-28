@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { getGuides, getListings, getLocalities } from "@/lib/repositories";
+import { getCities, getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { getIndexableSeoPages, seoPages } from "./pages";
 import { savedPath, searchPath } from "./urls";
 
 describe("SeoPage registry", () => {
   it("registers the current indexable public page set", () => {
-    const expectedCount = 1 + 1 + getLocalities().length + getListings().length + 1 + getGuides().length + 9; // +1 list-property + 3 marketplace pages + 5 public parity pages
+    const expectedCount = 1 + 1 + getCities().length + getLocalities().length + getListings().length + 1 + getGuides().length + 9; // home + /buy/ hub + one hub per city + localities + listings + guide index + guides + 9 standing pages
     expect(seoPages).toHaveLength(expectedCount);
     expect(seoPages.map((page) => page.routeType)).toContain("home");
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);
+    expect(seoPages.filter((page) => page.routeType === "city")).toHaveLength(getCities().length);
+    expect(seoPages.filter((page) => page.routeType === "hub")).toHaveLength(1);
     expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
     expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(4 + getGuides().length); // guide index + developer index + investment lens + home loan context
     expect(seoPages.find((page) => page.id === "page:list-property")?.indexability).toBe("indexable");

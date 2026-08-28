@@ -10,11 +10,11 @@ import "@/index.css";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Architech — Find the place before the address. Homes in Ahmedabad.",
+    default: "Architech — Find the place before the address. Homes across India.",
     template: "%s · Architech",
   },
   description:
-    "Architech is a high-trust way to discover Ahmedabad homes: verified RERA context, locality intelligence, and architecture-grade curation.",
+    "Architech is a high-trust way to discover homes across India: verified RERA context, locality intelligence, and architecture-grade curation in 12 cities.",
   manifest: "/manifest.webmanifest",
   alternates: { canonical: homeUrl() },
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }], apple: "/icon-192.png" },
@@ -24,8 +24,8 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: homeUrl(),
     title: "Architech — Find the place before the address.",
-    description: "A high-trust way to discover Ahmedabad homes: verified RERA context, locality intelligence, and architecture-grade curation.",
-    images: [{ url: "/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg", width: 1600, height: 900, alt: "Ahmedabad-inspired contemporary architecture at golden hour" }],
+    description: "A high-trust way to discover homes across India: verified RERA context, locality intelligence, and architecture-grade curation.",
+    images: [{ url: "/manus-storage/architech-ahmedabad-hero-desktop_943690a3.jpg", width: 1600, height: 900, alt: "Indian contemporary architecture at golden hour" }],
   },
   twitter: { card: "summary_large_image" },
 };
@@ -40,7 +40,7 @@ const websiteJsonLd = {
       "@id": `${homeUrl()}#website`,
       url: homeUrl(),
       name: "Architech",
-      description: "High-trust home discovery for Ahmedabad, India.",
+      description: "High-trust home discovery across India.",
       inLanguage: ["en-IN", "hi-IN"],
     },
     {
@@ -49,7 +49,7 @@ const websiteJsonLd = {
       name: "Architech",
       url: homeUrl(),
       logo: assetUrl("/icon-512.png"),
-      areaServed: { "@type": "City", name: "Ahmedabad" },
+      areaServed: { "@type": "Country", name: "India" },
     },
   ],
 };

@@ -35,8 +35,50 @@ describe("backend search contract", () => {
   });
 
   it("applies reviewed property type and availability facets", () => {
-    expect(searchListings({ filters: ["type-villa"] }).results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
-    expect(searchListings({ filters: ["availability-new"] }).results.map((property) => property.id)).toEqual(["light-filled-home"]);
+    // Facets are asserted within one city scope; nationwide search spans every market.
+    expect(searchListings({ city: "ahmedabad", filters: ["type-villa"] }).results.map((property) => property.id)).toEqual(["thaltej-dusk-house"]);
+    expect(searchListings({ city: "ahmedabad", filters: ["availability-new"] }).results.map((property) => property.id)).toEqual(["light-filled-home"]);
+  });
+
+  it("narrows results to a PIN and echoes the scope", () => {
+    const response = searchListings({ pincode: "395007" });
+    expect(response.pincode).toBe("395007");
+    expect(response.results.length).toBeGreaterThan(0);
+    // 395007 covers both Vesu and Piplod, so both localities stay in scope.
+    const slugs = new Set(response.results.map((property) => property.localitySlug));
+    expect([...slugs].sort()).toEqual(["piplod", "vesu"]);
+  });
+
+  it("combines a PIN with a city scope and reports no PIN when none is given", () => {
+    expect(searchListings({ city: "surat", pincode: "395007" }).results.length).toBeGreaterThan(0);
+    // A PIN outside the chosen city can legitimately return nothing.
+    expect(searchListings({ city: "pune", pincode: "395007" }).results).toEqual([]);
+    expect(searchListings({}).pincode).toBeNull();
+  });
+
+  it("ignores a malformed PIN instead of emptying the page", () => {
+    const response = searchListings({ pincode: "not-a-pin" });
+    expect(response.pincode).toBeNull();
+    expect(response.count).toBe(searchListings({}).count);
+  });
+
+  it("treats a bare six-digit token in the query as a PIN", () => {
+    const response = searchListings({ q: "411057" });
+    expect(response.results.length).toBeGreaterThan(0);
+    const slugs = new Set(response.results.map((property) => property.localitySlug));
+    expect([...slugs].sort()).toEqual(["hinjawadi", "wakad"]);
+  });
+
+  it("combines a PIN token with other query tokens", () => {
+    const response = searchListings({ q: "3 bhk 411057" });
+    expect(response.results.every((property) => property.bhk === 3)).toBe(true);
+    expect(response.results.every((property) => ["hinjawadi", "wakad"].includes(property.localitySlug))).toBe(true);
+  });
+
+  it("reads ?pincode= from URL params", () => {
+    const response = searchListingsFromSearchParams(new URLSearchParams("pincode=560066"));
+    expect(response.pincode).toBe("560066");
+    expect(response.results.every((property) => property.localitySlug === "whitefield")).toBe(true);
   });
 
   it("carries intent and category through URL params (home buy/rent toggle)", () => {

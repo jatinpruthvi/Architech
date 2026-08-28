@@ -5,15 +5,15 @@ export type Lang = "en" | "hi";
 
 export const strings = {
   en: {
-    nav: { explore: "Explore Ahmedabad", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring", list: "List your property" },
+    nav: { explore: "Explore cities", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring", list: "List your property" },
     hero: {
-      kicker: "Ahmedabad · 23.03° N, 72.58° E · अमदावाद",
+      kicker: "India · 12 cities mapped · भारत",
       h1a: "Find the ",
       h1em: "place",
       h1b: "before the address.",
-      sub: "A high-trust way to discover Ahmedabad — verified RERA context, locality intelligence, and homes curated with an architect's eye.",
-      placeholderBuy: "Try “3 BHK near Law Garden” or a locality…",
-      placeholderRent: "Try “2 BHK furnished in Navrangpura”…",
+      sub: "A high-trust way to discover a home anywhere in India — verified RERA context, locality intelligence, and homes curated with an architect's eye.",
+      placeholderBuy: "Search any city, locality, PIN code, or BHK…",
+      placeholderRent: "Search rentals by city, locality, PIN code, or BHK…",
       search: "Search", buy: "Buy", rent: "Rent", beginWith: "Begin with —",
       stats: ["verified homes", "localities mapped", "RERA-checked"],
       scroll: "Scroll — the city opens up",
@@ -26,7 +26,7 @@ export const strings = {
       methodKicker: "Our method",
       homesCount: "homes",
       allHomes: "All homes",
-      all281Homes: "All 281 homes",
+      all281Homes: "All homes across India",
     },
     cta: { kicker: "Begin today", title1: "Your address is out there, ", title2: "waiting", start: "Start exploring", browse: "Browse localities" },
     list: {
@@ -38,7 +38,7 @@ export const strings = {
       cta: "Start listing", portalNote: "Part of the broker operations workspace", sourceTrail: "Source trail on every listing",
     },
     search: {
-      title1: "in", cityName: "Ahmedabad.", home: "home", homes: "homes",
+      title1: "in", cityName: "India.", home: "home", homes: "homes",
       filter: "Combine", clearAll: "Clear all", sort: "Sort", sortHomes: "Sort homes",
       sortFresh: "Freshest first", sortAsc: "Price — low to high", sortDesc: "Price — high to low",
       filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "Under ₹1.5 Cr", rera: "RERA verified", "type-apartment": "Apartment / flat", "type-villa": "Villa", "type-rowhouse": "Rowhouse", "availability-ready": "Ready to move", "availability-new": "New launch", "availability-resale": "Resale" } as Record<string, string>,
@@ -48,8 +48,8 @@ export const strings = {
       withFilters: "with those filters", emptyHelp: "Loosen a filter, try a trending search, or save this search and we'll tell you the moment something arrives.",
       saveSearch: "Save this search", searchSavedToast: "Search saved", searchSavedDescription: "We'll notify you when a matching home arrives. (Demo)", searchSavedDuplicate: "This search is already saved. We'll still notify you when a home arrives.", searchSaveFailed: "Could not save this search",
       readGuides: "Read locality guides", showingAll: "Showing all", demoInventorySuffix: "demo homes — full inventory arrives with the live data build",
-      mapLabel: "Map of Ahmedabad homes", searchArea: "Search this area", searchingArea: "Searching this area", searchingAreaDescription: "Results refresh for the visible map area with the live data build. Filters kept.",
-      liveCartography: "Live cartography · Paldi pinned", mapCopy: "Real OpenStreetMap data for Ahmedabad — explore the shape of the neighbourhood without losing the list.",
+      mapLabel: "Map of homes", searchArea: "Search this area", searchingArea: "Searching this area", searchingAreaDescription: "Results refresh for the visible map area with the live data build. Filters kept.",
+      liveCartography: "Live cartography · results pinned", mapCopy: "Real OpenStreetMap data for every city we cover — explore the shape of the neighbourhood without losing the list.",
     },
     saved: {
       title: "Saved homes", emptyTitle1: "Nothing saved —", emptyTitleEm: "yet", emptyCopy: "Tap the heart on any home and it will wait for you here, freshness stamps and all.",
@@ -57,9 +57,9 @@ export const strings = {
       tip: "Tip: tap the heart again to remove a home.", keepExploring: "Keep exploring",
     },
     locality: {
-      breadcrumbHome: "Home", breadcrumbCity: "Buy in Ahmedabad", kicker: "A locality, in context", titleCity: "Ahmedabad.",
+      breadcrumbHome: "Home", breadcrumbCity: "Buy in {city}", kicker: "A locality, in context", titleCity: "{city}.",
       introSuffix: "Explore homes with the whole place around them — streets, distances, and sources included.", snapshot: "Locality snapshot · demo data",
-      activeHomes: "active homes", medianRate: "median / sq ft", toRiverfront: "to riverfront", reraCoverage: "RERA coverage", updatedSources: "Updated 21 Aug 2026 · Sources reviewed",
+      activeHomes: "active homes", pincodeLabel: "PIN", pincodeNote: "PIN codes are illustrative demo data pending India Post verification", medianRate: "median / sq ft", toRiverfront: "to riverfront", reraCoverage: "RERA coverage", updatedSources: "Updated 21 Aug 2026 · Sources reviewed",
       feelKicker: "What the place feels like", feelTitle1: "A neighbourhood with a front door and a", feelTitleEm: "backstory", nearby: "Nearby —",
       measured: "Measured, not guessed", distancesFrom: "Distances from", geodata: "Geodata via OpenStreetMap · straight-line distances",
       homesIn: "Homes in", sourceTrailTitle: "Every home carries a", sourceTrailEm: "source trail", refine: "Refine in search",
@@ -74,8 +74,8 @@ export const strings = {
       priceKicker: "Evidence, not assertion", pricePosition: "price position",
       basedOn: "Based on {n} active verified buy listings", updatedOn: "Updated",
       activeBuy: "Active buy listings", medianAsking: "Median asking", avgPsf: "Avg / sq ft", vsCity: "vs city median",
-      cityBaseline: "Baseline · Ahmedabad median ₹/sq ft", atPar: "in line with the Ahmedabad median",
-      aboveCityPrefix: "{pct}% above the Ahmedabad median", belowCityPrefix: "{pct}% below the Ahmedabad median",
+      cityBaseline: "Baseline · city median ₹/sq ft", atPar: "in line with the city median",
+      aboveCityPrefix: "{pct}% above the city median", belowCityPrefix: "{pct}% below the city median",
       noBuyInventory: "There are no active buy listings published for this locality yet — the area is being watched for verified inventory. Save the search to be notified when a home appears.",
       configKicker: "What's on the market", byConfiguration: "By configuration",
       viewConfig: "View", view: "View", noConfigInventory: "No published buy listings to split by configuration yet. Save the search and we'll alert you when one appears.",
@@ -103,7 +103,7 @@ export const strings = {
       why: "Why it stands out", trail: "Information trail", facts: { type: "Type", area: "Carpet area", status: "Status", rate: "Rate" },
       mapKicker: "The neighbourhood, mapped", exactAddressPrivate: "Location shown at locality precision until you connect with the partner — exact address stays private.",
       privateStep: "Private next step", talkPartner: "Talk to the partner.", maskedCopy: "Your contact details stay masked until you choose to share them. No spam calls — that's a contract, not a promise.",
-      verifiedPartner: "Verified Ahmedabad partner", ask: "Ask about this home", usuallyReplies: "Usually replies within 4 working hours", nearbyTitle1: "Nearby, also worth a", nearbyTitleEm: "look", allHomes: "All homes",
+      verifiedPartner: "Verified local partner", ask: "Ask about this home", usuallyReplies: "Usually replies within 4 working hours", nearbyTitle1: "Nearby, also worth a", nearbyTitleEm: "look", allHomes: "All homes",
       dialogTitle: "Ask about this home", dialogCopy: "Your message goes to the verified partner. Your phone number stays masked until you choose to share it.", name: "Your name", phone: "Phone (kept masked)", message: "Message", send: "Send query", sending: "Sending…", noRealMessage: "Concept preview — stored through the lead API contract.", consentText: "I consent to Architech storing this enquiry, keeping my phone masked by default, and sharing it only with the verified partner for this listing.", querySent: "Query sent to Nivasa Partners", querySentDescription: "They usually reply within 4 working hours. Your number stays masked. (Demo)", queryFailed: "Could not send query", queryFailedDescription: "Please check the details and try again.",
       trust: {
         kicker: "Verification & trust", scoreLabel: "Trust score",
@@ -120,22 +120,22 @@ export const strings = {
     },
     footer: {
       made: "Made in Amdavad", tagline: "Find the place before you choose the address.", explore: "Explore", trust: "Trust", office: "Field office",
-      links: { buy: "Buy in Ahmedabad", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches", listProperty: "List your property" },
+      links: { buy: "Buy in India", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches", listProperty: "List your property" },
     },
     common: { skip: "Skip to content", translationNote: "", ahmedabad: "Ahmedabad", demoData: "demo data", partialTranslation: "" },
   },
   hi: {
     nav: { explore: "अहमदाबाद देखें", find: "घर खोजें", notes: "फ़ील्ड नोट्स", saved: "सहेजे गए", start: "खोज शुरू करें", list: "अपनी संपत्ति सूचीबद्ध करें" },
     hero: {
-      kicker: "अहमदाबाद · 23.03° N, 72.58° E · Ahmedabad",
+      kicker: "भारत · 12 शहर · India",
       h1a: "पहले ", h1em: "जगह", h1b: "फिर पता चुनिए।",
       sub: "अहमदाबाद में घर खोजने का एक भरोसेमंद तरीक़ा — प्रमाणित RERA संदर्भ, इलाक़े की समझ, और वास्तुकार की नज़र से चुने गए घर।",
-      placeholderBuy: "जैसे “लॉ गार्डन के पास 3 BHK” या कोई इलाक़ा…",
-      placeholderRent: "जैसे “नवरंगपुरा में 2 BHK फ़र्निश्ड”…",
+      placeholderBuy: "कोई भी शहर, इलाक़ा, पिन कोड या BHK खोजें…",
+      placeholderRent: "किराए के लिए शहर, इलाक़ा, पिन कोड या BHK खोजें…",
       search: "खोजें", buy: "ख़रीदें", rent: "किराया", beginWith: "यहाँ से शुरू करें —",
       stats: ["सत्यापित घर", "मैप किए इलाक़े", "RERA-जाँचे"], scroll: "स्क्रॉल करें — शहर खुलता है", demoNote: "आँकड़े इस कॉन्सेप्ट प्रीव्यू के लिए उदाहरणात्मक हैं।",
     },
-    sections: { localityKicker: "इलाक़ों की सूची", localityTitle: "शहर नक़्शे के एक बिंदु से कहीं ज़्यादा है।", curatedKicker: "इस हफ़्ते की पसंद", methodKicker: "हमारा तरीक़ा", homesCount: "घर", allHomes: "सभी घर", all281Homes: "सभी 281 घर" },
+    sections: { localityKicker: "इलाक़ों की सूची", localityTitle: "शहर नक़्शे के एक बिंदु से कहीं ज़्यादा है।", curatedKicker: "इस हफ़्ते की पसंद", methodKicker: "हमारा तरीक़ा", homesCount: "घर", allHomes: "सभी घर", all281Homes: "भारत भर के सभी घर" },
     cta: { kicker: "आज ही शुरू करें", title1: "आपका पता कहीं ", title2: "इंतज़ार", start: "खोज शुरू करें", browse: "इलाक़े देखें" },
     list: {
       kicker: "आपका है? सूचीबद्ध करें।", title: "अपने घर को बाज़ार में रखें,", titleEm: "स्रोत ट्रेल", titleSuffix: "के साथ।",
@@ -146,7 +146,7 @@ export const strings = {
       cta: "Listing शुरू करें", portalNote: "Broker operations workspace का हिस्सा", sourceTrail: "हर listing पर source trail",
     },
     search: {
-      title1: "—", cityName: "अहमदाबाद में।", home: "घर", homes: "घर", filter: "जोड़ें", clearAll: "सब हटाएँ", sort: "क्रम", sortHomes: "घरों का क्रम चुनें",
+      title1: "—", cityName: "भारत में।", home: "घर", homes: "घर", filter: "जोड़ें", clearAll: "सब हटाएँ", sort: "क्रम", sortHomes: "घरों का क्रम चुनें",
       sortFresh: "सबसे ताज़ा पहले", sortAsc: "क़ीमत — कम से ज़्यादा", sortDesc: "क़ीमत — ज़्यादा से कम",
       filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "₹1.5 करोड़ से कम", rera: "RERA सत्यापित", "type-apartment": "फ़्लैट / अपार्टमेंट", "type-villa": "विला", "type-rowhouse": "रोहहाउस", "availability-ready": "रहने के लिए तैयार", "availability-new": "नया लॉन्च", "availability-resale": "रीसेल" } as Record<string, string>,
       filtersGroup: "फ़िल्टर (जोड़े जा सकते हैं)", kicker: "खोज", clearSearch: "खोज हटाएँ", filtersButton: "फ़िल्टर", filterHomes: "घर फ़िल्टर करें",
@@ -163,8 +163,8 @@ export const strings = {
       tip: "टिप: घर हटाने के लिए दिल फिर दबाएँ।", keepExploring: "खोज जारी रखें",
     },
     locality: {
-      breadcrumbHome: "होम", breadcrumbCity: "अहमदाबाद में ख़रीदें", kicker: "इलाक़ा, संदर्भ सहित", titleCity: "अहमदाबाद।",
-      introSuffix: "घर के साथ पूरी जगह समझें — सड़कें, दूरी और स्रोत सहित।", snapshot: "इलाक़ा स्नैपशॉट · डेमो डेटा", activeHomes: "सक्रिय घर", medianRate: "मीडियन / sq ft", toRiverfront: "रिवरफ्रंट तक", reraCoverage: "RERA कवरेज", updatedSources: "21 अगस्त 2026 अपडेट · स्रोत समीक्षा",
+      breadcrumbHome: "होम", breadcrumbCity: "{city} में ख़रीदें", kicker: "इलाक़ा, संदर्भ सहित", titleCity: "{city}।",
+      introSuffix: "घर के साथ पूरी जगह समझें — सड़कें, दूरी और स्रोत सहित।", snapshot: "इलाक़ा स्नैपशॉट · डेमो डेटा", activeHomes: "सक्रिय घर", pincodeLabel: "पिन कोड", pincodeNote: "पिन कोड केवल डेमो डेटा हैं — भारतीय डाक से सत्यापन बाक़ी है", medianRate: "मीडियन / sq ft", toRiverfront: "रिवरफ्रंट तक", reraCoverage: "RERA कवरेज", updatedSources: "21 अगस्त 2026 अपडेट · स्रोत समीक्षा",
       feelKicker: "जगह कैसी महसूस होती है", feelTitle1: "एक इलाक़ा जिसका अपना दरवाज़ा और", feelTitleEm: "कहानी", nearby: "पास में —",
       measured: "नापा हुआ, अंदाज़ा नहीं", distancesFrom: "दूरी —", geodata: "जियोडेटा OpenStreetMap से · सीधी-रेखा दूरी",
       homesIn: "घर —", sourceTrailTitle: "हर घर के साथ", sourceTrailEm: "स्रोत ट्रेल", refine: "खोज में सुधारें",
@@ -179,8 +179,8 @@ export const strings = {
       priceKicker: "प्रमाण, दावा नहीं", pricePosition: "क़ीमत की स्थिति",
       basedOn: "{n} सक्रिय सत्यापित ख़रीद लिस्टिंग पर आधारित", updatedOn: "अपडेट",
       activeBuy: "सक्रिय ख़रीद लिस्टिंग", medianAsking: "मीडियन माँग", avgPsf: "औसत / sq ft", vsCity: "शहर मीडियन से",
-      cityBaseline: "आधार · अहमदाबाद मीडियन ₹/sq ft", atPar: "अहमदाबाद मीडियन के बराबर",
-      aboveCityPrefix: "अहमदाबाद मीडियन से {pct}% ऊपर", belowCityPrefix: "अहमदाबाद मीडियन से {pct}% नीचे",
+      cityBaseline: "आधार · शहर का मीडियन ₹/sq ft", atPar: "शहर के मीडियन के बराबर",
+      aboveCityPrefix: "शहर के मीडियन से {pct}% ऊपर", belowCityPrefix: "शहर के मीडियन से {pct}% नीचे",
       noBuyInventory: "इस इलाक़े में अभी कोई सक्रिय ख़रीद लिस्टिंग प्रकाशित नहीं है — क्षेत्र सत्यापित इन्वेंट्री के लिए निगरानी में है। घर आने पर सूचित होने के लिए खोज सहेजें।",
       configKicker: "बाज़ार में क्या है", byConfiguration: "कॉन्फ़िगरेशन के अनुसार",
       view: "देखें", viewConfig: "देखें", noConfigInventory: "कॉन्फ़िगरेशन के अनुसार बाँटने के लिए अभी कोई प्रकाशित ख़रीद लिस्टिंग नहीं है। घर आने पर अलर्ट के लिए खोज सहेजें।",
@@ -208,7 +208,7 @@ export const strings = {
       why: "यह अलग क्यों है", trail: "सूचना ट्रेल", facts: { type: "प्रकार", area: "कार्पेट एरिया", status: "स्थिति", rate: "रेट" },
       mapKicker: "इलाक़ा, नक़्शे पर", exactAddressPrivate: "Partner से जुड़ने तक location locality precision पर दिखती है — exact address private रहता है।",
       privateStep: "निजी अगला कदम", talkPartner: "Partner से बात करें।", maskedCopy: "आपकी contact details तब तक masked रहती हैं जब तक आप share न करें। Spam calls नहीं — यह contract है, सिर्फ़ promise नहीं।",
-      verifiedPartner: "सत्यापित Ahmedabad partner", ask: "इस घर के बारे में पूछें", usuallyReplies: "आमतौर पर 4 working hours में जवाब", nearbyTitle1: "पास में, देखने लायक", nearbyTitleEm: "घर", allHomes: "सभी घर",
+      verifiedPartner: "सत्यापित स्थानीय partner", ask: "इस घर के बारे में पूछें", usuallyReplies: "आमतौर पर 4 working hours में जवाब", nearbyTitle1: "पास में, देखने लायक", nearbyTitleEm: "घर", allHomes: "सभी घर",
       dialogTitle: "इस घर के बारे में पूछें", dialogCopy: "आपका message verified partner को जाएगा। आपका phone number तब तक masked रहेगा जब तक आप share न करें।", name: "आपका नाम", phone: "फ़ोन (masked रहेगा)", message: "संदेश", send: "Query भेजें", sending: "भेज रहे हैं…", noRealMessage: "Concept preview — lead API contract के ज़रिए stored.", consentText: "मैं सहमत हूँ कि Architech इस enquiry को store करे, मेरा phone default रूप से masked रखे, और इसे केवल इस listing के verified partner से share करे।", querySent: "Query Nivasa Partners को भेजी गई", querySentDescription: "वे आमतौर पर 4 working hours में जवाब देते हैं। आपका number masked रहता है। (डेमो)", queryFailed: "Query भेजी नहीं जा सकी", queryFailedDescription: "कृपया details जाँचकर फिर कोशिश करें।",
       trust: {
         kicker: "सत्यापन और भरोसा", scoreLabel: "ट्रस्ट स्कोर",
@@ -229,3 +229,9 @@ export const strings = {
 } as const;
 
 export type Strings = (typeof strings)["en"];
+
+/** Replace {token} placeholders in a reviewed string (e.g. `{city}`).
+    Keeps translation strings city-agnostic so one dictionary serves every market. */
+export function fillTokens(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+}

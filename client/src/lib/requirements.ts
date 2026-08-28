@@ -1,4 +1,7 @@
-/* Requirement capture contract: buyer/renter intent is not tied to a single listing. */
+/* Requirement capture contract: buyer/renter intent is not tied to a single
+   listing, and not tied to a single city — the accepted city set is derived
+   from the live city registry. */
+import { liveCities } from "@/lib/cities";
 
 export type RequirementIntent = "buy" | "rent";
 export type RequirementRole = "buyer" | "owner" | "tenant" | "agent" | "builder";
@@ -6,7 +9,8 @@ export type RequirementCategory = "residential" | "commercial" | "pg" | "plot" |
 
 export type RequirementInput = {
   intent: RequirementIntent;
-  city: "ahmedabad" | "gandhinagar";
+  /** A live city slug from the registry (see `client/src/lib/cities.ts`). */
+  city: string;
   category: RequirementCategory;
   subtype: string;
   localities: string[];
@@ -43,7 +47,7 @@ function stableId(key: string) {
 
 const categories = new Set<RequirementCategory>(["residential", "commercial", "pg", "plot", "land", "auction"]);
 const intents = new Set<RequirementIntent>(["buy", "rent"]);
-const cities = new Set(["ahmedabad", "gandhinagar"]);
+const cities = new Set(liveCities.map((city) => city.slug));
 const roles = new Set<RequirementRole>(["buyer", "owner", "tenant", "agent", "builder"]);
 
 export function validateRequirementInput(input: Partial<RequirementInput>) {

@@ -1,7 +1,8 @@
 /* Locality/city trust aggregation. Derives an area-level trust summary from the
    per-listing trust scores so the city and locality hubs surface verified
    coverage honestly. Server-safe: no client directive, no side effects. */
-import { getListings, getListingsByLocality } from "@/lib/repositories";
+import { getCityBySlug, getListingsByCity, getListingsByLocality, getLocalityBySlug, DEFAULT_CITY_SLUG } from "@/lib/repositories";
+import type { getListings } from "@/lib/repositories";
 import { badgesToTrustInput, computeTrustScore, type TrustGrade, type TrustSignalId } from "./score";
 
 export type LocalityTrustSummary = {
@@ -37,13 +38,15 @@ function trustForListings(slug: string, name: string, listings: ReturnType<typeo
   };
 }
 
-/** Trust summary across all homes in a locality. */
-export function localityTrustSummary(slug: string): LocalityTrustSummary {
-  const listings = getListingsByLocality(slug);
-  return trustForListings(slug, listings[0]?.locality ?? slug, listings);
+/** Trust summary across all homes in a locality, scoped to its city. */
+export function localityTrustSummary(slug: string, citySlug?: string): LocalityTrustSummary {
+  const listings = getListingsByLocality(slug, citySlug);
+  const name = listings[0]?.locality ?? getLocalityBySlug(slug, citySlug)?.name ?? slug;
+  return trustForListings(slug, name, listings);
 }
 
-/** Trust summary across the whole city inventory. */
-export function cityTrustSummary(): LocalityTrustSummary {
-  return trustForListings("ahmedabad", "Ahmedabad", getListings());
+/** Trust summary across one city's inventory. */
+export function cityTrustSummary(citySlug: string = DEFAULT_CITY_SLUG): LocalityTrustSummary {
+  const city = getCityBySlug(citySlug);
+  return trustForListings(citySlug, city?.name ?? citySlug, getListingsByCity(citySlug));
 }

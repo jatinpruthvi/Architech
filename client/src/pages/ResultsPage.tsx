@@ -14,7 +14,10 @@ import { makeFilters, parseFilterParam, serializeFilters, type MarketCategory, t
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Property } from "@/lib/repositories";
+import { getCities, getCityBySlug, type Property } from "@/lib/repositories";
+import { parsePincode, resolvePincode, PINCODE_PROVENANCE } from "@/lib/pincodes";
+import { applyParsedQueryToParams, describeParsedQuery, parseSearchQuery } from "@/lib/search/parse-query";
+import { popularQueries } from "@/lib/search/suggest";
 import { searchListings, type SearchResponse } from "@/lib/search/search";
 import MapListSync from "@/components/architech/MapListSync";
 import Pic from "@/components/architech/Pic";
@@ -22,7 +25,6 @@ import { useSearchSuggestions } from "@/components/architech/useSearchSuggestion
 import { labelForFacing, labelForFurnishing, propertyFactRows } from "@/lib/listing-details";
 
 const filterDefs = makeFilters<Property>();
-const trending = ["3 BHK in Paldi", "Courtyard homes", "New launches in Bopal", "Under ₹1 Cr"];
 
 function SkeletonCard() {
   return (
@@ -56,7 +58,7 @@ function FilterChips({ active, onToggle, vertical = false }: { active: string[];
 }
 
 export default function ResultsPage() {
-  useTitle("Search homes in Ahmedabad");
+  useTitle("Search homes across India");
   const { t } = useLang();
   const sp = useSearchParams();
   const router = useRouter();
@@ -67,18 +69,27 @@ export default function ResultsPage() {
   const query = params.get("q") ?? "";
   const category: MarketCategory = ["all", "residential", "commercial", "pg", "plot", "land", "auction"].includes(params.get("category") ?? "") ? params.get("category") as MarketCategory : "all";
   const intent: MarketIntent = params.get("intent") === "rent" ? "rent" : "buy";
+  // City scope: a known city slug narrows every result, "all" searches India.
+  const citySlug = getCityBySlug(params.get("city") ?? undefined)?.slug ?? "all";
+  const activeCity = citySlug === "all" ? undefined : getCityBySlug(citySlug);
+  // PIN scope: narrows to localities that serve the PIN. A malformed value is
+  // dropped rather than returning an empty page.
+  const pincode = parsePincode(params.get("pincode"));
+  const pincodeMatch = pincode ? resolvePincode(pincode) : null;
 
   const [mapMode, setMapMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeKey = active.join(",");
-  const initialSearch = useMemo(() => searchListings({ q: query, filters: active, category, intent, sort }), [activeKey, category, intent, query, sort]);
+  const initialSearch = useMemo(() => searchListings({ q: query, city: citySlug, pincode: pincode ?? undefined, filters: active, category, intent, sort }), [activeKey, category, citySlug, intent, pincode, query, sort]);
   const [searchResponse, setSearchResponse] = useState<SearchResponse>(initialSearch);
 
   useEffect(() => {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
+    if (citySlug !== "all") p.set("city", citySlug);
+    if (pincode) p.set("pincode", pincode);
     if (category !== "all") p.set("category", category);
     if (intent !== "buy") p.set("intent", intent);
     if (active.length) p.set("filters", serializeFilters(active));
@@ -95,7 +106,7 @@ export default function ResultsPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [activeKey, category, initialSearch, intent, query, sort]);
+  }, [activeKey, category, citySlug, initialSearch, intent, pincode, query, sort]);
 
   const results = searchResponse.results;
   const selectedProperty = results.find((property) => property.id === selectedId) ?? null;
@@ -105,6 +116,8 @@ export default function ResultsPage() {
   const updateUrl = (nextFilters: string[], nextSort: SortId = sort) => {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
+    if (citySlug !== "all") p.set("city", citySlug);
+    if (pincode) p.set("pincode", pincode);
     if (category !== "all") p.set("category", category);
     if (intent !== "buy") p.set("intent", intent);
     if (nextFilters.length) p.set("filters", serializeFilters(nextFilters));
@@ -118,12 +131,27 @@ export default function ResultsPage() {
   const updateMarket = (nextIntent: MarketIntent, nextCategory: MarketCategory) => {
     const p = new URLSearchParams();
     if (query) p.set("q", query);
+    if (citySlug !== "all") p.set("city", citySlug);
+    if (pincode) p.set("pincode", pincode);
     if (nextCategory !== "all") p.set("category", nextCategory);
     if (nextIntent !== "buy") p.set("intent", nextIntent);
     if (active.length) p.set("filters", serializeFilters(active));
     if (sort !== "fresh") p.set("sort", sort);
     router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false });
   };
+  /** Switching city keeps the query, market, filters and sort intact. */
+  const updateCity = (nextCity: string) => {
+    const p = new URLSearchParams();
+    if (query) p.set("q", query);
+    if (nextCity !== "all") p.set("city", nextCity);
+    if (pincode) p.set("pincode", pincode);
+    if (category !== "all") p.set("category", category);
+    if (intent !== "buy") p.set("intent", intent);
+    if (active.length) p.set("filters", serializeFilters(active));
+    if (sort !== "fresh") p.set("sort", sort);
+    router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false });
+  };
+
   const filterSummary = active.length ? filterDefs.filter((f) => active.includes(f.id)).map((f) => t.search.filters[f.id] ?? f.label).join(" + ") : t.search.allHomes;
 
   const [savingSearch, setSavingSearch] = useState(false);
@@ -131,17 +159,34 @@ export default function ResultsPage() {
   // Server-backed quick search (debounced, abortable) for refining the query.
   const [qInput, setQInput] = useState(query);
   const [qFocused, setQFocused] = useState(false);
-  const { suggestions: qSuggestions } = useSearchSuggestions(qInput);
+  const { suggestions: qSuggestions } = useSearchSuggestions(qInput, citySlug);
   useEffect(() => { setQInput(query); }, [query]);
+  /**
+   * Run a typed query. It is parsed into structured scope first — city, PIN,
+   * intent, category and filter ids become real URL parameters — and anything
+   * a parameter cannot carry stays as free text, so nothing typed is lost.
+   */
   const runQuery = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    const p = new URLSearchParams(searchStr);
-    p.set("q", trimmed);
-    router.replace(`/search?${p.toString()}`, { scroll: false });
+    const parsed = parseSearchQuery(trimmed, citySlug);
+    const base = new URLSearchParams(searchStr);
+    const p = parsed.understood ? applyParsedQueryToParams(parsed, base) : (base.set("q", trimmed), base);
+    router.replace(`/search/${p.toString() ? `?${p.toString()}` : ""}`, { scroll: false });
     setQInput(trimmed);
     setQFocused(false);
   };
+
+  /* What the box will do with the current text, shown before it runs. */
+  const typedPreview = useMemo(() => {
+    const trimmed = qInput.trim();
+    if (trimmed.length < 3 || trimmed === query) return "";
+    const parsed = parseSearchQuery(trimmed, citySlug);
+    return parsed.understood ? describeParsedQuery(parsed) : "";
+  }, [citySlug, qInput, query]);
+
+  /* Recovery chips derived from real inventory in the active scope. */
+  const trending = useMemo(() => popularQueries({ citySlug }, 4), [citySlug]);
 
   const saveSearch = async () => {
     if (savingSearch) return;
@@ -185,11 +230,16 @@ export default function ResultsPage() {
                 />
                 <button type="submit" className="btn-sweep touch-44 m-1.5 bg-brick px-5 stamp !text-[11px] font-semibold text-cream">{t.hero.search}</button>
               </form>
+              {typedPreview && <p className="mt-2 stamp !text-[10px] text-brick">Reads as: {typedPreview}</p>}
               {qFocused && qSuggestions.length > 0 && (
                 <div className="absolute inset-x-0 top-full z-30 mt-1 border border-ink/15 bg-paper text-ink editorial-shadow" role="listbox" aria-label="Search suggestions">
                   {qSuggestions.map((s, i) => (
-                    <button key={`${s.kind}-${i}`} onMouseDown={(e) => { e.preventDefault(); runQuery(s.query); }} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-ink/80 hover:bg-sand/70 hover:text-brick" role="option" aria-selected={false}>
-                      <Search size={12} className="text-ink/55" /> {s.label}
+                    <button key={`${s.kind}-${i}`} onMouseDown={(e) => { e.preventDefault(); runQuery(s.query); }} className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-sm text-ink/80 hover:bg-sand/70 hover:text-brick" role="option" aria-selected={false}>
+                      <Search size={12} className="mt-1 shrink-0 text-ink/55" />
+                      <span className="min-w-0">
+                        <span className="block truncate">{s.label}</span>
+                        {s.hint && <span className="mt-0.5 block truncate stamp !text-[9px] text-ink/45">{s.hint}</span>}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -197,6 +247,21 @@ export default function ResultsPage() {
             </div>
           </div>
           <div className="mt-5 flex flex-col gap-3 border-y border-ink/15 py-4 md:flex-row md:items-center md:gap-4">
+            {/* City scope — the search is nationwide until a city is chosen. */}
+            <div className="flex min-w-0 items-center gap-2">
+              <label htmlFor="search-city" className="stamp shrink-0 !text-[10px] text-ink/55">City</label>
+              <select
+                id="search-city"
+                value={citySlug}
+                onChange={(event) => updateCity(event.target.value)}
+                className="touch-44 min-w-0 max-w-[190px] border border-ink/15 bg-transparent px-3 py-2 stamp !text-[10px] font-semibold text-ink/75 transition-colors hover:border-brick hover:text-brick focus:border-brick focus:outline-none"
+              >
+                <option value="all">All India</option>
+                {getCities().map((option) => (
+                  <option key={option.slug} value={option.slug}>{option.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex gap-2" role="group" aria-label="Transaction type">
               {(["buy", "rent"] as MarketIntent[]).map((value) => <button key={value} type="button" onClick={() => updateMarket(value, category)} aria-pressed={intent === value} className={`touch-44 px-4 py-2 stamp !text-[10px] font-semibold transition-colors ${intent === value ? "bg-brick text-cream" : "border border-ink/15 text-ink/65 hover:border-brick hover:text-brick"}`}>{value === "buy" ? "Buy" : "Rent"}</button>)}
             </div>
@@ -206,7 +271,27 @@ export default function ResultsPage() {
           </div>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
             <div className="field-rule">
-              <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="text-ink/45">in</span> <em>{t.search.cityName}</em></h1>
+              <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="text-ink/45">in</span> <em>{activeCity ? `${activeCity.name}.` : t.search.cityName}</em></h1>
+              {pincode && (
+                /* A PIN filter is stated plainly, with the places it resolved to
+                   and a way out, so the smaller result count is never a mystery. */
+                <p className="stamp mt-4 !text-[11px] text-ink/60">
+                  PIN {pincode}
+                  {pincodeMatch?.localities.length
+                    ? ` · ${pincodeMatch.localities.map((locality) => locality.name).join(", ")}, ${pincodeMatch.city.name}`
+                    : pincodeMatch
+                      ? ` · ${pincodeMatch.city.name} (no locality in the demo registry claims this PIN)`
+                      : " · outside every covered postal district"}
+                  <button
+                    type="button"
+                    onClick={() => { const p = new URLSearchParams(params); p.delete("pincode"); router.replace(`/search/${p.toString() ? `?${p}` : ""}`, { scroll: false }); }}
+                    className="ml-3 underline decoration-brick underline-offset-4 hover:text-brick"
+                  >
+                    Clear PIN
+                  </button>
+                  <span className="ml-3 text-ink/45">{PINCODE_PROVENANCE}</span>
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -260,7 +345,7 @@ export default function ResultsPage() {
           <div className="container grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
               <p className="kicker text-ember">{t.search.liveCartography}</p>
-              <h2 id="atlas-lens-title" className="mt-4 max-w-[620px] font-display text-[clamp(28px,4vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]">Search by the <em className="text-ember">shape</em> of Ahmedabad.</h2>
+              <h2 id="atlas-lens-title" className="mt-4 max-w-[620px] font-display text-[clamp(28px,4vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]">Search by the <em className="text-ember">shape</em> of {activeCity ? activeCity.name : "India"}.</h2>
               <p className="mt-4 max-w-[560px] text-sm leading-7 text-cream/65">{t.search.mapCopy}</p>
             </div>
             <dl className="grid grid-cols-3 border-t border-cream/15 pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
@@ -313,8 +398,19 @@ export default function ResultsPage() {
                   </div>
                 </div>
                 <div className="relative mt-8 flex flex-wrap gap-2 border-t border-ink/12 pt-6">
-                  {trending.map((t) => (
-                    <button key={t} onClick={clearFilters} className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick">Try {t}</button>
+                  {/* These used to be four hardcoded Ahmedabad strings wired to
+                      clearFilters — the button said "Try 3 BHK in Paldi" and then
+                      did something else entirely. They are now derived from the
+                      inventory in scope and actually run what they promise. */}
+                  {trending.map((suggestion) => (
+                    <button
+                      key={suggestion.query}
+                      onClick={() => runQuery(suggestion.query)}
+                      title={suggestion.hint}
+                      className="touch-44 border border-ink/20 px-4 stamp !text-[11px] font-semibold text-ink/70 transition-colors hover:border-brick hover:text-brick"
+                    >
+                      Try {suggestion.label}
+                    </button>
                   ))}
                 </div>
                 <div className="relative mt-7 flex flex-col gap-3 sm:flex-row">

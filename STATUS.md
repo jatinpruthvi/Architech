@@ -1,7 +1,7 @@
 # Architech implementation status
 
 **Current revision:** `a77e526` plus the repository-audit hardening and Amdavad Modern UX revision in the active workspace.  
-**Product:** Ahmedabad-first, Google-first real-estate discovery platform.  
+**Product:** India-wide, Google-first real-estate discovery platform (12 live cities, 72 localities).  
 **Implementation mode:** Next.js 16 App Router reference implementation with fixture adapters available for local preview.
 
 ## Current gates
@@ -25,6 +25,18 @@ Sitemap and robots generation now stop advertising public pages until the explic
 
 The current UX revision adds a stronger geometric A mark with a terracotta doorway notch, atlas-grid map surfaces with coordinate annotations, a search-page Atlas Lens evidence band, partner-facing broker language, dynamic boundaries for client-only authenticated surfaces, and a bounded Reveal fallback so inventory cannot remain invisible when an observer does not fire. Desktop and mobile visual QA covered the home, search, locality, listing, and broker dashboard routes.
 
+## India-wide coverage (August 2026 revision)
+
+The platform is no longer Ahmedabad-only. A city registry (`client/src/lib/cities.ts`) is now the top of the place hierarchy, localities are keyed to a city, and the public route grammar is `/buy/` → `/buy/{city}/` → `/buy/{city}/{locality}/`. Twelve cities across ten states are live; `/buy/ahmedabad/...` URLs are unchanged, so no redirects were required and existing canonicals, sitemap entries, and Search Console history stay valid.
+
+Registry-driven surfaces: locality/city routes and `generateStaticParams`, the `SeoPage` registry and sitemap partitions, city and locality JSON-LD (including state and RERA authority), the search city scope (`?city=`), the home city index, related-listing selection, broker onboarding and listing-draft validation, requirement capture, and the Prisma seed (via a generated registry mirror with a drift test).
+
+Ahmedabad retains hand-authored editorial fixtures; other cities use deterministic generated demo inventory derived from a city price band and locality price index. All of it remains illustrative demo data.
+
+Places are also **PIN-code addressable**. Cities carry their three-digit India Post sorting-district prefixes and localities carry the PIN codes they serve, both as lists because the relationship is many-to-many in both directions. `client/src/lib/pincodes.ts` resolves a PIN to localities, falls back to the city that owns the district when no locality claims it, and returns `null` rather than guessing. PIN codes never appear in canonical URLs; they are exposed as `?pincode=` on search, as a recognised six-digit token in `?q=`, as a visible fact on locality pages, and as `postalCode` in `PostalAddress` JSON-LD. Schema support lands in migration `202608270001_pincode_registry` (`Locality.pincodes` GIN-indexed, `City.pincodePrefixes`, `Listing.postalCode`). The PIN data itself is illustrative demo data pending India Post verification.
+
+
+The **search box understands queries** rather than passing them through. A deterministic grammar (`client/src/lib/search/parse-query.ts`) extracts BHK, budget, intent, category, filters, city, locality and PIN from free text, maps them onto real URL parameters, and keeps anything unrepresentable as free text so the rewrite is lossless. Suggestions are ranked (exact → prefix → word-prefix → substring → bounded typo correction) with an active-city boost, PIN lookups, and structured "search with these filters" actions. Popular, trending and placeholder examples are derived from live inventory with real counts; recent searches are stored per-device in `localStorage`. This replaced hardcoded Ahmedabad-only suggestion literals and a `String.includes` matcher.
 ## Source-of-truth order
 
 Read [`README.md`](README.md), [`architecture/normative/final-three-phase-architecture.md`](architecture/normative/final-three-phase-architecture.md), [`governance/contracts/DOMAIN-CONTRACTS.md`](governance/contracts/DOMAIN-CONTRACTS.md), [`PHASE-1-IMPLEMENTATION-PLAN.md`](PHASE-1-IMPLEMENTATION-PLAN.md), and [`docs/runtime-activation-gates.md`](docs/runtime-activation-gates.md). Historical improvement reviews describe earlier repository states and should not override the current application or normative contracts.

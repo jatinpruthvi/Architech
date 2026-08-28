@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
-import { getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
+import { getCityBySlug, getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { httpDecisionForListing } from "@/lib/seo/lifecycle";
 import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const metadataDecision = httpDecisionForListing(property.lifecycle, property.id, { continuingValue: property.continuingSeoValue });
   return {
     title: `${property.title} — ${property.price}`,
-    description: `${property.meta} · ${property.area} · ${property.locality}, Ahmedabad. ${property.note} ${property.badge}, ${property.status.toLowerCase()}.`,
+    description: `${property.meta} · ${property.area} · ${property.locality}, ${property.city}. ${property.note} ${property.badge}, ${property.status.toLowerCase()}.`,
     alternates: { canonical: listingUrl(property.id) },
     robots: { index: metadataDecision.indexable, follow: true },
     openGraph: { title: `${property.title} — ${property.price}`, url: listingUrl(property.id), images: [{ url: assetUrl(`/images/${property.image}.jpg`) }] },
@@ -42,6 +42,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (decision.status !== 200) notFound();
 
   const locality = getLocalityBySlug(property.localitySlug);
+  const city = getCityBySlug(property.citySlug);
+  // The PIN is the locality's primary code: a listing address sits inside one
+  // of the locality's PINs, and the first is the registry's principal entry.
+  const postalCode = locality?.pincodes[0];
   const [lat, lon] = (locality?.marker ?? "23.011,72.559").split(",");
   const trust = computeTrustScore(badgesToTrustInput(property.badge, property.status));
   const agent = buildAgentJsonLd(buildAgentProfile(demoBrokerSession));
@@ -54,7 +58,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     numberOfRooms: property.bhk,
     numberOfBathroomsTotal: property.details.bathrooms,
     floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitText: "sq ft" },
-    address: { "@type": "PostalAddress", addressLocality: property.locality, addressRegion: "Gujarat", addressCountry: "IN" },
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: property.locality,
+      addressRegion: city?.state ?? "India",
+      ...(postalCode ? { postalCode } : {}),
+      addressCountry: "IN",
+    },
     geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
     image: assetUrl(`/images/${property.image}.jpg`),
     additionalProperty: [

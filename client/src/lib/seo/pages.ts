@@ -1,8 +1,8 @@
-import { getGuides, getListings, getLocalities } from "@/lib/repositories";
+import { getCities, getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { isIndexable } from "./lifecycle";
 import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, requirementsPath, requirementsUrl } from "./urls";
 
-export type SeoRouteType = "home" | "city" | "locality" | "listing" | "guide";
+export type SeoRouteType = "home" | "hub" | "city" | "locality" | "listing" | "guide";
 export type SeoIndexability = "indexable" | "noindex";
 export type SeoQualityState = "prototype-validated" | "needs-production-data" | "editorial-review-required";
 export type SeoOwner = "Product" | "SEO" | "Content";
@@ -25,49 +25,66 @@ export type SeoPage = {
   };
 };
 
-const CITY_SLUG = "ahmedabad";
-
 const homePage: SeoPage = {
   id: "home",
   routeType: "home",
   path: homePath(),
   canonicalUrl: homeUrl(),
-  primaryIntent: "Introduce Architech and route users to Ahmedabad home discovery.",
+  primaryIntent: "Introduce Architech and route users to home discovery across Indian cities.",
   indexability: "indexable",
   owner: "Product",
   qualityState: "prototype-validated",
   freshnessPolicy: "Refresh when inventory, city coverage, or methodology claims materially change.",
-  entityIds: ["brand:architech", "city:ahmedabad"],
+  entityIds: ["brand:architech", "country:india"],
   sitemap: { changeFrequency: "daily", priority: 1 },
 };
 
-const cityPage: SeoPage = {
-  id: `city:${CITY_SLUG}:buy`,
+/** National hub above the city hubs — the crawl entry point for every market. */
+const buyIndiaPage: SeoPage = {
+  id: "hub:buy:india",
+  routeType: "hub",
+  path: "/buy/",
+  canonicalUrl: canonicalUrl("/buy/"),
+  primaryIntent: "Route buyers to the right Indian city hub and expose national coverage.",
+  indexability: "indexable",
+  owner: "SEO",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh whenever a city is launched, paused, or retired.",
+  entityIds: ["brand:architech", "country:india"],
+  sitemap: { changeFrequency: "daily", priority: 0.95 },
+};
+
+/* One hub per live city, generated from the city registry so launching a city
+   is a single registry edit (SEO-002). */
+const cityPages: SeoPage[] = getCities().map((city) => ({
+  id: `city:${city.slug}:buy`,
   routeType: "city",
-  path: cityPath(CITY_SLUG),
-  canonicalUrl: cityUrl(CITY_SLUG),
-  primaryIntent: "Help buyers compare Ahmedabad localities before selecting a property.",
+  path: cityPath(city.slug),
+  canonicalUrl: cityUrl(city.slug),
+  primaryIntent: `Help buyers compare ${city.name} localities before selecting a property.`,
   indexability: "indexable",
   owner: "SEO",
   qualityState: "prototype-validated",
   freshnessPolicy: "Refresh when locality coverage, counts, or city-level internal links change.",
-  entityIds: [`city:${CITY_SLUG}`],
+  entityIds: [`city:${city.slug}`, `state:${city.stateSlug}`],
   sitemap: { changeFrequency: "daily", priority: 0.9 },
-};
-
-const localityPages: SeoPage[] = getLocalities().map((locality) => ({
-  id: `locality:${CITY_SLUG}:${locality.slug}:buy`,
-  routeType: "locality",
-  path: localityPath(CITY_SLUG, locality.slug),
-  canonicalUrl: localityUrl(CITY_SLUG, locality.slug),
-  primaryIntent: `Show homes and locality context for ${locality.name}, Ahmedabad.`,
-  indexability: "indexable",
-  owner: "SEO",
-  qualityState: "prototype-validated",
-  freshnessPolicy: "Refresh when listings, coordinates, landmarks, or locality editorial context materially change.",
-  entityIds: [`city:${CITY_SLUG}`, `locality:${locality.slug}`],
-  sitemap: { changeFrequency: "daily", priority: 0.8 },
 }));
+
+const localityPages: SeoPage[] = getCities().flatMap((city) =>
+  getLocalities(city.slug).map((locality) => ({
+    id: `locality:${city.slug}:${locality.slug}:buy`,
+    routeType: "locality" as const,
+    path: localityPath(city.slug, locality.slug),
+    canonicalUrl: localityUrl(city.slug, locality.slug),
+    primaryIntent: `Show homes and locality context for ${locality.name}, ${city.name}.`,
+    indexability: "indexable" as const,
+    owner: "SEO" as const,
+    qualityState: "prototype-validated" as const,
+    freshnessPolicy: "Refresh when listings, coordinates, landmarks, or locality editorial context materially change.",
+    entityIds: [`city:${city.slug}`, `locality:${locality.slug}`],
+    sitemap: { changeFrequency: "daily" as const, priority: 0.8 },
+  })),
+);
 
 const listingPages: SeoPage[] = getListings().map((property) => ({
   id: `listing:${property.id}`,
@@ -81,7 +98,7 @@ const listingPages: SeoPage[] = getListings().map((property) => ({
   owner: "SEO",
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",
-  entityIds: [`city:${CITY_SLUG}`, `locality:${property.localitySlug}`, `listing:${property.id}`],
+  entityIds: [`city:${property.citySlug}`, `locality:${property.localitySlug}`, `listing:${property.id}`],
   sitemap: { changeFrequency: "daily", priority: 0.7 },
 }));
 
@@ -124,7 +141,7 @@ const requirementsPage: SeoPage = {
   owner: "Product",
   qualityState: "prototype-validated",
   freshnessPolicy: "Refresh when the requirement fields, consent language, or routing policy changes.",
-  entityIds: ["brand:architech", "city:ahmedabad", "topic:property-requirements"],
+  entityIds: ["brand:architech", "country:india", "topic:property-requirements"],
   sitemap: { changeFrequency: "monthly", priority: 0.6 },
 };
 
@@ -133,12 +150,12 @@ const developersPage: SeoPage = {
   routeType: "guide",
   path: developersPath(),
   canonicalUrl: developersUrl(),
-  primaryIntent: "Help users discover Ahmedabad builders and projects with context and evidence policy.",
+  primaryIntent: "Help users discover Indian builders and projects with context and evidence policy.",
   indexability: "indexable",
   owner: "SEO",
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh when developer evidence, project links, or partner status changes.",
-  entityIds: ["brand:architech", "city:ahmedabad", "topic:developers"],
+  entityIds: ["brand:architech", "country:india", "topic:developers"],
   sitemap: { changeFrequency: "weekly", priority: 0.6 },
 };
 
@@ -147,12 +164,12 @@ const investmentPage: SeoPage = {
   routeType: "guide",
   path: investmentPath(),
   canonicalUrl: investmentUrl(),
-  primaryIntent: "Provide general Ahmedabad property context without personalized financial recommendations.",
+  primaryIntent: "Provide general Indian property-market context without personalized financial recommendations.",
   indexability: "indexable",
   owner: "Content",
   qualityState: "editorial-review-required",
   freshnessPolicy: "Refresh when sources, legal disclaimers, or locality context changes.",
-  entityIds: ["brand:architech", "city:ahmedabad", "topic:investment-context"],
+  entityIds: ["brand:architech", "country:india", "topic:investment-context"],
   sitemap: { changeFrequency: "monthly", priority: 0.5 },
 };
 
@@ -161,12 +178,12 @@ const aboutPage: SeoPage = {
   routeType: "home",
   path: "/about-us/",
   canonicalUrl: canonicalUrl("/about-us/"),
-  primaryIntent: "Explain Architech’s Ahmedabad-first product, evidence policy, and place-first approach.",
+  primaryIntent: "Explain Architech’s India-wide product, evidence policy, and place-first approach.",
   indexability: "indexable",
   owner: "Product",
   qualityState: "prototype-validated",
   freshnessPolicy: "Refresh when company positioning, methodology, or coverage changes.",
-  entityIds: ["brand:architech", "city:ahmedabad"],
+  entityIds: ["brand:architech", "country:india"],
   sitemap: { changeFrequency: "monthly", priority: 0.4 },
 };
 
@@ -180,7 +197,7 @@ const contactPage: SeoPage = {
   owner: "Product",
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh when approved contact channels and response policy change.",
-  entityIds: ["brand:architech", "city:ahmedabad"],
+  entityIds: ["brand:architech", "country:india"],
   sitemap: { changeFrequency: "monthly", priority: 0.4 },
 };
 
@@ -194,7 +211,7 @@ const homeLoanPage: SeoPage = {
   owner: "Content",
   qualityState: "editorial-review-required",
   freshnessPolicy: "Refresh when calculator assumptions, disclosures, or approved providers change.",
-  entityIds: ["brand:architech", "city:ahmedabad", "topic:home-loan-context"],
+  entityIds: ["brand:architech", "country:india", "topic:home-loan-context"],
   sitemap: { changeFrequency: "monthly", priority: 0.4 },
 };
 
@@ -222,7 +239,7 @@ const htmlSitemapPage: SeoPage = {
   owner: "SEO",
   qualityState: "prototype-validated",
   freshnessPolicy: "Refresh whenever a crawlable public route is added, removed, or materially changed.",
-  entityIds: ["brand:architech", "city:ahmedabad"],
+  entityIds: ["brand:architech", "country:india"],
   sitemap: { changeFrequency: "weekly", priority: 0.5 },
 };
 
@@ -240,7 +257,7 @@ const listPropertyPage: SeoPage = {
   sitemap: { changeFrequency: "monthly", priority: 0.6 },
 };
 
-export const seoPages: SeoPage[] = [homePage, cityPage, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
+export const seoPages: SeoPage[] = [homePage, buyIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
 
 export function getIndexableSeoPages() {
   return seoPages.filter((page) => page.indexability === "indexable");

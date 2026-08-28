@@ -3,10 +3,10 @@ import { AboutPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
-  title: "About Architech — Ahmedabad property discovery",
-  description: "Learn how Architech combines Ahmedabad locality context, source trails, freshness, and privacy-aware property discovery.",
+  title: "About Architech — India property discovery",
+  description: "Learn how Architech combines locality context across Indian cities, source trails, freshness, and privacy-aware property discovery.",
   alternates: { canonical: canonicalUrl("/about-us/") },
-  openGraph: { title: "About Architech — Ahmedabad property discovery", description: "A place-first, evidence-led property discovery platform for Ahmedabad.", url: canonicalUrl("/about-us/"), type: "website" },
+  openGraph: { title: "About Architech — India property discovery", description: "A place-first, evidence-led property discovery platform for India.", url: canonicalUrl("/about-us/"), type: "website" },
 };
 
 export default function Page() {

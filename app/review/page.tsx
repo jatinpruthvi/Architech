@@ -3,10 +3,10 @@ import { FeedbackPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
-  title: "Feedback for Architech — Ahmedabad property discovery",
+  title: "Feedback for Architech — India property discovery",
   description: "Share feedback about the Architech property discovery experience. Reviews are never published without real consent and moderation.",
   alternates: { canonical: canonicalUrl("/review/") },
-  openGraph: { title: "Feedback for Architech — Ahmedabad property discovery", url: canonicalUrl("/review/"), type: "website" },
+  openGraph: { title: "Feedback for Architech — India property discovery", url: canonicalUrl("/review/"), type: "website" },
 };
 
 export default function Page() {

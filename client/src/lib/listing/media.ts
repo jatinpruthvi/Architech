@@ -22,13 +22,13 @@ const EDITORIAL_SHOTS = [
     shared editorial context shots, each with a meaningful label. */
 export function listingSlides(property: Property): ListingSlide[] {
   const slides: ListingSlide[] = [
-    { name: property.image, alt: `${property.title}, ${property.locality}, Ahmedabad`, label: "Primary view" },
+    { name: property.image, alt: `${property.title}, ${property.locality}, ${property.city}`, label: "Primary view" },
   ];
   for (const shot of EDITORIAL_SHOTS) {
     if (shot.name === property.image) continue;
     slides.push({
       name: shot.name,
-      alt: `${shot.label} near ${property.locality}, Ahmedabad`,
+      alt: `${shot.label} near ${property.locality}, ${property.city}`,
       label: shot.label,
     });
   }

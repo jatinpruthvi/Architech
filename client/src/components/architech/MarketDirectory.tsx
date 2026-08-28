@@ -37,7 +37,7 @@ export default function MarketDirectory() {
             <h2 id="market-directory-title" className="display mt-4 max-w-[760px] text-[clamp(34px,5vw,68px)]">Find a place by <em className="text-brick">what it is.</em></h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-ink/65">The category, locality, project, and source trail stay visible together. Start broad, then follow the address until it makes sense.</p>
           </div>
-          <Link href="/buy/ahmedabad/" className="link-rail stamp self-start !text-[11px] font-semibold text-brick md:self-end">Explore all Ahmedabad localities <ArrowUpRight size={14} className="ml-1 inline" /></Link>
+          <Link href="/buy/" className="link-rail stamp self-start !text-[11px] font-semibold text-brick md:self-end">Explore all cities and localities <ArrowUpRight size={14} className="ml-1 inline" /></Link>
         </div>
 
         <nav className="mt-12 grid grid-cols-2 border-y border-ink/15 sm:grid-cols-3 lg:grid-cols-6" aria-label="Property categories">

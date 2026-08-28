@@ -105,6 +105,43 @@ const routeChecks = [
     },
   },
   {
+    // National hub above the city hubs — must expose every city as a crawlable link.
+    route: "/buy/",
+    check(html) {
+      assertCommonSeo(html, "/buy/");
+      includes(html, "Buy property in India", "/buy/");
+      includes(html, "href=\"/buy/ahmedabad/\"", "/buy/");
+      includes(html, "href=\"/buy/mumbai/\"", "/buy/");
+      includes(html, "href=\"/buy/bengaluru/\"", "/buy/");
+      includes(html, "@type\":\"ItemList", "/buy/");
+      matches(html, /<title>Buy property in India[^<]*· Architech<\/title>/, "/buy/", "route title");
+    },
+  },
+  {
+    // A second city proves the hub template is registry-driven, not Ahmedabad-only.
+    route: "/buy/mumbai/",
+    check(html) {
+      assertCommonSeo(html, "/buy/mumbai/");
+      includes(html, "Buy in", "/buy/mumbai/");
+      includes(html, "Bandra West", "/buy/mumbai/");
+      includes(html, "MahaRERA", "/buy/mumbai/");
+      includes(html, "href=\"/buy/mumbai/bandra-west/\"", "/buy/mumbai/");
+      matches(html, /<title>Buy in Mumbai[^<]*· Architech<\/title>/, "/buy/mumbai/", "route title");
+    },
+  },
+  {
+    route: "/buy/mumbai/bandra-west/",
+    check(html) {
+      assertCommonSeo(html, "/buy/mumbai/bandra-west/");
+      includes(html, "Homes in Bandra West", "/buy/mumbai/bandra-west/");
+      includes(html, "@type\":\"Place", "/buy/mumbai/bandra-west/");
+      includes(html, "@type\":\"BreadcrumbList", "/buy/mumbai/bandra-west/");
+      // Breadcrumbs must climb to the owning city, never to a hardcoded one.
+      includes(html, "href=\"/buy/mumbai/\"", "/buy/mumbai/bandra-west/");
+      matches(html, /<title>Bandra West, Mumbai[^<]*· Architech<\/title>/, "/buy/mumbai/bandra-west/", "route title");
+    },
+  },
+  {
     route: "/list-property/",
     check(html) {
       assertCommonSeo(html, "/list-property/");
@@ -160,7 +197,7 @@ const routeChecks = [
     check(html) {
       assertCommonSeo(html, "/search/");
       assertNoindex(html, "/search/");
-      includes(html, "Search homes in Ahmedabad", "/search/");
+      includes(html, "Search homes across India", "/search/");
     },
   },
   {

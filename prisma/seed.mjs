@@ -1,15 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { CITIES, LOCALITIES } from "./seed-registry.mjs";
 
 const prisma = new PrismaClient();
-
-const localities = [
-  { slug: "paldi", name: "Paldi", hindiName: "पालडी", note: "Tree-lined, central, quietly established", demoHomeCount: 42, latitude: "23.011000", longitude: "72.559000", bbox: "72.5350,22.9950,72.5850,23.0270", landmarks: [["Law Garden", "≈ 1.4 km"], ["Sabarmati Riverfront", "≈ 1.8 km"], ["Tagore Hall", "≈ 0.9 km"], ["IIM Ahmedabad", "≈ 5.2 km"], ["SVP Airport", "≈ 11.6 km"]] },
-  { slug: "navrangpura", name: "Navrangpura", hindiName: "नवरंगपुरा", note: "Lively streets with a familiar pulse", demoHomeCount: 31, latitude: "23.039000", longitude: "72.561000", bbox: "72.5400,23.0250,72.5820,23.0530", landmarks: [["Gujarat College", "≈ 0.8 km"], ["Law Garden", "≈ 1.2 km"], ["Sabarmati Riverfront", "≈ 1.6 km"], ["SVP Airport", "≈ 9.4 km"]] },
-  { slug: "prahlad-nagar", name: "Prahlad Nagar", hindiName: "प्रह्लाद नगर", note: "Newer buildings, easy everyday rhythm", demoHomeCount: 68, latitude: "23.011000", longitude: "72.507000", bbox: "72.4880,22.9970,72.5260,23.0250" },
-  { slug: "thaltej", name: "Thaltej", hindiName: "थलतेज", note: "Room to breathe at the western edge", demoHomeCount: 54, latitude: "23.052000", longitude: "72.509000", bbox: "72.4900,23.0380,72.5280,23.0660" },
-  { slug: "bopal", name: "Bopal", hindiName: "बोपल", note: "Young families, wide roads, new schools", demoHomeCount: 47, latitude: "23.033000", longitude: "72.464000", bbox: "72.4450,23.0190,72.4830,23.0470" },
-  { slug: "satellite", name: "Satellite", hindiName: "सैटेलाइट", note: "Connected, confident, always awake", demoHomeCount: 39, latitude: "23.023000", longitude: "72.519000", bbox: "72.5000,23.0090,72.5380,23.0370" },
-];
 
 const listings = [
   { stableId: "garden-courtyard", slug: "garden-courtyard", title: "A garden courtyard in Paldi", localitySlug: "paldi", priceLabel: "₹1.85 Cr", priceInr: 18_500_000, pricePerSqft: "₹12,480 / sq ft", bhk: 3, areaSqft: 1482, propertyType: "APARTMENT", availability: "READY_TO_MOVE", verification: "RERA_VERIFIED", description: "Old trees, kota stone floors, and a courtyard that carries the whole house.", image: "prop-courtyard" },
@@ -19,18 +11,30 @@ const listings = [
 ];
 
 async function main() {
-  const city = await prisma.city.upsert({
-    where: { slug: "ahmedabad" },
-    update: { name: "Ahmedabad", hindiName: "अहमदाबाद", state: "Gujarat", country: "IN", latitude: "23.030000", longitude: "72.580000" },
-    create: { slug: "ahmedabad", name: "Ahmedabad", hindiName: "अहमदाबाद", state: "Gujarat", country: "IN", latitude: "23.030000", longitude: "72.580000" },
-  });
+  // Every city in the registry is provisioned, so the database matches the
+  // routes, sitemap, and SEO registry the application generates.
+  const cityBySlug = new Map();
+  for (const city of CITIES) {
+    const record = await prisma.city.upsert({
+      where: { slug: city.slug },
+      update: { ...city },
+      create: { ...city },
+    });
+    cityBySlug.set(city.slug, record);
+  }
+
+  // The hand-authored demo listings below belong to the reference city.
+  const city = cityBySlug.get("ahmedabad");
+  if (!city) throw new Error("Seed registry is missing the reference city 'ahmedabad'.");
 
   const localityBySlug = new Map();
-  for (const locality of localities) {
+  for (const { citySlug, ...locality } of LOCALITIES) {
+    const owner = cityBySlug.get(citySlug);
+    if (!owner) throw new Error(`Locality ${locality.slug} references unknown city ${citySlug}.`);
     const record = await prisma.locality.upsert({
-      where: { cityId_slug: { cityId: city.id, slug: locality.slug } },
+      where: { cityId_slug: { cityId: owner.id, slug: locality.slug } },
       update: { ...locality, aliases: [locality.name.toLowerCase(), locality.hindiName], landmarks: locality.landmarks ?? undefined },
-      create: { ...locality, aliases: [locality.name.toLowerCase(), locality.hindiName], landmarks: locality.landmarks ?? undefined, cityId: city.id },
+      create: { ...locality, aliases: [locality.name.toLowerCase(), locality.hindiName], landmarks: locality.landmarks ?? undefined, cityId: owner.id },
     });
     localityBySlug.set(locality.slug, record);
   }
@@ -63,6 +67,7 @@ async function main() {
         bhk: listing.bhk,
         areaSqft: listing.areaSqft,
         availability: listing.availability,
+        postalCode: locality.pincodes?.[0] ?? null,
         cityId: city.id,
         localityId: locality.id,
         brokerOrgId: broker.id,
@@ -86,6 +91,7 @@ async function main() {
         areaSqft: listing.areaSqft,
         availability: listing.availability,
         addressLocality: locality.name,
+        postalCode: locality.pincodes?.[0] ?? null,
         cityId: city.id,
         localityId: locality.id,
         brokerOrgId: broker.id,
@@ -97,8 +103,8 @@ async function main() {
 
     await prisma.propertyMedia.upsert({
       where: { id: `media-${listing.slug}-primary` },
-      update: { url: `/images/${listing.image}.jpg`, alt: `${listing.title}, ${locality.name}, Ahmedabad`, moderationStatus: "APPROVED", derivatives: { webp: `/images/${listing.image}.webp`, mobileWebp: `/images/${listing.image}-800.webp` } },
-      create: { id: `media-${listing.slug}-primary`, listingId: saved.id, url: `/images/${listing.image}.jpg`, alt: `${listing.title}, ${locality.name}, Ahmedabad`, moderationStatus: "APPROVED", derivatives: { webp: `/images/${listing.image}.webp`, mobileWebp: `/images/${listing.image}-800.webp` }, exifStripped: true, sortOrder: 0 },
+      update: { url: `/images/${listing.image}.jpg`, alt: `${listing.title}, ${locality.name}, ${city.name}`, moderationStatus: "APPROVED", derivatives: { webp: `/images/${listing.image}.webp`, mobileWebp: `/images/${listing.image}-800.webp` } },
+      create: { id: `media-${listing.slug}-primary`, listingId: saved.id, url: `/images/${listing.image}.jpg`, alt: `${listing.title}, ${locality.name}, ${city.name}`, moderationStatus: "APPROVED", derivatives: { webp: `/images/${listing.image}.webp`, mobileWebp: `/images/${listing.image}-800.webp` }, exifStripped: true, sortOrder: 0 },
     });
   }
 
@@ -152,11 +158,11 @@ async function main() {
       action: "seed.phase1_domain_schema",
       entityType: "database",
       entityId: "phase1-demo-fixtures",
-      metadata: { localities: localities.length, listings: listings.length, source: "prisma/seed.mjs" },
+      metadata: { localities: LOCALITIES.length, listings: listings.length, source: "prisma/seed.mjs" },
     },
   });
 
-  console.log(`Seeded ${localities.length} Ahmedabad localities and ${listings.length} demo listings.`);
+  console.log(`Seeded ${CITIES.length} cities, ${LOCALITIES.length} localities, and ${listings.length} demo listings.`);
 }
 
 main()

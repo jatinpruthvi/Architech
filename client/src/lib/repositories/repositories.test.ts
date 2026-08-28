@@ -24,7 +24,12 @@ describe("fixture-backed repositories", () => {
   it("exposes locality lookup and static params", () => {
     expect(getLocalities().length).toBeGreaterThanOrEqual(6);
     expect(getLocalityBySlug("paldi")?.hindi).toBe("पालडी");
-    expect(getLocalityStaticParams()).toContainEqual({ locality: "paldi" });
+    // Static params carry the city segment for /buy/:city/:locality/.
+    expect(getLocalityStaticParams()).toContainEqual({ city: "ahmedabad", locality: "paldi" });
+    expect(getLocalityStaticParams()).toContainEqual({ city: "mumbai", locality: "bandra-west" });
+    // City scoping keeps one city's localities out of another's hub.
+    expect(getLocalities("ahmedabad").every((locality) => locality.citySlug === "ahmedabad")).toBe(true);
+    expect(getLocalityBySlug("bandra-west", "ahmedabad")).toBeUndefined();
   });
 
   it("exposes guide fixtures for the content repository contract", () => {

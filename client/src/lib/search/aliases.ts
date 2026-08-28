@@ -73,7 +73,9 @@ export function resolveLocalitiesFromQuery(query: string): string[] {
   const tokens = query
     .toLowerCase()
     .normalize("NFKC")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    // Keep combining marks: Devanagari vowel signs are \p{M}, and dropping them
+    // splits a word like "पालडी" into unmatchable fragments.
+    .replace(/[^\p{L}\p{N}\p{M}]+/gu, " ")
     .split(/\s+/)
     .filter(Boolean);
   const hits: string[] = [];
