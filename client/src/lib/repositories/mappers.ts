@@ -3,6 +3,7 @@ import { DEFAULT_CITY_SLUG } from "@/lib/cities";
 import type { Property } from "@/lib/properties";
 import type { PropertyDetails } from "@/lib/listing-details";
 import { isPropertyTypeCode, labelForAvailability, normalizeAvailability, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
+import { listingDetailsFromSourceSummary, normalizeListingDetails, hasAnyListingDetail } from "@/lib/listing-details-contract";
 
 type DecimalLike = { toString(): string } | string | number | null | undefined;
 
@@ -66,16 +67,6 @@ function coords(latitude?: DecimalLike, longitude?: DecimalLike) {
     coords: `${lat.toFixed(3)}° N · ${lon.toFixed(3)}° E`,
     marker: `${lat.toFixed(3)},${lon.toFixed(3)}`,
   };
-}
-
-function parseDetails(value?: string | null): PropertyDetails {
-  if (!value) return {};
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" ? parsed as PropertyDetails : {};
-  } catch {
-    return {};
-  }
 }
 
 /** Derive a "west,south,east,north" frame when a row has no stored bbox. */
@@ -176,6 +167,13 @@ export function dbListingToProperty(row: DbListingRow): Property {
     subtype,
     project: row.projectName ?? row.title,
     developer: row.developerName ?? "Verified partner",
-    details: row.details ?? parseDetails(row.sourceSummary),
+    /* Structured first, prose second — and "first" only when it is non-empty,
+       otherwise a `{}` on the column would mask the fallback entirely.
+       `row.details` does not exist on the `Listing` model yet, so today the
+       left side is always undefined and the cast at the call site
+       (server/prisma.ts) is what stops the compiler from saying so: see
+       listing-details-contract.ts for why that column is the real fix and why
+       it is deliberately not in this commit. */
+    details: hasAnyListingDetail(row.details) ? normalizeListingDetails(row.details) : listingDetailsFromSourceSummary(row.sourceSummary),
   };
 }

@@ -17,7 +17,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ i
   const homes = selectComparableListings(getListings(), params.ids);
 
   return (
-    <main className="min-h-screen bg-paper pt-[110px] text-ink">
+    <main className="vh-fill bg-paper pt-[110px] text-ink">
       <div className="container pb-24">
         <Link href="/search/" className="stamp !text-[11px] font-semibold text-brick underline underline-offset-4">← Back to search</Link>
         <div className="mt-8 flex items-end justify-between gap-6 border-b border-ink/15 pb-8">

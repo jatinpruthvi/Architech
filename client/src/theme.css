@@ -196,7 +196,21 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .kicker::before { content: ""; width: 44px; height: 2px; background: currentColor; }
 
 /* Mono data stamp */
-.stamp { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.stamp { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+/* The one legitimate step below .stamp. Written as a class rather than
+   `stamp !text-[11px]` because the override is the pattern the ratchet exists
+   to retire — 175 of them, mostly copies of each other, with no shared
+   meaning. Two rules here mean a rail or a chip row can go smaller on purpose
+   without adding debt: below this, a mono uppercase label stops being a label. */
+.stamp-sm { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+/* The DEFAULT colour is wrapped in `:where()` so it carries zero specificity.
+   240 call sites had `text-ink/45` baked into the markup (2.81:1 on the warm
+   card), which `.stamp` now supplies instead — but 149 other call sites pair
+   `.stamp` with a real semantic colour (`text-trust` on a verification stamp,
+   `text-brick` on a link). An unlayered rule beats a layered utility no matter
+   how specific the utility is, so an unwrapped colour here silently mutes every
+   one of those. Size stays a hard rule; colour stays a suggestion. */
+:where(.stamp) { color: var(--muted-foreground); }
 
 /* Big index numerals */
 .index-num { font-family: var(--font-display); font-variation-settings: "opsz" 144; font-weight: 300; line-height: 0.85; letter-spacing: -0.04em; }
@@ -288,6 +302,39 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .img-hover { overflow: hidden; }
 .img-hover img { transition: transform 900ms cubic-bezier(0.19, 1, 0.22, 1), filter 500ms ease; }
 .img-hover:hover img { transform: scale(1.05); }
+/* ------------------------------------------------------------------
+   Reveal — the entrance primitive in components/architech/Reveal.tsx.
+   It was wired to NOTHING: it emitted `architech-reveal` +
+   `--reveal-delay`, and theme.css had no rule for either, so the 51 call
+   sites across 12 pages were plain wrapper <div>s. Two ways to fix a lie like
+   that; deleting the wrapper would have touched 12 files and broken four
+   layouts whose className the wrapper happened to carry, so instead the CSS
+   now does what the component claimed, with the same guarantees:
+
+   - animate from `opacity: 0` but only for 420ms, then release (`both`
+     fill + a short total) so a bot, a stalled frame, or a paint that never
+     runs cannot be left with invisible content.
+   - inside no-preference only, so reduced motion sees the final state and
+     needs no override.
+   The delay is capped at 320ms in Reveal itself for the same reason v4's
+   uncapped 60ms stagger was removed: choreography over results that are
+   already on screen is a tax, not a feature.
+   ------------------------------------------------------------------ */
+@keyframes reveal-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .architech-reveal { animation: reveal-in 420ms cubic-bezier(0.2, 0, 0, 1) both; animation-delay: var(--reveal-delay, 0ms); }
+}
+
+/* Photo arrival, from Pic. The base state is deliberately VISIBLE and the
+   hidden state is the opt-in: `opacity: 0` by default means a photo that never
+   fires onLoad (blocked CDN, offline navigation, an aborted lazy request) stays
+   invisible forever, which is a broken image, not a missing animation. The fade
+   therefore lives inside no-preference, and reduced-motion needs no override. */
+.pic-fade { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .pic-fade:not(.pic-fade-in) { opacity: 0; }
+  .pic-fade { transition: opacity 260ms ease-out; }
+}
 
 /* animated underline */
 .link-rail { position: relative; }
@@ -315,7 +362,103 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    is invalid at computed-value time and the property silently falls back to
    the INHERITED colour — which is the exact failure mode being fixed here. */
 .clay-fill, .night-fill { color: var(--cream, #fff8ee); }
+/* Hover fills need the same guarantee. A cream label on `hover:bg-brick` is the
+   same 3.31:1 dark-theme failure as the static case, and `hover:clay-fill` is
+   not a valid utility (these are component classes, not Tailwind utilities) —
+   so hover-only clay surfaces carry `clay-fill` and get the label from here. */
+.clay-fill:hover, .clay-fill:focus-visible { color: var(--cream, #fff8ee); }
+.dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 92%, #000); }
+
 .paper-fill { color: var(--ink, #241c18); }
+
+/* ---------- Viewport geometry (mobile realism) ----------
+   `min-h-screen` / `h-screen` in Tailwind mean 100vh, and on Chrome Android
+   100vh is the viewport with the URL bar HIDDEN — so a full-height surface
+   renders 15-20% too tall and its bottom edge is unreachable until the person
+   scrolls enough for the bar to collapse. These are the three cases we actually
+   have, and they want THREE different answers, which is why they are named
+   rules instead of `h-[calc(100dvh-…)]` scattered through the markup:
+
+   - a sheet/dialog that must always fit   -> svh (never grows mid-drag)
+   - a tall panel whose bottom is the CTA  -> dvh (tallest, but only seen
+                                               scrolled, so the bar is already gone)
+   - a sticky rail inside a scrolled page  -> dvh
+
+   Written as a plain-vh rule PLUS a re-declaration inside `@supports`, not as
+   two declarations for one property. That second shape is the one every CSS
+   article recommends, and it does NOT survive this build: verified against
+   `.next/static/chunks/*.css`, Lightning CSS merges adjacent identical rules
+   and dedupes same-property declarations, so `.vh-fill,.vh-fill-dvh{
+   min-height:100vh}` collapses into the svh rule and the fallback is simply
+   gone — a browser without svh then gets `auto`, which is the exact failure the
+   fallback was written to prevent. A conditional block cannot be merged into
+   the rules it wraps, so both values ship. (If a future config sets
+   `lightningCssFeatures.supports`, the block gets unwrapped and this breaks
+   again — the guard test fails loudly rather than silently, so check that
+   first.) Tailwind arbitrary values are impossible here either way: a
+   `h-[62svh]` has no fallback half. */
+.vh-fill { min-height: 100vh; }
+.vh-fill-dvh { min-height: 100vh; }
+.vh-sheet { max-height: 94vh; }
+.vh-cta { height: 62vh; }
+.rail-scroll { max-height: calc(100vh - 130px); }
+@supports (height: 100svh) {
+  .vh-fill { min-height: 100svh; }
+  .vh-sheet { max-height: 94svh; }
+  .vh-cta { height: 62svh; }
+}
+@supports (height: 100dvh) {
+  .vh-fill-dvh { min-height: 100dvh; }
+  .rail-scroll { max-height: calc(100dvh - 130px); }
+}
+@media (min-width: 1024px) {
+  .vh-cta { height: calc(100vh - 190px); }
+  @supports (height: 100dvh) {
+    .vh-cta { height: calc(100dvh - 190px); }
+  }
+}
+
+/* ------------------------------------------------------------------
+   In-page anchors. The header is 78px and fixed, so an unguarded
+   `href="#features"` parks the heading directly UNDER it: the user jumps
+   and sees chrome, not content. scroll-margin-block-start is the offset
+   that survives every browser; `scroll-padding-top` on html would be the
+   other option, but it is per-scroll-container and this page nests.
+
+   Deliberately UNLAYERED. Tailwind v4's own `scroll-m-*` utilities live in
+   @layer utilities, and an unlayered rule outranks a layered one at any
+   specificity — which here is the point: the offset is not a per-component
+   choice, it is the page's geometry. (Same reason `.clay-fill` carries
+   `color:` as a hard property, ~line 168.)
+   ------------------------------------------------------------------ */
+[id] { scroll-margin-block-start: 96px; }
+/* No scroll-behavior here. The existing smooth declaration on the root element
+   near the top of this file already covers it, and the repo's single
+   reduced-motion block at the bottom already reverts it to auto. Re-declaring
+   either here would only give the guard test two copies to count, and it would
+   pass for the wrong reason the moment the real rule drifted. */
+
+/* The section rail's active marker. A dot rather than a colour: the rail sits
+   over a busy dossier, and the active state has to read at a glance while
+   scrolling, in both themes, without a second text style. */
+.section-rail { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.section-rail::-webkit-scrollbar { display: none; }
+.section-rail-link { position: relative; white-space: nowrap; }
+.section-rail-link[aria-current="true"] { color: var(--ink); }
+.section-rail-link::after {
+  content: ""; position: absolute; left: 0.6rem; right: 0.6rem; bottom: 0; height: 2px;
+  background: var(--brick); transform: scaleX(0); transform-origin: left;
+  transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+.section-rail-link[aria-current="true"]::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) {
+  .section-rail-link::after { transition: none; }
+}
+
+/* Bottom chrome (action bars, sheet footers) on a gesture-nav device sits under
+   the home-indicator strip: the tap target survives, the label clips. */
+.safe-bottom { padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+.safe-bottom-lg { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
 
 .dark .clay-fill { background: var(--brick-deep); }
 .dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }
@@ -448,6 +591,130 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .desk-kpi-primary { min-height: 270px; }
   .desk-kpi { min-height: 142px; }
 }
+
+/* ---------- Facet surface (filter rebuild) ----------
+   Selection is a SAND FILL + BRICK EDGE + CHECK, not a solid clay field with a
+   cream label. Why: `.dark .clay-fill` deepens the clay surface, but a raw
+   `bg-brick` chip does not get that treatment — so the same chip is 5.69:1 in
+   light and 3.31:1 in dark, and the fix for one breaks the other. A fill+edge
+   pattern is legible in every theme, needs no label to inherit anything, and
+   reads as "selected" without relying on a colour jump.
+   Type sizes are declared HERE (layered, no `!important`): the previous
+   `!text-[9px]` / `!text-[10px]` call-site overrides existed only because
+   `.stamp` and `.kicker` sat in an unlayered block. They must not come back —
+   `client/src/lib/ui/design-token-discipline.test.ts` fails the build on them. */
+@layer components {
+  /* Lists stay unmarked but keep their semantics. Safari + VoiceOver drop a
+     list's role the moment list-style is removed, and preflight removes it
+     globally — which is why every <ul> here carries role="list" explicitly
+     (see eslint.config.js) and this rule keeps the marker off. */
+  ul[role="list"] { list-style: none; margin: 0; padding: 0; }
+
+  .facet-group + .facet-group { border-top: 1px solid var(--rule-soft, rgb(17 24 39 / 0.1)); }
+  .facet-group { padding-block: 18px; }
+  .facet-group:first-child { padding-top: 4px; }
+  .facet-group-title { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+  .facet-option {
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
+    padding: 9px 12px; border-radius: 0.625rem; text-align: left;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
+    border: 1px solid var(--rule, rgb(17 24 39 / 0.14)); background: transparent; color: var(--ink);
+    transition: background var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease;
+  }
+  .facet-option:hover:not([aria-disabled="true"]) { border-color: var(--brick); color: var(--brick); }
+  /* aria-checked is the filter row's state (role="checkbox"); aria-pressed is
+     the preset chip's (a real toggle). Both mark selection the same way — sand
+     fill + clay edge, never a solid clay field with a cream label. */
+  .facet-option[aria-checked="true"], .facet-option[aria-pressed="true"] { background: var(--sand); border-color: var(--brick); color: var(--ink); }
+  /* Disabled, never removed: an option that resolves to zero still has to be
+     visible, otherwise the filter looks broken instead of the inventory scarce.
+     `--ink-3` resolves warm in both themes; no opacity is involved, so the
+     light and dark ladders cannot diverge the way `text-ink/45` did. */
+  .facet-option[aria-disabled="true"] { color: var(--muted-foreground); border-style: dashed; cursor: not-allowed; }
+  .facet-count { margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.85; }
+  .facet-hint { font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+  .facet-field {
+    width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 0.625rem;
+    border: 1px solid var(--input, rgb(17 24 39 / 0.16)); background: var(--card); color: var(--foreground);
+    font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .facet-field:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  /* Histogram bars are layout-safe at zero height: a flex column with a
+     min-height floor, so an empty bucket still shows the axis. */
+  .facet-histogram { display: flex; align-items: flex-end; gap: 2px; height: 56px; }
+  .facet-histogram-bar { flex: 1 1 0; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--sand); }
+  .facet-histogram-bar[data-inrange="true"] { background: color-mix(in srgb, var(--brick) 34%, var(--sand)); }
+  .facet-link {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--facet-link);
+    min-height: 44px;
+    padding-inline: 8px;
+    border-radius: 8px;
+    text-underline-offset: 4px;
+  }
+  .facet-link:hover { text-decoration: underline; }
+  .facet-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--facet-border);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+  }
+  .facet-control:hover { border-color: var(--facet-link); color: var(--facet-link); }
+  .facet-control[aria-pressed="true"] { border-color: var(--brick); background: var(--sand); color: var(--ink); }
+  .facet-applied {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 10px 6px 12px;
+    border-radius: 999px; border: 1px solid var(--brick); background: var(--sand);
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; color: var(--ink);
+  }
+  /* Warm ink ramp for secondary text. Defined once so a surface (consumer vs
+     desk) can retarget it later without touching a call site — which is exactly
+     what the opacity ladder (`text-ink/60`) could not do: it fails at 45% in
+     light (2.81:1) while passing at the same number in dark (3.73:1). */
+  /* :where() keeps these overridable by a later utility in the same layer,
+     and by any explicit text-* a call site still needs. */
+  :where(.ink-2) { color: var(--ink-2, #51453d); }
+  :where(.ink-3) { color: var(--ink-3, #6e6058); }
+}
+
+:root {
+  --ink-2: #51453d;
+  --ink-3: #6e6058;
+  --rule: rgba(17, 24, 39, 0.14);
+  --rule-soft: rgba(17, 24, 39, 0.1);
+  --facet-link: var(--brick);
+  --facet-border: rgba(17, 24, 39, 0.18);
+}
+/* --brick alone is 4.16:1 on the dark card — fine for a 26px display price,
+   short for a 12px mono label, and the theme cannot have two answers for one
+   usage. The action colour is therefore split: `--facet-link` lightens to
+   5.31:1 where the text is small, while large display numerals keep --brick. */
+.dark {
+  --ink-2: #c9b8ab;
+  --ink-3: #a9998d;
+  --rule: rgba(226, 232, 240, 0.16);
+  --rule-soft: rgba(226, 232, 240, 0.1);
+  --facet-link: color-mix(in srgb, var(--brick) 82%, #fff);
+  --facet-border: rgba(226, 232, 240, 0.2);
+}
+
+/* Dark `--muted-foreground` was slate blue #94a3b8 — an unretouched shadcn
+   default on a warm brown palette. Warm it so disabled text matches its
+   neighbours instead of reading as a foreign grey. Contrast on the dark card
+   (#33251f): 7.12:1. */
+.dark { --muted-foreground: #b7a79b; }
 
 @media (prefers-reduced-motion: reduce) {
   .desk-kpi, .desk-capability { transition: none; }

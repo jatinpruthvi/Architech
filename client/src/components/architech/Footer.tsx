@@ -16,7 +16,7 @@ export default function Footer() {
           </div>
           <nav aria-label={t.footer.explore}>
             <p className="stamp mb-5 text-cream/60">{t.footer.explore}</p>
-            <ul className="space-y-3 text-sm text-cream/80">
+            <ul role="list" className="space-y-3 text-sm text-cream/80">
               <li><Link href="/buy/" className="link-rail">{t.footer.links.buy}</Link></li>
               <li><Link href="/search/" className="link-rail">{t.footer.links.search}</Link></li>
               <li><Link href="/guide/" className="link-rail">{t.footer.links.notes}</Link></li>
@@ -27,7 +27,7 @@ export default function Footer() {
           </nav>
           <nav aria-label="Company and trust">
             <p className="stamp mb-5 text-cream/60">Company & trust</p>
-            <ul className="space-y-3 text-sm text-cream/80">
+            <ul role="list" className="space-y-3 text-sm text-cream/80">
               <li><Link href="/about-us/" className="link-rail">About Architech</Link></li>
               <li><Link href="/contact-us/" className="link-rail">Contact desk</Link></li>
               <li><Link href="/review/" className="link-rail">Give feedback</Link></li>

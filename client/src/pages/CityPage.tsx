@@ -125,7 +125,7 @@ export default function CityPage({ localitySlug, citySlug = DEFAULT_CITY_SLUG }:
               ? "Paldi balances a residential rhythm with a generous everyday life: walkable lanes, places to eat that aren't chains, and a strong mix of established homes and newer projects."
               : `${locality.name} — ${locality.note.toLowerCase()}. ${t.locality.fullStudySoon}`}
           </p>
-          <ul className="mt-9 space-y-4 text-sm text-ink/75">
+          <ul role="list" className="mt-9 space-y-4 text-sm text-ink/75">
             {(isPaldi
               ? ["Walkable pockets around Law Garden and Tagore Hall", "Schools, cafes, and everyday retail within ten minutes", "A healthy mix of resale character and new RERA projects"]
               : ["Verified locality boundary and coordinates (OpenStreetMap)", "RERA-checked projects tracked as they register", "Full editorial study publishing soon"]).map((t) => (

@@ -43,10 +43,18 @@ export function applySort<T extends FilterableProperty>(list: T[], sort: SortId)
   return list; // "fresh" = fixture order (already freshest-first)
 }
 
+/**
+ * Read the `?filters=` parameter. Two token shapes are legal:
+ *   • bare legacy chip ids (`2bhk`) — validated against `makeFilters()`;
+ *   • grouped facet tokens (`bhk:2`, `price:9000000-15000000`) — passed through
+ *     untouched for `parseFacetState()` to interpret.
+ * Grouped tokens MUST survive this function: it sits on the URL-read path for
+ * the search API, and dropping them here would silently empty every facet link.
+ */
 export function parseFilterParam(param: string | null): string[] {
   if (!param) return [];
   const valid = new Set(makeFilters().map((f) => f.id));
-  return param.split(",").filter((id) => valid.has(id));
+  return param.split(",").filter((id) => id.includes(":") || valid.has(id));
 }
 
 export function serializeFilters(ids: string[]): string {

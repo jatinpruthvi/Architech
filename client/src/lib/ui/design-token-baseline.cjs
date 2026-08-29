@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+/* eslint-disable no-undef, @typescript-eslint/no-require-imports */
+/* This helper is deliberately CommonJS: it runs under bare `node` in the repo's
+   ESLint config, which only knows ESM + TS. It is a maintenance tool, not app
+   code — the guard test reads the JSON it writes, never this file. */
+/* Regenerate design-token-baseline.json after paying down legacy type/colour debt.
+   Run: node client/src/lib/ui/design-token-baseline.cjs --write
+   The guard test compares against this file, so a cleanup that lowers a count
+   passes immediately, and this command then locks the new level in. */
+const { readFileSync, writeFileSync } = require("node:fs");
+const { execSync } = require("node:child_process");
+
+const out = execSync(
+  "grep -rl --include='*.tsx' '' client/src app | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
+  { encoding: "utf8" }
+).split("\n").filter(Boolean);
+
+const base = {
+  _readme:
+    "Ratchet baseline for design-token-discipline.test.ts. Each number is the CURRENT count of a legacy pattern in that file. The test fails only when a file EXCEEDS its baseline, so debt can be paid down but never grows. Regenerate after a cleanup with: node client/src/lib/ui/design-token-baseline.cjs --write",
+};
+for (const file of out) {
+  const src = readFileSync(file, "utf8");
+  const alphaText = (src.match(/text-(?:ink|cream|foreground|muted-foreground)\/\d+/g) ?? []).length;
+  const microText = (src.match(/!text-\[1[01]px\]/g) ?? []).length;
+  // 9px is the pattern the audit demanded be deleted outright. It cannot be a
+  // hard zero today (17 files still use it) without a repo-wide codemod, so it
+  // is budgeted: no file may ADD one, and every file that clears it stays clear.
+  const nanoText = (src.match(/!text-\[9px\]/g) ?? []).length;
+  if (alphaText || microText || nanoText) base[file] = { alphaText, microText, nanoText };
+}
+/* Key order is the filesystem walk's, which is not stable across machines — sort
+   so regenerating the baseline cannot produce a diff full of pure reordering. */
+const sorted = Object.fromEntries(Object.keys(base).sort().map((k) => [k, base[k]]));
+writeFileSync("client/src/lib/ui/design-token-baseline.json", JSON.stringify(sorted, null, 2) + "\n");
+console.log("baseline written:", Object.keys(base).length - 1, "files");

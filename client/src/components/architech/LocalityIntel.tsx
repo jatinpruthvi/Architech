@@ -152,7 +152,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
               {t.intel.byConfiguration}
             </h3>
             {intel.byBhk.length > 0 ? (
-              <ul className="mt-6 space-y-0">
+              <ul role="list" className="mt-6 space-y-0">
                 {intel.byBhk.map((band) => (
                   <li key={band.bhk} className="flex items-center justify-between border-b border-ink/10 py-3.5">
                     <span className="text-sm text-ink/75">{band.label}</span>
@@ -180,7 +180,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
             <p className="kicker text-ember !text-[10px]">{t.intel.budgetKicker}</p>
             <h3 className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">{t.intel.byBudget}</h3>
             {intel.byBudget.length > 0 ? (
-              <ul className="mt-6 space-y-0">
+              <ul role="list" className="mt-6 space-y-0">
                 {intel.byBudget.map((band) => (
                   <li key={band.id} className="flex items-center justify-between border-b border-ink/10 py-3.5">
                     <span className="text-sm text-ink/75">{band.label}</span>
@@ -215,7 +215,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
               {t.intel.commuteTitle}
             </h3>
             {intel.commute.length > 0 ? (
-              <ul className="mt-6 space-y-0">
+              <ul role="list" className="mt-6 space-y-0">
                 {intel.commute.map((stop) => (
                   <li key={stop.place} className="flex items-center justify-between border-b border-ink/10 py-3.5">
                     <span className="flex items-center gap-2.5 text-sm text-ink/75">

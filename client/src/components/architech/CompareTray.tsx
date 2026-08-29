@@ -39,7 +39,7 @@ export default function CompareTray() {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-brick bg-night text-cream shadow-[0_-12px_40px_rgba(27,22,18,0.35)]">
+    <div className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t-2 border-brick bg-night text-cream shadow-[0_-12px_40px_rgba(27,22,18,0.35)]">
       <div className="container flex items-center justify-between gap-4 py-3">
         <div className="flex items-center gap-3 overflow-hidden">
           <Scale size={16} className="shrink-0 text-ember" aria-hidden="true" />

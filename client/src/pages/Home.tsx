@@ -2,7 +2,7 @@
 /* ARCHITECH — Home v2 "Amdavad Modern". Hero rule: preserve the centered search hierarchy,
    use locally grounded right-weighted architecture, a calm text-safe zone, responsive art direction,
    real HTML copy, and reduced-motion-safe movement. */
-import { ArrowDown, ArrowUpRight, House, MapPin, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Search, TrendingUp } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,8 @@ import useTitle from "../hooks/useTitle";
 import { getCities, getFeaturedListings, getListings, getLocalities } from "@/lib/repositories";
 import { applyMarket, applyQuery, type MarketCategory, type MarketIntent } from "@/lib/filters";
 import { parseSearchQuery, parsedQueryToSearchUrl, describeParsedQuery, formatBudget } from "@/lib/search/parse-query";
+import SuggestRow from "@/components/architech/SuggestRow";
+import { useSuggestCombobox } from "@/components/architech/useSuggestCombobox";
 import { exampleQuery, popularQueries, type SearchSuggestion } from "@/lib/search/suggest";
 import { readRecentSearches, rememberRecentSearch } from "@/lib/search/recent";
 import { useLang } from "@/contexts/LangContext";
@@ -44,9 +46,6 @@ function HeroSearch() {
   const [intent, setIntent] = useState<HeroIntent>("buy");
   const [category, setCategory] = useState<HeroCategory>("residential");
   const [query, setQuery] = useState("");
-  const [focused, setFocused] = useState(false);
-  const [highlight, setHighlight] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const queryLen = query.trim().length;
 
@@ -89,7 +88,6 @@ function HeroSearch() {
   // what each one means (how many homes, which city) before it is chosen.
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [recents, setRecents] = useState<SearchSuggestion[]>([]);
-  const [loadingSug, setLoadingSug] = useState(false);
 
   // Real recent searches, read once on mount — never a hardcoded sample.
   useEffect(() => { setRecents(readRecentSearches()); }, []);
@@ -98,54 +96,37 @@ function HeroSearch() {
     const trimmed = query.trim();
     if (trimmed.length === 0) {
       setSuggestions([...recents, ...popularSearches]);
-      setLoadingSug(false);
       return;
     }
     const ctrl = new AbortController();
     const timer = setTimeout(async () => {
-      setLoadingSug(true);
       try {
         const r = await fetch(`/api/search/suggest/?q=${encodeURIComponent(trimmed)}`, { signal: ctrl.signal });
         const data = await r.json();
         if (Array.isArray(data.suggestions)) setSuggestions(data.suggestions as SearchSuggestion[]);
       } catch {
-        /* ignore aborted */
-      } finally {
-        if (!ctrl.signal.aborted) setLoadingSug(false);
+        /* aborted, or the endpoint is down: the panel simply shows nothing extra */
       }
     }, 160);
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, [query, recents]);
 
-  // Reset keyboard/visual selection when the input list changes.
-  useEffect(() => { setHighlight(-1); }, [suggestions]);
+  /* One option list for the panel: recents + curated populars while the box is
+     empty, fetched suggestions once there is a query. */
+  const options = query.trim().length === 0 ? [...recents, ...popularSearches] : suggestions;
 
-  // Keep selection within bounds.
-  const options = suggestions;
-  const optionCount = options.length;
+  /* Focus, highlight and the ↑↓/Enter/Escape contract come from the shared
+     combobox module — the results page uses the same one, so the two search
+     boxes cannot drift into two different controls again. */
+  const sug = useSuggestCombobox({
+    query,
+    suggestions: options,
+    openWhenEmpty: true,
+    commit: (q, href) => go(q, href),
+  });
+  const inputRef = sug.inputRef;
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (!focused) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setHighlight((i) => (i + 1) % Math.max(1, optionCount)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setHighlight((i) => (i <= 0 ? Math.max(0, optionCount - 1) : i - 1)); }
-    else if (e.key === "Enter") {
-      e.preventDefault();
-      if (highlight >= 0 && options[highlight]) go(options[highlight].query, options[highlight].href);
-      else go(query);
-      setFocused(false);
-    } else if (e.key === "Escape") { setFocused(false); setHighlight(-1); }
-  };
-
-  // Close on outside click but keep selection when interacting with the panel.
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setFocused(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
-  const setIntentAndFocus = (v: HeroIntent) => { setIntent(v); setHighlight(-1); inputRef.current?.focus(); };
+  const setIntentAndFocus = (v: HeroIntent) => { setIntent(v); inputRef.current?.focus(); };
 
   const intentLabel = intent === "rent" ? t.hero.rent : t.hero.buy;
   // The placeholder names a locality that genuinely has inventory, so the
@@ -203,7 +184,7 @@ function HeroSearch() {
             <button
               key={c}
               type="button"
-              onClick={() => { setCategory(c); setHighlight(-1); }}
+              onClick={() => { setCategory(c); }}
               aria-pressed={category === c}
               className={`rounded-full px-3 py-1.5 stamp !text-[10px] font-semibold transition-colors duration-200 ${category === c ? "bg-cream/20 text-cream ring-1 ring-cream/30" : "text-cream/55 hover:bg-cream/10 hover:text-cream"}`}
             >
@@ -219,63 +200,52 @@ function HeroSearch() {
         role="search" aria-label={`Search ${intentLabel} across India`}>
         <span className="grid w-14 shrink-0 place-items-center border-r border-cream/15 text-cream/60 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="block stamp !text-[9px] text-cream/45">{searchContext}</span><span className="mt-1 block font-display text-sm text-cream/90">All India</span></span><Search size={19} className="sm:hidden" /></span>
         <input
-          ref={inputRef}
           value={query} onChange={(e) => { setQuery(e.target.value); }}
-          onFocus={() => setFocused(true)} onBlur={() => { /* keep open until outside click */ }}
-          onKeyDown={onKeyDown}
           placeholder={`Try “${heroExample}”, a PIN code, or any city…`}
           className="w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
-          aria-label={`Search ${intentLabel} by locality, project, or BHK`} role="combobox" aria-expanded={focused && (queryLen > 0 || true)} aria-controls={focused ? "search-suggestions" : undefined}
-          aria-activedescendant={focused && highlight >= 0 ? `sug-${highlight}` : undefined} aria-autocomplete="list" autoComplete="off"
+          aria-label={`Search ${intentLabel} by locality, project, or BHK`}
+          {...sug.inputProps}
         />
         <button type="submit" className="clay-fill shimmer-btn motion-press mx-1.5 my-1.5 inline-flex items-center justify-center rounded-xl bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
 
       {/* Animated suggestions */}
-      {focused && <div className="overflow-hidden transition-[opacity,transform,max-height] duration-300 ease-out max-h-[420px] translate-y-0 opacity-100">
-        <div id="search-suggestions" className="mt-2 rounded-2xl border border-ink/15 bg-paper text-ink shadow-lg" role="listbox" aria-label="Search suggestions">
-          {options.length ? (
-            <div className="max-h-[360px] overflow-y-auto p-3" role="group" aria-label="Search suggestion choices">
-              <p className="stamp px-1 !text-[9px] text-ink/50">{queryLen ? `Suggestions for “${query.trim()}”` : recents.length ? "Recent and popular" : `${intentLabel} — start here`}{loadingSug ? " · loading…" : ""}</p>
+      {sug.open && (
+      <div className="overflow-hidden transition-[opacity,transform,max-height] duration-300 ease-out max-h-[420px] translate-y-0 opacity-100">
+        <div
+          ref={sug.listRef}
+          id={sug.listId}
+          className="mt-2 rounded-2xl border border-ink/15 bg-paper text-ink shadow-lg"
+          role="listbox"
+          aria-label="Search suggestions"
+        >
+          {sug.visible.length ? (
+            <div className="max-h-[360px] overflow-y-auto p-3">
+              <p className="stamp px-1 ink-3">{queryLen ? `Suggestions for “${query.trim()}”` : recents.length ? "Recent and popular" : `${intentLabel} starts here`}</p>
               {/* Say out loud how the typed words were understood, before the
                   search runs, so a misread is visible rather than mysterious. */}
-              {parsedPreview && <p className="mt-1 px-1 stamp !text-[9px] text-brick">Reads as: {parsedPreview}</p>}
+              {parsedPreview && <p className="mt-1 px-1 stamp text-brick">Reads as: {parsedPreview}</p>}
               <div className="mt-2 grid gap-1 sm:grid-cols-2">
-                {options.slice(0, 12).map((option, i) => (
-                  <button
+                {sug.visible.map((option, i) => (
+                  <SuggestRow
                     key={`${option.kind}-${option.query}-${i}`}
-                    id={`sug-${i}`}
-                    type="button"
-                    onMouseDown={(e) => { e.preventDefault(); go(option.query, option.href); }}
-                    onMouseEnter={() => setHighlight(i)}
-                    className={`group flex items-start gap-2.5 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors duration-150 ${highlight === i ? "border-brick/25 bg-sand/70 text-brick" : "text-ink/80 hover:border-brick/20 hover:bg-sand/50 hover:text-brick"}`}
-                    role="option" aria-selected={highlight === i}
-                  >
-                    {/* The icon states what kind of answer this is, so a place,
-                        a PIN and a filtered search are never confused. */}
-                    {option.kind === "structured" ? (
-                      <SlidersHorizontal size={14} className={`mt-0.5 shrink-0 transition-colors ${highlight === i ? "text-brick" : "text-ink/40 group-hover:text-brick"}`} />
-                    ) : option.kind === "listing" ? (
-                      <House size={14} className={`mt-0.5 shrink-0 transition-colors ${highlight === i ? "text-brick" : "text-ink/40 group-hover:text-brick"}`} />
-                    ) : option.kind === "query" ? (
-                      <Search size={14} className={`mt-0.5 shrink-0 transition-colors ${highlight === i ? "text-brick" : "text-ink/40 group-hover:text-brick"}`} />
-                    ) : (
-                      <MapPin size={14} className={`mt-0.5 shrink-0 transition-colors ${highlight === i ? "text-brick" : "text-ink/40 group-hover:text-brick"}`} />
-                    )}
-                    <span className="min-w-0">
-                      <span className="block truncate">{option.label}</span>
-                      {option.hint && <span className="mt-0.5 block truncate stamp !text-[9px] text-ink/45">{option.hint}</span>}
-                    </span>
-                  </button>
+                    option={option}
+                    index={i}
+                    id={`${sug.listId}-opt-${i}`}
+                    highlighted={sug.highlight === i}
+                    onHover={sug.optionHandlers.onHover}
+                    onSelect={sug.optionHandlers.onSelect}
+                  />
                 ))}
               </div>
             </div>
           ) : (
-            <div role="group" aria-label="No search matches" className="p-4 text-center text-sm text-ink/55">No matches — try a locality, a city, a PIN code, or a BHK.</div>
+            <div role="group" aria-label="No search matches" className="p-4 text-center text-sm text-ink/55">No matches — try a locality, a city, a PIN, or “2 bhk under 1.5 cr”.</div>
           )}
           <p role="group" aria-label="Search keyboard help" className="stamp border-t border-ink/10 px-4 py-2.5 !text-[9px] text-ink/50">↑↓ to move · Enter to search · Esc to close · {resultCount} {intentLabel} match{resultCount === 1 ? "" : "es"} for this scope</p>
         </div>
-      </div>}
+      </div>
+      )}
 
       {/* Quick chips */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -379,7 +349,7 @@ export default function Home() {
                   <p className="hidden text-sm text-ink/55 md:block">{city.tagline}</p>
                   <div className="flex items-center gap-4">
                     <span className="stamp !text-[11px] text-ink/60">{getLocalities(city.slug).length} localities</span>
-                    <span className="grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300 group-hover:border-brick group-hover:bg-brick group-hover:text-cream"><ArrowUpRight size={16} /></span>
+                    <span className="clay-fill group-hover:border-brick group-hover:bg-brick grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300"><ArrowUpRight size={16} /></span>
                   </div>
                 </Link>
               </Reveal>
@@ -451,7 +421,7 @@ export default function Home() {
       </section>
 
       {/* ================= CTA ================= */}
-      <section className="grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
+      <section className="clay-fill grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
         <span className="pointer-events-none absolute -right-24 -top-40 h-[480px] w-[300px] rounded-t-full bg-ember/20 md:-right-10" aria-hidden="true" />
         <div className="container relative z-10 flex flex-col items-start gap-10 md:flex-row md:items-end md:justify-between">
           <Reveal>
