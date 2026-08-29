@@ -1,8 +1,10 @@
 "use client";
 /* Amdavad Modern requirement drawer: a calm, evidence-first alternative to a generic lead form. */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ArrowUpRight, Check, X } from "lucide-react";
 import type { RequirementCategory, RequirementInput, RequirementIntent, RequirementRole } from "@/lib/requirements";
+
 
 const localities = ["Paldi", "Navrangpura", "Prahlad Nagar", "Thaltej", "Bopal", "Satellite"];
 const categories: Array<{ value: RequirementCategory; label: string; subtypes: string[] }> = [
@@ -43,19 +45,6 @@ export default function RequirementCapture({ compact = false }: Props) {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errors, setErrors] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
 
   const selectedCategory = useMemo(() => categories.find((item) => item.value === form.category) ?? categories[0], [form.category]);
 
@@ -98,17 +87,43 @@ export default function RequirementCapture({ compact = false }: Props) {
       <button type="button" className={triggerClass} onClick={() => { setOpen(true); setStatus("idle"); }} aria-haspopup="dialog">
         {compact ? "Tell us what you need" : <>Tell us what you need <ArrowUpRight size={14} /></>}
       </button>
-      {open && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-night/65 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="requirement-title" className="vh-sheet w-full max-w-3xl overflow-y-auto border-t-2 border-brick bg-paper text-ink editorial-shadow sm:border sm:border-ink/15">
-            <div className="flex items-start justify-between gap-6 border-b border-ink/12 p-5 md:p-8">
-              <div>
-                <p className="kicker text-brick">A better brief · Ahmedabad first</p>
-                <h2 id="requirement-title" className="display mt-3 text-[clamp(30px,5vw,52px)]">Tell us the place you are <em className="text-brick">looking for.</em></h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-ink/65">Share the shape of your search once. Our partner network can reply without exposing your number by default.</p>
-              </div>
-              <button type="button" onClick={() => setOpen(false)} className="grid h-11 w-11 shrink-0 place-items-center border border-ink/15 text-ink/70 hover:border-brick hover:text-brick" aria-label="Close requirement form"><X size={18} /></button>
+      {/* Radix Dialog, i.e. the SAME primitive the listing's lead form already
+          uses. The hand-rolled version this replaces had an Escape listener and
+          a scroll lock but NO focus trap: focus escaped to the page behind an
+          `aria-modal="true"` surface, and a keyboard user could tab into
+          invisible controls and act on them without seeing it. That is not a
+          styling gap — `aria-modal` tells a screen reader the rest of the
+          document is gone, so the old markup promised something it did not do.
+          Radix also owns focus restore, `inert`-style outside-click, and the
+          scroll lock, so the effect block below is gone with it. */}
+      <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) setStatus("idle"); }}>
+        <DialogContent
+          showCloseButton={false}
+          aria-describedby="requirement-desc"
+          onOpenAutoFocus={(event) => {
+            /* Focus the FIRST FIELD, not the sheet: Radix's default lands on the
+               container, and a dialog whose whole job is one short brief should
+               have the cursor in it. Held to a rAF because Radix measures the
+               panel in the same commit that mounts it. */
+            event.preventDefault();
+            requestAnimationFrame(() => {
+              const first = document.getElementById("requirement-name");
+              if (first instanceof HTMLInputElement) { first.focus(); first.select(); }
+            });
+          }}
+          className={`vh-sheet w-full max-w-3xl gap-0 overflow-y-auto border-t-2 border-brick bg-paper p-0 text-ink editorial-shadow sm:border sm:border-ink/15 ${compact ? "" : "sm:max-w-3xl"}`}
+        >
+          <div className="flex items-start justify-between gap-6 border-b border-ink/12 p-5 md:p-8">
+            <div>
+              <p className="kicker text-brick">A better brief · Ahmedabad first</p>
+              {/* Radix warns loudly when a dialog has no Title/Description; using
+                  its components here (rather than aria-labelledby at a distance)
+                  is what makes `aria-modal` a statement of fact. */}
+              <DialogTitle className="display mt-3 text-[clamp(30px,5vw,52px)]">Tell us the place you are <em className="text-brick">looking for.</em></DialogTitle>
+              <DialogDescription id="requirement-desc" className="mt-3 max-w-xl text-sm leading-6 text-ink/65">Share the shape of your search once. Our partner network can reply without exposing your number by default.</DialogDescription>
             </div>
+            <button type="button" onClick={() => setOpen(false)} className="grid h-11 w-11 shrink-0 place-items-center border border-ink/15 text-ink/70 hover:border-brick hover:text-brick" aria-label="Close requirement form"><X size={18} /></button>
+          </div>
             {status === "success" ? (
               <div className="p-8 md:p-12">
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-trust text-cream"><Check size={23} /></div>
@@ -143,16 +158,15 @@ export default function RequirementCapture({ compact = false }: Props) {
                   <legend className="stamp !text-[10px] font-semibold text-ink/60">I am a</legend>
                   <div className="mt-2 flex flex-wrap gap-2">{roles.map((role) => <button key={role.value} type="button" onClick={() => update("role", role.value)} className={`border px-3 py-2 stamp !text-[10px] font-semibold transition-colors ${form.role === role.value ? "border-brick bg-brick text-cream" : "border-ink/15 hover:border-brick hover:text-brick"}`}>{role.label}</button>)}</div>
                 </fieldset>
-                <label className="stamp !text-[10px] font-semibold text-ink/60">Name<input value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Your name" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" /></label>
+                <label className="stamp !text-[10px] font-semibold text-ink/60">Name<input id="requirement-name" value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Your name" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" /></label>
                 <label className="stamp !text-[10px] font-semibold text-ink/60">Mobile number<input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="+91 00000 00000" inputMode="tel" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" /></label>
                 <label className="flex gap-3 text-xs leading-5 text-ink/60 md:col-span-2"><input type="checkbox" required className="mt-1 h-4 w-4 accent-[#b8472e]" defaultChecked />I agree that Architech may contact me about this requirement. Contact is masked by default and can be revoked.</label>
                 {errors.length > 0 && <p role="alert" className="border border-brick/30 bg-brick/5 p-3 text-sm text-brick md:col-span-2">{errors.join(" ")}</p>}
                 <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"><p className="stamp !text-[9px] text-ink/50">No payment. No public phone number. Demo routing until production partners are connected.</p><button type="submit" disabled={status === "submitting"} className="clay-fill btn-solid bg-brick px-6 py-3 stamp !text-[11px] font-semibold text-cream">{status === "submitting" ? "Saving…" : "Send my requirement"}</button></div>
               </form>
             )}
-          </section>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

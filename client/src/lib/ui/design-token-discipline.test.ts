@@ -531,3 +531,44 @@ describe("the component-emitted hooks are real", () => {
     expect(guarded).toMatch(/\.pic-fade:not\(\.pic-fade-in\) \{ opacity: 0; \}/);
   });
 });
+
+/* ------------------------------------------------------------------
+ * Modal surfaces. The repo had TWO dialogs: the listing's lead form on Radix,
+ * and the requirement-capture sheet hand-rolled — with the WORSE
+ * implementation on the surface that actually produces revenue. A bespoke
+ * `role="dialog" aria-modal="true"` gets you the accessible NAME of a modal
+ * and none of the behaviour: no focus trap, so a keyboard user tabs into
+ * invisible page controls behind an overlay that told them the page was gone.
+ * ------------------------------------------------------------------ */
+describe("modal surfaces are one implementation", () => {
+  const surfaces = [
+    "client/src/components/architech/RequirementCapture.tsx",
+    "client/src/pages/ListingPage.tsx",
+  ];
+
+  it("every surface with a dialog uses the shared primitive", () => {
+    for (const f of surfaces) {
+      const src = source(f);
+      expect(src, `${f} must render dialogs via components/ui/dialog`).toMatch(
+        /from "@\/components\/ui\/dialog"/,
+      );
+      /* `aria-hidden` on a hand-rolled overlay is the other half of the same
+         false promise; the string is split so this test's own prose about
+         `aria-modal` cannot satisfy it. */
+      const handRolled = new RegExp("role=" + '"' + "dialog" + '"' + "[^>]*aria-" + "modal").test(src);
+      expect(handRolled, `${f} still hand-rolls a dialog — use DialogContent`).toBe(false);
+    }
+  });
+
+  it("keeps a Title and a Description on the content, not just an aria-labelledby", () => {
+    /* Radix warns in console when either is missing, which is why a bare
+       `aria-labelledby` pointing at a heading OUTSIDE the dialog is not a
+       substitute: the reference resolves but the description is still absent,
+       and most modals in this product explain something (masked phone number,
+       free-to-submit) that a user needs before they type into it. */
+    const rc = source(surfaces[0]);
+    expect(rc).toMatch(/<DialogTitle/);
+    expect(rc).toMatch(/<DialogDescription/);
+    expect(rc, "scroll lock belongs to Radix, not to a hand-written body style").not.toMatch(/document\.body\.style\.overflow/);
+  });
+});
