@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CityPage from "@/pages/CityPage";
-import { getLiveCityBySlug, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
-import { assetUrl, cityUrl, homeUrl, localityUrl } from "@/lib/seo/urls";
+import { getListingsByLocality, getLiveCityBySlug, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
+import { isIndexable } from "@/lib/seo/lifecycle";
+import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { localityTrustSummary } from "@/lib/trust/locality";
 import { localityIntel } from "@/lib/realestate/locality-intel";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
@@ -33,6 +34,11 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   const [lat, lon] = locality.marker.split(",");
   const trust = localityTrustSummary(slug);
   const intel = localityIntel(slug);
+  // Only publicly indexable (ACTIVE) listings belong in the page's ItemList:
+  // schema must describe what the page actually publishes.
+  const listings = getListingsByLocality(locality.slug, city.slug).filter((listing) =>
+    isIndexable(listing.lifecycle ?? "ACTIVE"),
+  );
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -71,6 +77,24 @@ export default async function Page({ params }: { params: Promise<{ city: string;
           { "@type": "ListItem", position: 3, name: locality.name, item: localityUrl(city.slug, locality.slug) },
         ],
       },
+      // The page visibly renders a list of homes, so describe it as one. Only
+      // ACTIVE listings are asserted — a `noindex` or sold listing is not part
+      // of the list this page publishes.
+      ...(listings.length
+        ? [
+            {
+              "@type": "ItemList",
+              name: `Homes in ${locality.name}, ${city.name}`,
+              numberOfItems: listings.length,
+              itemListElement: listings.map((listing, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                name: listing.title,
+                url: listingUrl(listing.id),
+              })),
+            },
+          ]
+        : []),
     ],
   };
 

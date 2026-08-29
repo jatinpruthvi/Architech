@@ -58,7 +58,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     ...(property.meaningfulUpdatedAt ? { dateModified: property.meaningfulUpdatedAt } : {}),
     numberOfRooms: property.bhk,
     numberOfBathroomsTotal: property.details.bathrooms,
-    floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitText: "sq ft" },
+    // FTK is the UN/CEFACT code for square foot. `unitCode` is what machines
+    // read; `unitText` is the human label, so both ship rather than one.
+    floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitCode: "FTK", unitText: "sq ft" },
     address: {
       "@type": "PostalAddress",
       addressLocality: property.locality,

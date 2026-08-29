@@ -134,6 +134,21 @@ export function sitemapIndexUrl(base?: string) {
   return assetUrl(sitemapIndexPath(), base);
 }
 
+/** Self-canonical URL for a paginated page.
+
+    Page 2 must canonicalise to **page 2**, never to page 1. Canonicalising a
+    deeper page to page 1 tells Google that pages 2..N are duplicates of page 1
+    and can be dropped — which is how listings discovered only on a deeper page
+    end up never getting indexed at all.
+
+    Page 1 returns the bare canonical so the clean URL stays the canonical one. */
+export function paginatedCanonicalUrl(path: string, page?: number, base?: string): string {
+  const url = new URL(canonicalUrl(path, base));
+  const safePage = Number.isFinite(page) && (page as number) > 1 ? Math.floor(page as number) : 1;
+  if (safePage > 1) url.searchParams.set("page", String(safePage));
+  return url.toString();
+}
+
 /** Child sitemap for one content type, e.g. `/sitemap/localities.xml`.
 
     The segment sits in a directory rather than a dotted filename
