@@ -538,7 +538,9 @@ export default function ResultsPage() {
  items / 40ms and only on the first paint. v4 keyed on
  filters+sort and staggered 24 cards by 60ms, so clicking a
  filter replayed ~1.4s of choreography over results that were
- already on screen. */
+ already on screen. The animation itself is `.architech-reveal` in theme.css and
+ runs on MOUNT only, so surviving cards keep their DOM across a filter change
+ and do not re-animate. */
  <Reveal key={property.id} delay={Math.min(i, 3) * 40}>
  <div id={`listing-${property.id}`} onMouseEnter={() => setSelectedId(property.id)} onFocus={() => setSelectedId(property.id)} className={selectedId === property.id ? "ring-2 ring-brick ring-offset-4 ring-offset-paper" : undefined}>
  <PropertyCard property={property} index={i} />

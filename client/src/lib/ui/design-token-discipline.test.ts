@@ -467,3 +467,67 @@ describe("the dossier navigates, and reuses the shared card", () => {
     expect(card).toMatch(/<div className="aspect-\[1\.5\]">/);
   });
 });
+
+/* ------------------------------------------------------------------
+ * Dead-class detector. `Reveal` shipped a class name that matched no rule for
+ * the entire life of the codebase — 51 call sites across 12 pages, and
+ * everyone, the audit included, assumed it animated. That is the specific
+ * failure mode of a system where components NAME things and CSS is trusted to
+ * just know them, so it is checked mechanically instead of in review.
+ * ------------------------------------------------------------------ */
+/*
+ * The named hooks this design system exposes. A Tailwind utility and a custom
+ * class are indistinguishable by shape (`items-center` vs `pic-fade`), and
+ * generated names like `text-brick`/`bg-card` come from @theme tokens, so a
+ * general "every class must exist" scan is undecidable statically — it flagged
+ * 2262 utilities. What IS decidable is the contract a component opts into:
+ * if a class is one of ours, it must have rules, in the right guard, and the
+ * set of our classes is declared here rather than inferred. `Reveal` broke
+ * exactly this and nobody noticed for the codebase's whole life.
+ */
+describe("the component-emitted hooks are real", () => {
+  /* motion-* / transition-* are Tailwind's own, listed so they are not
+     mistaken for ours: .motion-lift and .motion-press ARE ours (theme.css). */
+  const OURS = [
+    "stamp", "stamp-sm", "kicker", "display", "ink-2", "ink-3",
+    "clay-fill", "paper-fill", "link-rail", "btn-sweep", "img-hover",
+    "motion-lift", "motion-press", "editorial-shadow", "grain",
+    "map-frame", "skip-link", "touch-44", "listing-packet",
+    "listing-field-note", "section-rail", "section-rail-link",
+    "pic-fade", "architech-reveal", "facet-option", "facet-control", "facet-hint",
+  ] as const;
+
+  it("every one of our hooks has a rule in theme.css", () => {
+    /* `:where()`/`:is()` too: `.ink-2` is deliberately wrapped so a utility can
+       still override its colour (the `.stamp` lesson, bf90cf6), and a scanner
+       that only accepts a leading dot reports those hooks as missing. */
+    const defined = new Set([...css.matchAll(/^\s*(?::(?:where|is)\()?\.([a-zA-Z][\w-]*)/gm)].map((m) => m[1]));
+    const missing = OURS.filter((c) => !defined.has(c));
+    expect(missing, "a hook with no rule is a silent no-op — define it or delete the emission").toEqual([]);
+  });
+
+  it("wires the reveal primitive to real CSS, inside the motion guard", () => {
+    /* Asserting the class ALONE is what let the bug live: `Reveal` emitted
+       `architech-reveal` and the test would have passed on the name alone.
+       So: a keyframe must exist, the animation must sit inside
+       no-preference (an unguarded `from { opacity: 0 }` strands content for
+       reduced-motion users), and the delay must be read from the custom
+       property the component sets. */
+    expect(css, "reveal needs a keyframe").toMatch(/@keyframes reveal-in/);
+    const guarded = css.slice(css.indexOf("@media (prefers-reduced-motion: no-preference)"));
+    expect(guarded, ".architech-reveal must animate inside the no-preference guard").toMatch(/\.architech-reveal \{[^}]*animation: reveal-in/);
+    expect(guarded, "the component's --reveal-delay must actually be consumed").toMatch(/animation-delay: var\(--reveal-delay/);
+    const before = css.slice(0, css.indexOf("@media (prefers-reduced-motion: no-preference)"));
+    expect(before, "an unguarded reveal would hide content when motion is reduced").not.toMatch(/\.architech-reveal \{[^}]*animation/);
+  });
+
+  it("paints photos from a VISIBLE base state", () => {
+    /* Inverse of the usual advice, and the reason it is pinned: with the
+       hidden state as the default, an image whose onLoad never fires (blocked
+       CDN, aborted lazy request, offline back-navigation) is an invisible
+       image. So `.pic-fade` must be opacity:1 and the hiding must be opt-in. */
+    expect(css).toMatch(/\.pic-fade \{ opacity: 1; \}/);
+    const guarded = css.slice(css.indexOf("@media (prefers-reduced-motion: no-preference)"));
+    expect(guarded).toMatch(/\.pic-fade:not\(\.pic-fade-in\) \{ opacity: 0; \}/);
+  });
+});

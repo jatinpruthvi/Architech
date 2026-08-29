@@ -302,6 +302,29 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .img-hover { overflow: hidden; }
 .img-hover img { transition: transform 900ms cubic-bezier(0.19, 1, 0.22, 1), filter 500ms ease; }
 .img-hover:hover img { transform: scale(1.05); }
+/* ------------------------------------------------------------------
+   Reveal — the entrance primitive in components/architech/Reveal.tsx.
+   It was wired to NOTHING: it emitted `architech-reveal` +
+   `--reveal-delay`, and theme.css had no rule for either, so the 51 call
+   sites across 12 pages were plain wrapper <div>s. Two ways to fix a lie like
+   that; deleting the wrapper would have touched 12 files and broken four
+   layouts whose className the wrapper happened to carry, so instead the CSS
+   now does what the component claimed, with the same guarantees:
+
+   - animate from `opacity: 0` but only for 420ms, then release (`both`
+     fill + a short total) so a bot, a stalled frame, or a paint that never
+     runs cannot be left with invisible content.
+   - inside no-preference only, so reduced motion sees the final state and
+     needs no override.
+   The delay is capped at 320ms in Reveal itself for the same reason v4's
+   uncapped 60ms stagger was removed: choreography over results that are
+   already on screen is a tax, not a feature.
+   ------------------------------------------------------------------ */
+@keyframes reveal-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .architech-reveal { animation: reveal-in 420ms cubic-bezier(0.2, 0, 0, 1) both; animation-delay: var(--reveal-delay, 0ms); }
+}
+
 /* Photo arrival, from Pic. The base state is deliberately VISIBLE and the
    hidden state is the opt-in: `opacity: 0` by default means a photo that never
    fires onLoad (blocked CDN, offline navigation, an aborted lazy request) stays
