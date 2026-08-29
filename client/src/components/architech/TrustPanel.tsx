@@ -63,7 +63,7 @@ export function TrustPanel({ property }: { property: Property }) {
       <div className="mt-7 grid gap-8 md:grid-cols-[1fr_0.8fr]">
         <div>
           <p className="stamp !text-[11px] text-ink/60">{t.listing.trust.summaryHeader}</p>
-          <ul className="mt-4 space-y-3">
+          <ul role="list" className="mt-4 space-y-3">
             {trust.signals.map((signal) => (
               <SignalRow
                 key={signal.id}

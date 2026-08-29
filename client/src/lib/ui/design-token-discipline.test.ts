@@ -188,8 +188,13 @@ describe("ink ramp tokens clear AA in BOTH themes", () => {
     expect(facetBlock).toContain("--rule-soft");
     // Selection must read as fill + edge + check; a solid clay field with a
     // cream label is the low-contrast pattern this rebuild exists to remove.
-    expect(facetBlock).toMatch(/\.facet-option\[aria-pressed="true"\]\s*\{[^}]*--sand/);
-    expect(facetBlock).not.toMatch(/\.facet-option\[aria-pressed="true"\]\s*\{[^}]*background:\s*var\(--brick\)/);
+    // A filter row is a CHECKED state on the inventory, not a pressed toggle on
+    // the button, so the row moved to role="checkbox"/aria-checked. The rule must
+    // answer to both while `.facet-control` (a genuine toggle: the budget preset)
+    // keeps aria-pressed.
+    expect(facetBlock).toMatch(/\.facet-option\[aria-checked="true"\][^{]*\{[^}]*--sand/);
+    expect(facetBlock).not.toMatch(/\.facet-option\[aria-checked="true"\][^{]*\{[^}]*background:\s*var\(--brick\)/);
+    expect(facetBlock).toMatch(/\.facet-control\[aria-pressed="true"\]/);
   });
 });
 
@@ -249,5 +254,67 @@ describe("the filter surface works without a mouse", () => {
     expect(contrast("#d36a48", darkCard)).toBeLessThan(4.5); // the trap this token exists to avoid
     expect(css).toContain("--facet-link: color-mix(in srgb, var(--brick) 82%, #fff);");
     expect(css).toMatch(/\.facet-link \{[\s\S]*?color: var\(--facet-link\)/);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * ARIA wiring: controls that LOOK complete and are inert.
+ * Each check below corresponds to something real in this repo the day it was
+ * written — a `role="listbox"` reachable only by mouse, a `role="group"` that
+ * silently erased the count a <ul> announces, and an
+ * `aria-expanded={focused && (queryLen > 0 || true)}` that could never be false.
+ * ------------------------------------------------------------------ */
+describe("aria wiring is wired, not merely present", () => {
+  const strip = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/[^\n]*/g, "$1");
+  const scanned = legacyFiles.map((f) => [f, strip(source(f))] as const);
+
+  it("never asserts an aria state that cannot be false", () => {
+    const tautologies: string[] = [];
+    for (const [file, src] of scanned) {
+      for (const m of src.matchAll(/aria-(expanded|selected|pressed|checked)=\{([^}]*)\}/g)) {
+        const expr = m[2];
+        const always = /\|\|\s*(?:true|1)\b/.test(expr) || /&&\s*true\b/.test(expr) || /^\s*(?:true|1)\s*$/.test(expr);
+        if (always) tautologies.push(`${file}: aria-${m[1]}={${expr}}`);
+      }
+    }
+    expect(tautologies, "always-true aria-* tells AT the panel is open when it is absent from the DOM").toEqual([]);
+  });
+
+  it("gives every listbox the keyboard it promises", () => {
+    // role="listbox" makes AT move a virtual cursor INTO the list and suppress
+    // normal browse keys. Without arrows + Enter that is a net LOSS of
+    // function, so an unwired listbox must fail louder than an absent one.
+    const offenders: string[] = [];
+    for (const [file, src] of scanned) {
+      if (!/role="listbox"/.test(src)) continue;
+      const shares = src.includes("useSuggestCombobox"); // keys live in the shared module
+      const hasArrows = /"(ArrowDown|ArrowUp)"|\bArrowDown\b/.test(src);
+      const hasEnter = /"Enter"|\bsubmit\b|\bcommit\b/.test(src);
+      if (!shares && (!hasArrows || !hasEnter)) offenders.push(file);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("routes both search boxes through the one combobox module", () => {
+    // The drift itself is what must not come back: the hero had arrow keys,
+    // the results page did not, and both claimed to be the same control.
+    for (const page of ["client/src/pages/Home.tsx", "client/src/pages/ResultsPage.tsx"]) {
+      expect(source(page), `${page} must use the shared combobox`).toContain("useSuggestCombobox");
+      expect(strip(source(page)), `${page} must not re-implement the combobox keys`).not.toMatch(/const onKeyDown = \(e: React\.KeyboardEvent/);
+    }
+  });
+
+  it("keeps every <ul> announcing that it is a list", () => {
+    // The a11y tree exposes a <ul> as a list only while list semantics survive;
+    // Tailwind's preflight zeroes list-style, and a `role="group"` on the <ul>
+    // erases what is left. Both lose the ITEM COUNT, which on a filter row is
+    // the entire information ("3 of 14 homes"). One attribute restores it.
+    const offenders: string[] = [];
+    for (const [file, src] of scanned) {
+      for (const m of src.matchAll(/<ul(\s[^>]*?)?>/gs)) {
+        if (!/role="list"/.test(m[1] ?? "")) offenders.push(`${file}: <ul${(m[1] ?? "").replace(/\s+/g, " ").slice(0, 60)}>`);
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });

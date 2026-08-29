@@ -40,7 +40,10 @@ import { searchListings, type SearchResponse } from "@/lib/search/search";
 import { activeFacetCount, facetGroups, groupsForProjection, parseFacetState, serializeFacetState, type FacetState } from "@/lib/search/facets";
 import MapListSync from "@/components/architech/MapListSync";
 import Pic from "@/components/architech/Pic";
+import SuggestRow from "@/components/architech/SuggestRow";
 import { useSearchSuggestions } from "@/components/architech/useSearchSuggestions";
+import { useSuggestCombobox } from "@/components/architech/useSuggestCombobox";
+import { rememberRecentSearch } from "@/lib/search/recent";
 import { labelForFacing, labelForFurnishing, propertyFactRows } from "@/lib/listing-details";
 
 function SkeletonCard() {
@@ -213,11 +216,16 @@ export default function ResultsPage() {
 
  const [savingSearch, setSavingSearch] = useState(false);
 
- // Server-backed quick search (debounced, abortable) for refining the query.
- const [qInput, setQInput] = useState(query);
- const [qFocused, setQFocused] = useState(false);
- const { suggestions: qSuggestions } = useSearchSuggestions(qInput, citySlug);
- useEffect(() => setQInput(query), [query]);
+ /* Server-backed quick search (debounced, abortable) for refining the query.
+ The panel is driven by the same combobox module the hero uses, so the keys,
+ the aria wiring and the "what did I just select" state are one implementation
+ and not two that can drift apart. */
+ const selectSuggestion = useCallback((value: string, href?: string) => {
+ const trimmed = value.trim();
+ if (trimmed) rememberRecentSearch(trimmed);
+ if (href) { router.push(href); return; }
+ if (trimmed) runQueryRef.current(trimmed);
+ }, [router]);
 
  /** Run a typed query. It is parsed into structured scope first — city, PIN,
  * intent, category and facets become real URL parameters — and anything a
@@ -234,17 +242,29 @@ export default function ResultsPage() {
  });
  next.forEach((v, key) => p.set(key, v));
  });
- setQInput(trimmed);
- setQFocused(false);
  };
+
+ const runQueryRef = useRef<(value: string) => void>(() => {});
+ runQueryRef.current = runQuery;
+
+ /* The page owns the text (it is also what the debounced fetch reads); the hook
+ owns focus, highlight and the keys. */
+ const [sugQuery, setSugQuery] = useState(query);
+ useEffect(() => setSugQuery(query), [query]);
+ const { suggestions: qSuggestions } = useSearchSuggestions(sugQuery, citySlug);
+ const sug = useSuggestCombobox({
+ query: sugQuery,
+ suggestions: qSuggestions,
+ commit: selectSuggestion,
+ });
 
  /* What the box will do with the current text, shown before it runs. */
  const typedPreview = useMemo(() => {
- const trimmed = qInput.trim();
+ const trimmed = sugQuery.trim();
  if (trimmed.length < 3 || trimmed === query) return "";
  const parsed = parseSearchQuery(trimmed, citySlug);
  return parsed.understood ? describeParsedQuery(parsed) : "";
- }, [citySlug, qInput, query]);
+ }, [citySlug, sugQuery, query]);
 
  /* Recovery chips derived from real inventory in the active scope. */
  const trending = useMemo(() => popularQueries({ citySlug }, 4), [citySlug]);
@@ -326,15 +346,14 @@ export default function ResultsPage() {
  {t.search.clearSearch} “{query}” <X size={12} />
  </button>
  )}
- <div className="mt-6 max-w-[560px]">
+<div className="mt-6 max-w-[560px]">
  <div className="relative">
- <form onSubmit={(e) => { e.preventDefault(); runQuery(qInput); }} className="field-shell flex items-stretch border border-ink/20 bg-paper focus-within:border-brick" role="search" aria-label="Search homes">
+ <form onSubmit={(e) => { e.preventDefault(); sug.submit(); }} className="field-shell flex items-stretch border border-ink/20 bg-paper focus-within:border-brick" role="search" aria-label="Search homes">
  <span className="grid w-12 place-items-center ink-2"><Search size={16} /></span>
  <input
- value={qInput}
- onChange={(e) => setQInput(e.target.value)}
- onFocus={() => setQFocused(true)}
- onBlur={() => setQFocused(false)}
+ value={sugQuery}
+ onChange={(event) => setSugQuery(event.target.value)}
+ {...sug.inputProps}
  className="w-full bg-transparent px-2 py-3 text-sm focus:outline-none"
  placeholder={t.hero.placeholderBuy}
  aria-label={t.search.kicker}
@@ -351,17 +370,30 @@ export default function ResultsPage() {
  <span><span className="ink-2">Reads as</span> {typedPreview}</span>
  </p>
  )}
- {qFocused && qSuggestions.length > 0 && (
- <div className="absolute inset-x-0 top-full z-30 mt-1 border border-ink/15 bg-paper text-ink editorial-shadow" role="listbox" aria-label="Search suggestions">
- {qSuggestions.map((s, i) => (
- <button key={`${s.kind}-${i}`} onMouseDown={(e) => { e.preventDefault(); runQuery(s.query); }} className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-sm text-ink hover:bg-sand/70 hover:text-brick" role="option" aria-selected={false}>
- <Search size={12} className="mt-1 shrink-0 ink-2" />
- <span className="min-w-0">
- <span className="block truncate">{s.label}</span>
- {s.hint && <span className="mt-0.5 block truncate stamp text-[11px] ink-3">{s.hint}</span>}
- </span>
- </button>
+ {sug.open && (
+ <div
+ ref={sug.listRef}
+ id={sug.listId}
+ role="listbox"
+ aria-label="Search suggestions"
+ className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden border border-ink/15 bg-paper text-ink editorial-shadow"
+ >
+ <div className="max-h-[320px] overflow-y-auto p-2">
+ {sug.visible.map((option, index) => (
+ <SuggestRow
+ key={`${option.kind}-${option.query}-${index}`}
+ option={option}
+ index={index}
+ id={`${sug.listId}-opt-${index}`}
+ highlighted={sug.highlight === index}
+ onHover={sug.optionHandlers.onHover}
+ onSelect={sug.optionHandlers.onSelect}
+ />
  ))}
+ </div>
+ <p className="hidden border-t border-ink/12 px-4 py-2.5 stamp ink-3 sm:flex sm:items-center sm:gap-3">
+ <span>↑↓ to move</span><span aria-hidden="true">·</span><span>Enter to search</span><span aria-hidden="true">·</span><span>Esc to close</span>
+ </p>
  </div>
  )}
  </div>

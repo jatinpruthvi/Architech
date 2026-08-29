@@ -336,7 +336,7 @@ export default function ListingSubmission() {
           <div className="flex items-start justify-between"><ShieldCheck size={22} className="text-trust" /><span className="stamp text-ink/45">DOSSIER / 01</span></div>
           <h2 className="mt-7 font-display text-2xl font-medium tracking-[-0.02em]">Before review</h2>
           <p className="mt-2 text-sm leading-6 text-ink/60">A moderator should be able to understand what is claimed, where it belongs, and whether publication rights are clear.</p>
-          <ul className="mt-5 space-y-3 border-t border-ink/12 pt-5 text-sm text-ink/65">
+          <ul role="list" className="mt-5 space-y-3 border-t border-ink/12 pt-5 text-sm text-ink/65">
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Media rights confirmed</li>
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Locality selected</li>
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Price and area supplied</li>

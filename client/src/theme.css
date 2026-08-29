@@ -476,6 +476,12 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    `.stamp` and `.kicker` sat in an unlayered block. They must not come back —
    `client/src/lib/ui/design-token-discipline.test.ts` fails the build on them. */
 @layer components {
+  /* Lists stay unmarked but keep their semantics. Safari + VoiceOver drop a
+     list's role the moment list-style is removed, and preflight removes it
+     globally — which is why every <ul> here carries role="list" explicitly
+     (see eslint.config.js) and this rule keeps the marker off. */
+  ul[role="list"] { list-style: none; margin: 0; padding: 0; }
+
   .facet-group + .facet-group { border-top: 1px solid var(--rule-soft, rgb(17 24 39 / 0.1)); }
   .facet-group { padding-block: 18px; }
   .facet-group:first-child { padding-top: 4px; }
@@ -488,7 +494,10 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     transition: background var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease;
   }
   .facet-option:hover:not([aria-disabled="true"]) { border-color: var(--brick); color: var(--brick); }
-  .facet-option[aria-pressed="true"] { background: var(--sand); border-color: var(--brick); color: var(--ink); }
+  /* aria-checked is the filter row's state (role="checkbox"); aria-pressed is
+     the preset chip's (a real toggle). Both mark selection the same way — sand
+     fill + clay edge, never a solid clay field with a cream label. */
+  .facet-option[aria-checked="true"], .facet-option[aria-pressed="true"] { background: var(--sand); border-color: var(--brick); color: var(--ink); }
   /* Disabled, never removed: an option that resolves to zero still has to be
      visible, otherwise the filter looks broken instead of the inventory scarce.
      `--ink-3` resolves warm in both themes; no opacity is involved, so the

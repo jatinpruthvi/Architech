@@ -125,15 +125,21 @@ export default function FilterPanel({ groups, state, counts, lang, onChange, onC
  }}
  />
  ) : (
- <ul className="mt-3 space-y-2" role="group" aria-label={label(group, lang)}>
- {counted.options.length === 0 && <li className="facet-hint">{labels.localityNone}</li>}
+ ( <> {counted.options.length === 0 && <p className="facet-hint mt-3">{labels.localityNone}</p>}
+ <ul className="mt-3 space-y-2" role="list" aria-label={label(group, lang)}>
  {counted.options.map((option) => {
  const dead = option.count === 0 && !option.selected;
  return (
- <li key={option.id}>
+ <li key={option.id} role="listitem">
  <button
  type="button"
- aria-pressed={option.selected}
+ /* `role="checkbox"` + aria-checked, not aria-pressed: a filter row is a
+    checked state on the INVENTORY, not a toggle on the button itself. With
+    aria-pressed a screen reader says "2 BHK, toggle button, not pressed" and
+    never mentions the count that is the entire point of the row. */
+ role="checkbox"
+ aria-checked={option.selected}
+ aria-label={`${option.label}, ${dead ? labels.noChange : `${option.count} homes`}`}
  // Disabled but VISIBLE: removing an option teaches people
  // the filter is broken; a dashed (0) tells them the
  // inventory is what is scarce.
@@ -152,7 +158,8 @@ export default function FilterPanel({ groups, state, counts, lang, onChange, onC
  );
  })}
  </ul>
- )}
+ </>
+ ) )}
 
  {/* The verified toggle states what it HIDES, which is worth more
  trust than the badge on the results themselves. */}

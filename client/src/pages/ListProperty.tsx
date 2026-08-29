@@ -48,7 +48,7 @@ export default function ListProperty() {
 
             <div className="mt-10 border border-ink/15 bg-sand/50 p-6">
               <p className="kicker text-brick !text-[10px]">{t.list.sourceTrail}</p>
-              <ul className="mt-4 grid gap-3 text-sm text-ink/75 md:grid-cols-3">
+              <ul role="list" className="mt-4 grid gap-3 text-sm text-ink/75 md:grid-cols-3">
                 {[t.listing.sourceReviewed, t.listing.reraDetails, t.list.sourceTrail].map((item) => (
                   <li key={item} className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-trust" /> {item}</li>
                 ))}

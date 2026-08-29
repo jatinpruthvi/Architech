@@ -15,11 +15,6 @@
     "microText": 1,
     "nanoText": 0
   },
-  "client/src/components/architech/ListingGallery.tsx": {
-    "alphaText": 5,
-    "microText": 4,
-    "nanoText": 1
-  },
   "client/src/components/architech/LocalityIntel.tsx": {
     "alphaText": 22,
     "microText": 22,
@@ -65,6 +60,11 @@
     "microText": 6,
     "nanoText": 1
   },
+  "client/src/components/architech/ListingGallery.tsx": {
+    "alphaText": 5,
+    "microText": 4,
+    "nanoText": 1
+  },
   "client/src/pages/AgentWorkspace.tsx": {
     "alphaText": 38,
     "microText": 18,
@@ -106,9 +106,9 @@
     "nanoText": 0
   },
   "client/src/pages/Home.tsx": {
-    "alphaText": 38,
+    "alphaText": 31,
     "microText": 16,
-    "nanoText": 6
+    "nanoText": 3
   },
   "client/src/pages/InvestmentPage.tsx": {
     "alphaText": 10,

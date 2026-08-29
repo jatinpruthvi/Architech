@@ -188,7 +188,7 @@ export default function ListingPage({ id }: { id: string }) {
             <div className="mt-10 grid gap-10 border-t border-ink/15 pt-10 md:grid-cols-2">
               <div>
                 <p className="kicker text-brick !text-[10px]">{t.listing.why}</p>
-                <ul className="mt-6 space-y-4 text-sm text-ink/75">
+                <ul role="list" className="mt-6 space-y-4 text-sm text-ink/75">
                   {["Quiet orientation with generous natural light", "Walkable everyday conveniences and schools", "Verified partner with a complete source trail", "Fair pricing against the locality median"].map((t) => (
                     <li key={t} className="flex gap-3"><Check size={16} className="mt-0.5 shrink-0 text-trust" /> {t}</li>
                   ))}
