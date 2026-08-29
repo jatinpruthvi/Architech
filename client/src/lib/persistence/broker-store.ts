@@ -2,6 +2,7 @@ import "server-only";
 import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, updateListingDraft, resumeListingDraft, archiveListingDraft, deleteListingDraft, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
 import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
+import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { DEFAULT_CITY_SLUG, getLocalityBySlug } from "@/lib/repositories";
@@ -195,16 +196,6 @@ export async function listDraftMediaForServer(draftId: string, session: AuthSess
   return listDraftMediaIds(draftId, session);
 }
 
-function parseDetails(value: unknown) {
-  if (typeof value !== "string") return {};
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
 function contractFromRow(row: Record<string, unknown>): ListingDraft {
   return {
     id: String(row.id ?? ""),
@@ -218,7 +209,12 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     propertyType: isPropertyTypeCode(row.propertyType) ? row.propertyType as PropertyTypeCode : "APARTMENT",
     description: String(row.description ?? ""),
     mediaRightsConfirmed: true,
-    details: parseDetails(row.sourceSummary),
+    /* Same contract as the public read path (repositories/mappers.ts). This
+       used to be a second, looser copy of the parser, which is how "one column,
+       two meanings" became "one column, two behaviours": the broker's own draft
+       round-tripped unvalidated JSON while the shopper-facing path silently
+       dropped it. */
+    details: listingDetailsFromSourceSummary(typeof row.sourceSummary === "string" ? row.sourceSummary : null),
     organizationId: String(row.brokerOrgId ?? ""),
     status: (String(row.lifecycle ?? "IN_REVIEW") as ListingDraft["status"]) || "IN_REVIEW",
     auditTrail: [],
