@@ -572,3 +572,32 @@ describe("modal surfaces are one implementation", () => {
     expect(rc, "scroll lock belongs to Radix, not to a hand-written body style").not.toMatch(/document\.body\.style\.overflow/);
   });
 });
+
+/* ------------------------------------------------------------------
+ * Grid motion. FLIP is cheap to add and easy to add wrongly: the two failure
+ * modes below are the ones that make a results page worse than no animation.
+ * ------------------------------------------------------------------ */
+describe("results-grid motion stays a reflow, not a show", () => {
+  const results = source("client/src/pages/ResultsPage.tsx");
+
+  it("animates position only, never size", () => {
+    /* `layout` alone also scales x/y to the new box. On a card whose image is a
+       1.5-crop, that reads as the photo squashing mid-flight. */
+    expect(results).toMatch(/layout=\{reduceMotion \? false : "position"\}/);
+    expect(results, "bare `layout` = scaling artefacts on card-sized elements").not.toMatch(/<[a-zA-Z.][^>]*\slayout(\s|>)/);
+  });
+
+  it("has a JS escape hatch, because a motion transform is inline style", () => {
+    /* A media query cannot override `style="transform: …"` written by JS. So the
+       reduced-motion contract here is NOT setting `layout` in the first place. */
+    expect(results).toMatch(/usePrefersReducedMotion/);
+    expect(results).toMatch(/matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
+  });
+
+  it("keys the grid on the listing, so re-ordering does not remount cards", () => {
+    // Keyed on filters+sort, every card remounts on each click and FLIP becomes
+    // a full re-entry animation — the v4 regression this file keeps citing.
+    expect(results).toMatch(/<motion\.div key=\{property\.id\}/);
+    expect(results).not.toMatch(/key=\{[^}]*filter/i);
+  });
+});

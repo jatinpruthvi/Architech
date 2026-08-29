@@ -21,6 +21,7 @@
  and pre-rebuild `?filters=2bhk,rera` links keep resolving. */
 import { ArrowUpRight, Check, LayoutList, Map as MapIcon, Search, SlidersHorizontal, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LayoutGroup, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -45,6 +46,25 @@ import { useSearchSuggestions } from "@/components/architech/useSearchSuggestion
 import { useSuggestCombobox } from "@/components/architech/useSuggestCombobox";
 import { rememberRecentSearch } from "@/lib/search/recent";
 import { labelForFacing, labelForFurnishing, propertyFactRows } from "@/lib/listing-details";
+
+/**
+ * Does this browser want less motion? Mirrors the two existing JS answers in this
+ * repo (`magicui/NumberTicker`, `magicui/TiltCard`) rather than inventing a
+ * third. CSS cannot answer it for a FLIP: the transform motion writes lands in
+ * the element's inline `style`, so no media query can reach it — the only lever
+ * is not setting `layout` at all.
+ */
+function usePrefersReducedMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduce(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+  return reduce;
+}
 
 function SkeletonCard() {
  return (
@@ -88,6 +108,7 @@ export default function ResultsPage() {
  const activeCount = activeFacetCount(facetState);
 
  const [mapMode, setMapMode] = useState(false);
+ const reduceMotion = usePrefersReducedMotion();
  const [loading, setLoading] = useState(false);
  const [filterOpen, setFilterOpen] = useState(false);
  const [quickViewOpen, setQuickViewOpen] = useState(false);
@@ -530,6 +551,13 @@ export default function ResultsPage() {
  <p className="stamp hidden text-trust sm:block">{t.search.demoFixtures}</p>
  </div>
  <div className={`grid gap-6 ${mapMode ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-1 xl:grid-cols-2"}`} aria-busy={loading}>
+ {/* Grouped so a card removed by a filter animates its SURVIVORS into their new
+    slots. `layout="position"`, not `layout`: the latter also scales x/y, and a
+    card with a 1.5-crop image inside it visibly squishes while it travels.
+    Position morphing composes with the image aspect reservation and with
+    `.architech-reveal`, because the transform motion writes land on THIS wrapper
+    while the CSS animation lives on the Reveal element inside it. */}
+ <LayoutGroup>
  {loading ? (
  Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
  ) : (
@@ -541,7 +569,8 @@ export default function ResultsPage() {
  already on screen. The animation itself is `.architech-reveal` in theme.css and
  runs on MOUNT only, so surviving cards keep their DOM across a filter change
  and do not re-animate. */
- <Reveal key={property.id} delay={Math.min(i, 3) * 40}>
+ <motion.div key={property.id} layout={reduceMotion ? false : "position"} transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }}>
+  <Reveal delay={Math.min(i, 3) * 40}>
  <div id={`listing-${property.id}`} onMouseEnter={() => setSelectedId(property.id)} onFocus={() => setSelectedId(property.id)} className={selectedId === property.id ? "ring-2 ring-brick ring-offset-4 ring-offset-paper" : undefined}>
  <PropertyCard property={property} index={i} />
  {!mapMode && (
@@ -550,9 +579,11 @@ export default function ResultsPage() {
  </button>
  )}
  </div>
- </Reveal>
+  </Reveal>
+  </motion.div>
  ))
  )}
+  </LayoutGroup>
  </div>
 
  {/* Zero-result ladder: never a dead end. For a product paid by leads,
