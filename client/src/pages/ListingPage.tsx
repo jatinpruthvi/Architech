@@ -11,8 +11,8 @@ import { getListingById, getLocalityBySlug, getRelatedListings } from "@/lib/rep
 import { buildAgentProfile } from "@/lib/agent/profile";
 import { comparableListings, derivePriceHistory, type PriceEvent } from "@/lib/listing/history";
 import { demoBrokerSession } from "@/lib/auth/roles";
-import Reveal from "../components/architech/Reveal";
-import Pic from "../components/architech/Pic";
+import PropertyCard from "../components/architech/PropertyCard";
+import { SectionNav, type SectionAnchor } from "../components/architech/SectionNav";
 import { TrustPanel } from "../components/architech/TrustPanel";
 import { ListingGallery } from "../components/architech/ListingGallery";
 import { StickyBar } from "../components/architech/StickyBar";
@@ -22,8 +22,23 @@ import { useSaved } from "@/contexts/SavedContext";
 import { propertyFactRows } from "@/lib/listing-details";
 import { useLang } from "@/contexts/LangContext";
 
-function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propertyId: string; propertyTitle: string; open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [submitting, setSubmitting] = useState(false);
+/* Module-level, on purpose: SectionNav's effect depends on the array identity,
+   and a fresh literal every render would re-subscribe the scroll listener.
+   English, because the two headings it tracks ("Property features", and the
+   dossier's own kickers) are English-only copy in this file already — the rail
+   must name sections exactly as the page labels them, not paraphrase them in a
+   second voice. */
+const sectionAnchors: SectionAnchor[] = [
+  { id: "highlights", label: "Highlights" },
+  { id: "features", label: "Features" },
+  { id: "verification", label: "Verification" },
+  { id: "price-history", label: "Price & history" },
+  { id: "partner", label: "Your partner" },
+  { id: "location", label: "Location" },
+  { id: "nearby", label: "Nearby" },
+];
+
+function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propertyId: string; propertyTitle: string; open: boolean; onOpenChange: (open: boolean) => void }) {  const [submitting, setSubmitting] = useState(false);
   const { t } = useLang();
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -136,8 +151,12 @@ export default function ListingPage({ id }: { id: string }) {
           <span className="text-ink/80">{property.title}</span>
         </nav>
 
-        {/* Title band */}
-        <div className="mt-8 grid gap-6 border-y border-ink/15 bg-sand/70 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-9">
+        {/* Title band. The id is the rail's "Top" target; no per-node scroll
+            offset here, because theme.css sets the global `[id]` scroll margin
+            UNLAYERED and therefore outranks any utility you add on top of it —
+            a local `scroll-mt-*` would silently lose and mislead the next
+            reader into thinking it was in charge. */}
+        <div id="dossier-top" className="mt-8 grid gap-6 border-y border-ink/15 bg-sand/70 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-9">
           <div>
             <p className="flex flex-wrap items-center gap-2 stamp !text-[11px] font-semibold text-trust">
               <Tooltip>
@@ -173,6 +192,10 @@ export default function ListingPage({ id }: { id: string }) {
         </div>
       </section>
 
+      <div className="container">
+        <SectionNav sections={sectionAnchors} label={t.listing.sectionsLabel} />
+      </div>
+
       {/* Body */}
       <section className="container pb-20 md:pb-28">
         <div className="grid gap-14 lg:grid-cols-[1fr_360px]">
@@ -185,7 +208,7 @@ export default function ListingPage({ id }: { id: string }) {
               </button>
             </div>
 
-            <div className="mt-10 grid gap-10 border-t border-ink/15 pt-10 md:grid-cols-2">
+            <div id="highlights" className="mt-10 grid gap-10 border-t border-ink/15 pt-10 md:grid-cols-2">
               <div>
                 <p className="kicker text-brick !text-[10px]">{t.listing.why}</p>
                 <ul role="list" className="mt-6 space-y-4 text-sm text-ink/75">
@@ -220,7 +243,7 @@ export default function ListingPage({ id }: { id: string }) {
             </div>
 
             {/* Property features — explicit facts, no invented reviews */}
-            <section className="mt-12 border-y border-ink/12 py-10" aria-labelledby="property-features-heading">
+            <section id="features" className="mt-12 border-y border-ink/12 py-10" aria-labelledby="property-features-heading">
               <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="kicker text-brick !text-[10px]">Property features</p><h2 id="property-features-heading" className="mt-3 font-display text-3xl font-medium tracking-[-0.02em]">The useful facts, <span className="text-brick">together.</span></h2></div><span className="stamp text-ink/45">FACTS / {property.details.amenities?.length ?? 0} AMENITIES</span></div>
               <div className="mt-7 grid grid-cols-2 gap-px border border-ink/10 bg-ink/10 sm:grid-cols-3">
                 {propertyFactRows(property.details).map(([label, value]) => <div key={label} className="bg-paper p-4 md:p-5"><p className="stamp !text-[9px] text-ink/50">{label}</p><p className="mt-2 font-display text-lg font-medium tracking-[-0.01em]">{value}</p></div>)}
@@ -229,12 +252,12 @@ export default function ListingPage({ id }: { id: string }) {
             </section>
 
             {/* Trust dossier */}
-            <TrustPanel property={property} />
+            <div id="verification"><TrustPanel property={property} /></div>
             <OwnershipCost property={property} />
 
             {/* Price & history + agent trust */}
             <div className="mt-10 grid gap-10 md:grid-cols-2">
-              <section aria-labelledby="price-history-heading">
+              <section id="price-history" aria-labelledby="price-history-heading">
                 <p className="kicker text-brick !text-[10px]">{t.listing.trail}</p>
                 <h3 id="price-history-heading" className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">Price <span className="text-brick">& history</span>.</h3>
                 <div className="mt-5 space-y-0 border-l-2 border-ink/12 pl-5">
@@ -265,7 +288,7 @@ export default function ListingPage({ id }: { id: string }) {
                 </div>
               </section>
 
-              <section aria-labelledby="agent-heading" className="h-fit border border-ink/15 bg-sand/50 p-6">
+              <section id="partner" aria-labelledby="agent-heading" className="h-fit border border-ink/15 bg-sand/50 p-6">
                 <p className="kicker text-brick !text-[10px]">Your partner</p>
                 <h3 id="agent-heading" className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">{agent.name}.</h3>
                 <p className="stamp mt-2 !text-[10px] text-trust">{agent.badge}</p>
@@ -292,7 +315,7 @@ export default function ListingPage({ id }: { id: string }) {
 
 
             {/* Real OSM neighbourhood map */}
-            <div className="mt-12">
+            <div id="location" className="mt-12">
               <p className="kicker text-brick !text-[10px]">{t.listing.mapKicker}</p>
               <div className="relative mt-5 h-[320px] border border-ink/12 bg-sand">
                 <iframe
@@ -336,22 +359,20 @@ export default function ListingPage({ id }: { id: string }) {
         <StickyBar property={property} saved={saved} onSave={onSave} onAsk={() => setLeadOpen(true)} />
 
         {/* More homes */}
-        <div className="mt-20 border-t border-ink/12 pt-14">
+        <div id="nearby" className="mt-20 border-t border-ink/12 pt-14">
           <div className="flex items-end justify-between">
             <h2 className="display text-[clamp(26px,3vw,40px)]">{t.listing.nearbyTitle1} <em className="text-brick">{t.listing.nearbyTitleEm}</em>.</h2>
             <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.listing.allHomes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
+            {/* The SHARED card, not a local copy of it. This was a hand-rolled
+                1.4-crop / `text-ink/60` lookalike — a third of the page's scroll
+                written in a design language the product had already moved past,
+                with no save and no compare on cards whose only job is "save one
+                of these". Reveal is dropped too: PropertyCard already owns its
+                entrance motion, and nesting both double-animated the grid. */}
             {getRelatedListings(property.id, 3).map((p, i) => (
-              <Reveal key={p.id} delay={i * 80}>
-                <Link href={`/listing/${p.id}`} className="group block border border-ink/12 bg-card motion-lift hover:editorial-shadow">
-                  <div className="img-hover aspect-[1.4] bg-sand"><Pic name={p.image} alt={p.title} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, 33vw" /></div>
-                  <div className="p-5">
-                    <p className="font-display text-lg font-medium leading-tight tracking-[-0.015em] group-hover:text-brick">{p.title}</p>
-                    <div className="mt-2 flex items-center justify-between text-sm text-ink/60"><span>{p.locality}</span><strong className="font-display text-ink">{p.price}</strong></div>
-                  </div>
-                </Link>
-              </Reveal>
+              <PropertyCard key={p.id} property={p} index={i} />
             ))}
           </div>
         </div>

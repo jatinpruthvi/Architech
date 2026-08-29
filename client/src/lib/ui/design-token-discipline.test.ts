@@ -369,23 +369,101 @@ describe("viewport geometry is mobile-real", () => {
     expect(offenders, "fixed bottom chrome needs .safe-bottom (see theme.css)").toEqual([]);
   });
 
-  it("ships every viewport utility as a minifier-proof fallback + @supports pair", () => {
-    /* Browsers without the dynamic units (Safari < 15.4, Chrome < 108) ignore
-       `100svh` outright, so a utility that declares only the modern unit
-       collapses to `auto` there. The obvious fix — two declarations for one
-       property — does NOT survive this build: Turbopack's Lightning CSS drops
-       the "duplicate" fallback. So the contract is a top-level plain-`vh` rule
-       PLUS the same selector inside an `@supports` block. */
-    const supportsSvh = css.slice(css.search(/@supports \(height: 100svh\)/));
-    const supportsDvh = css.slice(css.search(/@supports \(height: 100dvh\)/));
+  it("ships each viewport utility as a plain-vh rule plus an @supports re-declaration", () => {
+    /* The textbook shape — `min-height: 100vh; min-height: 100svh;` — does NOT
+       survive this build: Lightning CSS dedupes same-property declarations and
+       merges adjacent identical selectors, so the fallback disappears from the
+       minified stylesheet while the SOURCE still looks correct. No dev-server
+       output, no `tsc`, and no source-text test can see that; it is only
+       visible in `.next/static/chunks/*.css` after a production build. Hence
+       @supports (which cannot be merged into what it wraps), and hence this
+       structural assertion instead of a friendlier-looking one. */
+    const svhBlock = css.slice(css.indexOf("@supports (height: 100svh)"));
+    const dvhBlock = css.slice(css.indexOf("@supports (height: 100dvh)"));
+    expect(svhBlock, "missing @supports (height: 100svh)").not.toBe(css);
+    expect(dvhBlock, "missing @supports (height: 100dvh)").not.toBe(css);
     for (const utility of ["vh-fill", "vh-fill-dvh", "vh-sheet", "vh-cta", "rail-scroll"]) {
-      const fallback = css.match(new RegExp(`^\\.${utility} \\{([^}]*)\\}`, "m"))?.[1] ?? "";
+      const fallback = new RegExp(`^\\.${utility} \\{([^}]*)\\}`, "m").exec(css)?.[1] ?? "";
       expect(fallback, `.${utility} needs a top-level plain-vh rule`).not.toBe("");
-      expect(/\dvh\b/.test(fallback) && !/\d(?:s|d|l)vh\b/.test(fallback), `.${utility} fallback must be plain vh, got "${fallback.trim()}"`).toBe(true);
-      const inSupports = new RegExp(`\\.${utility} \\{([^}]*)\\}`).test(
-        fallback.includes("dvh") ? supportsDvh : supportsSvh,
-      );
-      expect(inSupports, `.${utility} must be re-declared inside the matching @supports block`).toBe(true);
+      expect(/\dvh\b/.test(fallback) && !/\d[sd]vh\b/.test(fallback), `.${utility} must fall back to plain vh, got "${fallback.trim()}"`).toBe(true);
+      const block = utility.includes("dvh") || utility === "rail-scroll" ? dvhBlock : svhBlock;
+      const modern = new RegExp(`\\.${utility} \\{([^}]*)\\}`).exec(block.slice(0, block.indexOf("\n}") + 2))?.[1] ?? "";
+      expect(/\d[sd]vh\b/.test(modern), `.${utility} must be re-declared inside its @supports block`).toBe(true);
     }
+  });
+});
+
+/* ------------------------------------------------------------------
+ * The listing dossier's navigation contract.
+ * A page 3000px tall with no way to orient is not a taste problem: the
+ * reader either scrolls past the price history or gives up. These four
+ * checks pin the fix so it cannot rot into a rail of dead links.
+ * ------------------------------------------------------------------ */
+describe("the dossier navigates, and reuses the shared card", () => {
+  const page = "client/src/pages/ListingPage.tsx";
+  const nav = "client/src/components/architech/SectionNav.tsx";
+
+  it("has no dangling in-page anchor anywhere in the product", () => {
+    /* `href="#"` jumps to the top of the document — it looks like a button and
+       behaves like a bug. This caught the dossier's own "view all photos". */
+    const offenders: string[] = [];
+    for (const f of legacyFiles) {
+      if (f.includes("components/ui/")) continue;
+      const src = source(f);
+      for (const m of src.matchAll(/href="#([^"]*)"/g)) {
+        if (m[1].includes("${")) continue; // a template href is not statically resolvable
+        if (!src.includes(`id="${m[1]}"`)) offenders.push(`${f}: #${m[1] || "(empty)"}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("names only sections that exist", () => {
+    const src = source(page);
+    const listed = [...src.matchAll(/\{ id: "([^"]+)", label: "[^"]*" \}/g)].map((m) => m[1]);
+    expect(listed.length, "the rail would be pointless empty").toBeGreaterThanOrEqual(5);
+    const missing = listed.filter((id) => id !== "dossier-top" && !src.includes(`id="${id}"`));
+    expect(missing, "rail entries need a matching id on the section").toEqual([]);
+    expect(new Set(listed).size, "duplicate rail entries").toBe(listed.length);
+  });
+
+  it("offsets anchors in CSS, not per node, and honours reduced motion", () => {
+    /* The rule must be UNLAYERED to outrank Tailwind's `scroll-m-*` utilities
+       (unlayered beats layered at any specificity), so a component cannot
+       quietly "fix" a bad jump by deleting the offset for one element. */
+    const rule = css.search(/^\[id\] \{ scroll-margin-block-start: \d+px; \}/m);
+    expect(rule, "expected a global [id] scroll-margin rule in theme.css").toBeGreaterThan(-1);
+    /* Position in the file is irrelevant; LAYER membership is everything. A
+       rule inside `@layer base` loses to `@layer utilities` regardless of
+       specificity, so the offset would be one `scroll-mt-0` away from gone. */
+    /* "Which layer owns this rule" is a question about the enclosing block, so
+       measure the blocks rather than brace-counting a whole stylesheet (media
+       queries and `max()` brackets make that count meaningless — it returned
+       -121 the first time I tried it). */
+    /* Line-anchored on purpose: the file's PROSE mentions `@layer utilities`
+       inside comments, and an unanchored scan found three "blocks" — one of
+       them my own comment — and reported a correct rule as an offender. */
+    const opens = [...css.matchAll(/^@layer[^{]*\{/gm)].map((m) => m.index);
+    expect(opens.length, "expected this file to keep its @layer blocks").toBeGreaterThanOrEqual(2);
+    for (const open of opens) {
+      const end = css.indexOf("\n}", open);
+      expect(rule < open || rule > end, "[id] scroll-margin must sit outside every @layer block, or a utility could outrank it").toBe(true);
+    }
+    /* Smooth scrolling and its opt-out are PRE-EXISTING rules elsewhere in the
+       file. Assert them by their real selectors, and assert they are singular —
+       a second copy of either would make this check pass for the wrong reason. */
+    expect(css.match(/html \{[^}]*scroll-behavior: smooth/g)?.length, "exactly one smooth-scroll declaration").toBe(1);
+    expect(css.match(/html \{[^}]*scroll-behavior: auto/g)?.length, "exactly one reduced-motion reset").toBe(1);
+    expect(source(nav), "per-node scroll-mt would be dead weight and is misleading").not.toMatch(/scroll-mt-\[/);
+  });
+
+  it("does not re-hand-roll a listing card next to PropertyCard", () => {
+    /* The dossier's "Nearby" strip was a local `aspect-[1.4]` / `text-ink/60`
+       lookalike of the shared card: no save, no compare, a third design
+       language. If this goes red, use <PropertyCard> — do not tune the copy. */
+    expect(source(page)).not.toMatch(/aspect-\[1\.4\]/);
+    expect(source(page)).toMatch(/<PropertyCard key=\{p\.id\} property=\{p\} index=\{i\} \/>/);
+    const card = source("client/src/components/architech/PropertyCard.tsx");
+    expect(card).toMatch(/<div className="aspect-\[1\.5\]">/);
   });
 });

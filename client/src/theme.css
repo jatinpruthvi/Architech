@@ -197,6 +197,12 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 /* Mono data stamp */
 .stamp { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+/* The one legitimate step below .stamp. Written as a class rather than
+   `stamp !text-[11px]` because the override is the pattern the ratchet exists
+   to retire — 175 of them, mostly copies of each other, with no shared
+   meaning. Two rules here mean a rail or a chip row can go smaller on purpose
+   without adding debt: below this, a mono uppercase label stops being a label. */
+.stamp-sm { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 /* The DEFAULT colour is wrapped in `:where()` so it carries zero specificity.
    240 call sites had `text-ink/45` baked into the markup (2.81:1 on the warm
    card), which `.stamp` now supplies instead — but 149 other call sites pair
@@ -345,13 +351,19 @@ button:focus-visible, a:focus-visible, input:focus-visible {
                                                scrolled, so the bar is already gone)
    - a sticky rail inside a scrolled page  -> dvh
 
-   Written as `@supports`, NOT as two declarations for one property: Turbopack
-   runs Lightning CSS over this file and it deletes a "redundant" earlier
-   declaration (verified — the `100vh` fallback vanished from the compiled
-   stylesheet, and neither `browserslist` nor a next.config key brought it
-   back). A conditional block is the one shape no minifier merges away.
-   Tailwind arbitrary values could not express this at all, which is why these
-   live as named rules: `h-[62svh]` has no fallback half. */
+   Written as a plain-vh rule PLUS a re-declaration inside `@supports`, not as
+   two declarations for one property. That second shape is the one every CSS
+   article recommends, and it does NOT survive this build: verified against
+   `.next/static/chunks/*.css`, Lightning CSS merges adjacent identical rules
+   and dedupes same-property declarations, so `.vh-fill,.vh-fill-dvh{
+   min-height:100vh}` collapses into the svh rule and the fallback is simply
+   gone — a browser without svh then gets `auto`, which is the exact failure the
+   fallback was written to prevent. A conditional block cannot be merged into
+   the rules it wraps, so both values ship. (If a future config sets
+   `lightningCssFeatures.supports`, the block gets unwrapped and this breaks
+   again — the guard test fails loudly rather than silently, so check that
+   first.) Tailwind arbitrary values are impossible here either way: a
+   `h-[62svh]` has no fallback half. */
 .vh-fill { min-height: 100vh; }
 .vh-fill-dvh { min-height: 100vh; }
 .vh-sheet { max-height: 94vh; }
@@ -371,6 +383,43 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   @supports (height: 100dvh) {
     .vh-cta { height: calc(100dvh - 190px); }
   }
+}
+
+/* ------------------------------------------------------------------
+   In-page anchors. The header is 78px and fixed, so an unguarded
+   `href="#features"` parks the heading directly UNDER it: the user jumps
+   and sees chrome, not content. scroll-margin-block-start is the offset
+   that survives every browser; `scroll-padding-top` on html would be the
+   other option, but it is per-scroll-container and this page nests.
+
+   Deliberately UNLAYERED. Tailwind v4's own `scroll-m-*` utilities live in
+   @layer utilities, and an unlayered rule outranks a layered one at any
+   specificity — which here is the point: the offset is not a per-component
+   choice, it is the page's geometry. (Same reason `.clay-fill` carries
+   `color:` as a hard property, ~line 168.)
+   ------------------------------------------------------------------ */
+[id] { scroll-margin-block-start: 96px; }
+/* No scroll-behavior here. The existing smooth declaration on the root element
+   near the top of this file already covers it, and the repo's single
+   reduced-motion block at the bottom already reverts it to auto. Re-declaring
+   either here would only give the guard test two copies to count, and it would
+   pass for the wrong reason the moment the real rule drifted. */
+
+/* The section rail's active marker. A dot rather than a colour: the rail sits
+   over a busy dossier, and the active state has to read at a glance while
+   scrolling, in both themes, without a second text style. */
+.section-rail { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.section-rail::-webkit-scrollbar { display: none; }
+.section-rail-link { position: relative; white-space: nowrap; }
+.section-rail-link[aria-current="true"] { color: var(--ink); }
+.section-rail-link::after {
+  content: ""; position: absolute; left: 0.6rem; right: 0.6rem; bottom: 0; height: 2px;
+  background: var(--brick); transform: scaleX(0); transform-origin: left;
+  transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+.section-rail-link[aria-current="true"]::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) {
+  .section-rail-link::after { transition: none; }
 }
 
 /* Bottom chrome (action bars, sheet footers) on a gesture-nav device sits under
