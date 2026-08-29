@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assetUrl, canonicalUrl, cityUrl, guideUrl, homeUrl, listingUrl, localityUrl, normalizeSiteUrl, savedUrl, searchUrl, sitemapUrl, withTrailingSlash } from "./urls";
+import { assetUrl, canonicalUrl, cityUrl, guideUrl, homeUrl, listingUrl, localityUrl, normalizeSiteUrl, savedUrl, searchUrl, sitemapIndexPath, sitemapIndexUrl, sitemapSegmentPath, sitemapSegmentUrl, withTrailingSlash } from "./urls";
 
 const base = "https://example.com/";
 
@@ -29,6 +29,9 @@ describe("canonical URL helpers", () => {
 
   it("builds absolute asset and sitemap URLs without route slash mutation", () => {
     expect(assetUrl("/images/hero-ahmedabad.jpg", base)).toBe("https://example.com/images/hero-ahmedabad.jpg");
-    expect(sitemapUrl(base)).toBe("https://example.com/sitemap.xml");
+    expect(sitemapIndexPath()).toBe("/sitemap.xml");
+    expect(sitemapIndexUrl(base)).toBe("https://example.com/sitemap.xml");
+    expect(sitemapSegmentPath("localities")).toBe("/sitemap/localities.xml");
+    expect(sitemapSegmentUrl("localities", base)).toBe("https://example.com/sitemap/localities.xml");
   });
 });

@@ -11,11 +11,14 @@
    fixture set, so it can be unit-tested and SSR'd. */
 import { getListingsByLocality, getListings, getLocalityBySlug, type Property } from "@/lib/repositories";
 import { compactInr } from "@/lib/realestate/price-trends";
+import { FIXTURE_AS_OF_ISO, FIXTURE_AS_OF_LABEL } from "@/lib/properties";
 
 /** Human-readable date the underlying facts were last refreshed.
-    Fixtures are static; production sources stamp each update. */
-const PRICE_AS_OF = "26 Aug 2026";
-const PRICE_AS_OF_ISO = "2026-08-26";
+    Fixtures are static; production sources stamp each update.
+    Sourced from the single fixture as-of constant so listing freshness,
+    locality facts, and sitemap `lastmod` can never disagree. */
+const PRICE_AS_OF = FIXTURE_AS_OF_LABEL;
+const PRICE_AS_OF_ISO = FIXTURE_AS_OF_ISO;
 
 export type BudgetBand = { id: string; label: string; min: number; max: number | null; count: number };
 export type BhkSplit = { bhk: number; label: string; count: number };

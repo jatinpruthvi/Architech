@@ -1,8 +1,14 @@
 import { getCities, getGuides, getListings, getLocalities } from "@/lib/repositories";
+import { localityIntel } from "@/lib/realestate/locality-intel";
 import { isIndexable } from "./lifecycle";
 import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, requirementsPath, requirementsUrl } from "./urls";
 
 export type SeoRouteType = "home" | "hub" | "city" | "locality" | "listing" | "guide";
+
+/** Child sitemap a page is published in. Segmentation lets Search Console
+    report coverage per content type, so a locality-fact problem never hides
+    inside one flat 400-URL sitemap (StudyArena round-11, contestant A §5). */
+export type SeoSitemapSegment = "pages" | "cities" | "localities" | "listings" | "guides";
 export type SeoIndexability = "indexable" | "noindex";
 export type SeoQualityState = "prototype-validated" | "needs-production-data" | "editorial-review-required";
 export type SeoOwner = "Product" | "SEO" | "Content";
@@ -19,11 +25,37 @@ export type SeoPage = {
   qualityState: SeoQualityState;
   freshnessPolicy: string;
   entityIds: string[];
+  /** Child sitemap this page belongs to. Omit to use the route-type default. */
+  sitemapSegment?: SeoSitemapSegment;
+  /** ISO `YYYY-MM-DD` date the page's *content* last changed, from the
+      underlying entity — never the request/build clock.
+
+      `lastmod` is a promise to Google about when the page changed. Stamping
+      `new Date()` makes every sitemap entry claim "changed just now" on every
+      build, which is exactly the signal Google discounts. A page whose entity
+      carries no date (a standing page with no dated source) omits `lastmod`
+      entirely rather than inventing one. */
+  lastModified?: string;
   sitemap: {
     changeFrequency: SeoChangeFrequency;
     priority: number;
   };
 };
+
+const SEGMENT_BY_ROUTE_TYPE: Record<SeoRouteType, SeoSitemapSegment> = {
+  home: "pages",
+  hub: "pages",
+  city: "cities",
+  locality: "localities",
+  listing: "listings",
+  guide: "guides",
+};
+
+/** Resolve a page's child sitemap: the explicit override wins, otherwise the
+    route type decides. */
+export function sitemapSegmentForPage(page: Pick<SeoPage, "routeType" | "sitemapSegment">): SeoSitemapSegment {
+  return page.sitemapSegment ?? SEGMENT_BY_ROUTE_TYPE[page.routeType];
+}
 
 const homePage: SeoPage = {
   id: "home",
@@ -54,6 +86,22 @@ const buyIndiaPage: SeoPage = {
   sitemap: { changeFrequency: "daily", priority: 0.95 },
 };
 
+/* Locality fact dates are computed once and shared: a city hub is as fresh as
+   the newest locality it aggregates, and recomputing per call would make
+   registry construction O(cities × localities × listings). */
+const localityFactDates = new Map<string, string>(
+  getLocalities().map((locality) => [locality.slug, localityIntel(locality.slug).asOfDate] as const),
+);
+
+/** Newest locality fact date inside a city — the honest `lastmod` for its hub. */
+function cityFactDate(citySlug: string): string | undefined {
+  const dates = getLocalities(citySlug)
+    .map((locality) => localityFactDates.get(locality.slug))
+    .filter((date): date is string => Boolean(date))
+    .sort();
+  return dates.length ? dates[dates.length - 1] : undefined;
+}
+
 /* One hub per live city, generated from the city registry so launching a city
    is a single registry edit (SEO-002). */
 const cityPages: SeoPage[] = getCities().map((city) => ({
@@ -67,6 +115,7 @@ const cityPages: SeoPage[] = getCities().map((city) => ({
   qualityState: "prototype-validated",
   freshnessPolicy: "Refresh when locality coverage, counts, or city-level internal links change.",
   entityIds: [`city:${city.slug}`, `state:${city.stateSlug}`],
+  lastModified: cityFactDate(city.slug),
   sitemap: { changeFrequency: "daily", priority: 0.9 },
 }));
 
@@ -82,6 +131,8 @@ const localityPages: SeoPage[] = getCities().flatMap((city) =>
     qualityState: "prototype-validated" as const,
     freshnessPolicy: "Refresh when listings, coordinates, landmarks, or locality editorial context materially change.",
     entityIds: [`city:${city.slug}`, `locality:${locality.slug}`],
+    // The date the locality's own aggregated facts were last refreshed.
+    lastModified: localityFactDates.get(locality.slug),
     sitemap: { changeFrequency: "daily" as const, priority: 0.8 },
   })),
 );
@@ -99,8 +150,18 @@ const listingPages: SeoPage[] = getListings().map((property) => ({
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",
   entityIds: [`city:${property.citySlug}`, `locality:${property.localitySlug}`, `listing:${property.id}`],
+  // Mirrors `Listing.meaningfulUpdatedAt`, not `updatedAt`: a moderation touch
+  // is not a content change and must not bump `lastmod`.
+  lastModified: property.meaningfulUpdatedAt,
   sitemap: { changeFrequency: "daily", priority: 0.7 },
 }));
+
+/* The guide index renders the guide list, so its honest `lastmod` is the
+   newest guide revision it displays — not the build clock. */
+const newestGuideUpdate = getGuides()
+  .map((guide) => guide.updatedAt)
+  .sort()
+  .pop();
 
 const guidePage: SeoPage = {
   id: "guide:index",
@@ -113,6 +174,7 @@ const guidePage: SeoPage = {
   qualityState: "editorial-review-required",
   freshnessPolicy: "Refresh when verification methodology, source policy, or editorial guidance changes.",
   entityIds: ["brand:architech", "topic:verification-methodology"],
+  lastModified: newestGuideUpdate,
   sitemap: { changeFrequency: "weekly", priority: 0.6 },
 };
 
@@ -128,6 +190,8 @@ const guideDetailPages: SeoPage[] = getGuides().map((guide) => ({
   qualityState: guide.status === "published" ? "prototype-validated" : "editorial-review-required",
   freshnessPolicy: "Refresh when source evidence, reviewer status, or market guidance changes.",
   entityIds: ["brand:architech", `guide:${guide.id}`],
+  // Guides are the one surface with a real editorial date attached.
+  lastModified: guide.updatedAt,
   sitemap: { changeFrequency: "monthly", priority: 0.5 },
 }));
 
@@ -156,6 +220,8 @@ const developersPage: SeoPage = {
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh when developer evidence, project links, or partner status changes.",
   entityIds: ["brand:architech", "country:india", "topic:developers"],
+  // A standing product/tool page, not an editorial guide: keep it out of the guides sitemap.
+  sitemapSegment: "pages",
   sitemap: { changeFrequency: "weekly", priority: 0.6 },
 };
 
@@ -170,6 +236,8 @@ const investmentPage: SeoPage = {
   qualityState: "editorial-review-required",
   freshnessPolicy: "Refresh when sources, legal disclaimers, or locality context changes.",
   entityIds: ["brand:architech", "country:india", "topic:investment-context"],
+  // A standing product/tool page, not an editorial guide: keep it out of the guides sitemap.
+  sitemapSegment: "pages",
   sitemap: { changeFrequency: "monthly", priority: 0.5 },
 };
 
@@ -212,6 +280,8 @@ const homeLoanPage: SeoPage = {
   qualityState: "editorial-review-required",
   freshnessPolicy: "Refresh when calculator assumptions, disclosures, or approved providers change.",
   entityIds: ["brand:architech", "country:india", "topic:home-loan-context"],
+  // A standing product/tool page, not an editorial guide: keep it out of the guides sitemap.
+  sitemapSegment: "pages",
   sitemap: { changeFrequency: "monthly", priority: 0.4 },
 };
 

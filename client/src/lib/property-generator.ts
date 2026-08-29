@@ -11,7 +11,7 @@
    snapshots, sitemaps, and static params stay stable between builds. */
 import { findCity } from "./cities";
 import { localities, type Locality } from "./localities";
-import type { Property } from "./properties";
+import { FIXTURE_AS_OF_ISO, type Property } from "./properties";
 
 /** Small deterministic hash so per-listing variation is stable across builds. */
 function seedOf(value: string): number {
@@ -39,7 +39,26 @@ export function formatRent(rupees: number): string {
 
 const IMAGES = ["prop-courtyard", "prop-light", "prop-thaltej", "locality-street"] as const;
 const BADGES = ["RERA verified", "Verified partner", "Source reviewed"] as const;
-const STATUSES = ["Updated today", "Updated 1 day ago", "Updated 2 days ago", "Updated 4 days ago"] as const;
+/** Relative freshness labels and the exact day-offset each one means. Kept as a
+    single table so the visible label and the machine-readable
+    `meaningfulUpdatedAt` date can never drift apart. */
+const STATUSES = [
+  { label: "Updated today", daysAgo: 0 },
+  { label: "Updated 1 day ago", daysAgo: 1 },
+  { label: "Updated 2 days ago", daysAgo: 2 },
+  { label: "Updated 4 days ago", daysAgo: 4 },
+] as const;
+
+/** ISO `YYYY-MM-DD` `daysAgo` before the fixture as-of date.
+
+    Deterministic by construction — it reads the shared fixture constant rather
+    than the wall clock, so a rebuild never changes a listing's freshness or the
+    sitemap `lastmod` derived from it. */
+function fixtureDateDaysAgo(daysAgo: number): string {
+  const date = new Date(`${FIXTURE_AS_OF_ISO}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() - daysAgo);
+  return date.toISOString().slice(0, 10);
+}
 const FACINGS = ["EAST", "NORTH_EAST", "NORTH", "WEST", "SOUTH"] as const;
 const DEVELOPERS = ["Architech Curated Homes", "Nivasa Partners", "Sthapati Group", "Anant Realty", "Prithvi Habitat"] as const;
 
@@ -106,6 +125,9 @@ function buildListing(locality: Locality, blueprint: Blueprint, index: number): 
   // Illustrative gross rental yield ≈ 3% a year.
   const monthlyRent = Math.round((saleValue * 0.03) / 12 / 1000) * 1000;
   const isRent = blueprint.transaction === "rent";
+  // One pick drives both the visible freshness label and the machine-readable
+  // update date, so the two always agree.
+  const status = pick(STATUSES, seed, index);
 
   return {
     id,
@@ -125,7 +147,8 @@ function buildListing(locality: Locality, blueprint: Blueprint, index: number): 
     areaNum,
     image: pick(IMAGES, seed),
     badge: pick(BADGES, seed, index),
-    status: pick(STATUSES, seed, index),
+    status: status.label,
+    meaningfulUpdatedAt: fixtureDateDaysAgo(status.daysAgo),
     note: blueprint.noteFor(locality.name, cityName),
     propertyType: blueprint.propertyType,
     availability: blueprint.availability,

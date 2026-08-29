@@ -55,6 +55,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     "@id": `${listingUrl(property.id)}#residence`,
     name: property.title,
     description: `${property.note} (Concept-preview demonstration listing — not a real offer.)`,
+    ...(property.meaningfulUpdatedAt ? { dateModified: property.meaningfulUpdatedAt } : {}),
     numberOfRooms: property.bhk,
     numberOfBathroomsTotal: property.details.bathrooms,
     floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitText: "sq ft" },
@@ -91,6 +92,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         description: property.meta,
         about: residence,
         image: [assetUrl(`/images/${property.image}.jpg`)],
+        // Content-change date from the listing record (mirrors
+        // Listing.meaningfulUpdatedAt), not the render clock — a re-crawl that
+        // sees an unchanged date is a signal the page genuinely did not change.
+        ...(property.meaningfulUpdatedAt ? { dateModified: property.meaningfulUpdatedAt } : {}),
         offers: {
           "@type": "Offer",
           price: schemaPrice,
@@ -105,8 +110,21 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: homeUrl() },
-          { "@type": "ListItem", position: 2, name: "Ahmedabad", item: cityUrl("ahmedabad") },
-          { "@type": "ListItem", position: 3, name: property.locality, item: localityUrl("ahmedabad", property.localitySlug) },
+          // Resolved from the listing's own city, not a hard-coded launch city:
+          // a Mumbai dossier must not publish an Ahmedabad breadcrumb, or the
+          // trail — and every internal link Google reads from it — is wrong.
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: city?.name ?? property.city,
+            item: cityUrl(property.citySlug),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: property.locality,
+            item: localityUrl(property.citySlug, property.localitySlug),
+          },
           { "@type": "ListItem", position: 4, name: property.title, item: listingUrl(property.id) },
         ],
       },

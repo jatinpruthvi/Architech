@@ -1,5 +1,5 @@
 import { getIndexableSeoPages, type SeoPage } from "@/lib/seo/pages";
-import { sitemapUrl } from "@/lib/seo/urls";
+import { sitemapIndexUrl } from "@/lib/seo/urls";
 
 export type SearchConsoleThresholds = {
   minIndexedRatio: number;
@@ -72,7 +72,7 @@ export function analyzeSearchConsoleSnapshot(
   return alerts;
 }
 
-export function buildSearchConsoleSetup(siteUrl: string, sitemap = sitemapUrl()) {
+export function buildSearchConsoleSetup(siteUrl: string, sitemap = sitemapIndexUrl()) {
   return [
     `Create a Google Search Console Domain property for ${new URL(siteUrl).hostname}.`,
     "Verify ownership using DNS TXT record at the domain registrar/DNS host.",

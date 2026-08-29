@@ -123,10 +123,27 @@ export function savedUrl(base?: string) {
   return canonicalUrl(savedPath(), base);
 }
 
-export function sitemapPath() {
+/** The sitemap *index*. `/sitemap.xml` is kept as the single URL advertised in
+    `robots.txt` so existing Search Console history stays valid; it points at one
+    child sitemap per content type. */
+export function sitemapIndexPath() {
   return "/sitemap.xml";
 }
 
-export function sitemapUrl(base?: string) {
-  return assetUrl(sitemapPath(), base);
+export function sitemapIndexUrl(base?: string) {
+  return assetUrl(sitemapIndexPath(), base);
+}
+
+/** Child sitemap for one content type, e.g. `/sitemap/localities.xml`.
+
+    The segment sits in a directory rather than a dotted filename
+    (`/sitemap-localities.xml`) because Next.js will not route a path whose last
+    segment contains a dot to a dynamic route, and because `trailingSlash: true`
+    would otherwise redirect a file-looking URL. */
+export function sitemapSegmentPath(segment: string) {
+  return `/sitemap/${segment}.xml`;
+}
+
+export function sitemapSegmentUrl(segment: string, base?: string) {
+  return assetUrl(sitemapSegmentPath(segment), base);
 }

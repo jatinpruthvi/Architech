@@ -56,6 +56,26 @@ async function fetchHtml(baseUrl, route) {
   return response.text();
 }
 
+async function fetchXml(baseUrl, route) {
+  const response = await fetch(`${baseUrl}${route}`, { redirect: "manual" });
+  assert(response.status === 200, `${route} expected HTTP 200, received ${response.status}`);
+  const contentType = response.headers.get("content-type") ?? "";
+  assert(contentType.includes("xml"), `${route} expected XML, received ${contentType}`);
+  return response.text();
+}
+
+/* The sitemap index and one child sitemap per content type. Public indexing is
+   gated off in this build, so the URLs are expected to be empty — what these
+   checks protect is routing, content type, and XML shape. */
+const sitemapChecks = [
+  { route: "/sitemap.xml", root: "sitemapindex" },
+  { route: "/sitemap/pages.xml", root: "urlset" },
+  { route: "/sitemap/cities.xml", root: "urlset" },
+  { route: "/sitemap/localities.xml", root: "urlset" },
+  { route: "/sitemap/listings.xml", root: "urlset" },
+  { route: "/sitemap/guides.xml", root: "urlset" },
+];
+
 function assertCommonSeo(html, route) {
   includes(html, "<title", route);
   includes(html, "rel=\"canonical\"", route);
@@ -250,7 +270,15 @@ try {
     item.check(html);
     console.log(`✓ raw HTML SEO checks passed for ${item.route}`);
   }
-  console.log(`Raw HTML SEO smoke passed for ${routeChecks.length} routes.`);
+  for (const item of sitemapChecks) {
+    const xml = await fetchXml(baseUrl, item.route);
+    includes(xml, `<${item.root}`, item.route);
+    console.log(`✓ sitemap checks passed for ${item.route}`);
+  }
+  const unknownSegment = await fetch(`${baseUrl}/sitemap/not-a-segment.xml`, { redirect: "manual" });
+  assert(unknownSegment.status === 404, `unknown sitemap segment expected HTTP 404, received ${unknownSegment.status}`);
+  console.log("✓ unknown sitemap segment returns 404");
+  console.log(`SEO smoke passed for ${routeChecks.length} routes and ${sitemapChecks.length} sitemaps.`);
 } catch (error) {
   console.error(output.trim());
   console.error(error);
