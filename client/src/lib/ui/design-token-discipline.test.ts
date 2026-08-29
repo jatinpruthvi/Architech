@@ -318,3 +318,74 @@ describe("aria wiring is wired, not merely present", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * Mobile viewport geometry.
+ * `min-h-screen` and `100vh` mean the URL-BAR-HIDDEN viewport on Chrome
+ * Android, so a full-height surface is 15-20% too tall and its bottom edge —
+ * usually the primary CTA — is unreachable until the user scrolls enough for
+ * the bar to collapse. This is invisible in every desktop devtools, so it is
+ * pinned here instead of in review.
+ * ------------------------------------------------------------------ */
+describe("viewport geometry is mobile-real", () => {
+  // Vendored primitives are exempt (upstream, patched by hand once); the
+  // Storybook harness is exempt because it deliberately mimics a device frame
+  // rather than shipping to anyone's phone.
+  const isProductSurface = (f: string) =>
+    !f.includes("components/ui/") && !f.includes(".stories.") && !f.includes("/stories/");
+  const geometryFiles = legacyFiles.filter(isProductSurface);
+
+  it("never sizes a full-height surface with 100vh or min-h-screen", () => {
+    const offenders: string[] = [];
+    for (const file of geometryFiles) {
+      const src = source(file);
+      for (const m of src.matchAll(/100vh|min-h-screen|h-screen(?![\w-])/g)) {
+        const line = src.slice(0, m.index).split("\n").length;
+        offenders.push(`${file}:${line} ${m[0]}`);
+      }
+    }
+    expect(
+      offenders,
+      "use .vh-fill (svh: must always fit), .rail-scroll (dvh: sticky panel) or .vh-sheet — see theme.css for which is which",
+    ).toEqual([]);
+  });
+
+  it("gives every fixed bottom bar the safe-area inset", () => {
+    // A bottom bar without the inset keeps a 44px target tappable but clips its
+    // own label under the gesture strip — the failure nobody sees on a Mac.
+    const offenders: string[] = [];
+    for (const file of geometryFiles) {
+      const src = source(file);
+      for (const m of src.matchAll(/className="([^"]*fixed[^"]*bottom-0[^"]*)"/g)) {
+        if (m[1].includes("safe-bottom")) continue;
+        /* The inset legitimately lives on the bar's own inner container (that is
+           where the padding is), so look ahead into the element it opens instead
+           of demanding the class sit on the outer wrapper. */
+        const window = src.slice(m.index, m.index + 700);
+        if (/safe-bottom/.test(window)) continue;
+        offenders.push(`${file}: ${m[1].slice(0, 70)}`);
+      }
+    }
+    expect(offenders, "fixed bottom chrome needs .safe-bottom (see theme.css)").toEqual([]);
+  });
+
+  it("ships every viewport utility as a minifier-proof fallback + @supports pair", () => {
+    /* Browsers without the dynamic units (Safari < 15.4, Chrome < 108) ignore
+       `100svh` outright, so a utility that declares only the modern unit
+       collapses to `auto` there. The obvious fix — two declarations for one
+       property — does NOT survive this build: Turbopack's Lightning CSS drops
+       the "duplicate" fallback. So the contract is a top-level plain-`vh` rule
+       PLUS the same selector inside an `@supports` block. */
+    const supportsSvh = css.slice(css.search(/@supports \(height: 100svh\)/));
+    const supportsDvh = css.slice(css.search(/@supports \(height: 100dvh\)/));
+    for (const utility of ["vh-fill", "vh-fill-dvh", "vh-sheet", "vh-cta", "rail-scroll"]) {
+      const fallback = css.match(new RegExp(`^\\.${utility} \\{([^}]*)\\}`, "m"))?.[1] ?? "";
+      expect(fallback, `.${utility} needs a top-level plain-vh rule`).not.toBe("");
+      expect(/\dvh\b/.test(fallback) && !/\d(?:s|d|l)vh\b/.test(fallback), `.${utility} fallback must be plain vh, got "${fallback.trim()}"`).toBe(true);
+      const inSupports = new RegExp(`\\.${utility} \\{([^}]*)\\}`).test(
+        fallback.includes("dvh") ? supportsDvh : supportsSvh,
+      );
+      expect(inSupports, `.${utility} must be re-declared inside the matching @supports block`).toBe(true);
+    }
+  });
+});

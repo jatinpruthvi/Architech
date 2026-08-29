@@ -125,7 +125,7 @@ function Header({ section }: { section: AgentSection }) {
 }
 
 function Sidebar({ section }: { section: AgentSection }) {
-  return <aside className="desk-sidebar border-b border-ink/12 bg-paper md:border-b-0 md:border-r"><div className="flex gap-2 overflow-x-auto p-4 md:sticky md:top-24 md:block md:max-h-[calc(100vh-7rem)] md:overflow-y-auto md:p-5">{nav.map(({ section: itemSection, label, icon: Icon }) => <Link key={itemSection} href={`/broker/agent/${itemSection === "dashboard" ? "" : itemSection}`} className={`group flex min-w-max items-center gap-2 border px-3 py-2.5 stamp !text-[10px] font-semibold transition md:mb-2 md:w-full ${section === itemSection ? "border-brick bg-brick text-cream" : "border-transparent text-ink/60 hover:border-ink/15 hover:text-brick"}`}><Icon size={14} /><span>{label}</span></Link>)}</div></aside>;
+  return <aside className="desk-sidebar border-b border-ink/12 bg-paper md:border-b-0 md:border-r"><div className="flex gap-2 overflow-x-auto p-4 md:sticky md:top-24 md:block md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto md:p-5">{nav.map(({ section: itemSection, label, icon: Icon }) => <Link key={itemSection} href={`/broker/agent/${itemSection === "dashboard" ? "" : itemSection}`} className={`group flex min-w-max items-center gap-2 border px-3 py-2.5 stamp !text-[10px] font-semibold transition md:mb-2 md:w-full ${section === itemSection ? "border-brick bg-brick text-cream" : "border-transparent text-ink/60 hover:border-ink/15 hover:text-brick"}`}><Icon size={14} /><span>{label}</span></Link>)}</div></aside>;
 }
 
 function Dashboard({ drafts }: { drafts: ListingDraft[] }) {

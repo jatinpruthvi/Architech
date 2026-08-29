@@ -1,5 +1,35 @@
 {
   "_readme": "Ratchet baseline for design-token-discipline.test.ts. Each number is the CURRENT count of a legacy pattern in that file. The test fails only when a file EXCEEDS its baseline, so debt can be paid down but never grows. Regenerate after a cleanup with: node client/src/lib/ui/design-token-baseline.cjs --write",
+  "app/buy/[city]/page.tsx": {
+    "alphaText": 10,
+    "microText": 4,
+    "nanoText": 0
+  },
+  "app/buy/page.tsx": {
+    "alphaText": 9,
+    "microText": 5,
+    "nanoText": 0
+  },
+  "app/compare/page.tsx": {
+    "alphaText": 5,
+    "microText": 3,
+    "nanoText": 0
+  },
+  "app/error.tsx": {
+    "alphaText": 2,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "app/privacy/page.tsx": {
+    "alphaText": 6,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "app/terms/page.tsx": {
+    "alphaText": 2,
+    "microText": 0,
+    "nanoText": 0
+  },
   "client/src/components/architech/CompareTray.tsx": {
     "alphaText": 6,
     "microText": 5,
@@ -14,6 +44,11 @@
     "alphaText": 6,
     "microText": 1,
     "nanoText": 0
+  },
+  "client/src/components/architech/ListingGallery.tsx": {
+    "alphaText": 5,
+    "microText": 4,
+    "nanoText": 1
   },
   "client/src/components/architech/LocalityIntel.tsx": {
     "alphaText": 22,
@@ -58,11 +93,6 @@
   "client/src/components/architech/TrustPanel.tsx": {
     "alphaText": 9,
     "microText": 6,
-    "nanoText": 1
-  },
-  "client/src/components/architech/ListingGallery.tsx": {
-    "alphaText": 5,
-    "microText": 4,
     "nanoText": 1
   },
   "client/src/pages/AgentWorkspace.tsx": {
@@ -158,36 +188,6 @@
   "client/src/pages/SavedSearches.tsx": {
     "alphaText": 9,
     "microText": 3,
-    "nanoText": 0
-  },
-  "app/buy/[city]/page.tsx": {
-    "alphaText": 10,
-    "microText": 4,
-    "nanoText": 0
-  },
-  "app/buy/page.tsx": {
-    "alphaText": 9,
-    "microText": 5,
-    "nanoText": 0
-  },
-  "app/compare/page.tsx": {
-    "alphaText": 5,
-    "microText": 3,
-    "nanoText": 0
-  },
-  "app/error.tsx": {
-    "alphaText": 2,
-    "microText": 0,
-    "nanoText": 0
-  },
-  "app/privacy/page.tsx": {
-    "alphaText": 6,
-    "microText": 1,
-    "nanoText": 0
-  },
-  "app/terms/page.tsx": {
-    "alphaText": 2,
-    "microText": 0,
     "nanoText": 0
   }
 }

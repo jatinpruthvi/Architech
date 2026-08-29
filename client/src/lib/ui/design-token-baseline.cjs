@@ -29,5 +29,8 @@ for (const file of out) {
   const nanoText = (src.match(/!text-\[9px\]/g) ?? []).length;
   if (alphaText || microText || nanoText) base[file] = { alphaText, microText, nanoText };
 }
-writeFileSync("client/src/lib/ui/design-token-baseline.json", JSON.stringify(base, null, 2) + "\n");
+/* Key order is the filesystem walk's, which is not stable across machines — sort
+   so regenerating the baseline cannot produce a diff full of pure reordering. */
+const sorted = Object.fromEntries(Object.keys(base).sort().map((k) => [k, base[k]]));
+writeFileSync("client/src/lib/ui/design-token-baseline.json", JSON.stringify(sorted, null, 2) + "\n");
 console.log("baseline written:", Object.keys(base).length - 1, "files");

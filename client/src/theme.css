@@ -332,6 +332,52 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 .paper-fill { color: var(--ink, #241c18); }
 
+/* ---------- Viewport geometry (mobile realism) ----------
+   `min-h-screen` / `h-screen` in Tailwind mean 100vh, and on Chrome Android
+   100vh is the viewport with the URL bar HIDDEN — so a full-height surface
+   renders 15-20% too tall and its bottom edge is unreachable until the person
+   scrolls enough for the bar to collapse. These are the three cases we actually
+   have, and they want THREE different answers, which is why they are named
+   rules instead of `h-[calc(100dvh-…)]` scattered through the markup:
+
+   - a sheet/dialog that must always fit   -> svh (never grows mid-drag)
+   - a tall panel whose bottom is the CTA  -> dvh (tallest, but only seen
+                                               scrolled, so the bar is already gone)
+   - a sticky rail inside a scrolled page  -> dvh
+
+   Written as `@supports`, NOT as two declarations for one property: Turbopack
+   runs Lightning CSS over this file and it deletes a "redundant" earlier
+   declaration (verified — the `100vh` fallback vanished from the compiled
+   stylesheet, and neither `browserslist` nor a next.config key brought it
+   back). A conditional block is the one shape no minifier merges away.
+   Tailwind arbitrary values could not express this at all, which is why these
+   live as named rules: `h-[62svh]` has no fallback half. */
+.vh-fill { min-height: 100vh; }
+.vh-fill-dvh { min-height: 100vh; }
+.vh-sheet { max-height: 94vh; }
+.vh-cta { height: 62vh; }
+.rail-scroll { max-height: calc(100vh - 130px); }
+@supports (height: 100svh) {
+  .vh-fill { min-height: 100svh; }
+  .vh-sheet { max-height: 94svh; }
+  .vh-cta { height: 62svh; }
+}
+@supports (height: 100dvh) {
+  .vh-fill-dvh { min-height: 100dvh; }
+  .rail-scroll { max-height: calc(100dvh - 130px); }
+}
+@media (min-width: 1024px) {
+  .vh-cta { height: calc(100vh - 190px); }
+  @supports (height: 100dvh) {
+    .vh-cta { height: calc(100dvh - 190px); }
+  }
+}
+
+/* Bottom chrome (action bars, sheet footers) on a gesture-nav device sits under
+   the home-indicator strip: the tap target survives, the label clips. */
+.safe-bottom { padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+.safe-bottom-lg { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+
 .dark .clay-fill { background: var(--brick-deep); }
 .dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }
 .dark .clay-fill.btn-sweep::before { background: color-mix(in srgb, var(--brick-deep) 74%, #000); }

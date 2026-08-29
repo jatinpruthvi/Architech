@@ -100,7 +100,7 @@ export default function RequirementCapture({ compact = false }: Props) {
       </button>
       {open && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-night/65 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="requirement-title" className="max-h-[94svh] w-full max-w-3xl overflow-y-auto border-t-2 border-brick bg-paper text-ink editorial-shadow sm:border sm:border-ink/15">
+          <section role="dialog" aria-modal="true" aria-labelledby="requirement-title" className="vh-sheet w-full max-w-3xl overflow-y-auto border-t-2 border-brick bg-paper text-ink editorial-shadow sm:border sm:border-ink/15">
             <div className="flex items-start justify-between gap-6 border-b border-ink/12 p-5 md:p-8">
               <div>
                 <p className="kicker text-brick">A better brief · Ahmedabad first</p>

@@ -516,7 +516,7 @@ export default function ResultsPage() {
  {/* Desktop rail: same panel, same counts, same footer as the sheet. */}
  {!mapMode && (
  <aside className="hidden lg:block">
- <div className="lg:sticky lg:top-[102px] lg:max-h-[calc(100vh-130px)] border border-ink/12 bg-card px-4 py-3">
+ <div className="rail-scroll lg:sticky lg:top-[102px] border border-ink/12 bg-card px-4 py-3">
  {panel("rail")}
  </div>
  </aside>
@@ -639,7 +639,7 @@ export default function ResultsPage() {
  listings={results}
  selectedId={selectedId}
  onSelect={setSelectedId}
- className="h-[62vh] border border-ink/12 lg:h-[calc(100vh-190px)]"
+ className="vh-cta border border-ink/12"
  copy={{
  mapLabel: t.search.mapLabel,
  searchArea: t.search.searchArea,
@@ -678,7 +678,7 @@ export default function ResultsPage() {
  <DrawerTitle className="font-display text-2xl font-medium tracking-[-0.02em]">{t.search.filterHomes}</DrawerTitle>
  </DrawerHeader>
  <div className="px-4 pb-2">{panel("sheet")}</div>
- <div className="sticky bottom-0 border-t border-ink/12 bg-paper px-4 py-3">
+ <div className="safe-bottom sticky bottom-0 border-t border-ink/12 bg-paper px-4 py-3">
  <DrawerClose asChild>
  <button className="clay-fill touch-44 w-full bg-brick py-3.5 stamp font-semibold text-cream">
  {results.length === 1 ? t.search.facet.showOneHome : t.search.facet.showHomes} · {results.length}
