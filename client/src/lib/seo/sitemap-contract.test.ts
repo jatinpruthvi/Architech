@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSitemapIndex, buildSegmentSitemap, collectUnsegmentedPages, getSegmentPages, SITEMAP_SEGMENTS } from "./sitemap";
-import { getIndexableSeoPages, sitemapSegmentForPage } from "./pages";
+import { getHeldBackPages, getIndexableSeoPages, getPublishableSeoPages, sitemapSegmentForPage } from "./pages";
 import { sitemapSegmentPath } from "./urls";
 
 /* The contract that matters: `lastmod` is a promise about when a page changed.
@@ -94,5 +94,33 @@ describe("sitemap publication contracts", () => {
       expect(match[1]).toMatch(/^https:\/\//);
       expect(match[1]).not.toContain("&amp;");
     }
+  });
+});
+
+describe("quality gate governs publication", () => {
+  it("publishes only pages the quality gate clears", () => {
+    // The sitemap is the last line of defence: a page the gate holds back must
+    // never be submitted, however it got into the registry.
+    expect(getPublishableSeoPages().length).toBeLessThanOrEqual(getIndexableSeoPages().length);
+    for (const page of getPublishableSeoPages()) {
+      expect(page.indexability).toBe("indexable");
+    }
+  });
+
+  it("reports every held-back page with actionable reasons", () => {
+    // Held-back pages are a worklist, not a silent drop.
+    for (const entry of getHeldBackPages()) {
+      expect(entry.decision.status).toBe("HOLD");
+      expect(entry.decision.reasons.length).toBeGreaterThan(0);
+      expect(entry.page.indexability).toBe("indexable");
+    }
+  });
+
+  it("keeps the whole current public surface published", () => {
+    // Calibration guard: the gate is wired to block *future* thinness, not to
+    // re-litigate the pages that legitimately qualify today. If this number
+    // changes, the evidence bars moved and that is a deliberate decision.
+    expect(getHeldBackPages()).toHaveLength(0);
+    expect(getPublishableSeoPages().length).toBe(getIndexableSeoPages().length);
   });
 });

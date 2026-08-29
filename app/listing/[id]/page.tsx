@@ -7,6 +7,7 @@ import { httpDecisionForListing } from "@/lib/seo/lifecycle";
 import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
 import { buildAgentJsonLd, buildAgentProfile } from "@/lib/agent/profile";
 import { demoBrokerSession } from "@/lib/auth/roles";
+import { residenceSchemaType } from "@/lib/listing-vocabulary";
 
 export function generateStaticParams() {
   return getListingStaticParams();
@@ -50,8 +51,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const trust = computeTrustScore(badgesToTrustInput(property.badge, property.status));
   const agent = buildAgentJsonLd(buildAgentProfile(demoBrokerSession));
   const schemaPrice = property.transaction === "rent" ? Number(property.price.replace(/[^0-9]/g, "")) : property.priceNum;
+  // Contestant C §3 asks for the specific type, not the generic one: a flat is
+  // an Apartment and a house is a SingleFamilyResidence. `Residence` stays only
+  // as the honest fallback for anything we cannot type more precisely.
+  const residenceType = residenceSchemaType(property.subtype);
   const residence = {
-    "@type": "Residence",
+    "@type": residenceType,
     "@id": `${listingUrl(property.id)}#residence`,
     name: property.title,
     description: `${property.note} (Concept-preview demonstration listing — not a real offer.)`,

@@ -108,6 +108,7 @@ export const strings = {
     },
     listing: {
       breadcrumbHome: "Home", sourceReviewed: "Source reviewed", guidePrice: "Guide price", verifiedView: "Verified view · Nº 01", neighbourhoodLink: "See the neighbourhood",
+      updatedOn: "Updated on",
       gallery: { photos: "Photos", openGallery: "Open gallery", close: "Close", prev: "Previous photo", next: "Next photo" },
       stickyBar: { price: "Guide price", save: "Save", removeSaved: "Saved", ask: "Ask about this home" },
       cost: { kicker: "Ownership lens", monthlyLabel: "Est. monthly EMI", loanLabel: "Loan (80% LTV)", tenureLabel: "Tenure", rateLabel: "Rate", stampLabel: "Stamp duty", registrationLabel: "Registration", cashLabel: "Cash required", note: "Educational estimate from your assumptions; not a lender quote or tax advice.", adjust: "Adjust" },
@@ -228,6 +229,7 @@ export const strings = {
     },
     listing: {
       breadcrumbHome: "होम", sourceReviewed: "स्रोत समीक्षा", guidePrice: "अनुमानित क़ीमत", verifiedView: "सत्यापित दृश्य · Nº 01", neighbourhoodLink: "इलाक़ा देखें",
+      updatedOn: "अपडेट",
       gallery: { photos: "फ़ोटो", openGallery: "गैलरी खोलें", close: "बंद करें", prev: "पिछली फ़ोटो", next: "अगली फ़ोटो" },
       stickyBar: { price: "अनुमानित क़ीमत", save: "सहेजें", removeSaved: "सहेजा गया", ask: "इस घर के बारे में पूछें" },
       cost: { kicker: "स्वामित्व झलक", monthlyLabel: "अनुमानित मासिक EMI", loanLabel: "ऋण (80% LTV)", tenureLabel: "अवधि", rateLabel: "दर", stampLabel: "स्टाम्प शुल्क", registrationLabel: "पंजीकरण", cashLabel: "आवश्यक नकद", note: "आपकी मान्यताओं से शैक्षिक अनुमान; यह ऋणदाता उद्धरण या कर सलाह नहीं है।", adjust: "समायोजित करें" },

@@ -15,7 +15,7 @@
      field rather than guessing.
 
    Pure and server-safe: no request, no clock, no I/O. */
-import { seoPages, sitemapSegmentForPage, type SeoPage, type SeoSitemapSegment } from "./pages";
+import { getPublishableSeoPages, sitemapSegmentForPage, type SeoPage, type SeoSitemapSegment } from "./pages";
 import { isPublicIndexingEnabled, type RuntimeEnvironment } from "./runtime";
 import { sitemapSegmentUrl } from "./urls";
 
@@ -58,15 +58,19 @@ export function isSitemapSegment(value: string): value is SeoSitemapSegment {
   return SEGMENT_IDS.has(value);
 }
 
-/** Indexable, gated pages in one segment, in registry order. */
+/** Published pages in one segment, in registry order.
+
+    "Published" is registry-indexable **and** quality-gate approved. A page the
+    gate holds back stays useful to users but is never submitted to Google —
+    which is exactly what makes programmatic page generation safe. */
 export function getSegmentPages(segment: SeoSitemapSegment): SeoPage[] {
-  return seoPages.filter((page) => page.indexability === "indexable" && sitemapSegmentForPage(page) === segment);
+  return getPublishableSeoPages().filter((page) => sitemapSegmentForPage(page) === segment);
 }
 
 /** Every page must land in exactly one child sitemap — a page in two is a
     duplicate-submission bug, a page in none is silently uncrawlable. */
 export function collectUnsegmentedPages(): SeoPage[] {
-  return seoPages.filter((page) => page.indexability === "indexable" && !isSitemapSegment(sitemapSegmentForPage(page)));
+  return getPublishableSeoPages().filter((page) => !isSitemapSegment(sitemapSegmentForPage(page)));
 }
 
 export function toSitemapEntries(pages: SeoPage[]): SitemapUrlEntry[] {

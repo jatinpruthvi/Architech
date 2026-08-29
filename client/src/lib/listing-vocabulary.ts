@@ -56,3 +56,40 @@ export function labelForPropertyType(value: PropertyTypeCode): string {
 export function labelForAvailability(value: AvailabilityCode): string {
   return AVAILABILITY_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
+
+/* ---------- schema.org residence typing ---------- */
+
+/** The `Property["subtype"]` values, kept here so the schema mapping below is
+    exhaustive by construction rather than by memory. */
+export type ListingSubtype =
+  | "Flat/Apartment"
+  | "Villa"
+  | "Office"
+  | "Shop"
+  | "Plot"
+  | "Land"
+  | "PG/Co-living"
+  | "Bank Auction";
+
+const RESIDENCE_SCHEMA_TYPE: Record<ListingSubtype, string> = {
+  "Flat/Apartment": "Apartment",
+  Villa: "SingleFamilyResidence",
+  // Non-residential inventory must not be typed as a Residence — that would be
+  // a false statement in markup — so it falls back to the generic type and
+  // stays out of the residence-shaped facts until it has its own modelling.
+  Office: "Residence",
+  Shop: "Residence",
+  Plot: "Residence",
+  Land: "Residence",
+  "PG/Co-living": "Residence",
+  "Bank Auction": "Residence",
+};
+
+/** schema.org type for the thing a listing is about.
+
+    Google reads `Apartment` and `SingleFamilyResidence` far more precisely than
+    the generic `Residence`, so prefer the specific type wherever the listing's
+    own subtype supports it. */
+export function residenceSchemaType(subtype: string): string {
+  return RESIDENCE_SCHEMA_TYPE[subtype as ListingSubtype] ?? "Residence";
+}

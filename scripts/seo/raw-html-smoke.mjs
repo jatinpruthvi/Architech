@@ -186,7 +186,14 @@ const routeChecks = [
       includes(html, "RERA verified", "/listing/garden-courtyard/");
 
       includes(html, "Paldi", "/listing/garden-courtyard/");
-      includes(html, "@type\":\"Residence", "/listing/garden-courtyard/");
+      // Contestant C §3: the specific type, not the generic Residence. This
+      // listing is a Flat/Apartment, so it must be typed Apartment.
+      includes(html, "@type\":\"Apartment", "/listing/garden-courtyard/");
+      // §6: an absolute freshness stamp the reader can actually check.
+      includes(html, "<time dateTime=\"", "/listing/garden-courtyard/");
+      includes(html, "Updated on", "/listing/garden-courtyard/");
+      // The city comes from the listing, never a hardcoded launch city.
+      includes(html, "Paldi, Ahmedabad", "/listing/garden-courtyard/");
       includes(html, "@type\":\"RealEstateListing\"", "/listing/garden-courtyard/");
       includes(html, "@type\":\"Offer\"", "/listing/garden-courtyard/");
       includes(html, "numberOfBathroomsTotal", "/listing/garden-courtyard/");

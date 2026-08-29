@@ -1,5 +1,7 @@
 import { getCities, getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { localityIntel } from "@/lib/realestate/locality-intel";
+import { evaluateSeoPageQuality } from "./page-gate";
+import type { PageQualityDecision } from "./page-quality";
 import { isIndexable } from "./lifecycle";
 import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, requirementsPath, requirementsUrl } from "./urls";
 
@@ -329,8 +331,40 @@ const listPropertyPage: SeoPage = {
 
 export const seoPages: SeoPage[] = [homePage, buyIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
 
+/* Quality decisions are computed once at module load: evaluating per call would
+   re-scan the listing table for every consumer. */
+const qualityByPageId: ReadonlyMap<string, PageQualityDecision> = new Map(
+  getIndexableSeoPages().map((page) => [page.id, evaluateSeoPageQuality(page)] as const),
+);
+
 export function getIndexableSeoPages() {
   return seoPages.filter((page) => page.indexability === "indexable");
+}
+
+/** Pages that are both registry-indexable and quality-gate approved.
+
+    This is the set that reaches a sitemap. The registry decides what we *want*
+    indexed; `page-gate.ts` decides whether the page has the evidence to earn
+    it. Keeping the two separate is what stops a generated page from being
+    published just because someone added it to the registry. */
+export function getPublishableSeoPages() {
+  return getIndexableSeoPages().filter((page) => qualityByPageId.get(page.id)?.indexable ?? false);
+}
+
+/** The quality decision for a page, or undefined if it is not registered. */
+export function qualityDecisionFor(pageId: string) {
+  return qualityByPageId.get(pageId);
+}
+
+/** Pages the registry wants indexed but the quality gate holds back, with the
+    reasons. This is the report to act on — not an error, a worklist. */
+export function getHeldBackPages(): { page: SeoPage; decision: PageQualityDecision }[] {
+  const held: { page: SeoPage; decision: PageQualityDecision }[] = [];
+  for (const page of getIndexableSeoPages()) {
+    const decision = qualityByPageId.get(page.id);
+    if (decision && !decision.indexable) held.push({ page, decision });
+  }
+  return held;
 }
 
 export function findSeoPageByPath(path: string) {
