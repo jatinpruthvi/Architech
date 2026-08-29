@@ -302,6 +302,16 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .img-hover { overflow: hidden; }
 .img-hover img { transition: transform 900ms cubic-bezier(0.19, 1, 0.22, 1), filter 500ms ease; }
 .img-hover:hover img { transform: scale(1.05); }
+/* Photo arrival, from Pic. The base state is deliberately VISIBLE and the
+   hidden state is the opt-in: `opacity: 0` by default means a photo that never
+   fires onLoad (blocked CDN, offline navigation, an aborted lazy request) stays
+   invisible forever, which is a broken image, not a missing animation. The fade
+   therefore lives inside no-preference, and reduced-motion needs no override. */
+.pic-fade { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .pic-fade:not(.pic-fade-in) { opacity: 0; }
+  .pic-fade { transition: opacity 260ms ease-out; }
+}
 
 /* animated underline */
 .link-rail { position: relative; }
