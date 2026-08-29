@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAgentJsonLd, buildAgentProfile, isRatingWithinScale, meanRating, SAMPLE_AGENT_REVIEWS } from "./profile";
+import { buildAgentJsonLd, buildAgentProfile, isRatingWithinScale, meanRating, SAMPLE_AGENT_REVIEWS, type AgentProfile } from "./profile";
 import { demoBrokerSession } from "@/lib/auth/roles";
 
 describe("agent profile & reviews", () => {
@@ -37,5 +37,38 @@ describe("agent profile & reviews", () => {
     expect(isRatingWithinScale(3)).toBe(true);
     expect(isRatingWithinScale(6)).toBe(false);
     expect(isRatingWithinScale(0)).toBe(false);
+  });
+});
+
+describe("review markup is tied to genuine reviews", () => {
+  const profileWith = (overrides: Partial<AgentProfile>): AgentProfile => ({
+    id: "org", slug: "org", name: "Org", verificationStatus: "VERIFIED_PARTNER", badge: "Verified partner",
+    reviews: [], rating: 0, reviewCount: 0, ...overrides,
+  });
+
+  it("omits AggregateRating when there are no verified reviews", () => {
+    expect(buildAgentJsonLd(profileWith({})).aggregateRating).toBeUndefined();
+  });
+
+  it("never emits AggregateRating with a zero review count", () => {
+    // The failure mode this closes: rating is derived from verified-buyer
+    // reviews only, so a rating with a zero count should be unreachable — but
+    // it is constructible, and an AggregateRating with reviewCount 0 is
+    // invalid markup. The builder asserts the invariant itself.
+    const jsonLd = buildAgentJsonLd(profileWith({ rating: 4.5, reviewCount: 0 }));
+    expect(jsonLd.aggregateRating).toBeUndefined();
+  });
+
+  it("emits AggregateRating when genuine reviews back it", () => {
+    const jsonLd = buildAgentJsonLd(profileWith({ rating: 4.5, reviewCount: 12 }));
+    expect(jsonLd.aggregateRating).toEqual({ "@type": "AggregateRating", ratingValue: 4.5, reviewCount: 12 });
+  });
+
+  it("still omits rating markup for sample-only review sets", () => {
+    // Contestant E: "AggregateRating/Review (genuine ones)". Sample reviews are
+    // labelled sample and must never reach markup as if they were real.
+    const profile = buildAgentProfile(demoBrokerSession, SAMPLE_AGENT_REVIEWS);
+    expect(profile.rating).toBe(0);
+    expect(buildAgentJsonLd(profile).aggregateRating).toBeUndefined();
   });
 });
