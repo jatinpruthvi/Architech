@@ -119,3 +119,24 @@ describe("editorial evidence bar", () => {
     expect(evaluatePageQuality({ ...base, pageKind: "editorial", activeListings: 0, uniqueWordCount: 600 }).indexable).toBe(true);
   });
 });
+
+/* Contestant F §4: locality pages must not be "templates with the locality name
+   swapped in". */
+describe("locality distinct-data derivation", () => {
+  it("holds a locality page whose record carries nothing of its own", () => {
+    const decision = evaluatePageQuality({
+      ...base,
+      pageKind: "locality",
+      activeListings: 3,
+      hasUniqueData: false,
+    });
+    expect(decision.indexable).toBe(false);
+    expect(decision.reasons.some((reason) => reason.includes("Distinct data"))).toBe(true);
+  });
+
+  it("still indexes a locality with real inventory once its data is confirmed", () => {
+    expect(
+      evaluatePageQuality({ ...base, pageKind: "locality", activeListings: 3, hasUniqueData: true }).indexable,
+    ).toBe(true);
+  });
+});

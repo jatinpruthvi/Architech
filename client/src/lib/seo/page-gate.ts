@@ -9,7 +9,8 @@
    asserted to make a page pass: a listing without a recorded update date fails
    the sourced-freshness bar, and a locality with no live listings fails the
    evidence bar. */
-import { getGuides, getListings, type Property } from "@/lib/repositories";
+import { getGuides, getListings, getLocalityBySlug, type Property } from "@/lib/repositories";
+import { localityIntel } from "@/lib/realestate/locality-intel";
 import { isIndexable } from "./lifecycle";
 import { evaluatePageQuality, type PageKind, type PageQualityDecision, type PageQualityInput } from "./page-quality";
 import type { SeoPage } from "./pages";
@@ -22,6 +23,24 @@ function activeListingsIn(citySlug: string, localitySlug: string): number {
       property.localitySlug === localitySlug &&
       isIndexable(property.lifecycle ?? "ACTIVE"),
   ).length;
+}
+
+/** Whether a locality has data that is genuinely its own.
+
+    Contestant F §4 is blunt about the failure mode: locality pages that are
+    "just templates with the locality name swapped in" get classified as doorway
+    pages. So this is derived from the locality's actual record rather than
+    assumed — a place qualifies on named landmarks with distances, the PIN codes
+    it serves, or real aggregated price facts. A registry entry carrying nothing
+    but a name and coordinates fails, which is exactly the page that should not
+    be published. */
+function localityHasUniqueData(citySlug: string, localitySlug: string): boolean {
+  const locality = getLocalityBySlug(localitySlug, citySlug);
+  if (!locality) return false;
+  const hasLandmarks = (locality.landmarks ?? []).length > 0;
+  const hasPincodes = locality.pincodes.length > 0;
+  const hasPriceFacts = localityIntel(localitySlug).medianPriceInr !== null;
+  return hasLandmarks || hasPincodes || hasPriceFacts;
 }
 
 /** Word count of a guide's own reviewed body copy. */
@@ -77,7 +96,11 @@ export function qualityInputFor(page: SeoPage): PageQualityInput {
   switch (kind) {
     case "locality": {
       const [, citySlug, localitySlug] = page.id.split(":");
-      return { ...base, activeListings: activeListingsIn(citySlug, localitySlug) };
+      return {
+        ...base,
+        activeListings: activeListingsIn(citySlug, localitySlug),
+        hasUniqueData: localityHasUniqueData(citySlug, localitySlug),
+      };
     }
     case "listing": {
       const listingId = page.id.slice("listing:".length);
