@@ -93,13 +93,24 @@ export const SAMPLE_AGENT_REVIEWS: AgentReview[] = SAMPLE_REVIEWS.map((review) =
 export const isRatingWithinScale = (rating: number): boolean => rating >= REVIEW_SCALE.min && rating <= REVIEW_SCALE.max;
 
 export function buildAgentJsonLd(profile: AgentProfile) {
+  /* Review markup is emitted only when genuine verified-buyer reviews exist,
+     and it asserts that itself rather than trusting `rating` alone.
+
+     `rating` is already derived from verified-buyer reviews only, so today the
+     two always move together — but that makes this markup's correctness
+     incidental, coupled to meanRating()'s filtering. A future change that
+     averaged sample reviews in for *display* purposes would silently start
+     publishing fabricated AggregateRating data, and an AggregateRating with
+     reviewCount 0 is invalid markup besides. Requiring both decouples the
+     schema from the display layer. */
+  const hasGenuineReviews = profile.reviewCount > 0 && profile.rating > 0;
   return {
     "@type": "RealEstateAgent",
     name: profile.name,
     identifier: profile.slug,
     url: "/guide/",
     description: `Verified broker organization: ${profile.verificationStatus.replaceAll("_", " ").toLowerCase()}.`,
-    aggregateRating: profile.rating > 0
+    aggregateRating: hasGenuineReviews
       ? { "@type": "AggregateRating", ratingValue: profile.rating, reviewCount: profile.reviewCount }
       : undefined,
   };

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import RequirementsPage from "@/pages/RequirementsPage";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
+import { defaultSocialImage } from "@/lib/seo/social";
 
 export const metadata: Metadata = {
   title: "Tell us what you need — Architech",
   description: "Share a clear property brief for buying, renting, commercial space, co-living, plots, land, or bank-auction opportunities.",
   alternates: { canonical: `${SITE_URL}/requirements/` },
-  openGraph: { title: "Tell us what you need — Architech", url: `${SITE_URL}/requirements/`, type: "website" },
+  openGraph: { title: "Tell us what you need — Architech", url: `${SITE_URL}/requirements/`, type: "website", images: [defaultSocialImage()] },
 };
 
 export default function Page() {

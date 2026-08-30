@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { ContactPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
+import { defaultSocialImage } from "@/lib/seo/social";
 
 export const metadata: Metadata = {
   title: "Contact Architech — India property desk",
   description: "Contact Architech about property discovery in any city we cover, partnerships, editorial context, or a moderated property brief.",
   alternates: { canonical: canonicalUrl("/contact-us/") },
-  openGraph: { title: "Contact Architech — India property desk", url: canonicalUrl("/contact-us/"), type: "website" },
+  openGraph: { title: "Contact Architech — India property desk", url: canonicalUrl("/contact-us/"), type: "website", images: [defaultSocialImage()] },
 };
 
 export default function Page() {

@@ -25,6 +25,8 @@ import { GET as aiAssistGet } from "../../../app/api/ai/search-assist/route";
 import { GET as listingStatsGet, POST as listingStatsPost } from "../../../app/api/listings/[id]/stats/route";
 import { GET as priceTrendsGet } from "../../../app/api/localities/[slug]/price-trends/route";
 import { POST as investmentMetricsPost } from "../../../app/api/investment/metrics/route";
+import { GET as marketTrendsGet } from "../../../app/api/cities/[slug]/market-trends/route";
+import { POST as ownershipPost } from "../../../app/api/cost/ownership/route";
 
 async function json(response: Response): Promise<Record<string, unknown>> {
   return (await response.json()) as Record<string, unknown>;
@@ -235,11 +237,78 @@ describe("public API contract", () => {
 
 
   it("GET /api/localities/:slug/price-trends returns a derived price summary", async () => {
-    const response = await priceTrendsGet(new Request("http://example.com/api/localities/paldi/price-trends"), { params: Promise.resolve({ slug: "paldi" }) });
+    const response = await priceTrendsGet(new Request("http://example.com/api/localities/bandra-west/price-trends?city=mumbai"), { params: Promise.resolve({ slug: "bandra-west" }) });
     expect(response.status).toBe(200);
     const body = await json(response);
     expect((body as { summary: { count: number } }).summary.count).toBeGreaterThan(0);
     expect((body as { summary: { medianPriceInr: number | null } }).summary.medianPriceInr).toBeGreaterThan(0);
+  });
+
+  /* Paldi holds one sale listing. The endpoint must report that honestly
+     rather than returning that home's asking price as a locality median —
+     the figure is withheld and `published` says why. */
+  it("GET /api/localities/:slug/price-trends withholds a median below the sample bar", async () => {
+    const response = await priceTrendsGet(new Request("http://example.com/api/localities/paldi/price-trends"), { params: Promise.resolve({ slug: "paldi" }) });
+    expect(response.status).toBe(200);
+    const body = await json(response) as { summary: { count: number; saleSampleSize: number; published: boolean; medianPriceInr: number | null } };
+    expect(body.summary.count).toBeGreaterThan(0);
+    expect(body.summary.published).toBe(false);
+    expect(body.summary.medianPriceInr).toBeNull();
+  });
+
+  /* Rent is stored as monthly rupees x 100, so a rental must never reach a
+     sale-price figure through this endpoint. */
+  it("GET /api/localities/:slug/price-trends keeps rentals out of sale figures", async () => {
+    const response = await priceTrendsGet(new Request("http://example.com/api/localities/bopal/price-trends"), { params: Promise.resolve({ slug: "bopal" }) });
+    expect(response.status).toBe(200);
+    const body = await json(response) as { summary: { saleSampleSize: number; rentSampleSize: number; medianPriceInr: number | null } };
+    expect(body.summary.saleSampleSize).toBe(0);
+    expect(body.summary.rentSampleSize).toBeGreaterThan(0);
+    expect(body.summary.medianPriceInr).toBeNull();
+  });
+
+  /* The market-report endpoint backs the data-journalism asset. It must answer
+     honestly for a city that cannot support the report, not 404 or hide the gap. */
+  it("GET /api/cities/:slug/market-trends reports a city that is not yet publishable", async () => {
+    const response = await marketTrendsGet(new Request("http://example.com/api/cities/ahmedabad/market-trends"), { params: Promise.resolve({ slug: "ahmedabad" }) });
+    expect(response.status).toBe(200);
+    const body = await json(response) as { report: { cityName: string; publishable: boolean; blockers: string[]; coverage: { total: number; published: number } } };
+    expect(body.report.cityName).toBe("Ahmedabad");
+    expect(body.report.publishable).toBe(false);
+    expect(body.report.blockers.length).toBeGreaterThan(0);
+    expect(body.report.coverage.total).toBeGreaterThan(0);
+  });
+
+  it("GET /api/cities/:slug/market-trends publishes a city that clears the bar", async () => {
+    const response = await marketTrendsGet(new Request("http://example.com/api/cities/mumbai/market-trends"), { params: Promise.resolve({ slug: "mumbai" }) });
+    expect(response.status).toBe(200);
+    const body = await json(response) as { report: { publishable: boolean; blockers: unknown[]; methodology: string[]; limitations: string[]; asOfDate: string } };
+    expect(body.report.publishable).toBe(true);
+    expect(body.report.blockers).toEqual([]);
+    // Methodology and limitations travel with the table, not a README.
+    expect(body.report.methodology.length).toBeGreaterThan(0);
+    expect(body.report.limitations.length).toBeGreaterThan(0);
+    expect(body.report.asOfDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("GET /api/cities/:slug/market-trends rejects an unknown city", async () => {
+    const response = await marketTrendsGet(new Request("http://example.com/api/cities/nowhere/market-trends"), { params: Promise.resolve({ slug: "nowhere" }) });
+    expect(response.status).toBe(404);
+  });
+
+  /* Stamp duty and registration were duplicated between the estimator and this
+     route. The response now names which state's rates produced the figures. */
+  it("POST /api/cost/ownership returns the state its transfer rates came from", async () => {
+    const response = await ownershipPost(new Request("http://example.com/api/cost/ownership", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ priceInr: 15_000_000, state: "Gujarat" }),
+    }));
+    expect(response.status).toBe(200);
+    const body = await json(response) as { cost: { stampDutyInr: number; charges: { state: string; note: string } } };
+    expect(body.cost.stampDutyInr).toBe(750_000);
+    expect(body.cost.charges.state).toBe("Gujarat");
+    expect(body.cost.charges.note.length).toBeGreaterThan(0);
   });
 
   it("POST /api/investment/metrics validates and computes investment metrics", async () => {

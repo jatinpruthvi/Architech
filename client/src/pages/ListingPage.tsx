@@ -102,6 +102,18 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
   );
 }
 
+/* Deterministic "26 Aug 2026". Deliberately not toLocaleDateString: its output
+   depends on the runtime locale, which would desync prerendered server HTML
+   from the client render and trip a hydration mismatch. */
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatIsoDate(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  const monthIndex = Number.parseInt(month ?? "", 10) - 1;
+  if (!year || !day || !Number.isFinite(monthIndex) || monthIndex < 0 || monthIndex > 11) return iso;
+  return `${Number.parseInt(day, 10)} ${MONTH_LABELS[monthIndex]} ${year}`;
+}
+
 export default function ListingPage({ id }: { id: string }) {
   const property = getListingById(id);
   const { t } = useLang();
@@ -171,10 +183,24 @@ export default function ListingPage({ id }: { id: string }) {
                 </TooltipContent>
               </Tooltip>
               <span aria-hidden="true">·</span> {t.listing.sourceReviewed} <span aria-hidden="true">·</span> {property.status}
+              {/* Contestant C §6: a prominent absolute freshness stamp. "Ghost
+                  listings" are the complaint users have about portals, and a
+                  relative label ("Updated 2 days ago") cannot be checked
+                  against anything. The date is `meaningfulUpdatedAt` — when the
+                  listing's facts last changed — so it reads "Updated on", not
+                  "Verified on": the field does not assert verification. */}
+              {property.meaningfulUpdatedAt ? (
+                <>
+                  <span aria-hidden="true">·</span>{" "}
+                  <time dateTime={property.meaningfulUpdatedAt}>
+                    {t.listing.updatedOn} {formatIsoDate(property.meaningfulUpdatedAt)}
+                  </time>
+                </>
+              ) : null}
             </p>
             <h1 className="display mt-4 max-w-[720px] text-[clamp(34px,4.6vw,60px)]">{property.title}<span className="text-brick">.</span></h1>
             <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink/60">
-              <span className="flex items-center gap-2"><MapPin size={15} className="text-brick" /> {property.locality}, Ahmedabad</span>
+              <span className="flex items-center gap-2"><MapPin size={15} className="text-brick" /> {property.locality}, {property.city}</span>
               <span className="flex items-center gap-2"><BedDouble size={15} className="text-brick" /> {property.meta}</span>
               <span className="flex items-center gap-2"><Ruler size={15} className="text-brick" /> {property.area}</span>
             </p>

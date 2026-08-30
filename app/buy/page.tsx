@@ -5,9 +5,9 @@ import { getCities, getCitiesByState, getListingsByCity, getLocalities } from "@
 import { canonicalUrl, cityUrl, homeUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
-  title: "Buy property in India — every city Architech covers",
+  title: "Buy property in India — every city we cover",
   description:
-    "Architech covers metros and major markets across India: Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — each mapped locality by locality with RERA context and verified coordinates.",
+    "Architech covers 12 metros and major markets: Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur.",
   alternates: { canonical: canonicalUrl("/buy/") },
 };
 

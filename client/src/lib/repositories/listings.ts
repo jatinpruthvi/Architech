@@ -34,11 +34,31 @@ export function getFeaturedListings(limit = 8, citySlug?: string): Property[] {
 }
 
 /** Related homes prefer the same city so a Mumbai dossier never suggests Jaipur. */
+/* Siblings, nearest first.
+
+   The ordering is the point of authority routing: a listing's strongest
+   internal links are the ones sharing its query, and query is dominated by
+   locality. Ranking a Bandra listing next to a Thane one because both are in
+   the same city spends a link on a page that answers a different question.
+
+   Deliberately still capped at three. The grid that renders these is three
+   columns, so three fills exactly one row; five would leave a ragged second
+   row and six would double the scroll for marginal link equity. Raising the
+   number is a layout decision, not an SEO one. */
 export function getRelatedListings(currentId: string, limit = 3): Property[] {
   const current = getListingById(currentId);
   const pool = getListings().filter((property) => property.id !== currentId);
-  const sameCity = current ? pool.filter((property) => property.citySlug === current.citySlug) : [];
-  return [...sameCity, ...pool.filter((property) => !sameCity.includes(property))].slice(0, limit);
+  if (!current) return pool.slice(0, limit);
+
+  const sameLocality = pool.filter(
+    (property) => property.localitySlug === current.localitySlug && property.citySlug === current.citySlug,
+  );
+  const sameCity = pool.filter(
+    (property) => property.citySlug === current.citySlug && !sameLocality.includes(property),
+  );
+  const rest = pool.filter((property) => !sameLocality.includes(property) && !sameCity.includes(property));
+
+  return [...sameLocality, ...sameCity, ...rest].slice(0, limit);
 }
 
 export function getListingStaticParams() {

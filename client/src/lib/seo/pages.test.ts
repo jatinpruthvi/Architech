@@ -5,7 +5,17 @@ import { savedPath, searchPath } from "./urls";
 
 describe("SeoPage registry", () => {
   it("registers the current indexable public page set", () => {
-    const expectedCount = 1 + 1 + getCities().length + getLocalities().length + getListings().length + 1 + getGuides().length + 9; // home + /buy/ hub + one hub per city + localities + listings + guide index + guides + 9 standing pages
+    const expectedCount =
+      1 + // home
+      1 + // /buy/ hub
+      getCities().length + // one hub per city
+      getLocalities().length +
+      getListings().length +
+      1 + // price-index hub
+      getCities().length + // one price index per city
+      1 + // guide index
+      getGuides().length +
+      9; // standing pages
     expect(seoPages).toHaveLength(expectedCount);
     expect(seoPages.map((page) => page.routeType)).toContain("home");
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);

@@ -3,14 +3,16 @@ import type { ReactNode } from "react";
 import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
-import { assetUrl, homeUrl, SITE_URL } from "@/lib/seo/urls";
+import { homeUrl, SITE_URL } from "@/lib/seo/urls";
+import { defaultSocialImage } from "@/lib/seo/social";
+import { organizationJsonLd } from "@/lib/seo/organization";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@/theme.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Architech — Find the place before the address. Homes across India.",
+    default: "Architech — Find the place before the address.",
     template: "%s · Architech",
   },
   description:
@@ -25,7 +27,14 @@ export const metadata: Metadata = {
     url: homeUrl(),
     title: "Architech — Find the place before the address.",
     description: "A high-trust way to discover homes across India: verified RERA context, locality intelligence, and architecture-grade curation.",
-    images: [{ url: "/images/hero-ahmedabad.jpg", width: 1600, height: 900, alt: "Indian contemporary architecture at golden hour" }],
+    /* Dimensions and the absolute URL both come from the shared helper, not a
+       hand-written guess. These were 1600x900 against an image that is
+       actually 1376x768 — a 16% overstatement of width published on every
+       route that inherits this default, which is what tells a social platform
+       how to crop the preview. The URL was relative too, which OGP requires
+       to be absolute. Omitted dimensions if the asset is ever unmapped: no
+       dimensions is better than wrong dimensions. */
+    images: [{ ...defaultSocialImage(), alt: "Indian contemporary architecture at golden hour" }],
   },
   twitter: { card: "summary_large_image" },
 };
@@ -43,14 +52,12 @@ const websiteJsonLd = {
       description: "High-trust home discovery across India.",
       inLanguage: ["en-IN", "hi-IN"],
     },
-    {
-      "@type": "Organization",
-      "@id": `${homeUrl()}#org`,
-      name: "Architech",
-      url: homeUrl(),
-      logo: assetUrl("/icon-512.png"),
-      areaServed: { "@type": "Country", name: "India" },
-    },
+    /* F §3: property is YMYL, so the organisation behind the site is part of
+       how Google decides whether to trust it. The address and coordinates are
+       facts /contact-us/ already publishes; the phone and email are omitted
+       because those channels are not activated yet and inventing them would be
+       the fabricated trust signal this scrutiny exists to catch. */
+    organizationJsonLd(),
   ],
 };
 

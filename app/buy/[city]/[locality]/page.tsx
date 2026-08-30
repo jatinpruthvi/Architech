@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CityPage from "@/pages/CityPage";
-import { getLiveCityBySlug, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
-import { assetUrl, cityUrl, homeUrl, localityUrl } from "@/lib/seo/urls";
+import { getListingsByLocality, getLiveCityBySlug, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
+import { isIndexable } from "@/lib/seo/lifecycle";
+import { cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
+import { socialImage } from "@/lib/seo/social";
 import { localityTrustSummary } from "@/lib/trust/locality";
 import { localityIntel } from "@/lib/realestate/locality-intel";
+import { localitySerpDescription, localitySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
 
 export function generateStaticParams() {
@@ -16,11 +19,26 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const city = getLiveCityBySlug(citySlug);
   const locality = city ? getLocalityBySlug(slug, city.slug) : undefined;
   if (!city || !locality) return { title: "Not found" };
+  const title = localitySerpTitle({
+    name: locality.name,
+    note: locality.note,
+    pincodes: locality.pincodes,
+    cityName: city.name,
+    reraAuthority: city.reraAuthority,
+    intel: localityIntel(slug),
+  });
   return {
-    title: `${locality.name}, ${city.name} — homes & locality context`,
-    description: `Homes in ${locality.name} (${locality.hindi}), ${city.name}${locality.pincodes.length ? ` — PIN ${locality.pincodes.join(", ")}` : ""}: ${locality.note.toLowerCase()}. ${city.reraAuthority}-checked inventory, verified coordinates (${locality.coords}), and real distances.`,
+    title,
+    description: localitySerpDescription({
+      name: locality.name,
+      note: locality.note,
+      pincodes: locality.pincodes,
+      cityName: city.name,
+      reraAuthority: city.reraAuthority,
+      intel: localityIntel(slug),
+    }),
     alternates: { canonical: localityUrl(city.slug, locality.slug) },
-    openGraph: { title: `${locality.name}, ${city.name}`, url: localityUrl(city.slug, locality.slug), images: [{ url: assetUrl("/images/locality-street.jpg") }] },
+    openGraph: { title, url: localityUrl(city.slug, locality.slug), images: [socialImage("locality-street")] },
   };
 }
 
@@ -33,6 +51,11 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   const [lat, lon] = locality.marker.split(",");
   const trust = localityTrustSummary(slug);
   const intel = localityIntel(slug);
+  // Only publicly indexable (ACTIVE) listings belong in the page's ItemList:
+  // schema must describe what the page actually publishes.
+  const listings = getListingsByLocality(locality.slug, city.slug).filter((listing) =>
+    isIndexable(listing.lifecycle ?? "ACTIVE"),
+  );
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -71,6 +94,24 @@ export default async function Page({ params }: { params: Promise<{ city: string;
           { "@type": "ListItem", position: 3, name: locality.name, item: localityUrl(city.slug, locality.slug) },
         ],
       },
+      // The page visibly renders a list of homes, so describe it as one. Only
+      // ACTIVE listings are asserted — a `noindex` or sold listing is not part
+      // of the list this page publishes.
+      ...(listings.length
+        ? [
+            {
+              "@type": "ItemList",
+              name: `Homes in ${locality.name}, ${city.name}`,
+              numberOfItems: listings.length,
+              itemListElement: listings.map((listing, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                name: listing.title,
+                url: listingUrl(listing.id),
+              })),
+            },
+          ]
+        : []),
     ],
   };
 

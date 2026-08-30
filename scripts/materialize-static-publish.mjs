@@ -69,8 +69,28 @@ function materializePages() {
   const robotsBody = path.join(nextApp, "robots.txt.body");
   if (statSafe(robotsBody)) copyFile(robotsBody, path.join(outputDir, "robots.txt"));
 
-  const sitemapBody = path.join(nextApp, "sitemap.xml.body");
-  if (statSafe(sitemapBody)) copyFile(sitemapBody, path.join(outputDir, "sitemap.xml"));
+  // The sitemap index plus one prerendered child sitemap per content type
+  // (/sitemap/pages.xml, /sitemap/localities.xml, …). Copy every sitemap body
+  // rather than naming them, so adding a segment is a registry edit only.
+  for (const body of walkSitemapBodies(nextApp)) {
+    const destination = path.join(outputDir, body);
+    copyFile(path.join(nextApp, body), destination);
+  }
+}
+
+/** Prerendered sitemap bodies: `sitemap.xml.body` and `sitemap/*.xml.body`. */
+function walkSitemapBodies(dir, relative = "") {
+  const found = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const entryRelative = path.join(relative, entry.name);
+    const absolute = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "sitemap") found.push(...walkSitemapBodies(absolute, entryRelative));
+      continue;
+    }
+    if (entry.isFile() && entryRelative.endsWith(".xml.body")) found.push(entryRelative.slice(0, -".body".length));
+  }
+  return found;
 }
 
 rmSync(path.join(root, "dist"), { recursive: true, force: true });

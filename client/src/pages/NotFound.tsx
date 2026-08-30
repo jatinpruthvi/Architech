@@ -3,6 +3,7 @@
 import { ArrowUpRight, Compass } from "lucide-react";
 import Link from "next/link";
 import useTitle from "../hooks/useTitle";
+import Pic from "../components/architech/Pic";
 
 export default function NotFound() {
   useTitle("Page not found");
@@ -12,7 +13,12 @@ export default function NotFound() {
         <div className="flex items-end gap-3 font-display text-[clamp(110px,20vw,240px)] font-medium leading-none tracking-[-0.05em]" aria-hidden="true">
           <span>4</span>
           <span className="arch-frame grain relative mb-2 inline-block h-[0.78em] w-[0.62em] overflow-hidden bg-brick">
-            <img src="/images/brick-arch.jpg" alt="" className="h-full w-full object-cover opacity-80" />
+            {/* Was a raw <img>: no WebP, no responsive source, no intrinsic
+                dimensions and no lazy loading, because it skipped the image
+                primitive every other public image goes through. `sizes` is
+                0.62em of the numeral above it — clamp(110px, 20vw, 240px) —
+                so 149px at the largest step. */}
+            <Pic name="brick-arch" alt="" className="h-full w-full object-cover opacity-80" sizes="149px" />
           </span>
           <span>4</span>
         </div>

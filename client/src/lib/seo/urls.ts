@@ -115,6 +115,30 @@ export function investmentUrl(base?: string) {
   return canonicalUrl(investmentPath(), base);
 }
 
+/* The city property price index.
+
+   Contestant E §5 calls a published price index the one authority lever that
+   cannot be faked, and the report behind it already existed — but only behind
+   an API route, which no journalist can cite and no searcher can find. This
+   is its public surface. Per-city rather than per-locality because the report
+   is city-scoped: the locality rows are the table inside it, not pages of
+   their own. */
+export function priceIndexPath() {
+  return "/price-index/";
+}
+
+export function priceIndexUrl(base?: string) {
+  return canonicalUrl(priceIndexPath(), base);
+}
+
+export function cityPriceIndexPath(citySlug: string) {
+  return withTrailingSlash(`/price-index/${citySlug}/`);
+}
+
+export function cityPriceIndexUrl(citySlug: string, base?: string) {
+  return canonicalUrl(cityPriceIndexPath(citySlug), base);
+}
+
 export function savedPath() {
   return "/saved/";
 }
@@ -123,10 +147,42 @@ export function savedUrl(base?: string) {
   return canonicalUrl(savedPath(), base);
 }
 
-export function sitemapPath() {
+/** The sitemap *index*. `/sitemap.xml` is kept as the single URL advertised in
+    `robots.txt` so existing Search Console history stays valid; it points at one
+    child sitemap per content type. */
+export function sitemapIndexPath() {
   return "/sitemap.xml";
 }
 
-export function sitemapUrl(base?: string) {
-  return assetUrl(sitemapPath(), base);
+export function sitemapIndexUrl(base?: string) {
+  return assetUrl(sitemapIndexPath(), base);
+}
+
+/** Self-canonical URL for a paginated page.
+
+    Page 2 must canonicalise to **page 2**, never to page 1. Canonicalising a
+    deeper page to page 1 tells Google that pages 2..N are duplicates of page 1
+    and can be dropped — which is how listings discovered only on a deeper page
+    end up never getting indexed at all.
+
+    Page 1 returns the bare canonical so the clean URL stays the canonical one. */
+export function paginatedCanonicalUrl(path: string, page?: number, base?: string): string {
+  const url = new URL(canonicalUrl(path, base));
+  const safePage = Number.isFinite(page) && (page as number) > 1 ? Math.floor(page as number) : 1;
+  if (safePage > 1) url.searchParams.set("page", String(safePage));
+  return url.toString();
+}
+
+/** Child sitemap for one content type, e.g. `/sitemap/localities.xml`.
+
+    The segment sits in a directory rather than a dotted filename
+    (`/sitemap-localities.xml`) because Next.js will not route a path whose last
+    segment contains a dot to a dynamic route, and because `trailingSlash: true`
+    would otherwise redirect a file-looking URL. */
+export function sitemapSegmentPath(segment: string) {
+  return `/sitemap/${segment}.xml`;
+}
+
+export function sitemapSegmentUrl(segment: string, base?: string) {
+  return assetUrl(sitemapSegmentPath(segment), base);
 }

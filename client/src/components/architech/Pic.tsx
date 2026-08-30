@@ -14,20 +14,19 @@
  */
 import { useCallback, useState } from "react";
 
-const WIDTHS: Record<string, number> = {
-  "hero-ahmedabad": 1376,
-  "locality-street": 1264,
-  "prop-courtyard": 1200,
-  "prop-light": 1200,
-  "prop-thaltej": 1200,
-  "brick-arch": 896,
-  "stepwell": 896,
-};
+/* The map itself lives in `lib/media/intrinsic-sizes.ts`, hooks-free, because
+   a server component — the root layout declaring OpenGraph image dimensions —
+   needs the same numbers and cannot import a module that uses hooks. */
+import {
+  DEFAULT_INTRINSIC_ASPECT as DEFAULT_ASPECT,
+  DEFAULT_INTRINSIC_WIDTH as DEFAULT_WIDTH,
+  IMAGE_INTRINSIC_SIZES,
+  intrinsicSizeOf,
+} from "@/lib/media/intrinsic-sizes";
 
-/* Only used to derive a height from the known width, and 1.5 is what every
-   derivative in /public/images is cropped to. An explicit `aspect` prop beats
-   it; if a future asset is square, pass aspect rather than editing this. */
-const DEFAULT_ASPECT = 1.5;
+/* `pic.test.ts` asserts this map against the real files. Both names refer to
+   the same object so there is one source of truth, not two that can drift. */
+export const PIC_INTRINSIC_SIZES = IMAGE_INTRINSIC_SIZES;
 
 type PicProps = {
   name: string;
@@ -42,7 +41,10 @@ type PicProps = {
 
 export default function Pic({ name, alt, className = "", sizes = "(max-width: 768px) 100vw, 50vw", eager = false, src, mobileSrc, aspect = DEFAULT_ASPECT }: PicProps) {
   const [loaded, setLoaded] = useState(false);
-  const fullWidth = WIDTHS[name] ?? 1200;
+  /* An explicit `aspect` prop only governs an asset that is not in the map yet,
+     so measuring and adding the asset remains the right fix. */
+  const intrinsic = intrinsicSizeOf(name) ?? { width: DEFAULT_WIDTH, height: Math.round(DEFAULT_WIDTH / aspect) };
+  const fullWidth = intrinsic.width;
   const srcSet = fullWidth > 800
     ? `/images/${name}-800.webp 800w, /images/${name}.webp ${fullWidth}w`
     : `/images/${name}.webp ${fullWidth}w`;
@@ -67,8 +69,8 @@ export default function Pic({ name, alt, className = "", sizes = "(max-width: 76
         loading={eager ? "eager" : "lazy"}
         fetchPriority={eager ? "high" : undefined}
         decoding="async"
-        width={src ? 1600 : fullWidth}
-        height={src ? 900 : Math.round(fullWidth / aspect)}
+        width={src ? 1600 : intrinsic.width}
+        height={src ? 900 : intrinsic.height}
         onLoad={markLoaded}
         onError={markLoaded}
       />

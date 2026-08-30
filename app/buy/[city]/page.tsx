@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { getCityStaticParams, getLiveCityBySlug, getLocalities } from "@/lib/repositories";
 import { cityUrl, homeUrl } from "@/lib/seo/urls";
 import { cityTrustSummary } from "@/lib/trust/locality";
+import { citySerpDescription, citySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
 
 export function generateStaticParams() {
@@ -16,12 +17,10 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const city = getLiveCityBySlug(citySlug);
   if (!city) return { title: "Not found" };
   const localities = getLocalities(city.slug);
+  const title = citySerpTitle(city);
   return {
-    title: `Buy in ${city.name} — localities with verified context`,
-    description: `Explore ${city.name}, ${city.state} locality by locality: ${localities
-      .slice(0, 6)
-      .map((locality) => locality.name)
-      .join(", ")} — with ${city.reraAuthority} context, real coordinates, and verified distances.`,
+    title,
+    description: citySerpDescription({ ...city, localities: localities.map((locality) => locality.name) }),
     alternates: { canonical: cityUrl(city.slug) },
   };
 }

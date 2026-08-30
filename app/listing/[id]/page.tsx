@@ -3,10 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
 import { getCityBySlug, getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
+import { socialImage } from "@/lib/seo/social";
 import { httpDecisionForListing } from "@/lib/seo/lifecycle";
 import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
 import { buildAgentJsonLd, buildAgentProfile } from "@/lib/agent/profile";
 import { demoBrokerSession } from "@/lib/auth/roles";
+import { residenceSchemaType } from "@/lib/listing-vocabulary";
+import { listingSerpDescription, listingSerpTitle } from "@/lib/seo/serp";
 
 export function generateStaticParams() {
   return getListingStaticParams();
@@ -17,12 +20,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const property = getListingById(id);
   if (!property) return { title: "Not found" };
   const metadataDecision = httpDecisionForListing(property.lifecycle, property.id, { continuingValue: property.continuingSeoValue });
+  // Title and description are composed against a SERP length budget: see
+  // `lib/seo/serp.ts`. The page-level title must leave room for the brand
+  // suffix the root layout appends, or Google truncates the number off the end.
+  const title = listingSerpTitle(property);
   return {
-    title: `${property.title} — ${property.price}`,
-    description: `${property.meta} · ${property.area} · ${property.locality}, ${property.city}. ${property.note} ${property.badge}, ${property.status.toLowerCase()}.`,
+    title,
+    description: listingSerpDescription(property),
     alternates: { canonical: listingUrl(property.id) },
     robots: { index: metadataDecision.indexable, follow: true },
-    openGraph: { title: `${property.title} — ${property.price}`, url: listingUrl(property.id), images: [{ url: assetUrl(`/images/${property.image}.jpg`) }] },
+    openGraph: { title, url: listingUrl(property.id), images: [socialImage(property.image)] },
   };
 }
 
@@ -50,14 +57,21 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const trust = computeTrustScore(badgesToTrustInput(property.badge, property.status));
   const agent = buildAgentJsonLd(buildAgentProfile(demoBrokerSession));
   const schemaPrice = property.transaction === "rent" ? Number(property.price.replace(/[^0-9]/g, "")) : property.priceNum;
+  // Contestant C §3 asks for the specific type, not the generic one: a flat is
+  // an Apartment and a house is a SingleFamilyResidence. `Residence` stays only
+  // as the honest fallback for anything we cannot type more precisely.
+  const residenceType = residenceSchemaType(property.subtype);
   const residence = {
-    "@type": "Residence",
+    "@type": residenceType,
     "@id": `${listingUrl(property.id)}#residence`,
     name: property.title,
     description: `${property.note} (Concept-preview demonstration listing — not a real offer.)`,
+    ...(property.meaningfulUpdatedAt ? { dateModified: property.meaningfulUpdatedAt } : {}),
     numberOfRooms: property.bhk,
     numberOfBathroomsTotal: property.details.bathrooms,
-    floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitText: "sq ft" },
+    // FTK is the UN/CEFACT code for square foot. `unitCode` is what machines
+    // read; `unitText` is the human label, so both ship rather than one.
+    floorSize: { "@type": "QuantitativeValue", value: property.areaNum, unitCode: "FTK", unitText: "sq ft" },
     address: {
       "@type": "PostalAddress",
       addressLocality: property.locality,
@@ -91,6 +105,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         description: property.meta,
         about: residence,
         image: [assetUrl(`/images/${property.image}.jpg`)],
+        // Content-change date from the listing record (mirrors
+        // Listing.meaningfulUpdatedAt), not the render clock — a re-crawl that
+        // sees an unchanged date is a signal the page genuinely did not change.
+        ...(property.meaningfulUpdatedAt ? { dateModified: property.meaningfulUpdatedAt } : {}),
         offers: {
           "@type": "Offer",
           price: schemaPrice,
@@ -105,8 +123,21 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: homeUrl() },
-          { "@type": "ListItem", position: 2, name: "Ahmedabad", item: cityUrl("ahmedabad") },
-          { "@type": "ListItem", position: 3, name: property.locality, item: localityUrl("ahmedabad", property.localitySlug) },
+          // Resolved from the listing's own city, not a hard-coded launch city:
+          // a Mumbai dossier must not publish an Ahmedabad breadcrumb, or the
+          // trail — and every internal link Google reads from it — is wrong.
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: city?.name ?? property.city,
+            item: cityUrl(property.citySlug),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: property.locality,
+            item: localityUrl(property.citySlug, property.localitySlug),
+          },
           { "@type": "ListItem", position: 4, name: property.title, item: listingUrl(property.id) },
         ],
       },
