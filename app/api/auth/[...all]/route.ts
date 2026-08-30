@@ -11,8 +11,27 @@ import { getAuthServer } from "@/lib/auth/server-auth";
  *
  * Routes are mounted in every mode: in `demo` mode broker APIs still use the
  * demo session, but sign-ups validate that the live wiring works before the
- * source switch (docs/auth/live-better-auth-handoff.md). */
+ * source switch (docs/auth/live-better-auth-handoff.md).
+ *
+ * This app deploys with `trailingSlash: true`, so Next hands the handler
+ * `/api/auth/sign-up/email/`. Better Auth matches endpoint paths exactly, so
+ * the trailing slash is stripped before dispatch — otherwise every auth route
+ * would 404 behind the global trailing-slash rewrite. */
 
 export const runtime = "nodejs";
 
-export const { GET, POST } = toNextJsHandler(getAuthServer().handler);
+const auth = getAuthServer();
+const handler = toNextJsHandler({ handler: (request: Request) => auth.handler(request) });
+
+function withoutTrailingSlash(request: Request): Request {
+  const url = new URL(request.url);
+  if (!url.pathname.endsWith("/")) return request;
+  url.pathname = url.pathname.replace(/\/+$/, "");
+  return new Request(url, request);
+}
+
+export const GET = (request: Request) => handler.GET(withoutTrailingSlash(request));
+export const POST = (request: Request) => handler.POST(withoutTrailingSlash(request));
+export const PUT = (request: Request) => handler.PUT(withoutTrailingSlash(request));
+export const PATCH = (request: Request) => handler.PATCH(withoutTrailingSlash(request));
+export const DELETE = (request: Request) => handler.DELETE(withoutTrailingSlash(request));
