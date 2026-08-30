@@ -78,7 +78,12 @@ describe("exact postal-code resolution", () => {
     });
 
     const result = await resolvePostalCodeForServer("400104");
-    expect(postalCode.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { code: "400104", isActive: true } }));
+    expect(postalCode.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+      where: { code: "400104", isActive: true },
+      include: expect.objectContaining({
+        localityLinks: expect.objectContaining({ where: { validTo: null, source: { status: "ACTIVE" } } }),
+      }),
+    }));
     expect(result).toMatchObject({ postalCode: "400104", ambiguous: true, cities: [], localities: [] });
     expect(result?.postOffices).toEqual([expect.objectContaining({ name: "Goregaon S.O" })]);
     expect(result?.administrativeAreas).toEqual([

@@ -1,8 +1,32 @@
 import "server-only";
-import type { Prisma, PrismaClient } from "@prisma/client";
 import { INDIA_STATES_AND_UTS } from "@/lib/location/india-states";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { isPrismaDataSource } from "@/lib/repositories/source";
+
+type DirectoryStateRow = {
+  id: string;
+  code: string | null;
+  name: string;
+  slug: string | null;
+  subtype: string | null;
+};
+
+type DirectoryLocalBodyRow = {
+  id: string;
+  code: string | null;
+  name: string;
+  slug: string | null;
+  subtype: string | null;
+  postalCodes: Array<{ postalCode: string }>;
+};
+
+type DirectoryPrismaClient = {
+  administrativeArea: {
+    findFirst(args: unknown): Promise<DirectoryStateRow | null>;
+    count(args: unknown): Promise<number>;
+    findMany(args: unknown): Promise<DirectoryLocalBodyRow[]>;
+  };
+};
 
 export async function getLocalBodiesForStateForServer(stateSlug: string, page = 1, requestedPageSize = 50) {
   const stateReference = INDIA_STATES_AND_UTS.find((state) => state.slug === stateSlug);
@@ -19,7 +43,7 @@ export async function getLocalBodiesForStateForServer(stateSlug: string, page = 
     };
   }
 
-  const prisma = getPrismaClient() as unknown as PrismaClient;
+  const prisma = getPrismaClient() as unknown as DirectoryPrismaClient;
   const state = await prisma.administrativeArea.findFirst({
     where: { type: "STATE_OR_UT", code: stateReference.lgdCode, isActive: true, source: { key: "lgd-state-ut-registry-2026-08-30", status: "ACTIVE" } },
     select: { id: true, code: true, name: true, slug: true, subtype: true },
@@ -30,7 +54,7 @@ export async function getLocalBodiesForStateForServer(stateSlug: string, page = 
     parentId: state.id,
     isActive: true,
     source: { key: "lgd-local-bodies-with-pin-codes", status: "ACTIVE" },
-  } satisfies Prisma.AdministrativeAreaWhereInput;
+  };
   const [total, rows] = await Promise.all([
     prisma.administrativeArea.count({ where }),
     prisma.administrativeArea.findMany({

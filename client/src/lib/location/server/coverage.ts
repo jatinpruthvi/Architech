@@ -1,5 +1,4 @@
 import "server-only";
-import type { PrismaClient } from "@prisma/client";
 import { INDIA_STATES_AND_UTS, INDIA_STATE_REGISTRY_SOURCE } from "@/lib/location/india-states";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { isPrismaDataSource } from "@/lib/repositories/source";
@@ -75,6 +74,30 @@ export type PublicCoverageSource = {
 
 type SourceRecord = Omit<PublicCoverageSource, "retrievedAt" | "ageDays" | "fresh"> & { retrievedAt: Date | string };
 
+type CoverageStateRow = {
+  id: string;
+  code: string | null;
+  name: string;
+  nativeName: string | null;
+  slug: string | null;
+  subtype: string | null;
+};
+
+type CoveragePrismaClient = {
+  administrativeArea: {
+    findMany(args: unknown): Promise<CoverageStateRow[]>;
+    count(args: unknown): Promise<number>;
+    groupBy(args: unknown): Promise<Array<{ parentId: string | null; _count: { _all: number } }>>;
+  };
+  postalCode: { count(args: unknown): Promise<number> };
+  postOffice: {
+    count(args: unknown): Promise<number>;
+    groupBy(args: unknown): Promise<Array<{ administrativeAreaId: string | null; _count: { _all: number } }>>;
+  };
+  administrativeAreaPostalCode: { count(args: unknown): Promise<number> };
+  locationSource: { findFirst(args: unknown): Promise<SourceRecord | null> };
+};
+
 function ageDays(date: Date | string, now: Date) {
   return Math.max(0, (now.getTime() - new Date(date).getTime()) / 86_400_000);
 }
@@ -139,7 +162,7 @@ export async function getIndiaLocationCoverageForServer(now = new Date()): Promi
     };
   }
 
-  const prisma = getPrismaClient() as unknown as PrismaClient;
+  const prisma = getPrismaClient() as unknown as CoveragePrismaClient;
   const [
     stateRows,
     postalCodeCount,

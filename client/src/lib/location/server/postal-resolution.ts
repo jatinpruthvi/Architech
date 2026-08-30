@@ -1,5 +1,4 @@
 import "server-only";
-import type { PrismaClient } from "@prisma/client";
 import { isValidPincode, resolvePincode } from "@/lib/pincodes";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { isPrismaDataSource } from "@/lib/repositories/source";
@@ -34,6 +33,55 @@ type SourceRow = {
   status?: string;
 };
 
+type ConfidenceValue = number | string | { toString(): string } | null;
+
+type PostalLocalityLinkRow = {
+  linkType: string;
+  confidence: ConfidenceValue;
+  source: SourceRow | null;
+  locality: {
+    id: string;
+    slug: string;
+    name: string;
+    city: { slug: string; name: string; state: string };
+  };
+};
+
+type PostOfficeRow = {
+  id: string;
+  name: string;
+  officeType: string | null;
+  deliveryStatus: string | null;
+  districtName: string | null;
+  stateName: string | null;
+  source: SourceRow | null;
+};
+
+type AdministrativeAreaLinkRow = {
+  confidence: ConfidenceValue;
+  source: SourceRow | null;
+  administrativeArea: {
+    id: string;
+    code: string | null;
+    name: string;
+    slug: string | null;
+    type: string;
+    subtype: string | null;
+    parent: { code: string | null; name: string; slug: string | null } | null;
+  };
+};
+
+type PostalCodeRow = {
+  source: SourceRow | null;
+  localityLinks: PostalLocalityLinkRow[];
+  postOffices: PostOfficeRow[];
+  administrativeAreas: AdministrativeAreaLinkRow[];
+};
+
+type PostalPrismaClient = {
+  postalCode: { findUnique(args: unknown): Promise<PostalCodeRow | null> };
+};
+
 function sourceView(source: SourceRow) {
   return { ...source, retrievedAt: new Date(source.retrievedAt).toISOString() };
 }
@@ -59,12 +107,12 @@ export async function resolvePostalCodeForServer(value: string): Promise<PostalR
     };
   }
 
-  const prisma = getPrismaClient() as unknown as PrismaClient;
+  const prisma = getPrismaClient() as unknown as PostalPrismaClient;
   const row = await prisma.postalCode.findUnique({
     where: { code: postalCode, isActive: true },
     include: {
       source: true,
-      localityLinks: { where: { validTo: null }, include: { locality: { include: { city: true } }, source: true }, orderBy: [{ isPrimary: "desc" }, { confidence: "desc" }] },
+      localityLinks: { where: { validTo: null, source: { status: "ACTIVE" } }, include: { locality: { include: { city: true } }, source: true }, orderBy: [{ isPrimary: "desc" }, { confidence: "desc" }] },
       postOffices: { where: { isActive: true, source: { status: "ACTIVE" } }, include: { source: true }, orderBy: { name: "asc" } },
       administrativeAreas: {
         where: { validTo: null, source: { status: "ACTIVE" } },
