@@ -5,22 +5,25 @@
    typo in the index surfaces as a Search Console error instead of silently
    submitting nothing. */
 import { notFound } from "next/navigation";
-import { SITEMAP_SEGMENTS, buildSegmentSitemap, isSitemapSegment } from "@/lib/seo/sitemap";
+import { buildSegmentSitemap, isSitemapSegment } from "@/lib/seo/sitemap";
 import type { SeoSitemapSegment } from "@/lib/seo/pages";
 
-/* Prerendered, not frozen.
+/* Dynamic, not prerendered.
 
    This was `force-static`, which meant a listing approved at 10am did not
-   appear in the sitemap until the next build — Google's first signal that a
-   URL exists is the sitemap, so a stale one quietly withholds every new page.
-   `revalidate` keeps the build-time prerender and adds a one-hour floor, while
-   the discovery subscriber calls `revalidatePath` the moment something
-   publishes. */
-export const revalidate = 3600;
+   appear until the next build — and Google's first signal that a URL exists
+   is the sitemap.
 
-export function generateStaticParams() {
-  return SITEMAP_SEGMENTS.map((segment) => ({ segment: `${segment.id}.xml` }));
-}
+   It is `force-dynamic` rather than ISR on purpose. The payload depends on
+   `PUBLIC_INDEXING_ENABLED`, and a prerender bakes whatever that flag was at
+   build time: build without it and you ship an empty sitemap that stays empty
+   until something revalidates it. That failure is silent, invisible in the
+   diff, and costs a week of indexing. Rendering per request removes the whole
+   class of bug. The response is still cached at the edge for an hour by the
+   `s-maxage` below, so the cost is one render per CDN region per hour. */
+export const dynamic = "force-dynamic";
+
+
 
 export async function GET(_request: Request, context: { params: Promise<{ segment: string }> }) {
   const { segment } = await context.params;

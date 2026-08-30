@@ -353,6 +353,28 @@ per-URL.
 
 ---
 
+## Decision 18 — The sitemaps are dynamic, not prerendered
+
+**Decision.** Both `app/sitemap.xml/route.ts` and `app/sitemap/[segment]/route.ts`
+are `export const dynamic = "force-dynamic"`. Not `force-static` (what they
+were) and not ISR.
+
+**Why not ISR.** Prerendering bakes whatever `PUBLIC_INDEXING_ENABLED` was at
+build time. Build without it and you ship an empty sitemap that stays empty
+until something revalidates it — a silent failure, invisible in the diff, that
+costs weeks of indexing and shows up as "Google isn't crawling us". Rendering
+per request removes the entire class of bug.
+
+**The cost.** One XML render per request instead of zero. At this scale — a few
+hundred URLs — that is a few milliseconds, and the `s-maxage=3600` on the
+response means a CDN takes nearly all of it anyway.
+
+**Do not** "optimise" these back to `force-static` or ISR without also
+guaranteeing the build environment carries the indexing flag. If you must make
+them static, add a build assertion that the generated sitemap is non-empty.
+
+---
+
 ## Summary for an agent about to touch this
 
 - Do not add a permission without the five steps in Decision 1.
@@ -372,3 +394,4 @@ per-URL.
 - Do not invent a listing URL to submit to IndexNow (Decision 15).
 - Do not raise the sibling count without changing the grid (Decision 16).
 - Do not display demo Search Console numbers as measurement (Decision 17).
+- Do not make the sitemaps static again without a build-time non-empty assertion (Decision 18).
