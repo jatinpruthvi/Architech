@@ -52,7 +52,12 @@ export type ListingEvent = {
   meta?: Record<string, unknown>;
 };
 
-export type ListingEventListener = (event: ListingEvent) => void | Promise<void>;
+/* `unknown` rather than `void`: a subscriber is allowed to return something —
+   the discovery subscriber returns which paths it revalidated and which
+   failed. The spine awaits the result, which is a no-op for a synchronous
+   subscriber, so returning diagnostics costs nothing and makes failures
+   visible without a logging dependency. */
+export type ListingEventListener = (event: ListingEvent) => unknown;
 
 const listeners: ListingEventListener[] = [];
 

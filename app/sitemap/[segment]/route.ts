@@ -8,7 +8,15 @@ import { notFound } from "next/navigation";
 import { SITEMAP_SEGMENTS, buildSegmentSitemap, isSitemapSegment } from "@/lib/seo/sitemap";
 import type { SeoSitemapSegment } from "@/lib/seo/pages";
 
-export const dynamic = "force-static";
+/* Prerendered, not frozen.
+
+   This was `force-static`, which meant a listing approved at 10am did not
+   appear in the sitemap until the next build — Google's first signal that a
+   URL exists is the sitemap, so a stale one quietly withholds every new page.
+   `revalidate` keeps the build-time prerender and adds a one-hour floor, while
+   the discovery subscriber calls `revalidatePath` the moment something
+   publishes. */
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return SITEMAP_SEGMENTS.map((segment) => ({ segment: `${segment.id}.xml` }));

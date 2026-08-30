@@ -5,7 +5,10 @@
    `MetadataRoute.Sitemap` type can only describe `<urlset>` entries. */
 import { buildSitemapIndex } from "@/lib/seo/sitemap";
 
-export const dynamic = "force-static";
+/* Prerendered, not frozen. The index advertises the newest date inside each
+   child sitemap, so it has to be refreshable too — otherwise Google keeps
+   skipping child sitemaps whose contents have already changed. */
+export const revalidate = 3600;
 
 export function GET() {
   return new Response(buildSitemapIndex(), {
