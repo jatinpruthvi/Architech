@@ -14,6 +14,7 @@ import { ArrowUpRight, Building2, Check, Clock3, Route, Star, TrainFront } from 
 import Link from "next/link";
 import type { Locality } from "@/lib/repositories";
 import type { LocalityIntel } from "@/lib/realestate/locality-intel";
+import { AMENITY_LABELS, type AmenityCategory } from "@/lib/realestate/amenities";
 import type { Property } from "@/lib/repositories";
 import { compactInr, formatPsf } from "@/lib/realestate/locality-intel";
 import { useLang } from "@/contexts/LangContext";
@@ -26,14 +27,9 @@ type Props = {
   newProjects: Property[];
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
-  transit: "Transit",
-  health: "Health",
-  learning: "Schools & learning",
-  green: "Green",
-  culture: "Culture",
-  landmark: "Landmark",
-};
+/* Labels come from the amenity vocabulary rather than a local copy, so a new
+   category added to `amenities.ts` can never reach the page unlabelled. */
+const CATEGORY_LABEL: Record<AmenityCategory, string> = AMENITY_LABELS;
 
 export default function LocalityIntel({ intel, locality, newProjects }: Props) {
   const { t } = useLang();
@@ -222,7 +218,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
                       <Route size={14} className="shrink-0 text-ember" aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block truncate">{stop.place}</span>
-                        <span className="stamp !text-[9px] text-ink/50">{CATEGORY_LABEL[stop.category] ?? "Landmark"}</span>
+                        <span className="stamp !text-[9px] text-ink/50">{CATEGORY_LABEL[stop.category]}</span>
                       </span>
                     </span>
                     <span className="stamp !text-[11px] font-semibold text-brick">{stop.distance}</span>

@@ -1,24 +1,48 @@
 import { describe, expect, it } from "vitest";
+import { getListingsByCity } from "@/lib/repositories";
 import { formatPsf, localityIntel } from "./locality-intel";
 
 describe("locality intelligence", () => {
+  /* Uses a locality with a real sample. Paldi holds one sale listing, which is
+     no longer enough to publish a median — see the withheld test below. */
   it("produces provenance-labeled buy facts for a locality with inventory", () => {
-    const intel = localityIntel("paldi");
-    expect(intel.slug).toBe("paldi");
-    expect(intel.name).toBe("Paldi");
+    const intel = localityIntel("bandra-west");
+    expect(intel.slug).toBe("bandra-west");
     expect(intel.buyCount).toBeGreaterThanOrEqual(1);
+    expect(intel.sampleSufficient).toBe(true);
     expect(intel.minPriceInr).toBeGreaterThan(0);
-    if (intel.minPriceInr && intel.medianPriceInr) {
-      expect(intel.medianPriceInr).toBeGreaterThanOrEqual(intel.minPriceInr);
-    }
-    if (intel.medianPriceInr && intel.maxPriceInr) {
-      expect(intel.maxPriceInr).toBeGreaterThanOrEqual(intel.medianPriceInr);
-    }
+    expect(intel.medianPriceInr).toBeGreaterThanOrEqual(intel.minPriceInr!);
+    expect(intel.maxPriceInr).toBeGreaterThanOrEqual(intel.medianPriceInr!);
     // An as-of label is always present so readers can assess freshness.
     expect(intel.asOfLabel).toMatch(/\d{1,2} [A-Za-z]{3} \d{4}/);
     expect(intel.asOfDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     // Position is only reported against a real city baseline.
     expect(typeof intel.position.deltaPct).toBe("number");
+  });
+
+  /* The corrected behaviour. A median of one is that home's asking price, and
+     the page used to print it under the label "Median asking". */
+  it("withholds price facts for a locality below the sample bar", () => {
+    const intel = localityIntel("paldi");
+    expect(intel.buyCount).toBeGreaterThanOrEqual(1);
+    expect(intel.sampleSufficient).toBe(false);
+    expect(intel.minPriceInr).toBeNull();
+    expect(intel.medianPriceInr).toBeNull();
+    expect(intel.maxPriceInr).toBeNull();
+    expect(intel.avgPricePerSqftInr).toBeNull();
+    expect(intel.position.deltaPct).toBeNull();
+  });
+
+  /* The baseline used to be computed across every buy listing in the country
+     while the page labelled it "vs city". It is now the locality's own city. */
+  it("compares a locality against its own city, not against all of India", () => {
+    const intel = localityIntel("bandra-west");
+    expect(intel.position.cityPsf).not.toBeNull();
+    const cityListings = getListingsByCity("mumbai").filter((l) => (l.transaction ?? "buy") !== "rent");
+    const expected = Math.round(
+      cityListings.reduce((sum, l) => sum + l.priceNum / l.areaNum, 0) / cityListings.length,
+    );
+    expect(intel.position.cityPsf).toBe(expected);
   });
 
   it("never reports rent listings as buy price facts", () => {

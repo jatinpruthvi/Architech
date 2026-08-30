@@ -5,6 +5,7 @@
    are unique across India (asserted by `localities.test.ts`) so that a slug can
    be resolved with or without city context, while canonical URLs always carry
    the city segment: /buy/{city}/{locality}/. */
+import type { AmenityRow } from "./realestate/amenities";
 import { DEFAULT_CITY_SLUG, findCity } from "./cities";
 
 export type Locality = {
@@ -19,7 +20,9 @@ export type Locality = {
   /** Owning city slug — always present after normalization. */
   citySlug: string;
   cityName: string;
-  landmarks?: [string, string][];
+  /** Nearby places with the distance as authored and the kind of place it
+      is. The category is declared, not guessed: see `realestate/amenities`. */
+  landmarks?: AmenityRow[];
   /** Locality price premium relative to the city median (1 = city median). */
   priceIndex: number;
   /**
@@ -67,12 +70,12 @@ const seeds: LocalitySeed[] = [
   {
     citySlug: "ahmedabad", slug: "paldi", name: "Paldi", hindi: "पालडी", note: "Tree-lined, central, quietly established", homes: 42,
     coords: "23.011° N · 72.559° E", marker: "23.011,72.559", bbox: "72.5350,22.9950,72.5850,23.0270", priceIndex: 1.12, pincodes: ["380007"],
-    landmarks: [["Law Garden", "≈ 1.4 km"], ["Sabarmati Riverfront", "≈ 1.8 km"], ["Tagore Hall", "≈ 0.9 km"], ["IIM Ahmedabad", "≈ 5.2 km"], ["SVP Airport", "≈ 11.6 km"]],
+    landmarks: [["Law Garden", "≈ 1.4 km", "green"], ["Sabarmati Riverfront", "≈ 1.8 km", "green"], ["Tagore Hall", "≈ 0.9 km", "culture"], ["IIM Ahmedabad", "≈ 5.2 km", "learning"], ["SVP Airport", "≈ 11.6 km", "transit"]],
   },
   {
     citySlug: "ahmedabad", slug: "navrangpura", name: "Navrangpura", hindi: "नवरंगपुरा", note: "Lively streets with a familiar pulse", homes: 31,
     coords: "23.039° N · 72.561° E", marker: "23.039,72.561", bbox: "72.5400,23.0250,72.5820,23.0530", priceIndex: 1.18, pincodes: ["380009"],
-    landmarks: [["Gujarat College", "≈ 0.8 km"], ["Law Garden", "≈ 1.2 km"], ["Sabarmati Riverfront", "≈ 1.6 km"], ["SVP Airport", "≈ 9.4 km"]],
+    landmarks: [["Gujarat College", "≈ 0.8 km", "learning"], ["Law Garden", "≈ 1.2 km", "green"], ["Sabarmati Riverfront", "≈ 1.6 km", "green"], ["SVP Airport", "≈ 9.4 km", "transit"]],
   },
   {
     citySlug: "ahmedabad", slug: "prahlad-nagar", name: "Prahlad Nagar", hindi: "प्रह्लाद नगर", note: "Newer buildings, easy everyday rhythm", homes: 68,
@@ -92,31 +95,31 @@ const seeds: LocalitySeed[] = [
   },
 
   /* ---------------- Mumbai, Maharashtra ---------------- */
-  { citySlug: "mumbai", slug: "bandra-west", name: "Bandra West", hindi: "बांद्रा पश्चिम", note: "Sea-facing promenades and the city's most quoted address", homes: 58, marker: "19.0596,72.8295", priceIndex: 1.9, pincodes: ["400050"], landmarks: [["Bandra Bandstand", "≈ 1.1 km"], ["Bandra–Worli Sea Link", "≈ 2.4 km"], ["Bandra Terminus", "≈ 3.0 km"]] },
-  { citySlug: "mumbai", slug: "andheri-west", name: "Andheri West", hindi: "अंधेरी पश्चिम", note: "Studios, suburban rail, and endless small commerce", homes: 96, marker: "19.1364,72.8296", priceIndex: 1.05, pincodes: ["400058", "400053"], landmarks: [["Andheri Station", "≈ 1.6 km"], ["Versova Beach", "≈ 4.2 km"], ["CSMI Airport T2", "≈ 5.1 km"]] },
-  { citySlug: "mumbai", slug: "powai", name: "Powai", hindi: "पवई", note: "Lakeside campus town with planned streets", homes: 64, marker: "19.1176,72.9060", priceIndex: 1.22, pincodes: ["400076"], landmarks: [["Powai Lake", "≈ 0.7 km"], ["IIT Bombay", "≈ 1.9 km"], ["Hiranandani Gardens", "≈ 0.5 km"]] },
+  { citySlug: "mumbai", slug: "bandra-west", name: "Bandra West", hindi: "बांद्रा पश्चिम", note: "Sea-facing promenades and the city's most quoted address", homes: 58, marker: "19.0596,72.8295", priceIndex: 1.9, pincodes: ["400050"], landmarks: [["Bandra Bandstand", "≈ 1.1 km", "green"], ["Bandra–Worli Sea Link", "≈ 2.4 km", "transit"], ["Bandra Terminus", "≈ 3.0 km", "transit"]] },
+  { citySlug: "mumbai", slug: "andheri-west", name: "Andheri West", hindi: "अंधेरी पश्चिम", note: "Studios, suburban rail, and endless small commerce", homes: 96, marker: "19.1364,72.8296", priceIndex: 1.05, pincodes: ["400058", "400053"], landmarks: [["Andheri Station", "≈ 1.6 km", "transit"], ["Versova Beach", "≈ 4.2 km", "green"], ["CSMI Airport T2", "≈ 5.1 km", "transit"]] },
+  { citySlug: "mumbai", slug: "powai", name: "Powai", hindi: "पवई", note: "Lakeside campus town with planned streets", homes: 64, marker: "19.1176,72.9060", priceIndex: 1.22, pincodes: ["400076"], landmarks: [["Powai Lake", "≈ 0.7 km", "green"], ["IIT Bombay", "≈ 1.9 km", "learning"], ["Hiranandani Gardens", "≈ 0.5 km", "landmark"]] },
   { citySlug: "mumbai", slug: "chembur", name: "Chembur", hindi: "चेंबूर", note: "Central, green, and newly well connected", homes: 51, marker: "19.0522,72.9005", priceIndex: 0.86, pincodes: ["400071", "400074"] },
   { citySlug: "mumbai", slug: "goregaon-east", name: "Goregaon East", hindi: "गोरेगांव पूर्व", note: "Film-city side, big redevelopment pipeline", homes: 73, marker: "19.1663,72.8526", priceIndex: 0.82, pincodes: ["400063", "400065"] },
   { citySlug: "mumbai", slug: "thane-west", name: "Thane West", hindi: "ठाणे पश्चिम", note: "Lakes, malls, and the value end of the metro", homes: 112, marker: "19.2183,72.9781", priceIndex: 0.58, pincodes: ["400601", "400604", "400607"] },
 
   /* ---------------- Delhi ---------------- */
-  { citySlug: "delhi", slug: "dwarka", name: "Dwarka", hindi: "द्वारका", note: "Sub-city of societies, wide sectors, metro spine", homes: 88, marker: "28.5921,77.0460", priceIndex: 0.72, pincodes: ["110075", "110078"], landmarks: [["Dwarka Sector 21 Metro", "≈ 2.2 km"], ["IGI Airport T3", "≈ 8.4 km"]] },
-  { citySlug: "delhi", slug: "saket", name: "Saket", hindi: "साकेत", note: "South Delhi calm with malls at the doorstep", homes: 44, marker: "28.5245,77.2066", priceIndex: 1.3, pincodes: ["110017"], landmarks: [["Select Citywalk", "≈ 1.0 km"], ["Qutub Minar", "≈ 3.6 km"]] },
+  { citySlug: "delhi", slug: "dwarka", name: "Dwarka", hindi: "द्वारका", note: "Sub-city of societies, wide sectors, metro spine", homes: 88, marker: "28.5921,77.0460", priceIndex: 0.72, pincodes: ["110075", "110078"], landmarks: [["Dwarka Sector 21 Metro", "≈ 2.2 km", "transit"], ["IGI Airport T3", "≈ 8.4 km", "transit"]] },
+  { citySlug: "delhi", slug: "saket", name: "Saket", hindi: "साकेत", note: "South Delhi calm with malls at the doorstep", homes: 44, marker: "28.5245,77.2066", priceIndex: 1.3, pincodes: ["110017"], landmarks: [["Select Citywalk", "≈ 1.0 km", "retail"], ["Qutub Minar", "≈ 3.6 km", "culture"]] },
   { citySlug: "delhi", slug: "vasant-kunj", name: "Vasant Kunj", hindi: "वसंत कुंज", note: "Ridge forest edges and diplomatic quiet", homes: 37, marker: "28.5200,77.1591", priceIndex: 1.42, pincodes: ["110070"] },
   { citySlug: "delhi", slug: "rohini", name: "Rohini", hindi: "रोहिणी", note: "Planned North-West grid, strong resale depth", homes: 79, marker: "28.7495,77.0565", priceIndex: 0.66, pincodes: ["110085", "110089"] },
   { citySlug: "delhi", slug: "mayur-vihar", name: "Mayur Vihar", hindi: "मयूर विहार", note: "Yamuna-side societies, easy Noida access", homes: 56, marker: "28.6089,77.2952", priceIndex: 0.78, pincodes: ["110091", "110096"] },
   { citySlug: "delhi", slug: "punjabi-bagh", name: "Punjabi Bagh", hindi: "पंजाबी बाग", note: "Builder floors on West Delhi's widest roads", homes: 41, marker: "28.6663,77.1310", priceIndex: 1.08, pincodes: ["110026"] },
 
   /* ---------------- Bengaluru, Karnataka ---------------- */
-  { citySlug: "bengaluru", slug: "indiranagar", name: "Indiranagar", hindi: "इंदिरानगर", note: "Old bungalow plots turned into the city's best walk", homes: 46, marker: "12.9784,77.6408", priceIndex: 1.45, pincodes: ["560038"], landmarks: [["100 Feet Road", "≈ 0.4 km"], ["Indiranagar Metro", "≈ 1.1 km"], ["Ulsoor Lake", "≈ 2.6 km"]] },
+  { citySlug: "bengaluru", slug: "indiranagar", name: "Indiranagar", hindi: "इंदिरानगर", note: "Old bungalow plots turned into the city's best walk", homes: 46, marker: "12.9784,77.6408", priceIndex: 1.45, pincodes: ["560038"], landmarks: [["100 Feet Road", "≈ 0.4 km", "transit"], ["Indiranagar Metro", "≈ 1.1 km", "transit"], ["Ulsoor Lake", "≈ 2.6 km", "green"]] },
   { citySlug: "bengaluru", slug: "koramangala", name: "Koramangala", hindi: "कोरमंगला", note: "Startup blocks, cafés, and short commutes", homes: 62, marker: "12.9352,77.6245", priceIndex: 1.38, pincodes: ["560034", "560095"] },
-  { citySlug: "bengaluru", slug: "whitefield", name: "Whitefield", hindi: "व्हाइटफील्ड", note: "Tech parks, gated townships, and new metro", homes: 128, marker: "12.9698,77.7500", priceIndex: 0.82, pincodes: ["560066"], landmarks: [["ITPL", "≈ 2.0 km"], ["Whitefield Metro", "≈ 1.4 km"]] },
+  { citySlug: "bengaluru", slug: "whitefield", name: "Whitefield", hindi: "व्हाइटफील्ड", note: "Tech parks, gated townships, and new metro", homes: 128, marker: "12.9698,77.7500", priceIndex: 0.82, pincodes: ["560066"], landmarks: [["ITPL", "≈ 2.0 km", "work"], ["Whitefield Metro", "≈ 1.4 km", "transit"]] },
   { citySlug: "bengaluru", slug: "hsr-layout", name: "HSR Layout", hindi: "एचएसआर लेआउट", note: "Sector grid, parks, and the flat-hunt favourite", homes: 84, marker: "12.9116,77.6474", priceIndex: 1.12, pincodes: ["560102"] },
   { citySlug: "bengaluru", slug: "hebbal", name: "Hebbal", hindi: "हेब्बाल", note: "Lake views and the cleanest run to the airport", homes: 59, marker: "13.0358,77.5970", priceIndex: 1.05, pincodes: ["560024"] },
   { citySlug: "bengaluru", slug: "electronic-city", name: "Electronic City", hindi: "इलेक्ट्रॉनिक सिटी", note: "Elevated expressway, employer-adjacent value", homes: 103, marker: "12.8452,77.6602", priceIndex: 0.62, pincodes: ["560100"] },
 
   /* ---------------- Hyderabad, Telangana ---------------- */
-  { citySlug: "hyderabad", slug: "gachibowli", name: "Gachibowli", hindi: "गचीबौली", note: "Financial district frontage, still filling in", homes: 91, marker: "17.4401,78.3489", priceIndex: 1.24, pincodes: ["500032"], landmarks: [["Financial District", "≈ 3.1 km"], ["Gachibowli Stadium", "≈ 1.2 km"]] },
+  { citySlug: "hyderabad", slug: "gachibowli", name: "Gachibowli", hindi: "गचीबौली", note: "Financial district frontage, still filling in", homes: 91, marker: "17.4401,78.3489", priceIndex: 1.24, pincodes: ["500032"], landmarks: [["Financial District", "≈ 3.1 km", "work"], ["Gachibowli Stadium", "≈ 1.2 km", "sports"]] },
   { citySlug: "hyderabad", slug: "hitec-city", name: "HITEC City", hindi: "हाईटेक सिटी", note: "Towers, skywalks, and the shortest tech commute", homes: 77, marker: "17.4435,78.3772", priceIndex: 1.3, pincodes: ["500081"] },
   { citySlug: "hyderabad", slug: "kondapur", name: "Kondapur", hindi: "कोंडापुर", note: "Mid-market depth right behind the tech belt", homes: 86, marker: "17.4615,78.3620", priceIndex: 1.02, pincodes: ["500084"] },
   { citySlug: "hyderabad", slug: "banjara-hills", name: "Banjara Hills", hindi: "बंजारा हिल्स", note: "Rock outcrops, road numbers, and old money", homes: 38, marker: "17.4126,78.4392", priceIndex: 1.62, pincodes: ["500034"] },
@@ -124,7 +127,7 @@ const seeds: LocalitySeed[] = [
   { citySlug: "hyderabad", slug: "kukatpally", name: "Kukatpally", hindi: "कुकटपल्ली", note: "Dense, well-served, and priced for families", homes: 94, marker: "17.4849,78.4138", priceIndex: 0.78, pincodes: ["500072"] },
 
   /* ---------------- Chennai, Tamil Nadu ---------------- */
-  { citySlug: "chennai", slug: "adyar", name: "Adyar", hindi: "अड्यार", note: "River, banyan shade, and settled institutions", homes: 43, marker: "13.0067,80.2570", priceIndex: 1.44, pincodes: ["600020"], landmarks: [["Adyar Estuary", "≈ 1.5 km"], ["Elliot's Beach", "≈ 2.8 km"]] },
+  { citySlug: "chennai", slug: "adyar", name: "Adyar", hindi: "अड्यार", note: "River, banyan shade, and settled institutions", homes: 43, marker: "13.0067,80.2570", priceIndex: 1.44, pincodes: ["600020"], landmarks: [["Adyar Estuary", "≈ 1.5 km", "green"], ["Elliot's Beach", "≈ 2.8 km", "green"]] },
   { citySlug: "chennai", slug: "anna-nagar", name: "Anna Nagar", hindi: "अन्ना नगर", note: "Planned blocks, tower park, deep resale market", homes: 61, marker: "13.0850,80.2101", priceIndex: 1.32, pincodes: ["600040"] },
   { citySlug: "chennai", slug: "velachery", name: "Velachery", hindi: "वेलाचेरी", note: "Central-south connector with everything nearby", homes: 72, marker: "12.9750,80.2210", priceIndex: 0.96, pincodes: ["600042"] },
   { citySlug: "chennai", slug: "thoraipakkam", name: "Thoraipakkam (OMR)", hindi: "तोरैपक्कम", note: "IT corridor frontage on Old Mahabalipuram Road", homes: 89, marker: "12.9401,80.2340", priceIndex: 0.88, pincodes: ["600097"] },
@@ -132,7 +135,7 @@ const seeds: LocalitySeed[] = [
   { citySlug: "chennai", slug: "porur", name: "Porur", hindi: "पोरूर", note: "Western junction, hospitals, and fast new roads", homes: 66, marker: "13.0359,80.1565", priceIndex: 0.8, pincodes: ["600116"] },
 
   /* ---------------- Pune, Maharashtra ---------------- */
-  { citySlug: "pune", slug: "kharadi", name: "Kharadi", hindi: "खराडी", note: "River-bend offices and premium new towers", homes: 87, marker: "18.5515,73.9470", priceIndex: 1.16, pincodes: ["411014"], landmarks: [["EON IT Park", "≈ 1.3 km"], ["Pune Airport", "≈ 7.8 km"]] },
+  { citySlug: "pune", slug: "kharadi", name: "Kharadi", hindi: "खराडी", note: "River-bend offices and premium new towers", homes: 87, marker: "18.5515,73.9470", priceIndex: 1.16, pincodes: ["411014"], landmarks: [["EON IT Park", "≈ 1.3 km", "work"], ["Pune Airport", "≈ 7.8 km", "transit"]] },
   { citySlug: "pune", slug: "baner", name: "Baner", hindi: "बाणेर", note: "Hill slopes, highway access, young households", homes: 78, marker: "18.5590,73.7868", priceIndex: 1.2, pincodes: ["411045"] },
   { citySlug: "pune", slug: "hinjawadi", name: "Hinjawadi", hindi: "हिंजवडी", note: "Rajiv Gandhi Infotech Park and its housing belt", homes: 118, marker: "18.5913,73.7389", priceIndex: 0.78, pincodes: ["411057"] },
   { citySlug: "pune", slug: "wakad", name: "Wakad", hindi: "वाकड", note: "Bridge to Hinjawadi with better everyday retail", homes: 92, marker: "18.5975,73.7625", priceIndex: 0.9, pincodes: ["411057"] },

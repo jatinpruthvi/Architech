@@ -4,6 +4,7 @@ import type { Property } from "@/lib/properties";
 import type { PropertyDetails } from "@/lib/listing-details";
 import { isPropertyTypeCode, labelForAvailability, normalizeAvailability, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { listingDetailsFromSourceSummary, normalizeListingDetails, hasAnyListingDetail } from "@/lib/listing-details-contract";
+import { normalizeAmenityRows } from "@/lib/realestate/amenities";
 
 type DecimalLike = { toString(): string } | string | number | null | undefined;
 
@@ -128,7 +129,10 @@ export function dbLocalityToLocality(row: DbLocalityRow): Locality {
     cityName: row.city?.name ?? "India",
     priceIndex: row.priceIndex ?? 1,
     pincodes: row.pincodes ?? [],
-    landmarks: Array.isArray(row.landmarks) ? row.landmarks as [string, string][] : undefined,
+    // Amenity rows predate the category field in the database, so they are
+    // validated and typed here rather than cast: a row that is not
+    // [name, distance, category?] is dropped instead of reaching the page.
+    landmarks: normalizeAmenityRows(row.landmarks),
   };
 }
 
