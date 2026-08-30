@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { compactInr, formatPsf } from "@/lib/realestate/locality-intel";
 import { cityMarketTrends } from "@/lib/realestate/market-trends";
 import { allCityMarketTrends, priceIndexJsonLd, priceIndexMetadata, priceIndexOutboundLinks } from "@/lib/seo/price-index";
+import { cityAcquisitionPlan } from "@/lib/seo/acquisition-queue";
 import { cityPriceIndexUrl, localityUrl, priceIndexUrl } from "@/lib/seo/urls";
 import { getCityStaticParams, getLiveCityBySlug } from "@/lib/repositories";
 import NotesList from "@/components/architech/NotesList";
@@ -38,6 +39,7 @@ export default async function Page({ params }: { params: Promise<{ city: string 
   const jsonLd = priceIndexJsonLd(report);
   const links = priceIndexOutboundLinks(report);
   const siblings = allCityMarketTrends().filter((entry) => entry.citySlug !== citySlug);
+  const plan = cityAcquisitionPlan(citySlug);
 
   return (
     <>
@@ -67,6 +69,19 @@ export default async function Page({ params }: { params: Promise<{ city: string 
             <div className="border-l-4 border-brick bg-sand/50 p-6">
               <p className="stamp text-brick">Not published</p>
               <NotesList title="Why this city is withheld" items={report.blockers} tone="alert" />
+              {/* The blocker says what is missing; this says exactly how much.
+                  The gates are arithmetic, so the distance to publishing is
+                  knowable in advance — and publishing it is the honest
+                  counterpart to publishing the gap. Someone reading a withheld
+                  index should be told what would unwithhold it. */}
+              {plan.minimumToPublish.gap > 0 ? (
+                <p className="mt-5 border-t border-ink/20 pt-4 text-sm leading-7 ink-2">
+                  This index publishes when any one locality reaches {report.minSample} sale listings.{" "}
+                  <strong className="font-semibold">
+                    {plan.minimumToPublish.localities.join(" / ")} is closest, {plan.minimumToPublish.gap} short.
+                  </strong>
+                </p>
+              ) : null}
             </div>
           </section>
         ) : (
