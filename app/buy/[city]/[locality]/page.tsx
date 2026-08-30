@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import CityPage from "@/pages/CityPage";
 import { getListingsByLocality, getLiveCityBySlug, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
 import { isIndexable } from "@/lib/seo/lifecycle";
-import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
+import { cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
+import { socialImage } from "@/lib/seo/social";
 import { localityTrustSummary } from "@/lib/trust/locality";
 import { localityIntel } from "@/lib/realestate/locality-intel";
 import { localitySerpDescription, localitySerpTitle } from "@/lib/seo/serp";
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
       intel: localityIntel(slug),
     }),
     alternates: { canonical: localityUrl(city.slug, locality.slug) },
-    openGraph: { title, url: localityUrl(city.slug, locality.slug), images: [{ url: assetUrl("/images/locality-street.jpg") }] },
+    openGraph: { title, url: localityUrl(city.slug, locality.slug), images: [socialImage("locality-street")] },
   };
 }
 

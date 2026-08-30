@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
 import { getCityBySlug, getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
+import { socialImage } from "@/lib/seo/social";
 import { httpDecisionForListing } from "@/lib/seo/lifecycle";
 import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
 import { buildAgentJsonLd, buildAgentProfile } from "@/lib/agent/profile";
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: listingSerpDescription(property),
     alternates: { canonical: listingUrl(property.id) },
     robots: { index: metadataDecision.indexable, follow: true },
-    openGraph: { title, url: listingUrl(property.id), images: [{ url: assetUrl(`/images/${property.image}.jpg`) }] },
+    openGraph: { title, url: listingUrl(property.id), images: [socialImage(property.image)] },
   };
 }
 

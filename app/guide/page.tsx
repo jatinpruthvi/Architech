@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Guide from "@/pages/Guide";
-import { getGuides } from "@/lib/repositories";
 import { guideUrl } from "@/lib/seo/urls";
+import { guideHubJsonLd } from "@/lib/seo/guide-jsonld";
 
 export const metadata: Metadata = {
   title: "Field notes — how we verify",
@@ -10,23 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "@id": `${guideUrl()}#collection`,
-    name: "Field notes — how we verify",
-    url: guideUrl(),
-    isPartOf: { "@type": "WebSite", name: "Architech" },
-    mainEntity: {
-      "@type": "ItemList",
-      itemListElement: getGuides().map((guide, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: guide.title,
-        url: guideUrl(guide.path.replace(/^\/guide\//, "").replace(/\/$/, "")),
-      })),
-    },
-  };
+  const jsonLd = guideHubJsonLd();
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />

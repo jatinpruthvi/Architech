@@ -131,11 +131,31 @@ const sitemapChecks = [
   { route: "/sitemap/guides.xml", root: "urlset" },
 ];
 
+/* The social card. OGP wants an absolute URL; a relative one is resolved
+   against whatever host served the page, so it breaks behind a proxy or a
+   preview host. Dimensions are optional but they let a card be laid out
+   before the image is fetched — and wrong ones lay it out wrongly, which is
+   exactly what the root layout used to publish (1600x900 for a 1376x768
+   image). Both now come from the measured map via socialImage(). */
+function assertSocialCard(html, route) {
+  const image = html.match(/<meta[^>]+property="og:image"[^>]*>/i);
+  if (!image) return; // a page with no card is a choice, not a defect
+  const url = (image[0].match(/content="([^"]*)"/) || [])[1] || "";
+  assert(/^https?:\/\//.test(url), `${route}: og:image must be absolute, got ${url}`);
+  const width = html.match(/<meta[^>]+property="og:image:width"[^>]+content="(\d+)"/i);
+  const height = html.match(/<meta[^>]+property="og:image:height"[^>]+content="(\d+)"/i);
+  assert(
+    width && height && Number(width[1]) > 0 && Number(height[1]) > 0,
+    `${route}: og:image ${url} declares no dimensions — derive them from the measured map, do not guess`,
+  );
+}
+
 function assertCommonSeo(html, route) {
   includes(html, "<title", route);
   includes(html, "rel=\"canonical\"", route);
   includes(html, "application/ld+json", route);
   assertSerpBudget(html, route);
+  assertSocialCard(html, route);
 }
 
 function assertNoindex(html, route) {

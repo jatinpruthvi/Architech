@@ -14,34 +14,19 @@
  */
 import { useCallback, useState } from "react";
 
-/* Intrinsic dimensions of the full-size derivative in /public/images.
+/* The map itself lives in `lib/media/intrinsic-sizes.ts`, hooks-free, because
+   a server component — the root layout declaring OpenGraph image dimensions —
+   needs the same numbers and cannot import a module that uses hooks. */
+import {
+  DEFAULT_INTRINSIC_ASPECT as DEFAULT_ASPECT,
+  DEFAULT_INTRINSIC_WIDTH as DEFAULT_WIDTH,
+  IMAGE_INTRINSIC_SIZES,
+  intrinsicSizeOf,
+} from "@/lib/media/intrinsic-sizes";
 
-   These are the source of truth for the width/height attributes, and they must
-   be the real numbers: a declared ratio that disagrees with the actual file
-   makes the browser reserve the wrong amount of space, so the page jumps when
-   the photo lands. That is a direct CLS cost on the LCP element.
-
-   `DEFAULT_ASPECT` previously stood in for all of them, on the comment's claim
-   that "1.5 is what every derivative in /public/images is cropped to". Measured
-   against the files, that held for one asset out of seven: the two portrait
-   assets were being declared landscape (896x597 against an actual 896x1200, a
-   603px error), the hero was 149px out, and the three property photos 96px out.
-   The ratio is now per-asset and `pic.test.ts` asserts this map against the real
-   files, so it cannot silently go stale again. */
-export const PIC_INTRINSIC_SIZES: Record<string, { width: number; height: number }> = {
-  "hero-ahmedabad": { width: 1376, height: 768 },
-  "locality-street": { width: 1264, height: 848 },
-  "prop-courtyard": { width: 1200, height: 896 },
-  "prop-light": { width: 1200, height: 896 },
-  "prop-thaltej": { width: 1200, height: 896 },
-  "brick-arch": { width: 896, height: 1200 },
-  stepwell: { width: 896, height: 1200 },
-};
-
-/* Fallback for an asset not yet added to the map above. Keep it as a last
-   resort: an unmapped image should be measured and added, not guessed. */
-const DEFAULT_WIDTH = 1200;
-const DEFAULT_ASPECT = 1.5;
+/* `pic.test.ts` asserts this map against the real files. Both names refer to
+   the same object so there is one source of truth, not two that can drift. */
+export const PIC_INTRINSIC_SIZES = IMAGE_INTRINSIC_SIZES;
 
 type PicProps = {
   name: string;
@@ -58,7 +43,7 @@ export default function Pic({ name, alt, className = "", sizes = "(max-width: 76
   const [loaded, setLoaded] = useState(false);
   /* An explicit `aspect` prop only governs an asset that is not in the map yet,
      so measuring and adding the asset remains the right fix. */
-  const intrinsic = PIC_INTRINSIC_SIZES[name] ?? { width: DEFAULT_WIDTH, height: Math.round(DEFAULT_WIDTH / aspect) };
+  const intrinsic = intrinsicSizeOf(name) ?? { width: DEFAULT_WIDTH, height: Math.round(DEFAULT_WIDTH / aspect) };
   const fullWidth = intrinsic.width;
   const srcSet = fullWidth > 800
     ? `/images/${name}-800.webp 800w, /images/${name}.webp ${fullWidth}w`

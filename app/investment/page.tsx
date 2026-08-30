@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import InvestmentPage from "@/pages/InvestmentPage";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
+import { defaultSocialImage } from "@/lib/seo/social";
 
 export const metadata: Metadata = {
   title: "India investment lens — Architech",
   description: "Read property signals through locality movement, supply, documentation, and everyday context. General information, not personalized financial advice.",
   alternates: { canonical: `${SITE_URL}/investment/` },
-  openGraph: { title: "India investment lens — Architech", url: `${SITE_URL}/investment/`, type: "article" },
+  openGraph: { title: "India investment lens — Architech", url: `${SITE_URL}/investment/`, type: "article", images: [defaultSocialImage()] },
 };
 
 export default function Page() {
