@@ -20,7 +20,7 @@ import { POST as mediaSignPost } from "../../../app/api/media/uploads/sign/route
 import { POST as mediaCompletePost } from "../../../app/api/media/uploads/[uploadId]/complete/route";
 import { POST as errorsPost } from "../../../app/api/observability/errors/route";
 import { GET as savedSearchesGet, POST as savedSearchesPost } from "../../../app/api/saved-searches/route";
-import { GET as reraGet } from "../../../app/api/rera/gujarat/route";
+import { GET as reraGet } from "../../../app/api/rera/[state]/route";
 import { GET as aiAssistGet } from "../../../app/api/ai/search-assist/route";
 import { GET as listingStatsGet, POST as listingStatsPost } from "../../../app/api/listings/[id]/stats/route";
 import { GET as priceTrendsGet } from "../../../app/api/localities/[slug]/price-trends/route";
@@ -107,12 +107,22 @@ describe("public API contract", () => {
     expect((listBody as { savedSearches: unknown[] }).savedSearches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("GET /api/rera/gujarat validates input and returns provenance", async () => {
-    const response = await reraGet(new Request("http://example.com/api/rera/gujarat?registration=GJ/RERA/AHM/2026/04821-DEMO"));
+  it("GET /api/rera/:state routes verification by explicit jurisdiction", async () => {
+    const response = await reraGet(
+      new Request("http://example.com/api/rera/gujarat?registration=GJ/RERA/AHM/2026/04821-DEMO"),
+      { params: Promise.resolve({ state: "gujarat" }) },
+    );
     expect(response.status).toBe(200);
     const body = await json(response);
     expect(body.ok).toBe(true);
     expect((body as { provider: string }).provider).toBe("demo-rera-adapter");
+
+    const unsupported = await reraGet(
+      new Request("http://example.com/api/rera/karnataka?registration=GJ/RERA/AHM/2026/04821-DEMO"),
+      { params: Promise.resolve({ state: "karnataka" }) },
+    );
+    expect(unsupported.status).toBe(501);
+    expect(await json(unsupported)).toMatchObject({ ok: false, provider: "unsupported-rera-jurisdiction" });
   });
 
   it("POST/GET /api/listings/:id/stats record and read idempotent metrics", async () => {
@@ -207,7 +217,7 @@ describe("public API contract", () => {
     const created = await brokerDraftsPost(new Request("http://example.com/api/broker/listings", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title: "Media attach draft", localitySlug: "paldi", priceInr: 15000000, bhk: 3, areaSqft: 1500, propertyType: "APARTMENT", availability: "READY_TO_MOVE", description: "A draft used to test media attachment through the API contract.", mediaRightsConfirmed: true }),
+      body: JSON.stringify({ title: "Media attach draft", citySlug: "ahmedabad", localitySlug: "paldi", postalCode: "380007", priceInr: 15000000, bhk: 3, areaSqft: 1500, propertyType: "APARTMENT", availability: "READY_TO_MOVE", description: "A draft used to test media attachment through the API contract.", mediaRightsConfirmed: true }),
     }));
     const { draft } = await json(created) as { draft: { id: string } };
     const response = await draftMediaPost(new Request("http://example.com/api/broker/listings/medium/media", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mediaId: "media_demo_1" }) }), { params: Promise.resolve({ draftId: draft.id }) });

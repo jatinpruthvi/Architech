@@ -244,9 +244,6 @@ export const cities: City[] = [
 /** Cities approved for public routing, sitemaps, and the city switcher. */
 export const liveCities = cities.filter((city) => city.status === "live");
 
-/** The default city used when no city context is supplied (legacy entry points). */
-export const DEFAULT_CITY_SLUG = "ahmedabad";
-
 export function findCity(slug?: string): City | undefined {
   if (!slug) return undefined;
   return cities.find((city) => city.slug === slug.toLowerCase());

@@ -11,7 +11,9 @@ import { resetReraStoreForTests } from "@/lib/rera/rera";
 const draftInput: ListingDraftInput = {
   organizationId: "org_demo",
   title: "A courtyard home in Paldi",
+  citySlug: "ahmedabad",
   localitySlug: "paldi",
+  postalCode: "380007",
   priceInr: 18_500_000,
   bhk: 3,
   areaSqft: 1482,
@@ -97,6 +99,7 @@ describe("RERA correction persistence (fixture/memory path)", () => {
 
   it("requests a correction and marks the record stale via the server adapter", async () => {
     const correction = await requestReraCorrectionForServer({
+      stateSlug: "gujarat",
       registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO",
       field: "promoterName",
       currentValue: "Nivasa Partners",
@@ -107,7 +110,7 @@ describe("RERA correction persistence (fixture/memory path)", () => {
     expect(correction.ok).toBe(true);
     if (correction.ok) expect(correction.correction.status).toBe("REQUESTED");
 
-    const stale = await markReraStaleForServer("GJ/RERA/AHM/2026/04821-DEMO");
+    const stale = await markReraStaleForServer("gujarat", "GJ/RERA/AHM/2026/04821-DEMO");
     expect(stale.ok).toBe(true);
     if (stale.ok) expect(stale.record.verificationStatus).toBe("STALE");
   });

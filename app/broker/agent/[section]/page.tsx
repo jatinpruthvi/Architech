@@ -4,7 +4,7 @@ import AgentWorkspace, { type AgentSection } from "@/pages/AgentWorkspace";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Agent workspace · Architech",
-  description: "Protected Ahmedabad partner workspace.",
+  description: "Protected India-wide, city-scoped partner workspace.",
   robots: { index: false, follow: false },
 };
 

@@ -8,7 +8,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ reg
   const access = await authorizeRequest(request, { permission: "moderation.listings.write" });
   if (!isAuthorized(access)) return access.response;
   const { registration } = await params;
-  const result = await markReraStaleForServer(decodeURIComponent(registration));
+  const stateSlug = new URL(request.url).searchParams.get("state")?.trim().toLowerCase() ?? "";
+  if (!/^[a-z][a-z-]{1,63}$/.test(stateSlug)) {
+    return NextResponse.json({ ok: false, errors: ["State/UT slug is required."] }, { status: 400 });
+  }
+  const result = await markReraStaleForServer(stateSlug, decodeURIComponent(registration));
   if (!result.ok) return NextResponse.json(result, { status: result.status });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

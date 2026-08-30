@@ -4,7 +4,7 @@ import AgentWorkspace from "@/pages/AgentWorkspace";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Agent workspace · Architech",
-  description: "Protected Ahmedabad partner workspace for listings, leads, inventory, and follow-up.",
+  description: "Protected India-wide, city-scoped partner workspace for listings, leads, inventory, and follow-up.",
   robots: { index: false, follow: false },
 };
 

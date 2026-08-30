@@ -63,8 +63,8 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
             },
             layers: [{ id: "osm", type: "raster", source: "osm" }],
           },
-          center: [72.559, 23.011],
-          zoom: 11,
+          center: [78.9629, 20.5937],
+          zoom: 4,
           attributionControl: false,
         });
 
@@ -159,7 +159,7 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
         <p className="mt-2 text-sm leading-6 text-ink/65">{copy.mapCopy}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {clusters.map((cluster) => (
-            <span key={cluster.localitySlug} className="border border-ink/15 bg-sand/70 px-2 py-1 stamp !text-[9px] text-ink/65">
+            <span key={`${cluster.citySlug}:${cluster.localitySlug}`} className="border border-ink/15 bg-sand/70 px-2 py-1 stamp !text-[9px] text-ink/65">
               {cluster.locality} · {cluster.count}
             </span>
           ))}

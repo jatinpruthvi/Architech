@@ -8,6 +8,7 @@ describe("SeoPage registry", () => {
     const expectedCount =
       1 + // home
       1 + // /buy/ hub
+      1 + // official India location/PIN reference hub
       getCities().length + // one hub per city
       getLocalities().length +
       getListings().length +
@@ -20,7 +21,8 @@ describe("SeoPage registry", () => {
     expect(seoPages.map((page) => page.routeType)).toContain("home");
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);
     expect(seoPages.filter((page) => page.routeType === "city")).toHaveLength(getCities().length);
-    expect(seoPages.filter((page) => page.routeType === "hub")).toHaveLength(1);
+    expect(seoPages.filter((page) => page.routeType === "hub")).toHaveLength(2);
+    expect(seoPages.find((page) => page.id === "hub:locations:india")?.path).toBe("/locations/");
     expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
     expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(4 + getGuides().length); // guide index + developer index + investment lens + home loan context
     expect(seoPages.find((page) => page.id === "page:list-property")?.indexability).toBe("indexable");

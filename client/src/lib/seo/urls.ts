@@ -52,11 +52,11 @@ export function homeUrl(base?: string) {
   return canonicalUrl(homePath(), base);
 }
 
-export function cityPath(citySlug = "ahmedabad", intent: "buy" | "rent" = "buy") {
+export function cityPath(citySlug: string, intent: "buy" | "rent" = "buy") {
   return withTrailingSlash(`/${intent}/${citySlug}/`);
 }
 
-export function cityUrl(citySlug = "ahmedabad", intent: "buy" | "rent" = "buy", base?: string) {
+export function cityUrl(citySlug: string, intent: "buy" | "rent" = "buy", base?: string) {
   return canonicalUrl(cityPath(citySlug, intent), base);
 }
 

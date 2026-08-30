@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useTitle from "@/hooks/useTitle";
-import { getLocalities } from "@/lib/repositories";
+import { getCities, getLocalities } from "@/lib/repositories";
 import type { ListingDraftInput } from "@/lib/broker/workflow";
 import { AVAILABILITY_OPTIONS, PROPERTY_TYPE_OPTIONS } from "@/lib/listing-vocabulary";
 import type { SignedMediaUpload } from "@/lib/media/upload";
@@ -17,7 +17,9 @@ import { AMENITY_OPTIONS, BATHROOM_OPTIONS, FACING_OPTIONS, FURNISHING_OPTIONS, 
 
 const EMPTY: ListingDraftInput = {
   title: "",
-  localitySlug: "paldi",
+  citySlug: "",
+  localitySlug: "",
+  postalCode: "",
   priceInr: 0,
   bhk: 2,
   areaSqft: 0,
@@ -31,8 +33,10 @@ const EMPTY: ListingDraftInput = {
 
 export default function ListingSubmission() {
   useTitle("New listing draft");
-  const localities = getLocalities();
+  const cities = getCities();
   const [draft, setDraft] = useState<ListingDraftInput>(EMPTY);
+  const localities = useMemo(() => getLocalities(draft.citySlug), [draft.citySlug]);
+  const selectedLocality = useMemo(() => localities.find((locality) => locality.slug === draft.localitySlug), [localities, draft.localitySlug]);
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -51,6 +55,7 @@ export default function ListingSubmission() {
   const completion = useMemo(() => {
     const checks = [
       { label: "Title", complete: draft.title.trim().length >= 8 },
+      { label: "Location", complete: Boolean(draft.citySlug && draft.localitySlug && /^[1-9][0-9]{5}$/.test(draft.postalCode)) },
       { label: "Price", complete: Number.isFinite(draft.priceInr) && draft.priceInr > 0 },
       { label: "Area", complete: Number.isFinite(draft.areaSqft) && draft.areaSqft >= 150 },
       { label: "Availability", complete: draft.availability.trim().length >= 3 },
@@ -62,6 +67,14 @@ export default function ListingSubmission() {
   }, [draft]);
 
   const set = (key: keyof ListingDraftInput, value: string | number | boolean) => setDraft((current) => ({ ...current, [key]: value }));
+  const changeCity = (citySlug: string) => {
+    const locality = getLocalities(citySlug)[0];
+    setDraft((current) => ({ ...current, citySlug, localitySlug: locality?.slug ?? "", postalCode: locality?.pincodes[0] ?? "" }));
+  };
+  const changeLocality = (localitySlug: string) => {
+    const locality = getLocalities(draft.citySlug).find((candidate) => candidate.slug === localitySlug);
+    setDraft((current) => ({ ...current, localitySlug, postalCode: locality?.pincodes[0] ?? "" }));
+  };
   const setDetail = (key: keyof NonNullable<ListingDraftInput["details"]>, value: string | number | string[] | undefined) => setDraft((current) => ({ ...current, details: { ...(current.details ?? {}), [key]: value } }));
   const toggleAmenity = (amenity: string) => setDraft((current) => {
     const amenities = current.details?.amenities ?? [];
@@ -195,6 +208,8 @@ export default function ListingSubmission() {
   const validate = () => {
     const next: string[] = [];
     if (draft.title.trim().length < 8) next.push("Title must be at least 8 characters.");
+    if (!draft.citySlug || !selectedLocality) next.push("Choose a locality inside a supported city.");
+    if (!/^[1-9][0-9]{5}$/.test(draft.postalCode) || !selectedLocality?.pincodes.includes(draft.postalCode)) next.push("Choose a six-digit PIN linked to the selected locality.");
     if (!Number.isFinite(draft.priceInr) || draft.priceInr <= 0) next.push("Price must be a positive INR value.");
     if (!Number.isFinite(draft.areaSqft) || draft.areaSqft < 150) next.push("Area must be at least 150 sq ft.");
     if (draft.availability.trim().length < 3) next.push("Availability/status is required.");
@@ -214,7 +229,7 @@ export default function ListingSubmission() {
     <div className="page-transition listing-dossier bg-paper pt-[78px] text-ink">
       <section className="listing-dossier-hero border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><p className="kicker text-brick">Listing draft · moderation required</p><span className="stamp text-ink/45">SOURCE PACKET / 01 · AHMEDABAD</span></div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><p className="kicker text-brick">Listing draft · moderation required</p><span className="stamp text-ink/45">SOURCE PACKET / 01 · INDIA LOCATION-SCOPED</span></div>
           <h1 className="display mt-6 max-w-[760px] text-[clamp(40px,6vw,78px)]">Submit a home with the <em className="text-brick">source trail</em> attached.</h1>
           <p className="mt-6 max-w-[560px] text-base leading-8 text-ink/65">Capture the fields enforced by the listing contract, create a private draft, then submit the evidence packet for moderation.</p>
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-ink/12 pt-4 stamp text-ink/50"><span>01 / capture</span><span>02 / verify</span><span>03 / review</span><span>04 / publish</span></div>
@@ -257,12 +272,25 @@ export default function ListingSubmission() {
                   {PROPERTY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </Field>
-              <Field label="RERA number">
-                <input value={draft.reraNumber ?? ""} onChange={(e) => set("reraNumber", e.target.value)} className={inputCls} placeholder="GJ/RERA/AHM/2026/04821" />
+              <Field label="RERA registration number">
+                <input value={draft.reraNumber ?? ""} onChange={(e) => set("reraNumber", e.target.value)} className={inputCls} placeholder="Applicable state/UT authority number" />
+              </Field>
+              <Field label="City" required>
+                <select value={draft.citySlug} onChange={(e) => changeCity(e.target.value)} className={inputCls}>
+                  <option value="" disabled>Choose a city</option>
+                  {cities.map((city) => <option key={city.slug} value={city.slug}>{city.name}, {city.state}</option>)}
+                </select>
               </Field>
               <Field label="Locality" required>
-                <select value={draft.localitySlug} onChange={(e) => set("localitySlug", e.target.value)} className={inputCls}>
-                  {localities.map((locality) => <option key={locality.slug} value={locality.slug}>{locality.name}</option>)}
+                <select disabled={!draft.citySlug} value={draft.localitySlug} onChange={(e) => changeLocality(e.target.value)} className={inputCls}>
+                  <option value="" disabled>Choose a locality</option>
+                  {localities.map((locality) => <option key={`${locality.citySlug}:${locality.slug}`} value={locality.slug}>{locality.name}</option>)}
+                </select>
+              </Field>
+              <Field label="PIN code" required>
+                <select disabled={!selectedLocality} value={draft.postalCode} onChange={(e) => set("postalCode", e.target.value)} className={inputCls}>
+                  <option value="" disabled>Choose a PIN</option>
+                  {(selectedLocality?.pincodes ?? []).map((postalCode) => <option key={postalCode} value={postalCode}>{postalCode}</option>)}
                 </select>
               </Field>
             </div>
@@ -338,11 +366,11 @@ export default function ListingSubmission() {
           <p className="mt-2 text-sm leading-6 text-ink/60">A moderator should be able to understand what is claimed, where it belongs, and whether publication rights are clear.</p>
           <ul role="list" className="mt-5 space-y-3 border-t border-ink/12 pt-5 text-sm text-ink/65">
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Media rights confirmed</li>
-            <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Locality selected</li>
+            <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> City, locality, and PIN agree</li>
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Price and area supplied</li>
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Description has source context</li>
           </ul>
-          <div className="mt-7 border-t border-ink/12 pt-4 stamp text-ink/45">LOCALITY · PRICE · MEDIA RIGHTS · RERA</div>
+          <div className="mt-7 border-t border-ink/12 pt-4 stamp text-ink/45">CITY · LOCALITY · PIN · PRICE · MEDIA RIGHTS · RERA</div>
           <Link href="/admin/moderation/listings" className="mt-7 inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">View moderation queue <ArrowUpRight size={14} /></Link>
         </aside>
       </section>

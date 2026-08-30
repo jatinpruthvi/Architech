@@ -1,9 +1,9 @@
 /* Ownership cost estimator (P1-COST-001).
-   Pure, server-safe calculator that turns a property price into the real monthly
-   and one-time costs of buying in India: monthly EMI (reducing balance),
-   stamp duty, and registration. Like the investment/metrics module it is an
-   *educational calculator*, never a lender quote or legal advice, and every
-   output depends on the assumptions the caller supplies. */
+
+   EMI is nationally reusable. Stamp duty and registration are not: they depend
+   on the state/UT, instrument, consideration/market value, buyer attributes,
+   concessions, caps, and effective date. Unknown jurisdictions therefore
+   produce unavailable statutory fields — never another state's fallback. */
 
 export type OwnershipAssumptions = {
   /** Property price in INR. */
@@ -14,17 +14,26 @@ export type OwnershipAssumptions = {
   tenorYears?: number;
   /** Annual interest rate (%). */
   annualRatePct?: number;
-  /** Down payment in INR (defaults to 20% LTV). */
+  /** Down payment in INR (defaults to the price less loan). */
   downPaymentInr?: number;
-  /** State the property is in, used to resolve stamp duty and registration
-      from `TRANSFER_CHARGES`. Falls back to `DEFAULT_TRANSFER_CHARGES` with
-      its scope note attached when the state has no recorded rate. */
+  /** State/UT containing the property. Required to select a configured rule. */
   state?: string;
-  /** Stamp duty rate as a fraction (e.g. 0.05 = 5%). Overrides the registry —
-      for a calculator that lets the reader adjust the assumption. */
+  /** Reader-supplied stamp rate as a fraction. Must be supplied together with
+      `registrationRate`; these values are labelled as user assumptions. */
   stampDutyRate?: number;
-  /** Registration fee fraction (default 0.01). Overrides the registry. */
+  /** Reader-supplied registration rate as a fraction. */
   registrationRate?: number;
+};
+
+export type TransferCharges = {
+  state: string;
+  stampDutyRate: number;
+  registrationRate: number;
+  basis: "configured-state-baseline" | "user-assumption";
+  /** Human-readable limitations that must be shown beside the figures. */
+  note: string;
+  sourceUrl: string | null;
+  reviewedAt: string | null;
 };
 
 export type OwnershipCost = {
@@ -33,82 +42,45 @@ export type OwnershipCost = {
   downPaymentInr: number;
   tenorYears: number;
   annualRatePct: number;
-  /** Reducing-balance monthly EMI. */
   monthlyEmiInr: number;
-  /** Total interest paid over the loan term. */
   totalInterestInr: number;
-  /** Total repaid (principal + interest). */
   totalRepaymentInr: number;
-  /** One-time stamp duty. */
-  stampDutyInr: number;
-  /** One-time registration fee. */
-  registrationInr: number;
-  /** One-time purchase costs (stamp + registration). */
-  oneTimeCostsInr: number;
-  /** Total one-time cash required (down payment + stamp + registration). */
-  cashRequiredInr: number;
-  /** Which state's transfer charges produced the stamp duty and registration
-      figures, and the scope note that must travel with them. Carried on the
-      result so a caller cannot show the number without its caveat. */
-  charges: TransferCharges;
+  /** Null means Architech has no applicable reviewed/configured state rule. */
+  stampDutyInr: number | null;
+  registrationInr: number | null;
+  oneTimeCostsInr: number | null;
+  /** Null when mandatory transfer charges are unavailable; down payment alone
+      must not be presented as total cash required. */
+  cashRequiredInr: number | null;
+  charges: TransferCharges | null;
+  statutoryStatus: "available" | "unavailable";
 };
 
 export const DEFAULT_LOAN_RATIO = 0.8;
 
-/* One documented home for the statutory transfer rates.
-
-   These were written twice: as `DEFAULT_STAMP_DUTY` / `DEFAULT_REGISTRATION`
-   here, and as a `RATES` literal in `app/api/cost/ownership/route.ts`. Two
-   copies of a state rate is a drift waiting to happen — the API could quote a
-   buyer a different stamp duty than the page shows for the same house. Neither
-   copy said which state it described, though the route's comment claimed
-   Gujarat.
-
-   The registry holds only a region Architech has actually recorded. It is
-   deliberately not filled in for the other eleven cities: stamp duty is set by
-   each state, and a plausible-looking guess is a statutory number quoted to
-   someone about to spend a crore of rupees. An unrecorded rate falls back to
-   this one with the `note` attached, so the page says which state the figure
-   belongs to instead of implying it is universal.
-
-   Contestant B §3 wants content built around "how to calculate stamp duty in
-   [neighbourhood]". That content is only safe to write once this registry is
-   the single source of truth — otherwise each article invents its own rate. */
-export type TransferCharges = {
-  /** State whose rates these are. */
-  state: string;
-  /** Stamp duty as a fraction of the transaction value (0.05 = 5%). */
-  stampDutyRate: number;
-  /** Registration fee as a fraction of the transaction value. */
-  registrationRate: number;
-  /** Plain-English scope note, surfaced wherever the number is shown. */
-  note: string;
-};
-
+/* This registry is intentionally sparse. Adding a state requires product/legal
+   review of the official source and its conditions; copying a headline rate
+   from an article is not sufficient. Gujarat remains an explicitly scoped,
+   illustrative configured baseline for the existing demo and is never used for
+   another state. The linked GARVI service is the final transaction-time source. */
 export const TRANSFER_CHARGES: readonly TransferCharges[] = [
   {
     state: "Gujarat",
     stampDutyRate: 0.05,
     registrationRate: 0.01,
-    note: "Gujarat rates applied. Stamp duty and registration are set by each state — confirm the current rate for your state before relying on this figure.",
+    basis: "configured-state-baseline",
+    note: "Gujarat illustrative baseline only (5% stamp duty + 1% registration). Deed type, official market value, buyer eligibility, concessions and caps can change the amount; verify in GARVI before relying on it.",
+    sourceUrl: "https://garvi.gujarat.gov.in/",
+    reviewedAt: "2026-08-30",
   },
 ];
 
-/** The rates used when a city's state has no entry of its own. */
-export const DEFAULT_TRANSFER_CHARGES: TransferCharges = TRANSFER_CHARGES[0];
-
-/** Recorded transfer charges for a state, or null when none is recorded.
-
-    Null rather than a guess: the caller decides whether to fall back to
-    `DEFAULT_TRANSFER_CHARGES` and disclose it, or to withhold the figure. */
+/** Configured transfer charges for one explicit state/UT, or null. */
 export function transferChargesFor(state?: string | null): TransferCharges | null {
   if (!state) return null;
-  const needle = state.trim().toLowerCase();
-  return TRANSFER_CHARGES.find((charges) => charges.state.toLowerCase() === needle) ?? null;
+  const needle = state.trim().toLocaleLowerCase("en-IN");
+  return TRANSFER_CHARGES.find((charges) => charges.state.toLocaleLowerCase("en-IN") === needle) ?? null;
 }
-
-export const DEFAULT_STAMP_DUTY = DEFAULT_TRANSFER_CHARGES.stampDutyRate;
-export const DEFAULT_REGISTRATION = DEFAULT_TRANSFER_CHARGES.registrationRate;
 
 function round(value: number): number {
   return Math.round(value);
@@ -124,9 +96,7 @@ export function monthlyEmi(principalInr: number, tenorYears: number, annualRateP
   return (principalInr * r * factor) / (factor - 1);
 }
 
-/** Errors that make the estimate meaningless rather than merely unusual.
-    Returns [] for a callable set of assumptions; the API surfaces these as a
-    400 instead of forwarding NaN into a response. */
+/** Errors that make the estimate meaningless rather than merely unusual. */
 export function validateOwnershipAssumptions(input: Partial<OwnershipAssumptions>): string[] {
   const errors: string[] = [];
   const price = input.priceInr;
@@ -140,32 +110,42 @@ export function validateOwnershipAssumptions(input: Partial<OwnershipAssumptions
   if (input.annualRatePct !== undefined && (!Number.isFinite(input.annualRatePct) || input.annualRatePct < 0 || input.annualRatePct >= 100)) errors.push("Annual interest rate must be between 0 and 100.");
   if (input.stampDutyRate !== undefined && (!Number.isFinite(input.stampDutyRate) || input.stampDutyRate < 0 || input.stampDutyRate > 1)) errors.push("Stamp duty rate must be a fraction between 0 and 1.");
   if (input.registrationRate !== undefined && (!Number.isFinite(input.registrationRate) || input.registrationRate < 0 || input.registrationRate > 1)) errors.push("Registration rate must be a fraction between 0 and 1.");
+  if ((input.stampDutyRate === undefined) !== (input.registrationRate === undefined)) errors.push("Supply both stamp duty and registration rates together.");
   return errors;
+}
+
+function resolveCharges(input: OwnershipAssumptions): TransferCharges | null {
+  if (input.stampDutyRate !== undefined && input.registrationRate !== undefined) {
+    return {
+      state: input.state?.trim() || "User-supplied jurisdiction",
+      stampDutyRate: input.stampDutyRate,
+      registrationRate: input.registrationRate,
+      basis: "user-assumption",
+      note: "Rates supplied by the reader. Architech has not verified these statutory assumptions; confirm them with the applicable registration authority.",
+      sourceUrl: null,
+      reviewedAt: null,
+    };
+  }
+  return transferChargesFor(input.state);
 }
 
 export function calculateOwnershipCost(input: OwnershipAssumptions): OwnershipCost {
   const priceInr = Number.isFinite(input.priceInr) ? Math.max(0, input.priceInr) : 0;
-  /* `loanInr` presence is checked by value, not truthiness: an explicit
-     zero-loan (fully cash purchase) must not be silently replaced by the
-     80% LTV default — that is how EMI=0 and downPayment=20% coexisted. */
   const hasExplicitLoan = input.loanInr !== undefined && Number.isFinite(input.loanInr) && input.loanInr >= 0;
   const hasExplicitDownPayment = input.downPaymentInr !== undefined && Number.isFinite(input.downPaymentInr) && input.downPaymentInr >= 0;
-  const loanRatio = hasExplicitLoan && priceInr > 0 ? input.loanInr! / priceInr : DEFAULT_LOAN_RATIO;
-  const loanInr = hasExplicitLoan ? input.loanInr! : Math.round(priceInr * loanRatio);
+  const loanInr = hasExplicitLoan ? input.loanInr! : Math.round(priceInr * DEFAULT_LOAN_RATIO);
   const downPaymentInr = hasExplicitDownPayment ? input.downPaymentInr! : Math.max(0, priceInr - loanInr);
   const tenorYears = Number.isFinite(input.tenorYears) && input.tenorYears! > 0 ? input.tenorYears! : 20;
   const annualRatePct = Number.isFinite(input.annualRatePct) && input.annualRatePct! >= 0 && input.annualRatePct! < 100 ? input.annualRatePct! : 8.5;
-  const charges = transferChargesFor(input.state) ?? DEFAULT_TRANSFER_CHARGES;
-  const stampDutyRate = input.stampDutyRate !== undefined && Number.isFinite(input.stampDutyRate) && input.stampDutyRate >= 0 && input.stampDutyRate <= 1 ? input.stampDutyRate : charges.stampDutyRate;
-  const registrationRate = input.registrationRate !== undefined && Number.isFinite(input.registrationRate) && input.registrationRate >= 0 && input.registrationRate <= 1 ? input.registrationRate : charges.registrationRate;
+  const charges = resolveCharges(input);
 
   const emi = monthlyEmi(loanInr, tenorYears, annualRatePct);
   const totalRepaymentInr = emi > 0 ? emi * tenorYears * 12 : 0;
   const totalInterestInr = Math.max(0, totalRepaymentInr - loanInr);
-  const stampDutyInr = round(priceInr * stampDutyRate);
-  const registrationInr = round(priceInr * registrationRate);
-  const oneTimeCostsInr = stampDutyInr + registrationInr;
-  const cashRequiredInr = downPaymentInr + oneTimeCostsInr;
+  const stampDutyInr = charges ? round(priceInr * charges.stampDutyRate) : null;
+  const registrationInr = charges ? round(priceInr * charges.registrationRate) : null;
+  const oneTimeCostsInr = stampDutyInr === null || registrationInr === null ? null : stampDutyInr + registrationInr;
+  const cashRequiredInr = oneTimeCostsInr === null ? null : downPaymentInr + oneTimeCostsInr;
 
   return {
     priceInr,
@@ -181,6 +161,7 @@ export function calculateOwnershipCost(input: OwnershipAssumptions): OwnershipCo
     oneTimeCostsInr,
     cashRequiredInr,
     charges,
+    statutoryStatus: charges ? "available" : "unavailable",
   };
 }
 

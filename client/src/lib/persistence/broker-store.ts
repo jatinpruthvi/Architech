@@ -9,7 +9,7 @@ import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from
 import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
-import { getListings, DEFAULT_CITY_SLUG, getLocalityBySlug } from "@/lib/repositories";
+import { getListings } from "@/lib/repositories";
 
 type BrokerPrismaClient = ReturnType<typeof getPrismaClient> & {
   listing: {
@@ -32,19 +32,16 @@ const LIFECYCLE_BY_DECISION: Record<ModerationDecision, "ACTIVE" | "CHANGES_REQU
 };
 
 async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
-  const locality = (await db.locality.findFirst({ where: { slug: draft.localitySlug } })) as { id: string; cityId?: string } | null;
-  // The city comes from the draft's locality, so a broker in any covered city
-  // persists against the right city row instead of a hardcoded one.
-  const citySlug = getLocalityBySlug(draft.localitySlug)?.citySlug ?? DEFAULT_CITY_SLUG;
-  const city = (await db.city.findFirst({ where: { slug: citySlug } })) as { id: string } | null;
-  /* Never silently drop persistence. If the DB does not know the locality or
-     city, the API must say so — an in-memory draft that reports success while
-     the database holds nothing is how moderation/search lose inventory. */
-  if (!locality) {
-    throw new Error(`Locality "${draft.localitySlug}" is not in the database; run the seed before persisting broker drafts.`);
-  }
+  const city = (await db.city.findFirst({ where: { slug: draft.citySlug } })) as { id: string } | null;
+  /* Never silently drop persistence. If the DB does not know the city/locality,
+     the API must say so — and locality lookup is scoped by city to prevent a
+     same-named place in another market from being attached. */
   if (!city) {
-    throw new Error(`City "${citySlug}" is not in the database; run the seed before persisting broker drafts.`);
+    throw new Error(`City "${draft.citySlug}" is not in the database; run the location seed/import before persisting broker drafts.`);
+  }
+  const locality = (await db.locality.findFirst({ where: { slug: draft.localitySlug, cityId: city.id } })) as { id: string } | null;
+  if (!locality) {
+    throw new Error(`Locality "${draft.localitySlug}" is not in city "${draft.citySlug}"; run the location seed/import before persisting broker drafts.`);
   }
   await db.listing.upsert({
     where: { stableId: draft.stableId },
@@ -58,6 +55,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       availability: draft.availability,
       description: draft.description,
       sourceSummary: JSON.stringify(draft.details ?? {}),
+      postalCode: draft.postalCode,
       cityId: city.id,
       localityId: locality.id,
     },
@@ -77,6 +75,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       availability: draft.availability,
       brokerOrgId: draft.organizationId,
       sourceSummary: JSON.stringify(draft.details ?? {}),
+      postalCode: draft.postalCode,
       cityId: city.id,
       localityId: locality.id,
     },
@@ -151,7 +150,7 @@ export async function archiveListingDraftForServer(draftId: string, session: Aut
     stableId: result.draft.stableId,
     draftId,
     localitySlug: result.draft.localitySlug,
-    citySlug: getLocalityBySlug(result.draft.localitySlug)?.citySlug,
+    citySlug: result.draft.citySlug,
     previousLifecycle: before?.status ?? null,
     nextLifecycle: result.draft.status,
     meta: { actor: session?.user.email ?? "unknown", cause: "listing.draft.archived" },
@@ -181,7 +180,7 @@ export async function deleteListingDraftForServer(draftId: string, session: Auth
       stableId: before.stableId,
       draftId,
       localitySlug: before.localitySlug,
-      citySlug: getLocalityBySlug(before.localitySlug)?.citySlug,
+      citySlug: before.citySlug,
       previousLifecycle: before.status,
       nextLifecycle: "REMOVED",
       meta: { actor: session?.user.email ?? "unknown", cause: "listing.draft.deleted" },
@@ -349,7 +348,7 @@ export async function moderateListingForServer(draftId: string, decision: Modera
       stableId: gate.draft.stableId,
       draftId,
       localitySlug: gate.draft.localitySlug,
-      citySlug: getLocalityBySlug(gate.draft.localitySlug)?.citySlug,
+      citySlug: gate.draft.citySlug,
       previousLifecycle,
       nextLifecycle: null,
       meta: { reason, blockers: gate.decision.blockers, warnings: gate.decision.warnings, actor: session?.user.email ?? "unknown" },
@@ -408,7 +407,7 @@ export async function moderateListingForServer(draftId: string, decision: Modera
     stableId: result.draft.stableId,
     draftId,
     localitySlug: result.draft.localitySlug,
-    citySlug: getLocalityBySlug(result.draft.localitySlug)?.citySlug,
+    citySlug: result.draft.citySlug,
     previousLifecycle,
     nextLifecycle: canonicalized ? "DUPLICATE" : LIFECYCLE_BY_DECISION[decision],
     meta: { reason, actor: session?.user.email ?? "unknown", canonicalToListingId: canonicalToListingId ?? null },
@@ -420,7 +419,10 @@ export async function moderateListingForServer(draftId: string, decision: Modera
 export async function getModerationQueueForServer() {
   if (!isPrismaPersistence()) return getModerationQueue();
   const db = prisma();
-  const rows = (await db.listing.findMany({ where: { lifecycle: "IN_REVIEW" } })) as Array<Record<string, unknown>>;
+  const rows = (await db.listing.findMany({
+    where: { lifecycle: "IN_REVIEW" },
+    include: { city: { select: { slug: true } }, locality: { select: { slug: true } } },
+  })) as Array<Record<string, unknown>>;
   return rows.map((row) => contractFromRow(row));
 }
 
@@ -431,6 +433,7 @@ export async function listBrokerDraftsForServer(organizationId: string): Promise
   const rows = (await db.listing.findMany({
     where: { brokerOrgId: organizationId },
     orderBy: { updatedAt: "desc" },
+    include: { city: { select: { slug: true } }, locality: { select: { slug: true } } },
   })) as Array<Record<string, unknown>>;
   return rows.map((row) => contractFromRow(row));
 }
@@ -470,11 +473,15 @@ function isoOrNow(value: unknown): string {
 }
 
 function contractFromRow(row: Record<string, unknown>): ListingDraft {
+  const city = typeof row.city === "object" && row.city !== null ? row.city as Record<string, unknown> : {};
+  const locality = typeof row.locality === "object" && row.locality !== null ? row.locality as Record<string, unknown> : {};
   return {
     id: String(row.id ?? ""),
     stableId: String(row.stableId ?? ""),
     title: String(row.title ?? ""),
-    localitySlug: String(row.localitySlug ?? ""),
+    citySlug: String(city.slug ?? ""),
+    localitySlug: String(locality.slug ?? row.localitySlug ?? ""),
+    postalCode: String(row.postalCode ?? ""),
     priceInr: Number(row.priceInr ?? 0),
     bhk: Number(row.bhk ?? 0),
     areaSqft: Number(row.areaSqft ?? 0),

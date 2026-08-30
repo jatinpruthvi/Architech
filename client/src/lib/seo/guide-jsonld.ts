@@ -40,7 +40,7 @@ export function guideArticleUrl(guide: Guide): string {
 export function guideBreadcrumb(guide: Guide): BreadcrumbItem[] {
   const trail: BreadcrumbItem[] = [{ name: "Home", item: homeUrl() }];
   trail.push({ name: "Field notes", item: guideUrl() });
-  if (guide.localitySlug) {
+  if (guide.localitySlug && guide.citySlug) {
     trail.push({ name: `Buy in ${guide.citySlug}`, item: cityUrl(guide.citySlug) });
     trail.push({ name: guide.localitySlug, item: localityUrl(guide.citySlug, guide.localitySlug) });
   }

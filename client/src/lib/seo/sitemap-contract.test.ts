@@ -49,12 +49,14 @@ describe("sitemap publication contracts", () => {
   });
 
   it("omits lastmod for standing pages that carry no datable entity", () => {
-    // Home, the national hub, requirements, tools, about and contact have no
-    // per-entity change date, so they must ship undated rather than borrow one.
-    const pagesXml = buildSegmentSitemap("pages");
-    expect(pagesXml).toContain("<urlset");
-    expect(pagesXml).toContain("<loc>");
-    expect(pagesXml).not.toContain("<lastmod>");
+    // A pages sitemap may also contain a sourced dataset hub with a real
+    // snapshot date. Check the undated standing pages themselves rather than
+    // assuming no page in the whole segment can ever own a date.
+    const pages = getSegmentPages("pages");
+    for (const id of ["home", "hub:buy:india", "page:requirements", "page:about", "page:contact"]) {
+      expect(pages.find((page) => page.id === id)?.lastModified).toBeUndefined();
+    }
+    expect(pages.find((page) => page.id === "hub:locations:india")?.lastModified).toBe("2026-08-30");
   });
 
   it("dates listing, locality, city, and guide sitemaps from their own records", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DemoReraProvider, GujaratReraProvider } from "./provider";
+import { DemoReraProvider, GujaratReraProvider, UnsupportedReraProvider } from "./provider";
 import { getReraSourceMode, validateGujaratReraEnvironment } from "./source";
 
 describe("RERA provider adapters", () => {
@@ -17,6 +17,16 @@ describe("RERA provider adapters", () => {
   it("validates Gujarat provider environment", () => {
     expect(validateGujaratReraEnvironment({ GUJARAT_RERA_BASE_URL: "https://gujrera.gujarat.gov.in", GUJARAT_RERA_API_KEY: "key" }).ok).toBe(true);
     expect(validateGujaratReraEnvironment({}).missing).toContain("GUJARAT_RERA_API_KEY");
+  });
+
+  it("withholds verification for a state without an approved adapter", async () => {
+    const result = await new UnsupportedReraProvider({ stateSlug: "karnataka", stateName: "Karnataka", authorityName: "Karnataka RERA", publicRegistryUrl: null }).verify("PRM/KA/RERA/1234");
+    expect(result.ok).toBe(false);
+    expect(result.provider).toBe("unsupported-rera-jurisdiction");
+    if (!result.ok) {
+      expect(result.status).toBe(501);
+      expect(result.errors.join(" ")).toContain("No verification badge");
+    }
   });
 
   it("returns configured placeholder from Gujarat provider", async () => {

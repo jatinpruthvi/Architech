@@ -1,8 +1,9 @@
 "use client";
-/* Amdavad Modern marketplace directory: category-led discovery without third-party claims. */
+/* India-wide marketplace directory: category-led discovery without third-party claims. */
 import Link from "next/link";
 import { ArrowUpRight, Banknote, Building2, Home, MapPinned, Newspaper, Sprout } from "lucide-react";
 import RequirementCapture from "@/components/architech/RequirementCapture";
+import { getCities, getListingsByCity, getLocalities } from "@/lib/repositories";
 
 const categories = [
   { key: "residential", label: "Homes", icon: Home },
@@ -13,19 +14,25 @@ const categories = [
   { key: "auction", label: "Bank auctions", icon: Banknote },
 ] as const;
 
-const projects = [
-  { name: "Paldi Courtyard", developer: "Architech Curated Homes", locality: "Paldi", href: "/listing/garden-courtyard/", label: "Featured home" },
-  { name: "Prahlad Light House", developer: "Nivasa Partners", locality: "Prahlad Nagar", href: "/listing/light-filled-home/", label: "Partner verified" },
-  { name: "Thaltej Dusk House", developer: "Architech Curated Homes", locality: "Thaltej", href: "/listing/thaltej-dusk-house/", label: "RERA context" },
-];
+const showcaseCities = ["mumbai", "bengaluru", "ahmedabad"];
+const projects = showcaseCities.flatMap((citySlug) => getListingsByCity(citySlug).slice(0, 1)).map((listing) => ({
+  name: listing.project,
+  developer: listing.developer,
+  locality: `${listing.locality}, ${listing.city}`,
+  href: `/listing/${listing.id}/`,
+  label: listing.badge,
+}));
 
 const developers = [
-  ["Architech Curated Homes", "3 curated homes"],
-  ["Nivasa Partners", "1 verified partner"],
-  ["Ahmedabad local builders", "Evidence-led directory"],
+  ["India builder index", "City-scoped evidence"],
+  ["Verified partner directory", "Review status in view"],
+  ["Project document register", "Applicable RERA context"],
 ] as const;
 
-const localityLinks = ["Paldi", "Navrangpura", "Prahlad Nagar", "Thaltej", "Bopal", "Satellite", "Vastrapur", "Maninagar", "Ambawadi", "Sindhu Bhavan"];
+const localityLinks = getCities().flatMap((city) => {
+  const locality = getLocalities(city.slug)[0];
+  return locality ? [{ ...locality, city }] : [];
+});
 
 export default function MarketDirectory() {
   return (
@@ -33,7 +40,7 @@ export default function MarketDirectory() {
       <div className="container">
         <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
           <div>
-            <p className="kicker text-brick">The Ahmedabad market, arranged</p>
+            <p className="kicker text-brick">Indian city markets, arranged</p>
             <h2 id="market-directory-title" className="display mt-4 max-w-[760px] text-[clamp(34px,5vw,68px)]">Find a place by <em className="text-brick">what it is.</em></h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-ink/65">The category, locality, project, and source trail stay visible together. Start broad, then follow the address until it makes sense.</p>
           </div>
@@ -74,8 +81,8 @@ export default function MarketDirectory() {
         </div>
 
         <div className="mt-16 grid gap-8 border-t border-ink/15 pt-8 lg:grid-cols-[1fr_auto] lg:items-start">
-          <div><p className="kicker text-brick">Locality search index</p><div className="mt-4 flex max-w-3xl flex-wrap gap-x-5 gap-y-3">{localityLinks.map((locality) => <Link key={locality} href={`/search/?q=${encodeURIComponent(locality)}`} className="link-rail font-display text-xl tracking-[-0.02em] text-ink/75 hover:text-brick">{locality}</Link>)}</div></div>
-          <div className="flex flex-col items-start gap-3 lg:items-end"><Link href="/investment/" className="inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick"><Newspaper size={14} /> Ahmedabad investment lens <ArrowUpRight size={13} /></Link><Link href="/guide/" className="inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-ink/65 hover:text-brick">Buying guides and field notes <ArrowUpRight size={13} /></Link></div>
+          <div><p className="kicker text-brick">Locality search index</p><div className="mt-4 flex max-w-3xl flex-wrap gap-x-5 gap-y-3">{localityLinks.map(({ city, ...locality }) => <Link key={`${city.slug}:${locality.slug}`} href={`/search/?city=${city.slug}&q=${encodeURIComponent(locality.name)}`} className="link-rail font-display text-xl tracking-[-0.02em] text-ink/75 hover:text-brick">{locality.name} <span className="text-sm ink-3">· {city.name}</span></Link>)}</div></div>
+          <div className="flex flex-col items-start gap-3 lg:items-end"><Link href="/investment/" className="inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick"><Newspaper size={14} /> India investment lens <ArrowUpRight size={13} /></Link><Link href="/guide/" className="inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-ink/65 hover:text-brick">Buying guides and field notes <ArrowUpRight size={13} /></Link></div>
         </div>
 
         <div className="mt-12 flex flex-col gap-5 border border-brick/30 bg-paper p-6 md:flex-row md:items-center md:justify-between md:p-8"><div><p className="kicker text-brick">Personal property brief</p><p className="mt-2 max-w-xl font-display text-2xl tracking-[-0.02em]">Tell us the locality, category, and life you are trying to fit.</p></div><RequirementCapture /></div>

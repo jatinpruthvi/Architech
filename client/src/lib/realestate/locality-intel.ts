@@ -107,10 +107,10 @@ function cityPsf(citySlug: string): number | null {
 }
 
 /** Provenance-labeled market facts for a locality (buy-focused). */
-export function localityIntel(slug: string): LocalityIntel {
-  const locality = getLocalityBySlug(slug);
+export function localityIntel(slug: string, citySlug?: string): LocalityIntel {
+  const locality = getLocalityBySlug(slug, citySlug);
   const name = locality?.name ?? slug;
-  const all = getListingsByLocality(slug);
+  const all = getListingsByLocality(slug, citySlug);
   const buy = all.map(toBuyListing).filter((l): l is Property => l !== null);
   const rent = all.filter((l) => (l.transaction ?? "buy") === "rent");
 

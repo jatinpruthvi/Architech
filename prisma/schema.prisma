@@ -70,23 +70,110 @@ enum LeadStatus {
   DELETED
 }
 
+enum LocationSourceStatus {
+  STAGING
+  ACTIVE
+  SUPERSEDED
+  WITHDRAWN
+}
+
+enum AdministrativeAreaType {
+  COUNTRY
+  STATE_OR_UT
+  DIVISION
+  DISTRICT
+  SUBDISTRICT
+  LOCAL_BODY
+  WARD
+  VILLAGE
+  OTHER
+}
+
+enum LocalityKind {
+  NEIGHBOURHOOD
+  SUBLOCALITY
+  SECTOR
+  LAYOUT
+  VILLAGE
+  BUSINESS_DISTRICT
+  CORRIDOR
+  OTHER
+}
+
+enum LocalityAliasType {
+  OFFICIAL
+  COMMON
+  HISTORIC
+  TRANSLITERATION
+  MISSPELLING
+  SEARCH
+}
+
+enum AdministrativeAreaRole {
+  CONTAINS
+  STATE
+  DISTRICT
+  LOCAL_BODY
+  WARD
+}
+
+enum PostalLinkType {
+  PRIMARY
+  SERVED_BY
+  INTERSECTS
+  MANUAL
+}
+
+enum GeocodePrecision {
+  EXACT
+  BUILDING
+  STREET
+  POST_OFFICE
+  POSTAL_AREA
+  LOCALITY
+  CITY
+  UNKNOWN
+}
+
+enum CoordinateVisibility {
+  PRIVATE_EXACT
+  STREET_APPROXIMATE
+  LOCALITY_APPROXIMATE
+  HIDDEN
+}
+
+enum LocationImportStatus {
+  RUNNING
+  SUCCEEDED
+  SUCCEEDED_WITH_REJECTIONS
+  FAILED
+  CANCELLED
+}
+
+enum LocationImportMode {
+  DRY_RUN
+  APPLY
+}
+
 model City {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  name      String
-  hindiName String?
-  state     String
-  country   String   @default("IN")
-  latitude  Decimal? @db.Decimal(9, 6)
-  longitude Decimal? @db.Decimal(9, 6)
-  // Three-digit India Post sorting districts covered by this city. Used to
-  // resolve a PIN to a city when no locality claims that exact PIN.
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  hindiName       String?
+  state           String
+  country         String   @default("IN")
+  latitude        Decimal? @db.Decimal(9, 6)
+  longitude       Decimal? @db.Decimal(9, 6)
+  // Transitional fixture/search metadata only. Prefixes must never resolve an
+  // arbitrary six-digit PIN; production lookup uses exact PostalCode records.
   pincodePrefixes String[] @default([])
 
-  localities    Locality[]
-  listings      Listing[]
-  organizations BrokerOrganization[]
-  savedSearches SavedSearch[]
+  localities          Locality[]
+  listings            Listing[]
+  organizations       BrokerOrganization[]
+  savedSearches       SavedSearch[]
+  administrativeAreas CityAdministrativeArea[]
+  requirements        Requirement[]            @relation("ResolvedRequirementCity")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,33 +182,297 @@ model City {
 }
 
 model Locality {
-  id        String   @id @default(cuid())
-  cityId    String
-  slug      String
-  name      String
-  hindiName String?
-  aliases   String[] @default([])
-  note      String
+  id              String       @id @default(cuid())
+  cityId          String
+  slug            String
+  stableKey       String?      @unique
+  name            String
+  hindiName       String?
+  kind            LocalityKind @default(NEIGHBOURHOOD)
+  note            String
+  sourceId        String?
+  sourceFeatureId String?
+  confidence      Decimal?     @db.Decimal(4, 3)
+  reviewedAt      DateTime?
+  retiredAt       DateTime?
 
-  latitude      Decimal? @db.Decimal(9, 6)
-  longitude     Decimal? @db.Decimal(9, 6)
+  latitude      Decimal?                                    @db.Decimal(9, 6)
+  longitude     Decimal?                                    @db.Decimal(9, 6)
+  centroid      Unsupported("geography(Point,4326)")?
+  boundary      Unsupported("geometry(MultiPolygon,4326)")?
   bbox          String?
   landmarks     Json?
-  demoHomeCount Int      @default(0)
-  // A locality can span several PINs and a PIN can span several localities,
-  // so PIN membership is a list here rather than a single column.
-  pincodes      String[] @default([])
+  demoHomeCount Int                                         @default(0)
+  // Transitional read compatibility during the fixture-to-database rollout.
+  // New writes use LocalityAlias and LocalityPostalCode rows.
+  aliases       String[]                                    @default([])
+  pincodes      String[]                                    @default([])
 
-  city          City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  listings      Listing[]
-  savedSearches SavedSearch[]
+  city                City                         @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  source              LocationSource?              @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  listings            Listing[]
+  savedSearches       SavedSearch[]
+  aliasRecords        LocalityAlias[]
+  postalCodes         LocalityPostalCode[]
+  postOffices         PostOffice[]
+  administrativeAreas LocalityAdministrativeArea[]
+  requirements        RequirementLocality[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([cityId, slug])
+  @@unique([sourceId, sourceFeatureId])
   @@index([name])
+  @@index([sourceId])
   @@index([pincodes], type: Gin)
+}
+
+model LocationSource {
+  id             String               @id @default(cuid())
+  key            String               @unique
+  name           String
+  publisher      String
+  sourceUrl      String
+  downloadUrl    String?
+  licenseName    String?
+  licenseUrl     String?
+  attribution    String?
+  version        String?
+  checksumSha256 String?
+  publishedAt    DateTime?
+  retrievedAt    DateTime
+  status         LocationSourceStatus @default(ACTIVE)
+  metadata       Json?
+
+  administrativeAreas       AdministrativeArea[]
+  cityAreaLinks             CityAdministrativeArea[]
+  localityAreaLinks         LocalityAdministrativeArea[]
+  localities                Locality[]
+  localityAliases           LocalityAlias[]
+  postalCodes               PostalCode[]
+  postOffices               PostOffice[]
+  localityPostalCodes       LocalityPostalCode[]
+  administrativePostalCodes AdministrativeAreaPostalCode[]
+  importRuns                LocationImportRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdministrativeArea {
+  id              String                                      @id @default(cuid())
+  type            AdministrativeAreaType
+  code            String?
+  name            String
+  nativeName      String?
+  slug            String?
+  subtype         String?
+  metadata        Json?
+  parentId        String?
+  sourceId        String?
+  sourceFeatureId String?
+  latitude        Decimal?                                    @db.Decimal(9, 6)
+  longitude       Decimal?                                    @db.Decimal(9, 6)
+  centroid        Unsupported("geography(Point,4326)")?
+  boundary        Unsupported("geometry(MultiPolygon,4326)")?
+  validFrom       DateTime?
+  validTo         DateTime?
+  isActive        Boolean                                     @default(true)
+
+  parent        AdministrativeArea?            @relation("AdministrativeHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children      AdministrativeArea[]           @relation("AdministrativeHierarchy")
+  source        LocationSource?                @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  cityLinks     CityAdministrativeArea[]
+  localityLinks LocalityAdministrativeArea[]
+  postalCodes   AdministrativeAreaPostalCode[]
+  postOffices   PostOffice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sourceId, type, code])
+  @@unique([sourceId, sourceFeatureId])
+  @@index([parentId, type])
+  @@index([name, type])
+}
+
+model CityAdministrativeArea {
+  cityId               String
+  administrativeAreaId String
+  role                 AdministrativeAreaRole
+  isPrimary            Boolean                @default(false)
+  sourceId             String?
+
+  city               City               @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  administrativeArea AdministrativeArea @relation(fields: [administrativeAreaId], references: [id], onDelete: Cascade)
+  source             LocationSource?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@id([cityId, administrativeAreaId, role])
+  @@index([administrativeAreaId, role])
+}
+
+model LocalityAdministrativeArea {
+  localityId           String
+  administrativeAreaId String
+  role                 AdministrativeAreaRole
+  isPrimary            Boolean                @default(false)
+  sourceId             String?
+
+  locality           Locality           @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  administrativeArea AdministrativeArea @relation(fields: [administrativeAreaId], references: [id], onDelete: Cascade)
+  source             LocationSource?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@id([localityId, administrativeAreaId, role])
+  @@index([administrativeAreaId, role])
+}
+
+model LocalityAlias {
+  id             String            @id @default(cuid())
+  localityId     String
+  name           String
+  normalizedName String
+  languageCode   String            @default("und") @db.VarChar(16)
+  scriptCode     String?           @db.VarChar(8)
+  type           LocalityAliasType @default(COMMON)
+  isPreferred    Boolean           @default(false)
+  sourceId       String?
+
+  locality Locality        @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  source   LocationSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([localityId, normalizedName, languageCode])
+  @@index([normalizedName])
+}
+
+model PostalCode {
+  code      String    @id @db.VarChar(6)
+  sourceId  String?
+  isActive  Boolean   @default(true)
+  validFrom DateTime?
+  validTo   DateTime?
+
+  source              LocationSource?                @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  postOffices         PostOffice[]
+  localityLinks       LocalityPostalCode[]
+  administrativeAreas AdministrativeAreaPostalCode[]
+  listings            Listing[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sourceId])
+}
+
+model PostOffice {
+  id                   String           @id @default(cuid())
+  postalCode           String           @db.VarChar(6)
+  name                 String
+  officeType           String?
+  deliveryStatus       String?
+  circleName           String?
+  regionName           String?
+  divisionName         String?
+  districtName         String?
+  stateName            String?
+  administrativeAreaId String?
+  localityId           String?
+  sourceId             String
+  sourceRecordId       String
+  latitude             Decimal?         @db.Decimal(9, 6)
+  longitude            Decimal?         @db.Decimal(9, 6)
+  coordinatePrecision  GeocodePrecision @default(UNKNOWN)
+  digipin              String?          @db.VarChar(10)
+  isActive             Boolean          @default(true)
+  validFrom            DateTime?
+  validTo              DateTime?
+  raw                  Json?
+
+  postalCodeRecord   PostalCode          @relation(fields: [postalCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  administrativeArea AdministrativeArea? @relation(fields: [administrativeAreaId], references: [id], onDelete: SetNull)
+  locality           Locality?           @relation(fields: [localityId], references: [id], onDelete: SetNull)
+  source             LocationSource      @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sourceId, sourceRecordId])
+  @@index([postalCode, name])
+  @@index([districtName, stateName])
+  @@index([localityId])
+}
+
+model LocalityPostalCode {
+  localityId String
+  postalCode String         @db.VarChar(6)
+  linkType   PostalLinkType @default(SERVED_BY)
+  isPrimary  Boolean        @default(false)
+  confidence Decimal?       @db.Decimal(4, 3)
+  sourceId   String?
+  evidence   Json?
+  validFrom  DateTime?
+  validTo    DateTime?
+
+  locality         Locality        @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  postalCodeRecord PostalCode      @relation(fields: [postalCode], references: [code], onDelete: Cascade, onUpdate: Cascade)
+  source           LocationSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([localityId, postalCode])
+  @@index([postalCode, isPrimary])
+}
+
+model AdministrativeAreaPostalCode {
+  administrativeAreaId String
+  postalCode           String    @db.VarChar(6)
+  sourceId             String
+  confidence           Decimal?  @db.Decimal(4, 3)
+  evidence             Json?
+  validFrom            DateTime?
+  validTo              DateTime?
+
+  administrativeArea AdministrativeArea @relation(fields: [administrativeAreaId], references: [id], onDelete: Cascade)
+  postalCodeRecord   PostalCode         @relation(fields: [postalCode], references: [code], onDelete: Cascade, onUpdate: Cascade)
+  source             LocationSource     @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([administrativeAreaId, postalCode, sourceId])
+  @@index([postalCode, validTo])
+  @@index([sourceId, validTo])
+}
+
+model LocationImportRun {
+  id                 String               @id @default(cuid())
+  sourceId           String
+  status             LocationImportStatus
+  mode               LocationImportMode
+  sourceUri          String
+  checksumSha256     String?
+  schemaVersion      String
+  startedAt          DateTime             @default(now())
+  completedAt        DateTime?
+  rowsRead           Int                  @default(0)
+  rowsAccepted       Int                  @default(0)
+  rowsRejected       Int                  @default(0)
+  rowsInserted       Int                  @default(0)
+  rowsUpdated        Int                  @default(0)
+  rejectionReportUri String?
+  errorSummary       String?
+  metadata           Json?
+
+  source LocationSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([sourceId, startedAt])
+  @@index([status, startedAt])
 }
 
 model BrokerOrganization {
@@ -149,10 +500,10 @@ model BrokerOrganization {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   name          String?
-  role          UserRole @default(BUYER)
+  role          UserRole  @default(BUYER)
   phoneMasked   String?
   emailVerified DateTime?
   lastLoginAt   DateTime?
@@ -187,8 +538,9 @@ model BrokerUser {
 
 model ReraRecord {
   id                 String             @id @default(cuid())
-  registrationNumber String             @unique
-  state              String             @default("Gujarat")
+  jurisdictionSlug   String
+  registrationNumber String
+  state              String
   promoterName       String?
   projectName        String?
   sourceUrl          String?
@@ -205,17 +557,19 @@ model ReraRecord {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([jurisdictionSlug, registrationNumber])
+  @@index([jurisdictionSlug, verificationStatus])
   @@index([state, verificationStatus])
 }
 
 model Listing {
-  id                String             @id @default(cuid())
-  stableId          String             @unique
-  slug              String             @unique
-  cityId            String
-  localityId        String
-  brokerOrgId       String?
-  reraRecordId      String?
+  id           String  @id @default(cuid())
+  stableId     String  @unique
+  slug         String  @unique
+  cityId       String
+  localityId   String
+  brokerOrgId  String?
+  reraRecordId String?
 
   title             String
   titleHi           String?
@@ -227,40 +581,50 @@ model Listing {
   translationStatus TranslationStatus  @default(ENGLISH_ONLY)
   propertyType      PropertyType       @default(APARTMENT)
 
-  priceInr       Int
-  priceLabel     String
-  pricePerSqft   String?
-  bhk            Int?
-  areaSqft       Int?
+  priceInr             Int
+  priceLabel           String
+  pricePerSqft         String?
+  bhk                  Int?
+  areaSqft             Int?
   // Persisted as an uppercase AvailabilityCode from the application vocabulary;
   // kept nullable String for backward-safe migration of legacy labels.
-  availability   String?
-  addressLocality String?
-  // India Post PIN for the listing address; feeds PostalAddress.postalCode.
-  postalCode      String?
-  latitude       Decimal? @db.Decimal(9, 6)
-  longitude      Decimal? @db.Decimal(9, 6)
+  availability         String?
+  addressLocality      String?
+  // Postal code is a delivery area, not locality identity. The relation allows
+  // consistency checks while localityId remains the canonical neighbourhood.
+  postalCode           String?              @db.VarChar(6)
+  digipin              String?              @db.VarChar(10)
+  latitude             Decimal?             @db.Decimal(9, 6)
+  longitude            Decimal?             @db.Decimal(9, 6)
+  publicLatitude       Decimal?             @db.Decimal(9, 6)
+  publicLongitude      Decimal?             @db.Decimal(9, 6)
+  locationPrecision    GeocodePrecision     @default(LOCALITY)
+  coordinateVisibility CoordinateVisibility @default(LOCALITY_APPROXIMATE)
+  locationVerifiedAt   DateTime?
 
-  sourceSummary      String?
-  meaningfulUpdatedAt DateTime @default(now())
-  publishedAt         DateTime?
-  expiresAt           DateTime?
+  sourceSummary        String?
+  meaningfulUpdatedAt  DateTime  @default(now())
+  publishedAt          DateTime?
+  expiresAt            DateTime?
   canonicalToListingId String?
 
-  /* Full-text search vector created by the raw migration
-     `202608240002_search_indexes` (generated column + GIN/trigram indexes).
-     Declared here so `prisma migrate dev` does not generate a DROP for it;
-     Prisma cannot express the generated-column expression, so the migration
-     owns it and `migrate diff` must keep the two in sync. */
+  /**
+   * Full-text search vector created by the raw migration
+   * `202608240002_search_indexes` (generated column + GIN/trigram indexes).
+   * Declared here so `prisma migrate dev` does not generate a DROP for it;
+   * Prisma cannot express the generated-column expression, so the migration
+   * owns it and `migrate diff` must keep the two in sync.
+   */
   searchVector Unsupported("tsvector")?
 
-  city         City                @relation(fields: [cityId], references: [id], onDelete: Restrict)
-  locality     Locality            @relation(fields: [localityId], references: [id], onDelete: Restrict)
-  brokerOrg    BrokerOrganization? @relation(fields: [brokerOrgId], references: [id], onDelete: SetNull)
-  reraRecord   ReraRecord?         @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
-  media        PropertyMedia[]
-  leads        Lead[]
-  audits       AuditEvent[]
+  city             City                @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  locality         Locality            @relation(fields: [localityId], references: [id], onDelete: Restrict)
+  postalCodeRecord PostalCode?         @relation(fields: [postalCode], references: [code], onDelete: SetNull, onUpdate: Cascade)
+  brokerOrg        BrokerOrganization? @relation(fields: [brokerOrgId], references: [id], onDelete: SetNull)
+  reraRecord       ReraRecord?         @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
+  media            PropertyMedia[]
+  leads            Lead[]
+  audits           AuditEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -316,8 +680,8 @@ model Lead {
   deletedAt      DateTime?
 
   listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
-  organization BrokerOrganization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user         User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   audits       AuditEvent[]
 
   createdAt DateTime @default(now())
@@ -328,20 +692,61 @@ model Lead {
   @@index([createdAt])
 }
 
+model Requirement {
+  id              String    @id @default(cuid())
+  cityId          String
+  intent          String
+  category        String
+  subtype         String
+  role            String
+  name            String
+  phoneCiphertext Bytes
+  phoneLast4      String    @db.VarChar(4)
+  consentText     String
+  consentedAt     DateTime  @default(now())
+  status          String    @default("NEW")
+  idempotencyKey  String?   @unique
+  retentionUntil  DateTime
+  deletedAt       DateTime?
+
+  resolvedCity City                  @relation("ResolvedRequirementCity", fields: [cityId], references: [id], onDelete: Restrict)
+  localities   RequirementLocality[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cityId, status, createdAt])
+  @@index([retentionUntil])
+}
+
+model RequirementLocality {
+  requirementId String
+  localityId    String
+  priority      Int    @default(0)
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  locality    Locality    @relation(fields: [localityId], references: [id], onDelete: Restrict)
+
+  @@id([requirementId, localityId])
+  @@index([localityId])
+}
+
 model SavedSearch {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   userId     String?
   cityId     String?
   localityId String?
   query      String?
   filters    Json
   sort       String?
-  notify     Boolean  @default(false)
-  /* Canonical identity of the search (normalized query + sorted filters +
-     sort), written by the app on every create. The unique index is what makes
-     duplicate detection race-safe: two concurrent identical saves cannot both
-     insert, and a repeat save returns the existing row as a duplicate. */
-  dedupeKey String? @unique
+  notify     Boolean @default(false)
+  /**
+   * Canonical identity of the search (normalized query + sorted filters +
+   * sort), written by the app on every create. The unique index is what makes
+   * duplicate detection race-safe: two concurrent identical saves cannot both
+   * insert, and a repeat save returns the existing row as a duplicate.
+   */
+  dedupeKey  String? @unique
 
   user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   city     City?     @relation(fields: [cityId], references: [id], onDelete: SetNull)
@@ -356,21 +761,23 @@ model SavedSearch {
   @@index([sort])
 }
 
-/* Authority asset & outreach registry (P1-OFF-001).
-   Durable rows for the governance registry so ARCHITECH_AUTHORITY_STORAGE=
-   prisma survives restarts; the in-memory registry remains the fixture path.
-   `type` is a code from the app vocabulary (guide | local-report | field-note
-   | press | partner); `outcome` likewise (sent | accepted | declined). Kept as
-   String so the enum lives in application code and can grow without a
-   migration. */
+/**
+ * Authority asset & outreach registry (P1-OFF-001).
+ * Durable rows for the governance registry so ARCHITECH_AUTHORITY_STORAGE=
+ * prisma survives restarts; the in-memory registry remains the fixture path.
+ * `type` is a code from the app vocabulary (guide | local-report | field-note
+ * | press | partner); `outcome` likewise (sent | accepted | declined). Kept as
+ * String so the enum lives in application code and can grow without a
+ * migration.
+ */
 model AuthorityAsset {
-  id                 String   @id
-  type               String
-  title              String
-  url                String?
-  isNofollow         Boolean  @default(true)
-  paidForLink        Boolean  @default(false)
-  disclosure         String   @default("required")
+  id                   String  @id
+  type                 String
+  title                String
+  url                  String?
+  isNofollow           Boolean @default(true)
+  paidForLink          Boolean @default(false)
+  disclosure           String  @default("required")
   relationshipRegistry String?
 
   outreach AuthorityOutreach[]
@@ -382,7 +789,7 @@ model AuthorityAsset {
 }
 
 model AuthorityOutreach {
-  id         String   @id
+  id         String  @id
   date       String
   target     String
   assetId    String?
@@ -412,11 +819,11 @@ model AuditEvent {
   metadata       Json?
   ipHash         String?
 
-  actor        User?                @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
-  organization BrokerOrganization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  listing      Listing?             @relation(fields: [listingId], references: [id], onDelete: SetNull)
-  reraRecord   ReraRecord?          @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
-  lead         Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  actor        User?               @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  listing      Listing?            @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  reraRecord   ReraRecord?         @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
+  lead         Lead?               @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 

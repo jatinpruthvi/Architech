@@ -16,7 +16,10 @@ export type Guide = {
   id: string;
   slug: string;
   routeKind: GuideRouteKind;
-  citySlug: "ahmedabad";
+  /** City scope for city/locality notes; omitted for national/state methods. */
+  citySlug?: string;
+  /** State/UT slug, or `india` for a national methodology. */
+  jurisdictionSlug?: string;
   localitySlug?: string;
   path: string;
   title: string;
@@ -37,10 +40,10 @@ const guides: Guide[] = [
     id: "verify-rera",
     slug: "how-we-verify-rera",
     routeKind: "rera",
-    citySlug: "ahmedabad",
-    path: "/guide/rera/gujarat/how-we-verify-rera/",
-    title: "How we verify a listing against Gujarat RERA",
-    summary: "A plain-language method for checking registration numbers, promoter details, source timestamps, and correction status before a listing earns a trust badge.",
+    jurisdictionSlug: "india",
+    path: "/guide/rera/india/how-we-verify-rera/",
+    title: "How we verify a listing with the applicable RERA authority",
+    summary: "A state/UT-aware method for checking registration numbers, promoter details, source timestamps, and correction status before a listing earns a trust badge.",
     tag: "Methodology",
     time: "6 min read",
     image: "brick-arch",
@@ -49,13 +52,14 @@ const guides: Guide[] = [
     reviewer: "Legal + Data review pending",
     updatedAt: "2026-08-24",
     sources: [
-      { label: "Gujarat RERA public registry", url: "https://gujrera.gujarat.gov.in/", note: "Official source must be reviewed by legal before automated ingestion." },
-      { label: "Architech RERA adapter contract", note: "Internal provenance, freshness, and correction workflow documented in repo." },
+      { label: "Ministry of Housing and Urban Affairs — RERA", url: "https://rera.mohua.gov.in/real-estate-regulation-and-development-act-2016.html", note: "The central Act requires state/UT regulators; verification must use the authority applicable to the property's jurisdiction." },
+      { label: "Architech RERA adapter contract", note: "Internal jurisdiction routing, provenance, freshness, and correction workflow documented in repo." },
     ],
     sections: [
-      { heading: "Start with the registration number", body: "Every RERA claim should start with a normalized registration number and a state-specific source. If the number format is invalid, the listing cannot receive a RERA-verified badge." },
-      { heading: "Store provenance beside the claim", body: "Source URL, retrieval time, parser version, matched fields, confidence, and visible disclaimer belong with the record — not in a private spreadsheet." },
-      { heading: "Show stale and disputed states", body: "Trust is strongest when uncertainty is visible. A record that is old, contested, or under correction should say so clearly on the page." },
+      { heading: "Resolve the jurisdiction first", body: "The listing's reviewed city and state/UT select the authority adapter. A registration number is never sent to Gujarat merely because Gujarat was the launch market, and an unsupported authority is shown as unavailable rather than verified." },
+      { heading: "Start with the registration number", body: "Every RERA claim starts with a normalized registration number and that authority's own format rules. A format match alone is not verification; the source record must also match the project and promoter." },
+      { heading: "Store provenance beside the claim", body: "Authority, source URL, retrieval time, parser version, matched fields, confidence, and visible disclaimer belong with the record — not in a private spreadsheet." },
+      { heading: "Show unavailable, stale, and disputed states", body: "Trust is strongest when uncertainty is visible. No approved adapter, an old record, or a contested correction must remain visible and cannot earn a verified badge." },
     ],
   },
   {
@@ -124,6 +128,19 @@ export function getGuideBySlug(slug: string): Guide | undefined {
   return guides.find((guide) => guide.slug === slug);
 }
 
-export function getGuideStaticParams(routeKind: GuideRouteKind) {
-  return guides.filter((guide) => guide.routeKind === routeKind).map((guide) => ({ slug: guide.slug }));
+export function getGuideByScope(routeKind: GuideRouteKind, scopeSlug: string, slug: string): Guide | undefined {
+  return guides.find((guide) => {
+    const guideScope = routeKind === "rera" ? guide.jurisdictionSlug : guide.citySlug;
+    return guide.routeKind === routeKind && guideScope === scopeSlug && guide.slug === slug;
+  });
+}
+
+/** Params for dynamic `/guide/{kind}/{scope}/{slug}` routes. */
+export function getScopedGuideStaticParams(routeKind: GuideRouteKind) {
+  return guides
+    .filter((guide) => guide.routeKind === routeKind)
+    .flatMap((guide) => {
+      const scope = routeKind === "rera" ? guide.jurisdictionSlug : guide.citySlug;
+      return scope ? [{ scope, slug: guide.slug }] : [];
+    });
 }

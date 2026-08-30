@@ -6,7 +6,7 @@
    be resolved with or without city context, while canonical URLs always carry
    the city segment: /buy/{city}/{locality}/. */
 import type { AmenityRow } from "./realestate/amenities";
-import { DEFAULT_CITY_SLUG, findCity } from "./cities";
+import { findCity } from "./cities";
 
 export type Locality = {
   slug: string;
@@ -196,9 +196,6 @@ export function localitiesForCity(citySlug: string): Locality[] {
  * matching slug wins (slugs are unique across the registry).
  */
 export const findLocality = (slug?: string, citySlug?: string) => {
-  if (!slug) {
-    const scope = citySlug ? localitiesForCity(citySlug) : localities;
-    return scope.find((locality) => locality.citySlug === (citySlug ?? DEFAULT_CITY_SLUG)) ?? scope[0];
-  }
+  if (!slug) return undefined;
   return localities.find((locality) => locality.slug === slug && (!citySlug || locality.citySlug === citySlug));
 };

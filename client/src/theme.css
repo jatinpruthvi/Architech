@@ -1,5 +1,5 @@
 /* ============================================================
-   ARCHITECH design system (2026) — Amdavad Modern editorial system
+   ARCHITECH design system (2026) — India locality-first editorial system
    Palette: Kahn brick · warm plaster · deep ink · ember · trust green.
    Architectural frames, measured rules, evidence stamps, and calm depth.
    Trust green is semantic: verification, source, and freshness only.
@@ -33,7 +33,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  /* Amdavad Modern palette */
+  /* India locality-first palette */
   --color-ink: var(--ink);
   --color-paper: var(--paper);
   --color-sand: var(--sand);
@@ -50,7 +50,7 @@
 
 :root {
   --radius: 1rem;
-  /* Amdavad Modern: warm plaster, deep ink, Kahn brick, ember, trust green */
+  /* Locality-first: warm plaster, deep ink, Kahn brick, ember, trust green */
   --ink: #241c18;
   --paper: #f7f1e8;
   --sand: #e9ded2;
@@ -91,7 +91,7 @@
   --shadow-editorial: 0 12px 32px rgba(17, 24, 39, 0.10);
 }
 
-/* ---------- Dark theme (Amdavad Modern, night edition) ---------- */
+/* ---------- Dark theme (locality-first, night edition) ---------- */
 .dark {
   --ink: #f5eadf;          /* warm light foreground */
   --paper: #241b18;        /* dark plaster canvas */
@@ -491,7 +491,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 /* atlas surface: a branded cartographic layer rather than an empty map panel */
 .atlas-map { background: var(--sand); }
 .atlas-map::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(22deg, transparent 48%, rgb(105 82 55 / 0.12) 49%, transparent 50%), linear-gradient(90deg, rgb(105 82 55 / 0.09) 1px, transparent 1px), linear-gradient(0deg, rgb(105 82 55 / 0.09) 1px, transparent 1px); background-size: 180px 140px, 42px 42px, 42px 42px; mix-blend-mode: multiply; opacity: 0.7; z-index: 1; }
-.atlas-map::after { content: "23°03′ N  ·  72°58′ E  /  AHMEDABAD ATLAS"; position: absolute; left: 1.25rem; top: 1.25rem; z-index: 2; pointer-events: none; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; opacity: 0.62; }
+.atlas-map::after { content: "INDIA  /  LOCALITY ATLAS"; position: absolute; left: 1.25rem; top: 1.25rem; z-index: 2; pointer-events: none; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; opacity: 0.62; }
 .atlas-map > div:first-child { z-index: 0; }
 .atlas-map .maplibregl-canvas { filter: sepia(0.2) saturate(0.7) contrast(0.92); }
 
@@ -552,7 +552,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    stepped grouping, brick rules, and mono evidence stamps replace generic admin repetition. */
 .desk-page main { background-image: linear-gradient(90deg, transparent 0 92%, rgb(168 67 42 / 0.035) 92% 92.15%, transparent 92.15%); }
 .desk-header { position: relative; overflow: hidden; }
-.desk-header::after { content: "AHMEDABAD / FIELD OFFICE / 2026"; position: absolute; right: clamp(20px, 4vw, 48px); bottom: 1rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .3; }
+.desk-header::after { content: "INDIA / REVIEW DESK / 2026"; position: absolute; right: clamp(20px, 4vw, 48px); bottom: 1rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .3; }
 .desk-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .desk-rule .kicker::before { width: 42px; }
 .desk-rule-detail { color: color-mix(in srgb, var(--ink) 48%, transparent); }
@@ -729,7 +729,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .listing-dossier-body::before { content: "ARCHITECH / MODERATION PACKET"; position: absolute; left: clamp(20px, 4vw, 48px); top: 2rem; color: var(--brick); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .45; writing-mode: vertical-rl; transform: rotate(180deg); }
 .listing-packet { box-shadow: 12px 12px 0 color-mix(in srgb, var(--sand) 42%, transparent); }
 .listing-dossier-aside { position: relative; box-shadow: inset 5px 0 0 color-mix(in srgb, var(--trust) 32%, transparent); }
-.listing-dossier-aside::after { content: "AHMEDABAD / PACKET 01"; position: absolute; right: 1.5rem; bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; opacity: .4; }
+.listing-dossier-aside::after { content: "LOCATION / PACKET 01"; position: absolute; right: 1.5rem; bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; opacity: .4; }
 .listing-field-note { min-height: 40px; }
 @media (max-width: 767px) {
   .listing-dossier-hero::after, .listing-dossier-body::before { display: none; }

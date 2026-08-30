@@ -7,9 +7,13 @@ This slice converts the static `/guide` surface into a structured content system
 ## Routes
 
 ```text
-/guide/rera/gujarat/how-we-verify-rera/
-/guide/locality/ahmedabad/paldi-buying-guide/
-/guide/city/ahmedabad/home-buying-guide/
+/guide/rera/india/how-we-verify-rera/
+/guide/locality/{city}/…
+/guide/city/{city}/…
+
+Current editorial-review examples include `/guide/locality/ahmedabad/paldi-buying-guide/`
+and `/guide/city/ahmedabad/home-buying-guide/`; Ahmedabad is their explicit content
+scope, not a routing default.
 ```
 
 ## Content contract
