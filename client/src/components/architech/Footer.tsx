@@ -23,6 +23,7 @@ export default function Footer() {
               <li><Link href="/list-property/" className="link-rail">{t.footer.links.listProperty}</Link></li>
               <li><Link href="/home-loan/" className="link-rail">Home loan calculator</Link></li>
               <li><Link href="/blogs/" className="link-rail">Blogs & field notes</Link></li>
+              <li><Link href="/locations/" className="link-rail">India location & PIN directory</Link></li>
             </ul>
           </nav>
           <nav aria-label="Company and trust">
@@ -37,7 +38,7 @@ export default function Footer() {
           </nav>
           <div>
             <p className="stamp mb-5 text-cream/60">{t.footer.office}</p>
-            <p className="stamp leading-6 text-cream/70">Ahmedabad, Gujarat<br />23.03° N · 72.58° E<br />IST (UTC +5:30)</p>
+            <p className="stamp leading-6 text-cream/70">India coverage desk<br />Digital-first · city-scoped review<br />IST (UTC +5:30)</p>
           </div>
         </div>
       </div>
@@ -46,7 +47,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-cream/10">
         <div className="container flex flex-col items-start justify-between gap-3 py-6 md:flex-row md:items-center">
-          <p className="stamp text-cream/60">© 2026 Architech · Concept prototype — listings, stats & sample records are illustrative</p>
+          <p className="stamp text-cream/60">© 2026 Architech · Property listings and market stats may use labelled demo records; official references retain their source trails</p>
           <p className="stamp text-cream/60">Brick · Plaster · Light — after Kahn, Corbusier & Adalaj</p>
         </div>
       </div>

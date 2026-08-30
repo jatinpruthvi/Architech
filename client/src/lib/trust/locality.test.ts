@@ -3,7 +3,7 @@ import { cityTrustSummary, localityTrustSummary } from "./locality";
 
 describe("locality/city trust aggregation", () => {
   it("aggregates city-wide trust from per-listing scores", () => {
-    const summary = cityTrustSummary();
+    const summary = cityTrustSummary("ahmedabad");
     expect(summary.slug).toBe("ahmedabad");
     expect(summary.name).toBe("Ahmedabad");
     expect(summary.total).toBeGreaterThanOrEqual(4);

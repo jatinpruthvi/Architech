@@ -86,6 +86,21 @@ const homePage: SeoPage = {
 };
 
 /** National hub above the city hubs — the crawl entry point for every market. */
+const locationsIndiaPage: SeoPage = {
+  id: "hub:locations:india",
+  routeType: "hub",
+  path: "/locations/",
+  canonicalUrl: canonicalUrl("/locations/"),
+  primaryIntent: "Expose sourced India-wide State, Union Territory, exact PIN, post-office, and LGD local-body reference coverage without conflating property inventory.",
+  indexability: "indexable",
+  owner: "Product",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh when an official location snapshot is applied, retired, or fails freshness gates.",
+  entityIds: ["brand:architech", "country:india", "dataset:official-location-reference"],
+  lastModified: "2026-08-30",
+  sitemap: { changeFrequency: "monthly", priority: 0.75 },
+};
+
 const buyIndiaPage: SeoPage = {
   id: "hub:buy:india",
   routeType: "hub",
@@ -104,7 +119,7 @@ const buyIndiaPage: SeoPage = {
    the newest locality it aggregates, and recomputing per call would make
    registry construction O(cities × localities × listings). */
 const localityFactDates = new Map<string, string>(
-  getLocalities().map((locality) => [locality.slug, localityIntel(locality.slug).asOfDate] as const),
+  getLocalities().map((locality) => [locality.slug, localityIntel(locality.slug, locality.citySlug).asOfDate] as const),
 );
 
 /** Newest locality fact date inside a city — the honest `lastmod` for its hub. */
@@ -392,7 +407,7 @@ const cityPriceIndexPages: SeoPage[] = getCities().map((city) => {
   };
 });
 
-export const seoPages: SeoPage[] = [homePage, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
+export const seoPages: SeoPage[] = [homePage, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, locationsIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
 
 /* Quality decisions are computed once at module load: evaluating per call would
    re-scan the listing table for every consumer. */

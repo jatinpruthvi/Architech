@@ -122,7 +122,7 @@ export default function ListingPage({ id }: { id: string }) {
   if (!property) return null;
 
   const saved = isSaved(property.id);
-  const locality = getLocalityBySlug(property.localitySlug);
+  const locality = getLocalityBySlug(property.localitySlug, property.citySlug);
   const [leadOpen, setLeadOpen] = useState(false);
 
   // Idempotent, server-safe view tracking (no PII). One view per browser session.
@@ -344,13 +344,15 @@ export default function ListingPage({ id }: { id: string }) {
             <div id="location" className="mt-12">
               <p className="kicker text-brick !text-[10px]">{t.listing.mapKicker}</p>
               <div className="relative mt-5 h-[320px] border border-ink/12 bg-sand">
-                <iframe
-                  title={`Map around ${property.locality}, Ahmedabad — OpenStreetMap`}
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${locality?.bbox ?? "72.5400,22.9980,72.5800,23.0240"}&layer=mapnik&marker=${locality?.marker ?? "23.011,72.559"}`}
-                  className="map-frame absolute inset-0 h-full w-full border-0"
-                  loading="lazy"
-                />
-                <p className="stamp absolute right-3 top-3 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
+                {locality ? <>
+                  <iframe
+                    title={`Map around ${property.locality}, ${property.city} — OpenStreetMap`}
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${locality.bbox}&layer=mapnik&marker=${locality.marker}`}
+                    className="map-frame absolute inset-0 h-full w-full border-0"
+                    loading="lazy"
+                  />
+                  <p className="stamp absolute right-3 top-3 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
+                </> : <p className="grid h-full place-items-center p-6 text-center text-sm ink-3">A reviewed locality map is not available for this listing yet.</p>}
               </div>
               <p className="stamp mt-3 !text-[9px] text-ink/60">{t.listing.exactAddressPrivate}</p>
             </div>

@@ -1,10 +1,9 @@
 /* City repository facade.
    Fixture-backed today; shaped so routes and views never import the city
    registry directly and can move to Prisma (`model City`) without rewrites. */
-import { cities, citiesByState, DEFAULT_CITY_SLUG, findCity, findLiveCity, liveCities, type City } from "@/lib/cities";
+import { cities, citiesByState, findCity, findLiveCity, liveCities, type City } from "@/lib/cities";
 
 export type { City };
-export { DEFAULT_CITY_SLUG };
 
 export function getCities(): City[] {
   return liveCities;

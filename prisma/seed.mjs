@@ -11,6 +11,25 @@ const listings = [
 ];
 
 async function main() {
+  const fixtureSource = await prisma.locationSource.upsert({
+    where: { key: "architech-fixture-location-registry-v1" },
+    update: {
+      retrievedAt: new Date("2026-08-26T00:00:00.000Z"),
+      checksumSha256: null,
+      metadata: { authority: "demo-only", postalVerification: "pending India Post reconciliation" },
+    },
+    create: {
+      key: "architech-fixture-location-registry-v1",
+      name: "Architech demo location registry",
+      publisher: "Architech",
+      sourceUrl: "https://github.com/jatinpruthvi/Architech/tree/main/prisma",
+      licenseName: "MIT (application fixtures); upstream facts retain their own attribution",
+      attribution: "Demo locality/PIN mappings; coordinates © OpenStreetMap contributors",
+      retrievedAt: new Date("2026-08-26T00:00:00.000Z"),
+      metadata: { authority: "demo-only", postalVerification: "pending India Post reconciliation" },
+    },
+  });
+
   // Every city in the registry is provisioned, so the database matches the
   // routes, sitemap, and SEO registry the application generates.
   const cityBySlug = new Map();
@@ -31,12 +50,38 @@ async function main() {
   for (const { citySlug, ...locality } of LOCALITIES) {
     const owner = cityBySlug.get(citySlug);
     if (!owner) throw new Error(`Locality ${locality.slug} references unknown city ${citySlug}.`);
+    const stableKey = `IN:${citySlug}:${locality.slug}`;
     const record = await prisma.locality.upsert({
       where: { cityId_slug: { cityId: owner.id, slug: locality.slug } },
-      update: { ...locality, aliases: [locality.name.toLowerCase(), locality.hindiName], landmarks: locality.landmarks ?? undefined },
-      create: { ...locality, aliases: [locality.name.toLowerCase(), locality.hindiName], landmarks: locality.landmarks ?? undefined, cityId: owner.id },
+      update: { ...locality, stableKey, sourceId: fixtureSource.id, aliases: [locality.name.toLowerCase(), locality.hindiName].filter(Boolean), landmarks: locality.landmarks ?? undefined },
+      create: { ...locality, stableKey, sourceId: fixtureSource.id, aliases: [locality.name.toLowerCase(), locality.hindiName].filter(Boolean), landmarks: locality.landmarks ?? undefined, cityId: owner.id },
     });
     localityBySlug.set(locality.slug, record);
+
+    const aliases = [
+      { name: locality.name, normalizedName: locality.name.normalize("NFKC").toLocaleLowerCase("en-IN"), languageCode: "en", scriptCode: "Latn", type: "OFFICIAL", isPreferred: true },
+      ...(locality.hindiName ? [{ name: locality.hindiName, normalizedName: locality.hindiName.normalize("NFKC"), languageCode: "hi", scriptCode: "Deva", type: "TRANSLITERATION", isPreferred: true }] : []),
+    ];
+    for (const alias of aliases) {
+      await prisma.localityAlias.upsert({
+        where: { localityId_normalizedName_languageCode: { localityId: record.id, normalizedName: alias.normalizedName, languageCode: alias.languageCode } },
+        update: { ...alias, sourceId: fixtureSource.id },
+        create: { ...alias, localityId: record.id, sourceId: fixtureSource.id },
+      });
+    }
+
+    for (const [position, code] of locality.pincodes.entries()) {
+      await prisma.postalCode.upsert({
+        where: { code },
+        update: { isActive: true },
+        create: { code, sourceId: fixtureSource.id },
+      });
+      await prisma.localityPostalCode.upsert({
+        where: { localityId_postalCode: { localityId: record.id, postalCode: code } },
+        update: { sourceId: fixtureSource.id, linkType: "MANUAL", isPrimary: position === 0, confidence: "0.500" },
+        create: { localityId: record.id, postalCode: code, sourceId: fixtureSource.id, linkType: "MANUAL", isPrimary: position === 0, confidence: "0.500", evidence: { status: "fixture; pending authoritative reconciliation" } },
+      });
+    }
   }
 
   const broker = await prisma.brokerOrganization.upsert({
@@ -46,9 +91,9 @@ async function main() {
   });
 
   const rera = await prisma.reraRecord.upsert({
-    where: { registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO" },
+    where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug: "gujarat", registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO" } },
     update: { state: "Gujarat", promoterName: "Nivasa Partners", verificationStatus: "RERA_VERIFIED", parserVersion: "seed-v1", confidence: "0.9200", evidence: { source: "demo fixture", note: "Illustrative RERA evidence only" } },
-    create: { registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO", state: "Gujarat", promoterName: "Nivasa Partners", verificationStatus: "RERA_VERIFIED", parserVersion: "seed-v1", confidence: "0.9200", evidence: { source: "demo fixture", note: "Illustrative RERA evidence only" }, retrievedAt: new Date() },
+    create: { jurisdictionSlug: "gujarat", registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO", state: "Gujarat", promoterName: "Nivasa Partners", verificationStatus: "RERA_VERIFIED", parserVersion: "seed-v1", confidence: "0.9200", evidence: { source: "demo fixture", note: "Illustrative RERA evidence only" }, retrievedAt: new Date() },
   });
 
   for (const listing of listings) {

@@ -8,7 +8,8 @@ export const metadata: Metadata = {
 };
 
 const rows = [
-  ["Leads", "Name, masked phone, message, listing context, consent text", "Respond to property enquiries", "Until deletion/retention policy is approved"],
+  ["Requirements", "Name, AES-256-GCM encrypted phone digits, last four digits, city/locality IDs, consent text", "Review a city-scoped property brief", "Configured retention window (180 days by default), then scheduled hard deletion"],
+  ["Leads", "Name, masked phone, message, listing context, consent text", "Respond to property enquiries", "Production retention and deletion schedule required before activation"],
   ["Saved searches", "Query, filters, city/locality, notification preference", "Notify users about matching homes", "Until user deletes or retention job runs"],
   ["Broker operations", "Organization, role, listing drafts, media rights evidence", "Moderation, verification, and lead handling", "Lifecycle plus audit retention"],
   ["Observability", "Route, Web Vitals metrics, errors where configured", "Reliability, performance, and incident response", "Aggregated operational retention"],
@@ -34,7 +35,7 @@ export default function PrivacyPage() {
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           <div className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl">Your choices</h2><p className="mt-3 text-sm leading-6 text-ink/60">Request access, correction, withdrawal, or deletion through the production support channel once enabled.</p></div>
           <div className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl">No sale of data</h2><p className="mt-3 text-sm leading-6 text-ink/60">Architech does not sell personal data. Broker sharing requires an explicit product purpose and consent gate.</p></div>
-          <div className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl">Security</h2><p className="mt-3 text-sm leading-6 text-ink/60">PII is minimized, masked where possible, and protected by the security/privacy gates in the repository.</p></div>
+          <div className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl">Security</h2><p className="mt-3 text-sm leading-6 text-ink/60">PII is minimized and masked in responses. Durable requirement phone digits are encrypted at the application boundary; production still requires managed keys, access audit, rotation, and purge monitoring.</p></div>
         </div>
         <Link href="/terms" className="mt-8 inline-flex stamp !text-[12px] font-semibold text-brick">Read terms →</Link>
       </section>

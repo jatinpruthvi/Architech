@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { globSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * Contrast and theming contracts for solid surfaces.
@@ -13,6 +13,13 @@ import { globSync } from "node:fs";
  * was silently discarded. These tests pin the fix and the contrast budget.
  */
 const css = readFileSync("client/src/theme.css", "utf8");
+
+const tsxFilesUnder = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+  const path = join(directory, entry.name);
+  if (entry.isDirectory()) return tsxFilesUnder(path);
+  return entry.isFile() && entry.name.endsWith(".tsx") ? [path] : [];
+});
+const componentFiles = [...tsxFilesUnder("client/src"), ...tsxFilesUnder("app")];
 
 const hex = (value: string) => value.match(/^#([0-9a-f]{6})$/i)?.[1] ?? "";
 const luminance = (value: string) => {
@@ -88,9 +95,8 @@ describe("a solid fill owns its label colour", () => {
   });
 
   it("never lets a fill-tagged control carry a state text colour it cannot win", () => {
-    const files = globSync("client/src/**/*.tsx").concat(globSync("app/**/*.tsx"));
     const conflicts: string[] = [];
-    for (const file of files) {
+    for (const file of componentFiles) {
       for (const m of readFileSync(file, "utf8").matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
         const tokens = (m[1] ?? m[2] ?? "").split(/\s+/).filter(Boolean);
         if (!tokens.some((t) => /-fill$/.test(t))) continue;
@@ -103,7 +109,7 @@ describe("a solid fill owns its label colour", () => {
 });
 
 describe("solid action markup contracts", () => {
-  const files = globSync("client/src/**/*.tsx").concat(globSync("app/**/*.tsx")).filter((f) => !f.includes(".stories."));
+  const files = componentFiles.filter((file) => !file.includes(".stories."));
   const classAttrs = (src: string) =>
     [...src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)].map((m) => (m[1] ?? m[2] ?? "").split(/\s+/).filter(Boolean));
 

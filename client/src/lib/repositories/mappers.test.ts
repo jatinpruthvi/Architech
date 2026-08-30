@@ -4,7 +4,7 @@ import { getDataSourceMode } from "./source";
 
 describe("Prisma repository mappers", () => {
   it("maps database locality rows to UI localities", () => {
-    const locality = dbLocalityToLocality({ slug: "paldi", name: "Paldi", hindiName: "पालडी", note: "Central", demoHomeCount: 42, latitude: "23.011000", longitude: "72.559000", bbox: "72,23,73,24" });
+    const locality = dbLocalityToLocality({ slug: "paldi", name: "Paldi", hindiName: "पालडी", note: "Central", demoHomeCount: 42, latitude: "23.011000", longitude: "72.559000", bbox: "72,23,73,24", city: { slug: "ahmedabad", name: "Ahmedabad" } });
     expect(locality.marker).toBe("23.011,72.559");
     expect(locality.hindi).toBe("पालडी");
   });
@@ -24,7 +24,7 @@ describe("Prisma repository mappers", () => {
       verification: "RERA_VERIFIED",
       meaningfulUpdatedAt: "2026-08-24T00:00:00.000Z",
       locality: { slug: "paldi", name: "Paldi" },
-      city: { name: "Ahmedabad" },
+      city: { slug: "ahmedabad", name: "Ahmedabad" },
       media: [{ url: "/images/prop-courtyard.jpg" }],
     });
     expect(property.id).toBe("garden-courtyard");
@@ -43,7 +43,7 @@ describe("Prisma repository mappers", () => {
       priceLabel: "₹1.00 Cr",
       priceInr: 10000000,
       locality: { slug: "paldi", name: "Paldi" },
-      city: { name: "Ahmedabad" },
+      city: { slug: "ahmedabad", name: "Ahmedabad" },
       media: [{ url: "/images/prop-courtyard.jpg" }, { url: "/images/prop-light.webp" }],
     });
     expect(property.image).toBe("prop-courtyard");

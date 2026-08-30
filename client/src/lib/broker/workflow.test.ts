@@ -7,7 +7,9 @@ import { archiveListingDraft, createListingDraft, deleteListingDraft, getModerat
 
 const validDraft: ListingDraftInput = {
   title: "A verified garden apartment",
+  citySlug: "ahmedabad",
   localitySlug: "paldi",
+  postalCode: "380007",
   priceInr: 18500000,
   bhk: 3,
   areaSqft: 1482,

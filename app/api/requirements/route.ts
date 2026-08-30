@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { enforceMutationSafety } from "@/lib/auth/request-safety";
-import { createRequirement, type RequirementInput } from "@/lib/requirements";
+import type { RequirementInput } from "@/lib/requirements";
+import { createRequirementForServer } from "@/lib/requirements.server";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, errors: ["Request body must be JSON."] }, { status: 400 });
   }
 
-  const result = createRequirement(body as RequirementInput);
+  const result = await createRequirementForServer(body as RequirementInput);
   if (!result.ok) return NextResponse.json(result, { status: result.status });
 
   return NextResponse.json(result, {

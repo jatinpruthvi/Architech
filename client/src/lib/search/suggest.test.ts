@@ -68,10 +68,10 @@ describe("suggestion ranking", () => {
     expect(suggestions[0].href).toBe("/search/?pincode=395007");
   });
 
-  it("falls back to the city for a PIN no locality claims", () => {
-    const suggestions = suggestSearch("400104");
-    expect(suggestions[0].kind).toBe("pincode");
-    expect(suggestions[0].label).toContain("Mumbai");
+  it("does not infer a city for a PIN with no reviewed locality link", () => {
+    // A sorting-prefix match is not evidence that this exact PIN belongs to a
+    // city. Unknown fixture PINs stay unresolved until postal evidence exists.
+    expect(suggestSearch("400104")).toEqual([]);
   });
 
   it("offers a structured action for a query it understands", () => {

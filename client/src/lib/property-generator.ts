@@ -38,7 +38,9 @@ export function formatRent(rupees: number): string {
 }
 
 const IMAGES = ["prop-courtyard", "prop-light", "prop-thaltej", "locality-street"] as const;
-const BADGES = ["RERA verified", "Verified partner", "Source reviewed"] as const;
+// Generated fixtures have no state-authority evidence packet. Never award a
+// RERA badge merely to add visual variety; verification is jurisdictional.
+const BADGES = ["Verified partner", "Source reviewed"] as const;
 /** Relative freshness labels and the exact day-offset each one means. Kept as a
     single table so the visible label and the machine-readable
     `meaningfulUpdatedAt` date can never drift apart. */
@@ -82,7 +84,7 @@ const BLUEPRINTS: Blueprint[] = [
   {
     bhk: 2, areaNum: 1040, propertyType: "APARTMENT", subtype: "Flat/Apartment", availability: "NEW_LAUNCH", transaction: "buy",
     titleFor: (locality) => `New launch 2 BHK near ${locality}`,
-    noteFor: (locality) => `An early-phase tower in ${locality}: allotment-stage pricing, possession dated, RERA number on record.`,
+    noteFor: (locality) => `An illustrative early-phase tower in ${locality}: allotment-stage pricing and possession claims require project documents and the applicable state/UT RERA record before publication.`,
   },
   {
     bhk: 4, areaNum: 2180, propertyType: "VILLA", subtype: "Villa", availability: "RESALE", transaction: "buy",

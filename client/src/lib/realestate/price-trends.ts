@@ -23,7 +23,7 @@
 
    The unit encoding itself is pre-existing and has many consumers, so it is
    documented and converted here rather than silently changed. */
-import { DEFAULT_CITY_SLUG, getCityBySlug, getListingsByCity, getListingsByLocality, type Property } from "@/lib/repositories";
+import { getCityBySlug, getListingsByCity, getListingsByLocality, type Property } from "@/lib/repositories";
 
 /** Minimum listings behind an aggregate before it is published.
 
@@ -140,7 +140,7 @@ export function localityPriceTrends(slug: string, citySlug?: string): PriceTrend
 }
 
 /** City-wide price-trend summary across one city's inventory. */
-export function cityPriceTrends(citySlug: string = DEFAULT_CITY_SLUG): PriceTrendSummary {
+export function cityPriceTrends(citySlug: string): PriceTrendSummary {
   const city = getCityBySlug(citySlug);
   return summarize(citySlug, city?.name ?? citySlug, getListingsByCity(citySlug));
 }

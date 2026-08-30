@@ -81,7 +81,7 @@ export function TrustPanel({ property }: { property: Property }) {
           </p>
           <p className="mt-3 text-sm leading-6 text-ink/65">{t.listing.trust.disclaimer}</p>
           <Link
-            href="/guide/rera/gujarat/how-we-verify-rera"
+            href="/guide/rera/india/how-we-verify-rera"
             className="group mt-5 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick"
           >
             <ShieldCheck size={14} className="text-trust" /> {t.listing.trust.howWeVerify}

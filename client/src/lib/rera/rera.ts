@@ -3,7 +3,9 @@ export type ReraCorrectionStatus = "NONE" | "REQUESTED" | "UNDER_REVIEW" | "RESO
 
 export type ReraRecordSnapshot = {
   registrationNumber: string;
-  state: "Gujarat";
+  /** Stable state/UT jurisdiction key; registration numbers are unique only within it. */
+  stateSlug: string;
+  state: string;
   promoterName: string;
   projectName: string;
   sourceUrl: string;
@@ -29,6 +31,8 @@ export type ReraAuditEvent = {
 };
 
 export type ReraCorrectionInput = {
+  /** Required explicitly; no correction may silently inherit Gujarat. */
+  stateSlug: string;
   registrationNumber: string;
   field: string;
   currentValue?: string;
@@ -48,9 +52,10 @@ const now = new Date("2026-08-24T12:00:00.000Z");
 
 const records = new Map<string, ReraRecordSnapshot>([
   [
-    "GJ/RERA/AHM/2026/04821-DEMO",
+    "gujarat:GJ/RERA/AHM/2026/04821-DEMO",
     {
       registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO",
+      stateSlug: "gujarat",
       state: "Gujarat",
       promoterName: "Nivasa Partners",
       projectName: "Architech Paldi Garden Courtyard Demo",
@@ -88,28 +93,43 @@ export function normalizeReraNumber(value: string): string {
   return value.trim().toUpperCase().replace(/\s+/g, "");
 }
 
+export function normalizeReraJurisdiction(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function reraRecordKey(stateSlug: string, registrationNumber: string): string {
+  return `${normalizeReraJurisdiction(stateSlug)}:${normalizeReraNumber(registrationNumber)}`;
+}
+
+/** Gujarat adapter format validation. Other authorities need their own adapter. */
 export function validateReraNumber(value: string): boolean {
   return /^GJ\/RERA\/[A-Z]+\/\d{4}\/\d{5}(?:-[A-Z]+)?$/.test(normalizeReraNumber(value));
 }
 
-export function getReraRecord(registrationNumber: string): ReraRecordSnapshot | undefined {
-  return records.get(normalizeReraNumber(registrationNumber));
+export function getReraRecord(stateSlug: string, registrationNumber: string): ReraRecordSnapshot | undefined {
+  return records.get(reraRecordKey(stateSlug, registrationNumber));
 }
 
-export function verifyReraRecord(registrationNumber: string) {
+/** Fixture verification exists only for Gujarat; server routing prevents other
+ * jurisdictions from reaching this adapter. */
+export function verifyReraRecord(stateSlug: string, registrationNumber: string) {
+  const jurisdiction = normalizeReraJurisdiction(stateSlug);
   const normalized = normalizeReraNumber(registrationNumber);
+  if (jurisdiction !== "gujarat") {
+    return { ok: false as const, status: 501, errors: [`RERA verification is not configured for ${jurisdiction || "this jurisdiction"}.`] };
+  }
   if (!validateReraNumber(normalized)) {
     return { ok: false as const, status: 400, errors: ["Registration number format is invalid for Gujarat RERA."] };
   }
-  const record = getReraRecord(normalized);
+  const record = getReraRecord(jurisdiction, normalized);
   if (!record) {
     return { ok: true as const, record: null, verificationStatus: "NOT_FOUND" as const };
   }
   return { ok: true as const, record, verificationStatus: record.verificationStatus };
 }
 
-export function markReraStale(registrationNumber: string, reason = "Scheduled freshness check required.") {
-  const record = getReraRecord(registrationNumber);
+export function markReraStale(stateSlug: string, registrationNumber: string, reason = "Scheduled freshness check required.") {
+  const record = getReraRecord(stateSlug, registrationNumber);
   if (!record) return { ok: false as const, status: 404, errors: ["RERA record not found."] };
   record.verificationStatus = "STALE";
   record.auditTrail.push(audit("rera.record.marked_stale", "system", { reason }));
@@ -117,19 +137,23 @@ export function markReraStale(registrationNumber: string, reason = "Scheduled fr
 }
 
 export function requestReraCorrection(input: ReraCorrectionInput) {
-  const normalized = normalizeReraNumber(input.registrationNumber);
-  const verification = verifyReraRecord(normalized);
-  if (!verification.ok) return verification;
+  const stateSlug = normalizeReraJurisdiction(input.stateSlug ?? "");
+  const normalized = normalizeReraNumber(input.registrationNumber ?? "");
+  if (!/^[a-z][a-z-]{1,63}$/.test(stateSlug)) return { ok: false as const, status: 400, errors: ["State/UT slug is required."] };
+  // Correction intake is authority-neutral. Format verification remains inside
+  // each approved adapter; this conservative envelope only blocks malformed input.
+  if (!/^[A-Z0-9][A-Z0-9/_.()-]{4,127}$/.test(normalized)) return { ok: false as const, status: 400, errors: ["RERA registration number format is invalid."] };
   if (!input.field || input.field.trim().length < 2) return { ok: false as const, status: 400, errors: ["Correction field is required."] };
   if (!input.proposedValue || input.proposedValue.trim().length < 2) return { ok: false as const, status: 400, errors: ["Proposed value is required."] };
   if (!input.reason || input.reason.trim().length < 10) return { ok: false as const, status: 400, errors: ["Correction reason must be at least 10 characters."] };
 
-  const id = stableId("rera_correction", `${normalized}:${input.field}:${input.proposedValue}`);
+  const id = stableId("rera_correction", `${stateSlug}:${normalized}:${input.field}:${input.proposedValue}`);
   const existing = corrections.get(id);
   if (existing) return { ok: true as const, correction: existing, duplicate: true };
 
   const correction: ReraCorrection = {
     ...input,
+    stateSlug,
     registrationNumber: normalized,
     id,
     status: "REQUESTED",
@@ -138,7 +162,7 @@ export function requestReraCorrection(input: ReraCorrectionInput) {
   };
   corrections.set(id, correction);
 
-  const record = getReraRecord(normalized);
+  const record = getReraRecord(stateSlug, normalized);
   if (record) {
     record.correctionStatus = "REQUESTED";
     record.verificationStatus = "DISPUTED";
@@ -153,7 +177,7 @@ export function resolveReraCorrection(correctionId: string, status: Exclude<Rera
   if (!correction) return { ok: false as const, status: 404, errors: ["Correction not found."] };
   correction.status = status;
   correction.auditTrail.push(audit(`rera.correction.${status.toLowerCase()}`, "moderator", { note }));
-  const record = getReraRecord(correction.registrationNumber);
+  const record = getReraRecord(correction.stateSlug, correction.registrationNumber);
   if (record) {
     record.correctionStatus = status;
     record.verificationStatus = status === "RESOLVED" ? "VERIFIED" : record.verificationStatus;
@@ -164,7 +188,7 @@ export function resolveReraCorrection(correctionId: string, status: Exclude<Rera
 
 export function resetReraStoreForTests() {
   corrections.clear();
-  const record = records.get("GJ/RERA/AHM/2026/04821-DEMO");
+  const record = records.get("gujarat:GJ/RERA/AHM/2026/04821-DEMO");
   if (record) {
     record.verificationStatus = "VERIFIED";
     record.correctionStatus = "NONE";

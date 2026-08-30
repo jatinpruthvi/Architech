@@ -10,23 +10,31 @@ describe("RERA adapter/provenance/correction workflow", () => {
   });
 
   it("verifies seeded RERA record with provenance evidence", () => {
-    const result = verifyReraRecord("GJ/RERA/AHM/2026/04821-DEMO");
+    const result = verifyReraRecord("gujarat", "GJ/RERA/AHM/2026/04821-DEMO");
     expect(result.ok && result.record?.evidence.fieldsMatched).toContain("registrationNumber");
     expect(result.ok && result.verificationStatus).toBe("VERIFIED");
   });
 
   it("requests and resolves corrections while marking record disputed", () => {
-    const requested = requestReraCorrection({ registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO", field: "promoterName", currentValue: "Nivasa Partners", proposedValue: "Nivasa Partners LLP", reason: "Promoter legal suffix is missing from the source record.", reporterEmail: "reviewer@example.com" });
+    const requested = requestReraCorrection({ stateSlug: "gujarat", registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO", field: "promoterName", currentValue: "Nivasa Partners", proposedValue: "Nivasa Partners LLP", reason: "Promoter legal suffix is missing from the source record.", reporterEmail: "reviewer@example.com" });
     expect(requested.ok && requested.correction.status).toBe("REQUESTED");
-    const disputed = verifyReraRecord("GJ/RERA/AHM/2026/04821-DEMO");
+    const disputed = verifyReraRecord("gujarat", "GJ/RERA/AHM/2026/04821-DEMO");
     expect(disputed.ok && disputed.record?.verificationStatus).toBe("DISPUTED");
     if (!requested.ok) throw new Error("request failed");
     const resolved = resolveReraCorrection(requested.correction.id, "RESOLVED", "Official source updated.");
     expect(resolved.ok && resolved.record?.verificationStatus).toBe("VERIFIED");
   });
 
+  it("accepts correction intake only with an explicit jurisdiction", () => {
+    const missing = requestReraCorrection({ stateSlug: "", registrationNumber: "PRM-KA-RERA-1234", field: "status", proposedValue: "active", reason: "The authority record changed." });
+    expect(missing).toMatchObject({ ok: false, status: 400 });
+
+    const karnataka = requestReraCorrection({ stateSlug: "karnataka", registrationNumber: "PRM-KA-RERA-1234", field: "status", proposedValue: "active", reason: "The authority record changed." });
+    expect(karnataka).toMatchObject({ ok: true, correction: { stateSlug: "karnataka" } });
+  });
+
   it("marks records stale for refresh workflow", () => {
-    const stale = markReraStale("GJ/RERA/AHM/2026/04821-DEMO");
+    const stale = markReraStale("gujarat", "GJ/RERA/AHM/2026/04821-DEMO");
     expect(stale.ok && stale.record.verificationStatus).toBe("STALE");
   });
 });

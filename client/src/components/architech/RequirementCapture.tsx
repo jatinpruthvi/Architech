@@ -1,12 +1,10 @@
 "use client";
-/* Amdavad Modern requirement drawer: a calm, evidence-first alternative to a generic lead form. */
+/* India-wide requirement drawer: a calm, evidence-first alternative to a generic lead form. */
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ArrowUpRight, Check, X } from "lucide-react";
 import type { RequirementCategory, RequirementInput, RequirementIntent, RequirementRole } from "@/lib/requirements";
-
-
-const localities = ["Paldi", "Navrangpura", "Prahlad Nagar", "Thaltej", "Bopal", "Satellite"];
+import { getCities, getLocalities } from "@/lib/repositories";
 const categories: Array<{ value: RequirementCategory; label: string; subtypes: string[] }> = [
   { value: "residential", label: "Homes", subtypes: ["Flat/Apartment", "Villa"] },
   { value: "commercial", label: "Commercial", subtypes: ["Office", "Shop"] },
@@ -28,12 +26,14 @@ type Props = { compact?: boolean };
 
 type FormState = Omit<RequirementInput, "idempotencyKey">;
 
+const cities = getCities();
+
 const initialForm: FormState = {
   intent: "buy",
-  city: "ahmedabad",
+  citySlug: "",
   category: "residential",
   subtype: "Flat/Apartment",
-  localities: ["Paldi"],
+  localitySlugs: [],
   role: "buyer",
   name: "",
   phone: "",
@@ -47,6 +47,7 @@ export default function RequirementCapture({ compact = false }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
 
   const selectedCategory = useMemo(() => categories.find((item) => item.value === form.category) ?? categories[0], [form.category]);
+  const availableLocalities = useMemo(() => form.citySlug ? getLocalities(form.citySlug) : [], [form.citySlug]);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setStatus("idle");
@@ -54,10 +55,19 @@ export default function RequirementCapture({ compact = false }: Props) {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const changeCity = (citySlug: string) => {
+    const firstLocality = getLocalities(citySlug)[0]?.slug;
+    setStatus("idle");
+    setErrors([]);
+    // Reset locality choices atomically: retaining a previous city's slug would
+    // create a cross-city requirement even if the old checkbox is no longer visible.
+    setForm((current) => ({ ...current, citySlug, localitySlugs: firstLocality ? [firstLocality] : [] }));
+  };
+
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (form.name.trim().length < 2 || form.phone.replace(/\D/g, "").length < 8 || form.localities.length === 0) {
-      setErrors(["Add your name, an 8-digit phone number, and at least one preferred locality."]);
+    if (!form.citySlug || form.name.trim().length < 2 || form.phone.replace(/\D/g, "").length < 8 || form.localitySlugs.length === 0) {
+      setErrors(["Choose a city and locality, then add your name and an 8-digit phone number."]);
       setStatus("error");
       return;
     }
@@ -67,7 +77,7 @@ export default function RequirementCapture({ compact = false }: Props) {
       const response = await fetch("/api/requirements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, idempotencyKey: `${form.phone}:${form.intent}:${form.category}:${form.localities.join(",")}` }),
+        body: JSON.stringify({ ...form, idempotencyKey: `${form.phone}:${form.intent}:${form.category}:${form.citySlug}:${form.localitySlugs.join(",")}` }),
       });
       const payload = await response.json() as { ok?: boolean; errors?: string[] };
       if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") || "We could not save that requirement.");
@@ -115,7 +125,7 @@ export default function RequirementCapture({ compact = false }: Props) {
         >
           <div className="flex items-start justify-between gap-6 border-b border-ink/12 p-5 md:p-8">
             <div>
-              <p className="kicker text-brick">A better brief · Ahmedabad first</p>
+              <p className="kicker text-brick">A better brief · India-wide city scope</p>
               {/* Radix warns loudly when a dialog has no Title/Description; using
                   its components here (rather than aria-labelledby at a distance)
                   is what makes `aria-modal` a statement of fact. */}
@@ -142,7 +152,10 @@ export default function RequirementCapture({ compact = false }: Props) {
                   </div>
                 </fieldset>
                 <label className="stamp !text-[10px] font-semibold text-ink/60">City
-                  <select value={form.city} onChange={(event) => update("city", event.target.value as FormState["city"])} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none"><option value="ahmedabad">Ahmedabad</option><option value="gandhinagar">Gandhinagar</option></select>
+                  <select required value={form.citySlug} onChange={(event) => changeCity(event.target.value)} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none">
+                    <option value="" disabled>Select a city</option>
+                    {cities.map((city) => <option key={city.slug} value={city.slug}>{city.name}, {city.state}</option>)}
+                  </select>
                 </label>
                 <label className="stamp !text-[10px] font-semibold text-ink/60">Property category
                   <select value={form.category} onChange={(event) => { const category = event.target.value as RequirementCategory; update("category", category); update("subtype", categories.find((item) => item.value === category)?.subtypes[0] ?? "Flat/Apartment"); }} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none">{categories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}</select>
@@ -152,7 +165,7 @@ export default function RequirementCapture({ compact = false }: Props) {
                 </label>
                 <fieldset>
                   <legend className="stamp !text-[10px] font-semibold text-ink/60">Preferred localities</legend>
-                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">{localities.map((locality) => <label key={locality} className="flex min-h-9 items-center gap-2 text-sm text-ink/75"><input type="checkbox" checked={form.localities.includes(locality)} onChange={(event) => update("localities", event.target.checked ? [...form.localities, locality] : form.localities.filter((item) => item !== locality))} className="h-4 w-4 accent-[#b8472e]" />{locality}</label>)}</div>
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">{availableLocalities.map((locality) => <label key={`${locality.citySlug}:${locality.slug}`} className="flex min-h-9 items-center gap-2 text-sm text-ink/75"><input type="checkbox" checked={form.localitySlugs.includes(locality.slug)} onChange={(event) => update("localitySlugs", event.target.checked ? [...form.localitySlugs, locality.slug] : form.localitySlugs.filter((item) => item !== locality.slug))} className="h-4 w-4 accent-[#b8472e]" />{locality.name}</label>)}</div>
                 </fieldset>
                 <fieldset className="md:col-span-2">
                   <legend className="stamp !text-[10px] font-semibold text-ink/60">I am a</legend>

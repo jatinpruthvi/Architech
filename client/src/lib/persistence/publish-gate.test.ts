@@ -28,7 +28,9 @@ function input(overrides: Partial<ListingDraftInput> = {}): ListingDraftInput {
   return {
     organizationId: "org_demo",
     title: "A courtyard home in Paldi",
+    citySlug: "ahmedabad",
     localitySlug: "paldi",
+    postalCode: "380007",
     priceInr: 18_500_000,
     bhk: 3,
     areaSqft: 1482,

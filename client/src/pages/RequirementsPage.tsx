@@ -1,12 +1,12 @@
 "use client";
-/* Amdavad Modern requirements page: structured brief capture with honest privacy copy. */
+/* India-wide structured brief capture with city-scoped locality identity. */
 import Link from "next/link";
 import { ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import RequirementCapture from "@/components/architech/RequirementCapture";
 import Reveal from "@/components/architech/Reveal";
 
 const steps = [
-  ["01", "Name the brief", "Buy or rent, category, subtype, and the Ahmedabad localities that feel right."],
+  ["01", "Name the brief", "Choose a city, then the localities in that city that feel right."],
   ["02", "Keep the contact masked", "Your phone is not placed on a public page. The first response stays inside the partner workflow."],
   ["03", "Review the evidence", "Any home suggested through Architech keeps its freshness signal, RERA context, and source trail in view."],
 ];
@@ -16,7 +16,7 @@ export default function RequirementsPage() {
     <div className="bg-paper pt-[78px] text-ink">
       <section className="border-b border-ink/12 bg-night py-20 text-cream md:py-32">
         <div className="container grid gap-12 lg:grid-cols-[1fr_0.7fr] lg:items-end">
-          <Reveal><p className="kicker text-ember">Personal property manager · Ahmedabad</p><h1 className="display mt-6 max-w-[840px] text-[clamp(46px,8vw,110px)]">A better brief makes a better <em className="text-ember">address.</em></h1><p className="mt-7 max-w-xl text-[15px] leading-7 text-cream/70">Tell Architech what you are trying to find. We turn a loose search into a clear, reviewable brief for homes, commercial space, co-living, plots, land, and bank-auction opportunities.</p></Reveal>
+          <Reveal><p className="kicker text-ember">Personal property brief · cities across India</p><h1 className="display mt-6 max-w-[840px] text-[clamp(46px,8vw,110px)]">A better brief makes a better <em className="text-ember">address.</em></h1><p className="mt-7 max-w-xl text-[15px] leading-7 text-cream/70">Tell Architech what you are trying to find. We turn a loose search into a clear, reviewable brief for homes, commercial space, co-living, plots, land, and bank-auction opportunities.</p></Reveal>
           <Reveal delay={120} className="flex flex-col items-start gap-4"><RequirementCapture /><p className="stamp !text-[10px] text-cream/55">Free to submit · no public phone number · masked by default</p></Reveal>
         </div>
       </section>

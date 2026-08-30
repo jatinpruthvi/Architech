@@ -1,5 +1,4 @@
 import type { Locality } from "@/lib/localities";
-import { DEFAULT_CITY_SLUG } from "@/lib/cities";
 import type { Property } from "@/lib/properties";
 import type { PropertyDetails } from "@/lib/listing-details";
 import { isPropertyTypeCode, labelForAvailability, normalizeAvailability, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
@@ -11,7 +10,7 @@ type DecimalLike = { toString(): string } | string | number | null | undefined;
 export type DbLocalityRow = {
   slug: string;
   name: string;
-  city?: { slug: string; name: string } | null;
+  city: { slug: string; name: string };
   priceIndex?: number | null;
   hindiName?: string | null;
   note: string;
@@ -21,6 +20,7 @@ export type DbLocalityRow = {
   bbox?: string | null;
   landmarks?: unknown;
   pincodes?: string[] | null;
+  postalCodes?: Array<{ postalCode: string }> | null;
 };
 
 export type DbListingRow = {
@@ -43,7 +43,7 @@ export type DbListingRow = {
     name: string;
   };
   city: {
-    slug?: string;
+    slug: string;
     name: string;
   };
   media?: Array<{ url: string; derivatives?: unknown; alt?: string | null }>;
@@ -75,13 +75,8 @@ function coords(latitude?: DecimalLike, longitude?: DecimalLike) {
 /** Derive a "west,south,east,north" frame when a row has no stored bbox. */
 function frameAround(marker: string, padLon = 0.019, padLat = 0.014): string {
   const [lat, lon] = marker.split(",").map((value) => Number(value));
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return "72.4300,22.9650,72.6350,23.0950";
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return "";
   return [lon - padLon, lat - padLat, lon + padLon, lat + padLat].map((value) => value.toFixed(4)).join(",");
-}
-
-/** Fallback city slug when a persistence row predates the city-slug column. */
-function slugify(value: string): string {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 function imageNamesFromMedia(media?: DbListingRow["media"]): string[] {
@@ -127,10 +122,10 @@ export function dbLocalityToLocality(row: DbLocalityRow): Locality {
     coords: point.coords,
     marker: point.marker,
     bbox: row.bbox ?? frameAround(point.marker),
-    citySlug: row.city?.slug ?? DEFAULT_CITY_SLUG,
-    cityName: row.city?.name ?? "India",
+    citySlug: row.city.slug,
+    cityName: row.city.name,
     priceIndex: row.priceIndex ?? 1,
-    pincodes: row.pincodes ?? [],
+    pincodes: row.postalCodes?.map((link) => link.postalCode) ?? row.pincodes ?? [],
     // Amenity rows predate the category field in the database, so they are
     // validated and typed here rather than cast: a row that is not
     // [name, distance, category?] is dropped instead of reaching the page.
@@ -153,7 +148,7 @@ export function dbListingToProperty(row: DbListingRow): Property {
     locality: row.locality.name,
     localitySlug: row.locality.slug,
     city: row.city.name,
-    citySlug: row.city.slug ?? slugify(row.city.name),
+    citySlug: row.city.slug,
     price: row.priceLabel,
     priceNum: row.priceInr,
     pricePerSqft: row.pricePerSqft ?? "Rate on request",

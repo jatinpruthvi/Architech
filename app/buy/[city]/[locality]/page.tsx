@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
     pincodes: locality.pincodes,
     cityName: city.name,
     reraAuthority: city.reraAuthority,
-    intel: localityIntel(slug),
+    intel: localityIntel(slug, city.slug),
   });
   return {
     title,
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
       pincodes: locality.pincodes,
       cityName: city.name,
       reraAuthority: city.reraAuthority,
-      intel: localityIntel(slug),
+      intel: localityIntel(slug, city.slug),
     }),
     alternates: { canonical: localityUrl(city.slug, locality.slug) },
     openGraph: { title, url: localityUrl(city.slug, locality.slug), images: [socialImage("locality-street")] },
@@ -49,8 +49,8 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   if (!city || !locality) notFound();
 
   const [lat, lon] = locality.marker.split(",");
-  const trust = localityTrustSummary(slug);
-  const intel = localityIntel(slug);
+  const trust = localityTrustSummary(slug, city.slug);
+  const intel = localityIntel(slug, city.slug);
   // Only publicly indexable (ACTIVE) listings belong in the page's ItemList:
   // schema must describe what the page actually publishes.
   const listings = getListingsByLocality(locality.slug, city.slug).filter((listing) =>

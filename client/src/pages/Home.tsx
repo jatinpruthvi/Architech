@@ -25,10 +25,10 @@ import { useLang } from "@/contexts/LangContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const faqs = [
-  { q: "How is every listing RERA-verified?", a: "Each listing is checked against the Gujarat RERA registry at publication — registration number, promoter, and completion status — and re-checked on every meaningful update. The registration number is displayed on the listing page, never behind a form." },
-  { q: "What does the freshness stamp mean?", a: "It is the date a human or automated pipeline last confirmed the price, availability, and facts of the listing. Data that hasn't been re-confirmed within 14 days is flagged, and stale listings are withdrawn from search." },
-  { q: "Will brokers get my phone number?", a: "No. Contact is masked by default: partners reply to your query through the platform, and your number is shared only when you explicitly choose to share it." },
-  { q: "Which cities do you cover?", a: `${getCities().length} cities today — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — covering ${getLocalities().length} localities, each with intelligence built from public records and OpenStreetMap data. A new city goes live only once we can verify its localities properly.` },
+  { q: "How does RERA verification work across India?", a: "The listing’s reviewed state or union territory selects the applicable authority. A badge requires an approved adapter and a matching registration, promoter, project, and status record; unsupported authorities remain visibly unverified and are never checked against Gujarat as a fallback." },
+  { q: "What does the freshness stamp mean?", a: "In production it records when price, availability, and listing facts were last confirmed. Current concept-preview dates are deterministic demo data, not evidence that a live listing was re-checked." },
+  { q: "Will brokers get my phone number?", a: "Requirement capture stores contact digits encrypted and displays only a masked number. Production partner access and explicit sharing remain gated until the consent and access-control workflow is approved." },
+  { q: "Which cities do you cover?", a: `The concept registry currently demonstrates ${getCities().length} Indian city markets — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — across ${getLocalities().length} locality fixtures. Production coverage goes live city by city only after source and locality review.` },
 ];
 
 /* Popular searches are derived from live inventory, so the labels and the
@@ -280,7 +280,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(34,24,21,0.94)_0%,rgba(34,24,21,0.66)_42%,rgba(34,24,21,0.18)_100%)]" />
         <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-            <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>Ahmedabad · Amdavad</p>
+            <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>
             <h1 className="display mt-5 text-[clamp(38px,6.4vw,84px)] leading-[0.94] text-cream md:mt-6">
               <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="font-normal not-italic text-cream/90">{t.hero.h1em}</em></span></span>
               <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
@@ -414,7 +414,7 @@ export default function Home() {
               <div className="arch-frame-sm img-hover grain editorial-shadow">
                 <Pic name="prop-courtyard" alt="Sunlit inner courtyard of an Ahmedabad home, brick walls opening to a planted verandah" className="aspect-[4/3] w-full object-cover" sizes="(max-width: 768px) 100vw, 40vw" />
               </div>
-              <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Courtyard, western Ahmedabad</span><span>Owner submission</span></figcaption>
+              <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Courtyard study · Ahmedabad context</span><span>Concept-preview imagery</span></figcaption>
             </figure>
           </Reveal>
         </div>

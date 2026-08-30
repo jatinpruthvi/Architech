@@ -13,6 +13,12 @@ for (const name of required) {
   }
 }
 
+for (const name of ["staging", "production"]) {
+  const env = envs.environments?.find((item) => item.name === name);
+  if (env && !env.requiredSecrets.includes("ARCHITECH_CONTACT_ENCRYPTION_KEY")) failures.push(`${name} must require ARCHITECH_CONTACT_ENCRYPTION_KEY`);
+  if (env && !env.services.includes("Requirement retention purge")) failures.push(`${name} must schedule the requirement retention purge`);
+  if (env && !env.requiredChecks.includes("pnpm privacy:requirements:test")) failures.push(`${name} must test the requirement retention purge`);
+}
 const production = envs.environments?.find((item) => item.name === "production");
 if (production && !production.requiredSecrets.includes("GSC_CREDENTIALS")) failures.push("production must require GSC_CREDENTIALS");
 

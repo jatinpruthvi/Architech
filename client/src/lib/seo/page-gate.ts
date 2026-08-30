@@ -39,7 +39,7 @@ function localityHasUniqueData(citySlug: string, localitySlug: string): boolean 
   if (!locality) return false;
   const hasLandmarks = (locality.landmarks ?? []).length > 0;
   const hasPincodes = locality.pincodes.length > 0;
-  const hasPriceFacts = localityIntel(localitySlug).medianPriceInr !== null;
+  const hasPriceFacts = localityIntel(localitySlug, citySlug).medianPriceInr !== null;
   return hasLandmarks || hasPincodes || hasPriceFacts;
 }
 

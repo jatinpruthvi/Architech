@@ -9,18 +9,18 @@ import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import LocalityIntel from "../components/architech/LocalityIntel";
 import useTitle from "../hooks/useTitle";
-import { DEFAULT_CITY_SLUG, getCityBySlug, getListingsByCity, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
+import { getCityBySlug, getListingsByCity, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
 import { compactInr } from "@/lib/realestate/price-trends";
 import { localityIntel, formatPsf } from "@/lib/realestate/locality-intel";
 import { localityTrustSummary } from "@/lib/trust/locality";
 import { useLang } from "@/contexts/LangContext";
 import { fillTokens } from "@/lib/i18n";
 
-export default function CityPage({ localitySlug, citySlug = DEFAULT_CITY_SLUG }: { localitySlug: string; citySlug?: string }) {
+export default function CityPage({ localitySlug, citySlug }: { localitySlug: string; citySlug: string }) {
   const locality = getLocalityBySlug(localitySlug, citySlug);
   const city = getCityBySlug(locality?.citySlug ?? citySlug);
   const { t } = useLang();
-  const cityLabel = city?.name ?? t.common.ahmedabad;
+  const cityLabel = city?.name ?? t.common.india;
   useTitle(locality ? `${locality.name}, ${cityLabel} — homes & locality context` : "Not found");
   if (!locality || !city) return null;
 
@@ -35,7 +35,7 @@ export default function CityPage({ localitySlug, citySlug = DEFAULT_CITY_SLUG }:
      find the last locality by. The chips wrap, so five costs no layout. */
   const nearby = getLocalities(city.slug).filter((l) => l.slug !== locality.slug).slice(0, 5);
 
-  const intel = localityIntel(locality.slug);
+  const intel = localityIntel(locality.slug, city.slug);
   const trust = localityTrustSummary(locality.slug, city.slug);
   const newProjects = localHomes.filter(
     (p) => p.availability === "NEW_LAUNCH" || p.availability === "UNDER_CONSTRUCTION",

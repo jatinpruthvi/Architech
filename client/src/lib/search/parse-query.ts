@@ -177,7 +177,9 @@ export function parseSearchQuery(raw: string, scope?: string): ParsedQuery {
     working = working.replace(new RegExp(`(?<![0-9])${pincode}(?![0-9])`, "g"), " ");
     const resolved = resolvePincode(pincode);
     if (resolved) {
-      parsed.city = resolved.city;
+      // A PIN can cross product-locality (and even municipal) boundaries. Only
+      // set one city when every exact mapping agrees; always retain all matches.
+      if (resolved.city) parsed.city = resolved.city;
       parsed.localities = [...resolved.localities];
     }
   }

@@ -100,11 +100,11 @@ export async function getListingByIdForServer(id?: string) {
   return row ? dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]) : undefined;
 }
 
-export async function getListingsByLocalityForServer(localitySlug: string) {
-  if (!isPrismaDataSource()) return getListingsByLocality(localitySlug).slice(0, MAX_UNSCOPED_LISTING_ROWS);
+export async function getListingsByLocalityForServer(localitySlug: string, citySlug?: string) {
+  if (!isPrismaDataSource()) return getListingsByLocality(localitySlug, citySlug).slice(0, MAX_UNSCOPED_LISTING_ROWS);
   const prisma = getPrismaClient();
   const rows = await prisma.listing.findMany({
-    where: { lifecycle: "ACTIVE", locality: { slug: localitySlug } },
+    where: { lifecycle: "ACTIVE", locality: { slug: localitySlug, ...(citySlug ? { city: { slug: citySlug } } : {}) } },
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
     take: MAX_UNSCOPED_LISTING_ROWS,
@@ -115,14 +115,17 @@ export async function getListingsByLocalityForServer(localitySlug: string) {
 export async function getLocalitiesForServer() {
   if (!isPrismaDataSource()) return getLocalities();
   const prisma = getPrismaClient();
-  const rows = await prisma.locality.findMany({ include: { city: true }, orderBy: { name: "asc" } });
+  const rows = await prisma.locality.findMany({ include: { city: true, postalCodes: { where: { validTo: null }, orderBy: [{ isPrimary: "desc" }, { postalCode: "asc" }] } }, orderBy: [{ city: { name: "asc" } }, { name: "asc" }] });
   return rows.map((row) => dbLocalityToLocality(row as Parameters<typeof dbLocalityToLocality>[0]));
 }
 
-export async function getLocalityBySlugForServer(slug?: string) {
-  if (!isPrismaDataSource()) return getLocalityBySlug(slug);
+export async function getLocalityBySlugForServer(slug?: string, citySlug?: string) {
+  if (!isPrismaDataSource()) return getLocalityBySlug(slug, citySlug);
   if (!slug) return undefined;
   const prisma = getPrismaClient();
-  const row = await prisma.locality.findFirst({ where: { slug } });
+  const row = await prisma.locality.findFirst({
+    where: { slug, ...(citySlug ? { city: { slug: citySlug } } : {}) },
+    include: { city: true, postalCodes: { where: { validTo: null }, orderBy: [{ isPrimary: "desc" }, { postalCode: "asc" }] } },
+  });
   return row ? dbLocalityToLocality(row as Parameters<typeof dbLocalityToLocality>[0]) : undefined;
 }

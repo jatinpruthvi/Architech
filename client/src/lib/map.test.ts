@@ -3,8 +3,10 @@ import { boundsForPoints, makeListingMapPoints, makeLocalityClusters, parseMarke
 import { getListings, getLocalities } from "./repositories";
 
 describe("map/list synchronization helpers", () => {
-  it("parses OSM latitude,longitude markers into MapLibre longitude,latitude coordinates", () => {
+  it("parses OSM latitude,longitude markers without a launch-city fallback", () => {
     expect(parseMarker("23.011,72.559")).toEqual([72.559, 23.011]);
+    expect(parseMarker("not-a-coordinate")).toBeNull();
+    expect(boundsForPoints([])).toEqual([[68, 6], [98, 36]]);
   });
 
   it("creates map points for repository-backed listings", () => {

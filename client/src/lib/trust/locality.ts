@@ -1,7 +1,7 @@
 /* Locality/city trust aggregation. Derives an area-level trust summary from the
    per-listing trust scores so the city and locality hubs surface verified
    coverage honestly. Server-safe: no client directive, no side effects. */
-import { getCityBySlug, getListingsByCity, getListingsByLocality, getLocalityBySlug, DEFAULT_CITY_SLUG } from "@/lib/repositories";
+import { getCityBySlug, getListingsByCity, getListingsByLocality, getLocalityBySlug } from "@/lib/repositories";
 import type { getListings } from "@/lib/repositories";
 import { badgesToTrustInput, computeTrustScore, type TrustGrade, type TrustSignalId } from "./score";
 
@@ -46,7 +46,7 @@ export function localityTrustSummary(slug: string, citySlug?: string): LocalityT
 }
 
 /** Trust summary across one city's inventory. */
-export function cityTrustSummary(citySlug: string = DEFAULT_CITY_SLUG): LocalityTrustSummary {
+export function cityTrustSummary(citySlug: string): LocalityTrustSummary {
   const city = getCityBySlug(citySlug);
   return trustForListings(citySlug, city?.name ?? citySlug, getListingsByCity(citySlug));
 }

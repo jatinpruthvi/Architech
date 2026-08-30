@@ -69,23 +69,29 @@ describe("PIN to locality is many-to-many", () => {
 });
 
 describe("resolvePincode", () => {
-  it("resolves an exact PIN to its localities at locality precision", () => {
+  it("resolves an exact PIN to its linked postal area", () => {
     const match = resolvePincode("560066");
-    expect(match?.precision).toBe("locality");
-    expect(match?.city.slug).toBe("bengaluru");
+    expect(match?.precision).toBe("postal-area");
+    expect(match?.city?.slug).toBe("bengaluru");
+    expect(match?.cities.map((city) => city.slug)).toEqual(["bengaluru"]);
     expect(match?.localities.map((locality) => locality.slug)).toEqual(["whitefield"]);
+    expect(match?.ambiguous).toBe(false);
   });
 
-  it("falls back to the city when only the postal district is known", () => {
-    // 400104 is a real Mumbai district PIN that no demo locality claims.
+  it("marks a PIN shared by product localities as ambiguous", () => {
+    const match = resolvePincode("395007");
+    expect(match?.localities.map((locality) => locality.slug).sort()).toEqual(["piplod", "vesu"]);
+    expect(match?.ambiguous).toBe(true);
+  });
+
+  it("never infers a city from a three-digit sorting prefix", () => {
+    // 400104 shares a Mumbai sorting prefix, but no exact fixture mapping. A
+    // prefix is routing metadata, not proof that this PIN belongs to the city.
     expect(localitiesForPincode("400104")).toEqual([]);
-    const match = resolvePincode("400104");
-    expect(match?.precision).toBe("city");
-    expect(match?.city.slug).toBe("mumbai");
-    expect(match?.localities).toEqual([]);
+    expect(resolvePincode("400104")).toBeNull();
   });
 
-  it("refuses to guess outside every covered district", () => {
+  it("refuses malformed and unknown exact PINs", () => {
     expect(resolvePincode("999999")).toBeNull();
     expect(resolvePincode("012345")).toBeNull();
     expect(resolvePincode("")).toBeNull();

@@ -43,7 +43,7 @@ export function LocalityTrust({ summary }: { summary: LocalityTrustSummary }) {
       </div>
 
       <div className="border-l border-ink/12 pl-6 md:pl-8">
-        <Link href="/guide/rera/gujarat/how-we-verify-rera" className="stamp inline-flex items-center gap-2 !text-[11px] font-semibold text-brick">
+        <Link href="/guide/rera/india/how-we-verify-rera" className="stamp inline-flex items-center gap-2 !text-[11px] font-semibold text-brick">
           <ShieldCheck size={14} className="text-trust" /> {t.locality.verifyCta}
         </Link>
       </div>

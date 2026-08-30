@@ -23,7 +23,7 @@
 import { liveCities } from "@/lib/cities";
 import { localities } from "@/lib/localities";
 import { getListings } from "@/lib/repositories";
-import { localitiesForPincode, parsePincode, resolvePincode } from "@/lib/pincodes";
+import { localitiesForPincode, parsePincode } from "@/lib/pincodes";
 import { describeParsedQuery, formatBudget, parseSearchQuery, parsedQueryToSearchUrl } from "./parse-query";
 import { bestMatch, fold } from "./text-match";
 
@@ -152,7 +152,8 @@ export function suggestSearch(query: string, limit = MAX_SUGGESTIONS, scope: Sco
     scored.push({ suggestion, score, tieBreak });
   };
 
-  // 1. A PIN is unambiguous — answer it directly and first.
+  // 1. Answer an exact PIN with every linked locality. A PIN may be shared, so
+  // do not collapse it to one inferred city or one neighbourhood.
   const pincode = parsePincode(trimmed);
   if (pincode) {
     const served = localitiesForPincode(pincode);
@@ -168,22 +169,6 @@ export function suggestSearch(query: string, limit = MAX_SUGGESTIONS, scope: Sco
         130,
         counts.get(locality.slug) ?? 0,
       );
-    }
-    if (served.length === 0) {
-      const resolved = resolvePincode(pincode);
-      if (resolved) {
-        push(
-          {
-            kind: "pincode",
-            label: `PIN ${pincode} — ${resolved.city.name}`,
-            query: resolved.city.name,
-            hint: `No locality in this PIN yet · showing ${resolved.city.name}`,
-            href: `/buy/${resolved.city.slug}/`,
-          },
-          125,
-          0,
-        );
-      }
     }
   }
 

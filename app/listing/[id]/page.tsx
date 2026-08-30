@@ -49,12 +49,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   }
   if (decision.status !== 200) notFound();
 
-  const locality = getLocalityBySlug(property.localitySlug);
+  const locality = getLocalityBySlug(property.localitySlug, property.citySlug);
   const city = getCityBySlug(property.citySlug);
   // The PIN is the locality's primary code: a listing address sits inside one
   // of the locality's PINs, and the first is the registry's principal entry.
   const postalCode = locality?.pincodes[0];
-  const [lat, lon] = (locality?.marker ?? "23.011,72.559").split(",");
+  const coordinates = locality?.marker.split(",").map(Number);
   const trust = computeTrustScore(badgesToTrustInput(property.badge, property.status));
   const agent = buildAgentJsonLd(buildAgentProfile(demoBrokerSession));
   const schemaPrice = property.transaction === "rent" ? Number(property.price.replace(/[^0-9]/g, "")) : property.priceNum;
@@ -80,7 +80,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       ...(postalCode ? { postalCode } : {}),
       addressCountry: "IN",
     },
-    geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
+    ...(coordinates && coordinates.length === 2 && coordinates.every(Number.isFinite)
+      ? { geo: { "@type": "GeoCoordinates", latitude: coordinates[0], longitude: coordinates[1] } }
+      : {}),
     image: assetUrl(`/images/${property.image}.jpg`),
     additionalProperty: [
       { "@type": "PropertyValue", name: "propertyType", value: property.subtype },

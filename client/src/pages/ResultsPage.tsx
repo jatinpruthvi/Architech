@@ -366,8 +366,8 @@ export default function ResultsPage() {
  {/* Header */}
  <section className="border-b border-ink/12 bg-sand/70 py-12 md:py-16">
  <div className="container">
- <p className="ledger-stamp mb-4">AHM / DISCOVERY LEDGER / {intent === "rent" ? "RENT" : "BUY"} / {category === "all" ? "ALL INVENTORY" : category.toUpperCase()}</p>
- <p className="kicker text-brick">{t.search.kicker} · {t.common.ahmedabad}{query ? ` · “${query}”` : ""}</p>
+ <p className="ledger-stamp mb-4">{activeCity?.slug.toUpperCase() ?? "INDIA"} / DISCOVERY LEDGER / {intent === "rent" ? "RENT" : "BUY"} / {category === "all" ? "ALL INVENTORY" : category.toUpperCase()}</p>
+ <p className="kicker text-brick">{t.search.kicker} · {activeCity?.name ?? t.common.india}{query ? ` · “${query}”` : ""}</p>
  {query && (
  <button onClick={() => patch((p) => p.delete("q"))} className="mt-3 inline-flex items-center gap-1.5 stamp min-h-[36px] font-semibold ink-2 underline-offset-4 hover:text-brick">
  {t.search.clearSearch} “{query}” <X size={12} />
@@ -472,11 +472,9 @@ export default function ResultsPage() {
  and a way out, so the smaller result count is never a mystery. */
  <p className="stamp mt-4 ink-2">
  PIN {pincode}
- {pincodeMatch?.localities.length
- ? ` · ${pincodeMatch.localities.map((locality) => locality.name).join(", ")}, ${pincodeMatch.city.name}`
- : pincodeMatch
- ? ` · ${pincodeMatch.city.name} (no locality in the demo registry claims this PIN)`
- : " · outside every covered postal district"}
+ {pincodeMatch
+ ? ` · ${pincodeMatch.localities.map((locality) => locality.name).join(", ")}${pincodeMatch.city ? `, ${pincodeMatch.city.name}` : ""}${pincodeMatch.ambiguous ? " (shared postal area)" : ""}`
+ : " · no exact reviewed mapping"}
  <button type="button" onClick={() => patch((p) => p.delete("pincode"))} className="ml-3 underline decoration-brick underline-offset-4 hover:text-brick">
  Clear PIN
  </button>
@@ -744,7 +742,7 @@ export default function ResultsPage() {
  <div className="p-5 sm:p-7">
  <div className="flex items-start justify-between gap-4">
  <div>
- <p className="kicker text-brick">Quick view · Ahmedabad</p>
+ <p className="kicker text-brick">Quick view · {selectedProperty.city}</p>
  <h2 className="mt-2 font-display text-2xl font-medium leading-tight tracking-[-0.02em]">{selectedProperty.title}<span className="text-brick">.</span></h2>
  </div>
  <button type="button" onClick={() => setQuickViewOpen(false)} className="touch-44 rounded-lg border border-ink/15 px-3 stamp font-semibold ink-2 hover:border-brick hover:text-brick">Close</button>

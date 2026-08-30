@@ -1,8 +1,23 @@
 import "server-only";
-import { DemoReraProvider, GujaratReraProvider } from "@/lib/rera/provider";
+import { liveCities } from "@/lib/cities";
+import { DemoReraProvider, GujaratReraProvider, UnsupportedReraProvider, type ReraJurisdiction } from "@/lib/rera/provider";
 import { getReraSourceMode, validateGujaratReraEnvironment } from "@/lib/rera/source";
 
-export function getReraProvider(mode = getReraSourceMode()) {
+function unsupportedJurisdiction(stateSlug: string): ReraJurisdiction {
+  const city = liveCities.find((candidate) => candidate.stateSlug === stateSlug);
+  return {
+    stateSlug,
+    stateName: city?.state ?? stateSlug,
+    authorityName: city ? `${city.state} Real Estate Regulatory Authority` : "Applicable Real Estate Regulatory Authority",
+    publicRegistryUrl: null,
+  };
+}
+
+/** Resolve by the property's state/UT before touching a provider. Only Gujarat
+ * has an adapter today; unsupported states return an explicit unavailable
+ * provider rather than inheriting Gujarat behavior. */
+export function getReraProvider(stateSlug: string, mode = getReraSourceMode()) {
+  if (stateSlug !== "gujarat") return new UnsupportedReraProvider(unsupportedJurisdiction(stateSlug));
   if (mode === "gujarat") {
     const env = validateGujaratReraEnvironment();
     if (!env.ok) throw new Error(`Gujarat RERA provider missing: ${env.missing.join(", ")}`);
@@ -11,6 +26,6 @@ export function getReraProvider(mode = getReraSourceMode()) {
   return new DemoReraProvider();
 }
 
-export async function verifyReraRecordForServer(registrationNumber: string) {
-  return getReraProvider().verify(registrationNumber);
+export async function verifyReraRecordForServer(stateSlug: string, registrationNumber: string) {
+  return getReraProvider(stateSlug).verify(registrationNumber);
 }
