@@ -28,6 +28,7 @@ import {
   citySerpTitle,
   composeSerpText,
   fitSerpText,
+  fitTail,
   isSerpTruncated,
   listingSerpDescription,
   listingSerpTitle,
@@ -207,6 +208,93 @@ describe("every locality and city fits the budget without truncation", () => {
       const description = citySerpDescription({ ...city, localities: getLocalities(city.slug).map((l) => l.name) });
       expect(description.length, `${city.slug}: ${description}`).toBeLessThanOrEqual(SERP_DESCRIPTION_MAX);
       expect(isSerpTruncated(description), city.slug).toBe(false);
+    }
+  });
+});
+
+/* The tail ladder (StudyArena round-12, contestant E §2).
+
+   E wants the number in the title: `Flats in {Locality}, {City} — 1/2/3 BHK
+   Price ₹{X}/sqft`. That template overruns the budget for most Indian place
+   names, but the reason behind it survives — a tail clause true of every page
+   wastes the one line that earns the click.
+
+   Implementing it exposed a defect in the ladder it replaced. Three tails of
+   decreasing length were passed to `composeSerpText`, which appends parts and
+   stops at the first that does not fit: the longest was tried, overflowed, and
+   the loop broke before the two shorter ones were ever considered. Measured on
+   the built corpus, 15 of 72 locality pages shipped a bare "Locality, City"
+   title with room to spare.
+
+   `fitTail` tries candidates richest-first, so these tests are mostly about
+   the degradation: the richest fact that fits wins, and something always
+   wins. */
+describe("tail ladder", () => {
+  it("takes the first candidate that fits", () => {
+    expect(fitTail("Short", ["— a very long clause indeed", "— shorter", "— min"], 30)).toBe("— shorter");
+    expect(fitTail("Short", ["— a very long clause indeed", "— shorter", "— min"], 12)).toBe("— min");
+  });
+
+  /* Returning null is the point: the caller decides what a bare title means.
+     Guessing a shorter clause would invent copy. */
+  it("returns null when nothing fits, rather than inventing one", () => {
+    expect(fitTail("A subject", ["— way too long"], 10)).toBeNull();
+    expect(fitTail("A subject", [], 10)).toBeNull();
+  });
+
+  it("skips empty candidates instead of emitting a bare separator", () => {
+    expect(fitTail("Subject", [null, undefined, false, "— real"], 40)).toBe("— real");
+  });
+
+  /* The regression. A tail long enough to be interesting was also too long to
+     fit, and the loop gave up instead of trying the shorter ones. */
+  it("gives every locality a tail clause — none is left bare", () => {
+    for (const locality of getLocalities()) {
+      const city = getCities().find((entry) => entry.slug === locality.citySlug)!;
+      const title = localitySerpTitle({ name: locality.name, cityName: city.name, intel: localityIntel(locality.slug) });
+      expect(title, locality.slug).toContain("—");
+      expect(isSerpTruncated(title), locality.slug).toBe(false);
+    }
+  });
+
+  /* E's actual point: configurations and rate are what a searcher compares on,
+     and they differ page to page, unlike "homes & locality context". */
+  it("puts the rate in the title wherever the sample supports it", () => {
+    let withRate = 0;
+    for (const locality of getLocalities()) {
+      const intel = localityIntel(locality.slug);
+      const city = getCities().find((entry) => entry.slug === locality.citySlug)!;
+      const title = localitySerpTitle({ name: locality.name, cityName: city.name, intel });
+      if (intel.sampleSufficient && intel.avgPricePerSqftInr !== null) {
+        expect(title, locality.slug).toMatch(/sq ft/);
+        withRate += 1;
+      } else {
+        // Gated cities must not publish a figure the page itself withholds.
+        expect(title, locality.slug).not.toMatch(/sq ft/);
+      }
+    }
+    expect(withRate).toBeGreaterThan(0);
+  });
+
+  /* A title must never claim a configuration that is not actually available. */
+  it("only advertises configurations the locality actually has", () => {
+    for (const locality of getLocalities()) {
+      const intel = localityIntel(locality.slug);
+      const city = getCities().find((entry) => entry.slug === locality.citySlug)!;
+      const title = localitySerpTitle({ name: locality.name, cityName: city.name, intel });
+      const claimed = title.match(/(\d(?:\/\d)*) BHK/);
+      if (!claimed) continue;
+      const available = intel.byBhk.map((entry) => entry.bhk).join("/");
+      expect(claimed[1], locality.slug).toBe(available);
+    }
+  });
+
+  it("still fits without intel, so the ladder degrades rather than breaks", () => {
+    for (const locality of getLocalities()) {
+      const city = getCities().find((entry) => entry.slug === locality.citySlug)!;
+      const title = localitySerpTitle({ name: locality.name, cityName: city.name });
+      expect(isSerpTruncated(title), locality.slug).toBe(false);
+      expect(renderedTitle(title), locality.slug).toBeLessThanOrEqual(SERP_TITLE_MAX);
     }
   });
 });

@@ -28,7 +28,12 @@ export default function CityPage({ localitySlug, citySlug = DEFAULT_CITY_SLUG }:
   const cityHomes = getListingsByCity(city.slug);
   const localHomes = getListingsByLocality(locality.slug, city.slug);
   const showcase = localHomes.length ? [...localHomes, ...cityHomes.filter((p) => p.localitySlug !== locality.slug)].slice(0, 4) : cityHomes.slice(0, 4);
-  const nearby = getLocalities(city.slug).filter((l) => l.slug !== locality.slug).slice(0, 4);
+  /* Every sibling locality the city has, not a rounded four. E §6 asks for
+     parent plus five siblings, and with six localities per city all five are
+     available — the previous slice(0, 4) silently dropped one, which is one
+     fewer internal link into each locality and one fewer path a crawler can
+     find the last locality by. The chips wrap, so five costs no layout. */
+  const nearby = getLocalities(city.slug).filter((l) => l.slug !== locality.slug).slice(0, 5);
 
   const intel = localityIntel(locality.slug);
   const trust = localityTrustSummary(locality.slug, city.slug);

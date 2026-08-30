@@ -129,6 +129,7 @@ const sitemapChecks = [
   { route: "/sitemap/localities.xml", root: "urlset" },
   { route: "/sitemap/listings.xml", root: "urlset" },
   { route: "/sitemap/guides.xml", root: "urlset" },
+  { route: "/sitemap/reports.xml", root: "urlset" },
 ];
 
 /* The social card. OGP wants an absolute URL; a relative one is resolved
@@ -293,6 +294,36 @@ const routeChecks = [
       includes(html, "@type\":\"Article", "/guide/city/ahmedabad/home-buying-guide/");
       includes(html, "Editorial method", "/guide/city/ahmedabad/home-buying-guide/");
       matches(html, /\"image\":\"https:\/\/[^\"]+\"/, "/guide/city/ahmedabad/home-buying-guide/", "absolute Article image URL");
+    },
+  },
+  /* The price index (contestant E §5). Two routes, because the interesting
+     assertion is the difference between them: a city that clears the sample
+     bar publishes its figures and is indexable, and one that does not is
+     noindexed while still showing the blocker. A report that hides its own
+     coverage gap is worse than no report. */
+  {
+    route: "/price-index/",
+    check(html) {
+      assertCommonSeo(html, "/price-index/");
+      includes(html, "@type\":\"CollectionPage\"", "/price-index/");
+      includes(html, "Property price index", "/price-index/");
+    },
+  },
+  {
+    route: "/price-index/mumbai/",
+    check(html) {
+      assertCommonSeo(html, "/price-index/mumbai/");
+      includes(html, "@type\":\"Article\"", "/price-index/mumbai/");
+      includes(html, "@type\":\"BreadcrumbList\"", "/price-index/mumbai/");
+      matches(html, /<meta[^>]+name=\"robots\"[^>]+content=\"index/, "/price-index/mumbai/", "indexable when the sample publishes");
+    },
+  },
+  {
+    route: "/price-index/ahmedabad/",
+    check(html) {
+      assertCommonSeo(html, "/price-index/ahmedabad/");
+      assertNoindex(html, "/price-index/ahmedabad/");
+      includes(html, "Not published", "/price-index/ahmedabad/");
     },
   },
   {

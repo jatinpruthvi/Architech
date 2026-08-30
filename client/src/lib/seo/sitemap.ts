@@ -26,13 +26,14 @@ export type SitemapSegment = {
 };
 
 /** Ordered so the index reads the way the site is crawled: standing pages,
-    then the place hierarchy, then inventory, then editorial. */
+    then the place hierarchy, then inventory, then editorial, then reports. */
 export const SITEMAP_SEGMENTS: readonly SitemapSegment[] = [
   { id: "pages", label: "Standing pages", description: "Home, national hub, requirements, list-property, about, contact, and tools." },
   { id: "cities", label: "City hubs", description: "/buy/{city}/ — one hub per launched city." },
   { id: "localities", label: "Locality pages", description: "/buy/{city}/{locality}/ — the hyperlocal intent surface." },
   { id: "listings", label: "Property dossiers", description: "/listing/{id}/ — indexable (ACTIVE) listings only." },
   { id: "guides", label: "Field notes", description: "/guide/… — methodology and locality buying guides." },
+  { id: "reports", label: "Price indexes", description: "/price-index/{city}/ — the citable per-city property price index." },
 ];
 
 const SEGMENT_IDS = new Set<string>(SITEMAP_SEGMENTS.map((segment) => segment.id));

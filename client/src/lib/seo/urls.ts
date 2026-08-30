@@ -115,6 +115,30 @@ export function investmentUrl(base?: string) {
   return canonicalUrl(investmentPath(), base);
 }
 
+/* The city property price index.
+
+   Contestant E §5 calls a published price index the one authority lever that
+   cannot be faked, and the report behind it already existed — but only behind
+   an API route, which no journalist can cite and no searcher can find. This
+   is its public surface. Per-city rather than per-locality because the report
+   is city-scoped: the locality rows are the table inside it, not pages of
+   their own. */
+export function priceIndexPath() {
+  return "/price-index/";
+}
+
+export function priceIndexUrl(base?: string) {
+  return canonicalUrl(priceIndexPath(), base);
+}
+
+export function cityPriceIndexPath(citySlug: string) {
+  return withTrailingSlash(`/price-index/${citySlug}/`);
+}
+
+export function cityPriceIndexUrl(citySlug: string, base?: string) {
+  return canonicalUrl(cityPriceIndexPath(citySlug), base);
+}
+
 export function savedPath() {
   return "/saved/";
 }

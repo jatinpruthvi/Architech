@@ -1,16 +1,17 @@
 import { getCities, getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { localityIntel } from "@/lib/realestate/locality-intel";
+import { cityMarketTrends } from "@/lib/realestate/market-trends";
 import { evaluateSeoPageQuality } from "./page-gate";
 import type { PageQualityDecision } from "./page-quality";
 import { isIndexable } from "./lifecycle";
-import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, requirementsPath, requirementsUrl } from "./urls";
+import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, priceIndexPath, priceIndexUrl, cityPriceIndexPath, cityPriceIndexUrl, requirementsPath, requirementsUrl } from "./urls";
 
-export type SeoRouteType = "home" | "hub" | "city" | "locality" | "listing" | "guide";
+export type SeoRouteType = "home" | "hub" | "city" | "locality" | "listing" | "guide" | "report";
 
 /** Child sitemap a page is published in. Segmentation lets Search Console
     report coverage per content type, so a locality-fact problem never hides
     inside one flat 400-URL sitemap (StudyArena round-11, contestant A §5). */
-export type SeoSitemapSegment = "pages" | "cities" | "localities" | "listings" | "guides";
+export type SeoSitemapSegment = "pages" | "cities" | "localities" | "listings" | "guides" | "reports";
 export type SeoIndexability = "indexable" | "noindex";
 export type SeoQualityState = "prototype-validated" | "needs-production-data" | "editorial-review-required";
 export type SeoOwner = "Product" | "SEO" | "Content";
@@ -51,6 +52,7 @@ const SEGMENT_BY_ROUTE_TYPE: Record<SeoRouteType, SeoSitemapSegment> = {
   locality: "localities",
   listing: "listings",
   guide: "guides",
+  report: "reports",
 };
 
 /** Resolve a page's child sitemap: the explicit override wins, otherwise the
@@ -329,7 +331,55 @@ const listPropertyPage: SeoPage = {
   sitemap: { changeFrequency: "monthly", priority: 0.6 },
 };
 
-export const seoPages: SeoPage[] = [homePage, buyIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
+/* City property price indexes (StudyArena round-12, contestant E §5).
+
+   The report itself already existed and is already gated — see
+   `market-trends.ts`. What did not exist was any way to reach it: it was only
+   served as JSON from an API route, and a journalist cannot cite a JSON
+   endpoint or a searcher find one. E calls a published price index the one
+   authority lever that cannot be faked, which is only true once it is a page.
+
+   Indexability follows the report's own gate rather than a second opinion: a
+   city whose sample is below the minimum publishes no figures, so its page is
+   held back from Google while still showing the coverage gap and the blocker.
+   Withholding the number and withholding the page are the same decision. */
+
+const priceIndexHubPage: SeoPage = {
+  id: "page:price-index",
+  routeType: "report",
+  path: priceIndexPath(),
+  canonicalUrl: priceIndexUrl(),
+  primaryIntent: "Publish one citable property price index per Indian city, with the sample and methodology behind every figure.",
+  indexability: "indexable",
+  owner: "Content",
+  qualityState: "needs-production-data",
+  freshnessPolicy: "Refresh when any city's median, rate per square foot, or coverage changes.",
+  entityIds: ["brand:architech", "country:india", "topic:price-index"],
+  sitemap: { changeFrequency: "weekly", priority: 0.7 },
+};
+
+const cityPriceIndexPages: SeoPage[] = getCities().map((city) => {
+  const report = cityMarketTrends(city.slug);
+  return {
+    id: `report:price-index:${city.slug}`,
+    routeType: "report" as const,
+    path: cityPriceIndexPath(city.slug),
+    canonicalUrl: cityPriceIndexUrl(city.slug),
+    primaryIntent: `Publish the ${city.name} property price index: median price and rate per square foot by locality, with coverage stated.`,
+    // The report's own publication bar decides, not a separate rule.
+    indexability: report.publishable ? ("indexable" as const) : ("noindex" as const),
+    owner: "Content" as const,
+    qualityState: report.publishable
+      ? ("prototype-validated" as const)
+      : ("needs-production-data" as const),
+    freshnessPolicy: "Refresh when the city's sale listings, medians, or locality coverage change.",
+    entityIds: [`city:${city.slug}`, "topic:price-index"],
+    lastModified: report.asOfDate,
+    sitemap: { changeFrequency: "weekly" as const, priority: 0.7 },
+  };
+});
+
+export const seoPages: SeoPage[] = [homePage, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
 
 /* Quality decisions are computed once at module load: evaluating per call would
    re-scan the listing table for every consumer. */
