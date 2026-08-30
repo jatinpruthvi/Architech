@@ -389,6 +389,34 @@ try {
     includes(xml, `<${item.root}`, item.route);
     console.log(`✓ sitemap checks passed for ${item.route}`);
   }
+  /* Keyword URLs (contestant F §1 and §4). "2 bhk for rent in [locality]" is
+     the query shape F builds on, and these slugs are how it reaches the site.
+     Two things are asserted: the slug resolves to the place it names — both
+     routes used to default anything unrecognised to Ahmedabad — and the alias
+     is permanent, so crawlers collapse it onto the canonical search URL
+     instead of re-following it forever. */
+  for (const [slug, expectedCity] of [
+    ["/property/2bhk-rent-bandra-west/", "mumbai"],
+    ["/property/2bhk-rent-bopal/", "ahmedabad"],
+    ["/property-search/rent-whitefield/", "bengaluru"],
+    ["/property-search/3bhk-sale-powai/", "mumbai"],
+  ]) {
+    const response = await fetch(`${baseUrl}${slug}`, { redirect: "manual" });
+    assert(
+      response.status === 308 || response.status === 301,
+      `${slug} expected a permanent redirect, received ${response.status}`,
+    );
+    const location = response.headers.get("location") ?? "";
+    assert(location.includes(`city=${expectedCity}`), `${slug} resolved to ${location}, expected city=${expectedCity}`);
+    console.log(`✓ ${slug} redirects permanently to ${expectedCity}`);
+  }
+  /* An unrecognised place must not be guessed into a city: a confident wrong
+     result set is worse than an open search. */
+  const unmapped = await fetch(`${baseUrl}/property/2bhk-rent-somewhere-unmapped/`, { redirect: "manual" });
+  assert(unmapped.status === 308 || unmapped.status === 301, `unmapped slug expected a permanent redirect, received ${unmapped.status}`);
+  assert(!(unmapped.headers.get("location") ?? "").includes("city="), "an unmapped place must not be assigned a city");
+  console.log("✓ an unmapped keyword slug is not guessed into a city");
+
   const unknownSegment = await fetch(`${baseUrl}/sitemap/not-a-segment.xml`, { redirect: "manual" });
   assert(unknownSegment.status === 404, `unknown sitemap segment expected HTTP 404, received ${unknownSegment.status}`);
   console.log("✓ unknown sitemap segment returns 404");

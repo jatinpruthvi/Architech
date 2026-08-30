@@ -1,13 +1,19 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
+import { keywordSlugToSearchUrl } from "@/lib/search/keyword-slug";
 
-type Props = { params: Promise<{ segments: string[] }> };
+/* Keyword URLs → canonical search (contestant F §1 and §4).
 
-export default async function Page({ params }: Props) {
+   "/property/2bhk-rent-bandra-west" is the URL shape behind F's example
+   queries. It used to be answered by sniffing the joined slug for the word
+   "gandhinagar" and defaulting everything else to Ahmedabad, so a Mumbai or
+   Bengaluru slug redirected to an Ahmedabad search. `keywordSlugToSearchUrl`
+   resolves against the live registry instead — see that module.
+
+   Permanent, not temporary: the slug is a permanent alias for a query, so a
+   308 lets crawlers and browsers collapse the alias onto the canonical search
+   URL instead of re-following it (F §4's 301 strategy). The destination is
+   noindex by design; these slugs are entry points, not pages to rank. */
+export default async function Page({ params }: { params: Promise<{ segments: string[] }> }) {
   const { segments } = await params;
-  const raw = segments.join("-").toLowerCase();
-  const intent = raw.includes("rent") ? "rent" : "buy";
-  const category = raw.includes("commercial") ? "commercial" : raw.includes("plot") ? "plot" : raw.includes("land") ? "land" : raw.includes("auction") ? "auction" : "residential";
-  const city = raw.includes("gandhinagar") ? "gandhinagar" : "ahmedabad";
-  const paramsForSearch = new URLSearchParams({ intent, category, q: city });
-  redirect(`/search/?${paramsForSearch.toString()}`);
+  permanentRedirect(keywordSlugToSearchUrl(segments));
 }

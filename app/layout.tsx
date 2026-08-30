@@ -3,8 +3,9 @@ import type { ReactNode } from "react";
 import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
-import { assetUrl, homeUrl, SITE_URL } from "@/lib/seo/urls";
+import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
+import { organizationJsonLd } from "@/lib/seo/organization";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@/theme.css";
 
@@ -51,14 +52,12 @@ const websiteJsonLd = {
       description: "High-trust home discovery across India.",
       inLanguage: ["en-IN", "hi-IN"],
     },
-    {
-      "@type": "Organization",
-      "@id": `${homeUrl()}#org`,
-      name: "Architech",
-      url: homeUrl(),
-      logo: assetUrl("/icon-512.png"),
-      areaServed: { "@type": "Country", name: "India" },
-    },
+    /* F §3: property is YMYL, so the organisation behind the site is part of
+       how Google decides whether to trust it. The address and coordinates are
+       facts /contact-us/ already publishes; the phone and email are omitted
+       because those channels are not activated yet and inventing them would be
+       the fabricated trust signal this scrutiny exists to catch. */
+    organizationJsonLd(),
   ],
 };
 

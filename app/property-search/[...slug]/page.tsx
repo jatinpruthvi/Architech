@@ -1,19 +1,18 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
+import { keywordSlugToSearchUrl } from "@/lib/search/keyword-slug";
 
-type Props = { params: Promise<{ slug: string[] }> };
+/* The second keyword-URL shape, now sharing one resolver with `/property/`.
 
-function toSearch(slug: string[]) {
-  const value = slug.join("-").toLowerCase();
-  const intent = value.includes("rent") ? "rent" : "buy";
-  const category = value.includes("commercial") || value.includes("office") || value.includes("shop") ? "commercial" : value.includes("plot") ? "plot" : value.includes("land") ? "land" : value.includes("auction") ? "auction" : "residential";
-  const locality = ["bopal", "paldi", "thaltej", "satellite", "navrangpura", "prahlad-nagar", "maninagar", "gota", "nikol", "science-city"].find((item) => value.includes(item));
-  const query = locality ? locality.replaceAll("-", " ") : "";
-  const params = new URLSearchParams({ intent, category });
-  if (query) params.set("q", query);
-  redirect(`/search/?${params.toString()}`);
-}
+   These two routes were separate copies of the same idea, and the copies had
+   drifted: this one carried a hardcoded list of ten Ahmedabad localities, so
+   any slug naming one of the other 62 localities produced an empty query.
+   Both routes now ask `parseSearchQuery`, which already understands BHK,
+   budget, intent, category, PIN codes and place names across every city the
+   site covers — see `keyword-slug.ts`.
 
-export default async function Page({ params }: Props) {
+   Permanent rather than temporary, for the same reason as `/property/`: a
+   slug is a permanent alias for a query (F §4's 301 strategy). */
+export default async function Page({ params }: { params: Promise<{ slug: string[] }> }) {
   const { slug } = await params;
-  toSearch(slug);
+  permanentRedirect(keywordSlugToSearchUrl(slug));
 }
