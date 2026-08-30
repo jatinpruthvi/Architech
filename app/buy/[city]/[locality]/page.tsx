@@ -6,6 +6,7 @@ import { isIndexable } from "@/lib/seo/lifecycle";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { localityTrustSummary } from "@/lib/trust/locality";
 import { localityIntel } from "@/lib/realestate/locality-intel";
+import { localitySerpDescription, localitySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
 
 export function generateStaticParams() {
@@ -17,11 +18,26 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const city = getLiveCityBySlug(citySlug);
   const locality = city ? getLocalityBySlug(slug, city.slug) : undefined;
   if (!city || !locality) return { title: "Not found" };
+  const title = localitySerpTitle({
+    name: locality.name,
+    note: locality.note,
+    pincodes: locality.pincodes,
+    cityName: city.name,
+    reraAuthority: city.reraAuthority,
+    intel: localityIntel(slug),
+  });
   return {
-    title: `${locality.name}, ${city.name} — homes & locality context`,
-    description: `Homes in ${locality.name} (${locality.hindi}), ${city.name}${locality.pincodes.length ? ` — PIN ${locality.pincodes.join(", ")}` : ""}: ${locality.note.toLowerCase()}. ${city.reraAuthority}-checked inventory, verified coordinates (${locality.coords}), and real distances.`,
+    title,
+    description: localitySerpDescription({
+      name: locality.name,
+      note: locality.note,
+      pincodes: locality.pincodes,
+      cityName: city.name,
+      reraAuthority: city.reraAuthority,
+      intel: localityIntel(slug),
+    }),
     alternates: { canonical: localityUrl(city.slug, locality.slug) },
-    openGraph: { title: `${locality.name}, ${city.name}`, url: localityUrl(city.slug, locality.slug), images: [{ url: assetUrl("/images/locality-street.jpg") }] },
+    openGraph: { title, url: localityUrl(city.slug, locality.slug), images: [{ url: assetUrl("/images/locality-street.jpg") }] },
   };
 }
 

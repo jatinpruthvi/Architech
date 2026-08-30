@@ -10,7 +10,7 @@ import "@/theme.css";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Architech — Find the place before the address. Homes across India.",
+    default: "Architech — Find the place before the address.",
     template: "%s · Architech",
   },
   description:

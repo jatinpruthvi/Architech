@@ -18,6 +18,61 @@ function matches(html, pattern, route, label) {
   assert(pattern.test(html), `${route} raw HTML missing ${label}: ${pattern}`);
 }
 
+/* SERP length budget (StudyArena round-12, contestant C §7). Google truncates
+   a title past ~60 characters and a description past ~155, and the tail is
+   usually the number that would have earned the click. Measured across the
+   prerendered routes, 131 titles and 419 of 438 descriptions were over budget
+   with nothing checking, because the suite only asserted a <title> existed.
+
+   These run against served HTML rather than the builders, so they fail on the
+   string Google actually receives — including the brand suffix the layout
+   appends, which a builder alone would not see. */
+const SERP_TITLE_MAX = 60;
+const SERP_DESCRIPTION_MAX = 155;
+
+function decodeEntities(text) {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#0?39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+}
+
+function pageTitle(html, route) {
+  const match = html.match(/<title>([\s\S]*?)<\/title>/);
+  assert(match, `${route} has no <title>`);
+  return decodeEntities(match[1]);
+}
+
+function metaDescription(html, route) {
+  const match =
+    html.match(/<meta[^>]+name="description"[^>]+content="([^"]*)"/) ||
+    html.match(/<meta[^>]+content="([^"]*)"[^>]+name="description"/);
+  assert(match, `${route} has no meta description`);
+  return decodeEntities(match[1]);
+}
+
+function assertSerpBudget(html, route) {
+  const title = pageTitle(html, route);
+  assert(
+    title.length <= SERP_TITLE_MAX,
+    `${route} title is ${title.length} chars, over the ${SERP_TITLE_MAX} SERP budget: ${JSON.stringify(title)}`,
+  );
+  assert(!title.includes("\u2026"), `${route} title is truncated: ${JSON.stringify(title)}`);
+
+  const description = metaDescription(html, route);
+  assert(
+    description.length <= SERP_DESCRIPTION_MAX,
+    `${route} description is ${description.length} chars, over the ${SERP_DESCRIPTION_MAX} SERP budget: ${JSON.stringify(description)}`,
+  );
+  // An ellipsis in the SERP reads as a broken site. If a name outgrows the
+  // budget the copy should be rewritten, not silently cut.
+  assert(!description.includes("\u2026"), `${route} description is truncated: ${JSON.stringify(description)}`);
+}
+
 async function findFreePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -80,6 +135,7 @@ function assertCommonSeo(html, route) {
   includes(html, "<title", route);
   includes(html, "rel=\"canonical\"", route);
   includes(html, "application/ld+json", route);
+  assertSerpBudget(html, route);
 }
 
 function assertNoindex(html, route) {

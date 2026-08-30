@@ -8,6 +8,7 @@ import { badgesToTrustInput, computeTrustScore } from "@/lib/trust/score";
 import { buildAgentJsonLd, buildAgentProfile } from "@/lib/agent/profile";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import { residenceSchemaType } from "@/lib/listing-vocabulary";
+import { listingSerpDescription, listingSerpTitle } from "@/lib/seo/serp";
 
 export function generateStaticParams() {
   return getListingStaticParams();
@@ -18,12 +19,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const property = getListingById(id);
   if (!property) return { title: "Not found" };
   const metadataDecision = httpDecisionForListing(property.lifecycle, property.id, { continuingValue: property.continuingSeoValue });
+  // Title and description are composed against a SERP length budget: see
+  // `lib/seo/serp.ts`. The page-level title must leave room for the brand
+  // suffix the root layout appends, or Google truncates the number off the end.
+  const title = listingSerpTitle(property);
   return {
-    title: `${property.title} — ${property.price}`,
-    description: `${property.meta} · ${property.area} · ${property.locality}, ${property.city}. ${property.note} ${property.badge}, ${property.status.toLowerCase()}.`,
+    title,
+    description: listingSerpDescription(property),
     alternates: { canonical: listingUrl(property.id) },
     robots: { index: metadataDecision.indexable, follow: true },
-    openGraph: { title: `${property.title} — ${property.price}`, url: listingUrl(property.id), images: [{ url: assetUrl(`/images/${property.image}.jpg`) }] },
+    openGraph: { title, url: listingUrl(property.id), images: [{ url: assetUrl(`/images/${property.image}.jpg`) }] },
   };
 }
 
