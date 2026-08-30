@@ -60,6 +60,9 @@ export type SearchResponse = {
   count: number;
   source: SearchSource;
   indexPlan: "deterministic-parser-now-postgres-fts-trigram-next" | "postgres-fts-trigram-ready";
+  /** True when the underlying read hit its row ceiling (5000), so `count` is a
+      bounded total rather than the real one. Set by the server path. */
+  truncated?: boolean;
   page: PaginationMeta;
   results: Property[];
   /** --- facet rebuild --- */

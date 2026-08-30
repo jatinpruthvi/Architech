@@ -31,7 +31,7 @@ export type ListingDraftInput = {
 };
 
 export type ModerationDecision = "approve" | "request_changes" | "reject";
-export type DraftStatus = "DRAFT" | "IN_REVIEW" | "ACTIVE" | "CHANGES_REQUESTED" | "REJECTED" | "ARCHIVED";
+export type DraftStatus = "DRAFT" | "IN_REVIEW" | "ACTIVE" | "CHANGES_REQUESTED" | "REJECTED" | "ARCHIVED" | "DUPLICATE";
 
 export type ListingDraft = ListingDraftInput & {
   id: string;
@@ -94,6 +94,19 @@ export function createListingDraft(input: ListingDraftInput, session: AuthSessio
   const now = new Date().toISOString();
   const seed = `${session!.organization!.id}:${input.title}:${input.localitySlug}`;
   const id = stableId("draft", seed);
+  const previous = drafts.get(id);
+  if (previous) {
+    /* A second draft with the same title+locality is not a new listing: it is
+       the same one being submitted again. Silently overwriting it would lose
+       the audit trail, so the collision is surfaced and the existing draft is
+       returned for the client to resume instead. */
+    return {
+      ok: false as const,
+      status: 409,
+      errors: ["A draft with this title and locality already exists — resume the existing draft instead of creating a new one."],
+      existingDraft: previous,
+    };
+  }
   const draft: ListingDraft = {
     ...input,
     id,

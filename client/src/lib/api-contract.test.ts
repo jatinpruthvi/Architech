@@ -5,7 +5,7 @@
    changes that would break clients are caught in CI, independent of a live DB
    (memory/fixture sources). */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as searchGet } from "../../../app/api/search/route";
 import { GET as suggestGet } from "../../../app/api/search/suggest/route";
 import { POST as leadsPost } from "../../../app/api/leads/route";
@@ -27,6 +27,8 @@ import { GET as priceTrendsGet } from "../../../app/api/localities/[slug]/price-
 import { POST as investmentMetricsPost } from "../../../app/api/investment/metrics/route";
 import { GET as marketTrendsGet } from "../../../app/api/cities/[slug]/market-trends/route";
 import { POST as ownershipPost } from "../../../app/api/cost/ownership/route";
+import { GET as authGetSession, POST as authSignUpPost } from "../../../app/api/auth/[...all]/route";
+import { resetAuthServerForTests } from "./auth/server-auth";
 
 async function json(response: Response): Promise<Record<string, unknown>> {
   return (await response.json()) as Record<string, unknown>;
@@ -196,7 +198,8 @@ describe("public API contract", () => {
     const completedBody = await json(completed) as { ok: boolean; upload: { auditTrail: { action: string }[]; derivatives: { status: string }[]; moderationStatus: string } };
     expect(completedBody.ok).toBe(true);
     expect(completedBody.upload.moderationStatus).toBe("PENDING");
-    expect(completedBody.upload.derivatives.every((derivative) => derivative.status === "ready")).toBe(true);
+    /* B-17: no transcoder/EXIF processor runs, so derivatives stay planned. */
+    expect(completedBody.upload.derivatives.every((derivative) => derivative.status === "planned")).toBe(true);
     expect(completedBody.upload.auditTrail.some((entry) => entry.action === "media.upload.completed")).toBe(true);
   });
 
@@ -327,5 +330,48 @@ describe("public API contract", () => {
     const body = await json(response);
     expect(body.source).toBe("deterministic-ai-safe");
     expect((body as { structured: { localitySlug: string } }).structured.localitySlug).toBe("paldi");
+  });
+});
+
+/* Live auth mount contract (I-1/M-2). Better Auth endpoint routing fails on a
+   trailing slash and on an unbound handler, and both are exactly what this app
+   deploys with (`trailingSlash: true`). These lock the mounted routes to the
+   shapes the running server actually serves. */
+describe("mounted Better Auth routes", () => {
+  beforeEach(() => {
+    resetAuthServerForTests();
+    vi.stubEnv("BETTER_AUTH_SECRET", "w".repeat(32));
+    vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
+  });
+
+  afterEach(() => {
+    resetAuthServerForTests();
+    vi.unstubAllEnvs();
+  });
+
+  it("POST /api/auth/sign-up/email/ (trailing slash) mints a session cookie", async () => {
+    const response = await authSignUpPost(
+      new Request("http://localhost:3000/api/auth/sign-up/email/", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Wire Broker", email: "wire@example.com", password: "password123", role: "BROKER_ADMIN" }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    const setCookie = response.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("better-auth.session_token=");
+    const cookie = setCookie.split(";")[0];
+
+    const sessionResponse = await authGetSession(new Request("http://localhost:3000/api/auth/get-session/", { headers: { cookie } }));
+    expect(sessionResponse.status).toBe(200);
+    const body = await json(sessionResponse);
+    expect((body as { user?: { email?: string } }).user?.email).toBe("wire@example.com");
+  });
+
+  it("returns no session for a request without a cookie", async () => {
+    const response = await authGetSession(new Request("http://localhost:3000/api/auth/get-session/"));
+    expect(response.status).toBe(200);
+    // Better Auth's get-session body is literally JSON null when unauthenticated.
+    expect(await response.text()).toBe("null");
   });
 });

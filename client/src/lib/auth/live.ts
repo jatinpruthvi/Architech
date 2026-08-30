@@ -40,8 +40,15 @@ export async function getSessionContractForRequest(request: Request): Promise<{ 
   const readiness = getAuthReadiness("better-auth");
   if (!readiness.ready) return { session: null, source: "better-auth-not-configured", missing: readiness.missing };
 
-  // Live Better Auth session retrieval is intentionally isolated behind this
-  // contract until platform cookies, DB adapter and production secrets are wired.
-  // The returned shape is stable for broker routes and tests.
+  /* Live Better Auth session retrieval. `live-session.ts` owns the
+     cookie → token → claims resolution; this module provides the Better Auth
+     claims resolver and maps the result into the stable session contract.
+     (Dynamic import keeps `live-session`'s dependency on `./live` acyclic.) */
+  const { resolveLiveSession } = await import("./live-session");
+  const { resolveBetterAuthClaims } = await import("./server-auth");
+  const resolution = await resolveLiveSession(request, { resolveClaims: resolveBetterAuthClaims });
+  if (resolution.ok) return { session: resolution.session, source: resolution.source, missing: [] };
+  if (resolution.source === "better-auth-not-configured") return { session: null, source: resolution.source, missing: resolution.missing ?? [] };
+  // A configured deployment with no/invalid cookie is a 401, not a 503.
   return { session: null, source: "better-auth-live", missing: [] };
 }

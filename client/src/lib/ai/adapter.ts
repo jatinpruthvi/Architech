@@ -61,6 +61,21 @@ export async function runAiAdapter<TInput, T>(
   const start = performance.now();
   const warnings = assertAiInputWithinLimits(input);
 
+  /* B-10: the guardrail said "falling back to deterministic" but only warned —
+     the external provider was still called with oversized input. Enforce it:
+     over-limit input never reaches the external call, and the result is
+     marked as a fallback. */
+  if (warnings.length > 0) {
+    return {
+      ok: true,
+      data: deterministic(input),
+      fallbackUsed: true,
+      provider: "deterministic",
+      usage: { latencyMs: Math.round(performance.now() - start), estimatedCostInr: 0 },
+      warnings,
+    };
+  }
+
   if (provider === "deterministic") {
     return {
       ok: true,

@@ -64,11 +64,16 @@ export const MAX_UNSCOPED_LISTING_ROWS = 5000;
  * now pushed into the query and an explicit ceiling caps the nationwide case.
  */
 export async function getListingsForServer(scope: ListingScope = {}) {
+  /* Every read — city-scoped or not — gets the same ceiling and the same
+     stable ordering. Before this, a city-scoped read omitted `take` entirely
+     and could pull an entire city table into memory while the nationwide read
+     was capped; two paths that disagree on their own limits is how a capped
+     result silently becomes an unbounded one. */
+  const ceiling = scope.limit ?? MAX_UNSCOPED_LISTING_ROWS;
   if (!isPrismaDataSource()) {
     const all = getListings();
     const cityScoped = scope.citySlug ? all.filter((listing) => listing.citySlug === scope.citySlug) : all;
-    const ceiling = scope.limit ?? (scope.citySlug ? undefined : MAX_UNSCOPED_LISTING_ROWS);
-    return ceiling ? cityScoped.slice(0, ceiling) : cityScoped;
+    return cityScoped.slice(0, ceiling);
   }
   const prisma = getPrismaClient();
   const rows = await prisma.listing.findMany({
@@ -78,9 +83,7 @@ export async function getListingsForServer(scope: ListingScope = {}) {
     },
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
-    ...(scope.limit ?? (!scope.citySlug ? MAX_UNSCOPED_LISTING_ROWS : undefined)
-      ? { take: scope.limit ?? MAX_UNSCOPED_LISTING_ROWS }
-      : {}),
+    take: ceiling,
   });
   return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
 }
@@ -89,14 +92,23 @@ export async function getListingByIdForServer(id?: string) {
   if (!isPrismaDataSource()) return getListingById(id);
   if (!id) return undefined;
   const prisma = getPrismaClient();
-  const row = await prisma.listing.findFirst({ where: { OR: [{ stableId: id }, { slug: id }], lifecycle: "ACTIVE" }, include: listingInclude });
+  /* `id` is included so a canonicalToListingId that stores a row id (cuid)
+     resolves; stableId and slug keep existing URLs working. No lifecycle
+     filter here — the caller decides visibility via httpDecisionForListing,
+     which is what makes the DUPLICATE redirect (and the 410s) reachable. */
+  const row = await prisma.listing.findFirst({ where: { OR: [{ stableId: id }, { slug: id }, { id }] }, include: listingInclude });
   return row ? dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]) : undefined;
 }
 
 export async function getListingsByLocalityForServer(localitySlug: string) {
-  if (!isPrismaDataSource()) return getListingsByLocality(localitySlug);
+  if (!isPrismaDataSource()) return getListingsByLocality(localitySlug).slice(0, MAX_UNSCOPED_LISTING_ROWS);
   const prisma = getPrismaClient();
-  const rows = await prisma.listing.findMany({ where: { lifecycle: "ACTIVE", locality: { slug: localitySlug } }, include: listingInclude, orderBy: { meaningfulUpdatedAt: "desc" } });
+  const rows = await prisma.listing.findMany({
+    where: { lifecycle: "ACTIVE", locality: { slug: localitySlug } },
+    include: listingInclude,
+    orderBy: { meaningfulUpdatedAt: "desc" },
+    take: MAX_UNSCOPED_LISTING_ROWS,
+  });
   return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
 }
 

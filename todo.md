@@ -220,7 +220,7 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Confirm PR #31 is open, points to the intended base, and is mergeable.
 - [x] Merge PR #31 using the existing authenticated GitHub session; never use the token pasted in chat.
 - [x] Verify the public main commit and record the merged PR reference.
-- [ ] Revoke the exposed GitHub token and replace it only if needed. — User action required; the token was not used, and the revocation requirement is documented in the activation register.
+- [ ] Revoke the exposed GitHub token and replace it only if needed. — **Agent verification 2026-08-30:** no token material exists in the repo or in git history (the only `ghp_` strings are secret-detection patterns in `client/src/lib/operations/hygiene.ts`); the sandbox credential is the platform bot `arena-ai-coding-agent[bot]`, not the exposed token, so the exposed token is not in use here. The revocation itself remains **user action required** (it needs the owner's GitHub login): GitHub → Settings → Developer settings → Personal access tokens → delete the token that was pasted in chat. Do not paste the value in any chat or doc.
 
 
 ## Best Open-source Real-estate Repository Research
@@ -458,7 +458,7 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 
 ## External activation tasks
 
-- [ ] Revoke the exposed GitHub token and replace it only if needed. — User action required; the token was not used, and the revocation requirement is documented in the activation register.
+- [ ] Revoke the exposed GitHub token and replace it only if needed. — **Agent verification 2026-08-30:** no token material exists in the repo or in git history (the only `ghp_` strings are secret-detection patterns in `client/src/lib/operations/hygiene.ts`); the sandbox credential is the platform bot `arena-ai-coding-agent[bot]`, not the exposed token, so the exposed token is not in use here. The revocation itself remains **user action required** (it needs the owner's GitHub login): GitHub → Settings → Developer settings → Personal access tokens → delete the token that was pasted in chat. Do not paste the value in any chat or doc.
 - [x] Execute production environment provisioning when accounts/secrets are available. — Activation gate documented; no accounts or secrets were supplied for execution.
 - [x] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available. — Activation gate documented; live provider wiring remains intentionally disabled without credentials.
 - [x] Implement only the highest-value non-payment gaps approved from the recommendation. — Implemented buyer collections and broker draft lifecycle operations; payments remain excluded.
@@ -498,4 +498,37 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Inspect the current managed preview URL, branch, remote, and working tree.
 - [x] Start or repair the live preview and verify representative public, broker, collections, and SEO routes.
 - [x] Run focused review gates for the current review state.
-- [ ] Create or update a GitHub pull request only for unpushed intended changes, then report the preview and PR links.
+- [x] Create or update a GitHub pull request only for unpushed intended changes, then report the preview and PR links. — PR #45 opened (`arena/01a051b3-architech` → `main`) on 2026-08-30, covering the full CODEBASE-AUDIT-2026-08-30 bug pass (B-1..B-25) plus live auth (I-1/M-2) and retention runtime (M-6). Live preview running; gates green (96 files / 894 tests, `pnpm check` 0, `pnpm lint` 0/0).
+
+## CODEBASE-AUDIT-2026-08-30 bug pass (PR #45)
+
+- [x] Fix B-1: return `canonicalize` only when no gate blockers; otherwise `block` with the duplicate as a warning.
+- [x] Fix B-2: resolve peer stableId → row id; set `DUPLICATE` lifecycle for canonicalized listings; read the canonical column in the listing route.
+- [x] Fix B-3: second draft with same title+locality returns 409 (resume existing) instead of silently overwriting.
+- [x] Fix B-4: validate moderation `decision` ∈ {approve, request_changes, reject} → 400; normalize `reason`.
+- [x] Fix B-5: lead create races through unique constraint; P2002 → `duplicate: true` instead of 500.
+- [x] Fix B-6: guard `createdAt`/`updatedAt`; typed not-found instead of synthesizing a broken row.
+- [x] Fix B-7: saved-search validates input, dedupes via `dedupeKey`, `deleteMany` → 404 instead of P2025 500.
+- [x] Fix B-8: authority registry persists real `AuthorityAsset`/`AuthorityOutreach` rows in Prisma mode (+ migration).
+- [x] Fix B-9: rate-limit key uses trusted-proxy IP / scoped buckets; origin check fails closed in production.
+- [x] Fix B-10: AI over-limit input actually falls back to deterministic and records `fallbackUsed`.
+- [x] Fix B-11: IndexNow telemetry distinguishes `network-error` from `not-configured`.
+- [x] Fix B-12: ownership cost validates numeric bounds (loan ≤ price, finite values) → 400.
+- [x] Fix B-13: `truncated` added to `SearchResponse` and surfaced in ResultsPage UI.
+- [x] Fix B-14: broker draft persistence errors openly when locality/city is missing from DB.
+- [x] Fix B-15: `searchVector Unsupported("tsvector")` added to `schema.prisma`; migration kept in sync.
+- [x] Fix B-16: moderation lifecycle update scoped by `brokerOrgId` (ownership validated).
+- [x] Fix B-17: derivatives stay `planned`, `exifStripped: false` until a real processor runs (honest status).
+- [x] Fix B-18: duplicate gate peers loaded from DB (Prisma mode) in addition to fixture/legacy drafts.
+- [x] Fix B-19: map errors are transient; Retry map button added.
+- [x] Fix B-20: search fetch failure keeps a failure state + Retry; URL not marked consumed on failure.
+- [x] Fix B-21: site URL resolved per call (`siteUrl()`) instead of module load.
+- [x] Fix B-22: unknown city/locality slug → 404 in price-trends route.
+- [x] Fix B-23: `console.warn` routed through structured pino logger with event name.
+- [x] Fix B-24: lead/listing organization name resolved from the listing's broker org, never hardcoded.
+- [x] Fix B-25: per-city row ceiling + consistent `orderBy` in search reads.
+- [x] Implement I-1/M-2: live Better Auth session wired end-to-end — `/api/auth/[...all]` mount (trailing-slash + handler binding fixed), `server-auth.ts` singleton, token→claims resolver, role→permissions grant, org membership from `BrokerUser`.
+- [x] Implement M-6: retention policy enforced at runtime — periodic sweep from `instrumentation.ts`, publish gate requires approved AND EXIF-cleared media, `markMediaProcessingComplete` worker hook.
+- [x] Add regression tests for every fix; gates green: `pnpm check` 0, `pnpm lint` 0/0, `pnpm test` 96 files / 894 tests.
+- [x] Open PR #45 (`arena/01a051b3-architech` → `main`) with the complete change set.
+- [ ] Revoke the exposed GitHub token and replace it only if needed. — **Agent verification 2026-08-30:** no token material exists in the repo or in git history (the only `ghp_` strings are secret-detection patterns in `client/src/lib/operations/hygiene.ts`); the sandbox credential is the platform bot `arena-ai-coding-agent[bot]`, not the exposed token, so the exposed token is not in use here. The revocation itself remains **user action required** (it needs the owner's GitHub login): GitHub → Settings → Developer settings → Personal access tokens → delete the token that was pasted in chat. Do not paste the value in any chat or doc.

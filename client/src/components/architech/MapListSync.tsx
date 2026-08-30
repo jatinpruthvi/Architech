@@ -30,6 +30,14 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
   const [mapFailed, setMapFailed] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [maplibreModule, setMaplibreModule] = useState<typeof import("maplibre-gl") | null>(null);
+  /* B-19: a single transient tile/network error used to disable the map for
+     the whole session. Attempts are retryable — a failed map must degrade, not
+     be a dead end. */
+  const [mapAttempt, setMapAttempt] = useState(0);
+  const retryMap = () => {
+    setMapFailed(false);
+    setMapAttempt((attempt) => attempt + 1);
+  };
   const points = useMemo(() => makeListingMapPoints(listings, getLocalities()), [listings]);
   const clusters = useMemo(() => makeLocalityClusters(points), [points]);
 
@@ -77,7 +85,7 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
       mapRef.current = null;
       setMapReady(false);
     };
-  }, [mapFailed]);
+  }, [mapFailed, mapAttempt]);
 
   useEffect(() => {
       const map = mapRef.current;
@@ -123,7 +131,12 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
       {!mapFailed && <div ref={containerRef} className="absolute inset-0" />}
       {mapFailed && (
         <div className="absolute inset-0 overflow-auto bg-sand p-5">
-          <p className="stamp !text-[10px] font-semibold text-brick">Map fallback · list remains available</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="stamp font-semibold text-brick">Map fallback · list remains available</p>
+            <button type="button" onClick={retryMap} className="touch-44 rounded-lg border border-brick/50 px-3 py-1.5 stamp font-semibold text-brick hover:bg-paper">
+              Retry map
+            </button>
+          </div>
           <div className="mt-4 space-y-2">
             {points.map((point) => (
               <button key={point.id} onClick={() => onSelect(point.id)} className={`w-full border px-3 py-3 text-left text-sm ${point.id === selectedId ? "border-brick bg-paper text-brick" : "border-ink/15 bg-paper/80 text-ink/75"}`}>

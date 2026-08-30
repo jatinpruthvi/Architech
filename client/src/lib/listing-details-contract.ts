@@ -36,6 +36,7 @@
  * edit here would ship a migration nobody has checked compiles. The read path
  * below already prefers such a column when one exists.
  */
+import { logger } from "@/lib/observability/logger";
 import {
   AMENITY_OPTIONS,
   BATHROOM_OPTIONS,
@@ -151,9 +152,12 @@ export function listingDetailsFromSourceSummary(value?: string | null): Property
   } catch {
     if (!warnedUnstructured) {
       warnedUnstructured = true;
-      console.warn(
-        "[architech] sourceSummary looks like JSON but did not parse — listing details will be missing for affected rows. " +
-          "This is the feed contract problem, not a parse problem: the column holds prose in some writers and JSON in others.",
+      /* B-23: the only non-test console usage was invisible in production
+         logging. Route it through the structured pino logger with an event
+         name so operations can actually find the offending rows. */
+      logger.warn(
+        { event: "listing.details.source_summary_unparsable", severity: "warn" },
+        "sourceSummary looks like JSON but did not parse — listing details will be missing for affected rows. This is the feed contract problem, not a parse problem: the column holds prose in some writers and JSON in others.",
       );
     }
     return EMPTY_DETAILS;

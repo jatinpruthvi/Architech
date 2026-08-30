@@ -25,12 +25,16 @@ describe("media upload pipeline contract", () => {
     expect(planDerivatives(imageInput).map((item) => item.kind)).toEqual(["original", "webp", "webp_800", "thumbnail"]);
   });
 
-  it("creates signed uploads, completes derivatives, and moderates", () => {
+  it("creates signed uploads, completes the transfer, and moderates", () => {
     const signed = createSignedMediaUpload(imageInput);
     expect(signed.ok && signed.upload.moderationStatus).toBe("PENDING");
     if (!signed.ok) throw new Error("sign failed");
     const completed = completeMediaUpload(signed.upload.id);
-    expect(completed.ok && completed.upload.derivatives.every((d) => d.status === "ready")).toBe(true);
+    if (!completed.ok) throw new Error("complete failed");
+    /* B-17: no processor is attached, so derivatives must stay `planned` and
+       the audit trail must not claim EXIF was stripped. */
+    expect(completed.upload.derivatives.every((d) => d.status === "planned")).toBe(true);
+    expect(completed.upload.auditTrail.some((item) => item.action === "media.upload.completed" && item.metadata?.exifStripped === false)).toBe(true);
     const moderated = moderateMedia(signed.upload.id, "APPROVED", "Image rights verified.");
     expect(moderated.ok && moderated.upload.moderationStatus).toBe("APPROVED");
   });

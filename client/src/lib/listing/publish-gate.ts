@@ -28,7 +28,9 @@
    Three outcomes, not two. `canonicalize` is the one that matters: a
    near-duplicate is not refused, it is pointed at the listing it duplicates.
    The inventory stays visible and Google gets one page instead of two
-   competing ones.
+   competing ones. A duplicate that is also incomplete is `block`ed —
+   canonicalization never privileges a description over the media/quality
+   gate.
 
    Pure by design — it takes a subject and its peers and returns a decision.
    It reads no repository and touches no clock, so the rules can be tested
@@ -195,17 +197,24 @@ export function evaluatePublishGate(subject: PublishGateSubject, peers: PublishG
 
   /* Duplication. A near-duplicate is not refused — it is pointed at the
      listing it duplicates, so Google gets one page instead of two competing
-     ones. But only if the target is itself published. */
+     ones. But only if the target is itself published AND the subject is
+     otherwise publishable. A duplicate that is also incomplete must be
+     blocked: letting a photo-less listing through because its description
+     matches a published peer would bypass the media/quality gate. */
 
   const duplicate = nearestPublishedDuplicate(subject, peers);
   if (duplicate) {
-    return {
-      action: "canonicalize",
-      blockers,
-      warnings,
+    const canonical = {
       canonicalToListingId: duplicate.peer.stableId,
       similarity: Number(duplicate.similarity.toFixed(4)),
     };
+    if (blockers.length === 0) {
+      return { action: "canonicalize", blockers, warnings, ...canonical };
+    }
+    warnings.push(
+      `This description is a ${Math.round(duplicate.similarity * 100)}% match for an already-published listing in the same locality. Fix the blockers below and it will be canonicalized to that listing instead of being published as a second page.`,
+    );
+    return { action: "block", blockers, warnings, ...canonical };
   }
 
   const unpublishedDuplicate = peers.some(

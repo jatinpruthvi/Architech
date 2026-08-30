@@ -25,7 +25,8 @@ export type LeadRecord = {
   id: string;
   listingId: string;
   listingTitle: string;
-  organizationName: "Nivasa Partners";
+  /** Resolved from the listing's own organization/broker — never a literal. */
+  organizationName: string;
   name: string;
   phoneMasked: string;
   email?: string;
@@ -92,7 +93,7 @@ export function createLead(input: LeadInput): LeadResult {
     id: stableId("lead", key),
     listingId: input.listingId,
     listingTitle: listing.title,
-    organizationName: "Nivasa Partners",
+    organizationName: listing.developer,
     name: input.name.trim(),
     phoneMasked: maskPhone(input.phone),
     email: input.email?.trim() || undefined,

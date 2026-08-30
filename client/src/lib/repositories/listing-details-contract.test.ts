@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { logger } from "../observability/logger";
 import { dbListingToProperty } from "./mappers";
 import {
   hasAnyListingDetail,
@@ -84,7 +85,7 @@ describe("listingDetailsFromSourceSummary", () => {
   });
 
   it("reports a payload that looks structured but is not, exactly once", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
     expect(listingDetailsFromSourceSummary('{"bathrooms": 3')).toEqual({});
     expect(listingDetailsFromSourceSummary('{"bathrooms": 4')).toEqual({});
     expect(warn).toHaveBeenCalledTimes(1);

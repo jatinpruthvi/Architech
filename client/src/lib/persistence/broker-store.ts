@@ -3,15 +3,21 @@ import { createListingDraft, submitListingForReview, moderateListing, getModerat
 import { evaluatePublishGate, type PublishGateDecision, type PublishGatePeer, type PublishGateSubject } from "@/lib/listing/publish-gate";
 import { emitListingEvent } from "@/lib/listing/events";
 import { getMediaUpload } from "@/lib/media/upload";
+import { isPublishable } from "@/lib/media/retention";
 import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
-import { DEFAULT_CITY_SLUG, getLocalityBySlug } from "@/lib/repositories";
+import { getListings, DEFAULT_CITY_SLUG, getLocalityBySlug } from "@/lib/repositories";
 
 type BrokerPrismaClient = ReturnType<typeof getPrismaClient> & {
-  listing: { upsert(args: unknown): Promise<unknown>; updateMany(args: unknown): Promise<{ count: number }>; findMany(args: unknown): Promise<Array<Record<string, unknown>>> };
+  listing: {
+    upsert(args: unknown): Promise<unknown>;
+    updateMany(args: unknown): Promise<{ count: number }>;
+    findMany(args: unknown): Promise<Array<Record<string, unknown>>>;
+    findFirst(args: unknown): Promise<Record<string, unknown> | null>;
+  };
   locality: { findFirst(args: unknown): Promise<{ id: string; slug: string } | null> };
   city: { findFirst(args: unknown): Promise<{ id: string; slug: string } | null> };
   auditEvent: { create(args: unknown): Promise<unknown> };
@@ -31,7 +37,15 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
   // persists against the right city row instead of a hardcoded one.
   const citySlug = getLocalityBySlug(draft.localitySlug)?.citySlug ?? DEFAULT_CITY_SLUG;
   const city = (await db.city.findFirst({ where: { slug: citySlug } })) as { id: string } | null;
-  if (!locality || !city) return;
+  /* Never silently drop persistence. If the DB does not know the locality or
+     city, the API must say so — an in-memory draft that reports success while
+     the database holds nothing is how moderation/search lose inventory. */
+  if (!locality) {
+    throw new Error(`Locality "${draft.localitySlug}" is not in the database; run the seed before persisting broker drafts.`);
+  }
+  if (!city) {
+    throw new Error(`City "${citySlug}" is not in the database; run the seed before persisting broker drafts.`);
+  }
   await db.listing.upsert({
     where: { stableId: draft.stableId },
     update: {
@@ -69,12 +83,24 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
   });
 }
 
+function persistenceFailure(error: unknown): { ok: false; status: 422; errors: string[] } {
+  return {
+    ok: false as const,
+    status: 422,
+    errors: [error instanceof Error ? error.message : "Could not persist the draft."],
+  };
+}
+
 export async function createListingDraftForServer(input: ListingDraftInput, session: AuthSession = demoBrokerSession) {
   const result = createListingDraft(input, session);
   if (!result.ok) return result;
   if (isPrismaPersistence()) {
     const db = prisma();
-    await upsertDraftListing(db, result.draft);
+    try {
+      await upsertDraftListing(db, result.draft);
+    } catch (error) {
+      return persistenceFailure(error);
+    }
     await db.auditEvent.create({
       data: { action: "listing.draft.created", entityType: "Listing", entityId: result.draft.stableId, metadata: { localitySlug: input.localitySlug, source: "api.broker.listings.prisma" } },
     });
@@ -87,7 +113,11 @@ export async function updateListingDraftForServer(draftId: string, input: Listin
   if (!result.ok) return result;
   if (isPrismaPersistence()) {
     const db = prisma();
-    await upsertDraftListing(db, result.draft);
+    try {
+      await upsertDraftListing(db, result.draft);
+    } catch (error) {
+      return persistenceFailure(error);
+    }
     await db.auditEvent.create({ data: { action: "listing.draft.updated", entityType: "Listing", entityId: result.draft.stableId, metadata: { source: "api.broker.listings.update.prisma" } } });
   }
   return result;
@@ -202,7 +232,11 @@ export async function submitListingForReviewForServer(draftId: string, session: 
 function isShowableMedium(mediaId: string): boolean {
   const upload = getMediaUpload(mediaId);
   if (!upload) return true;
-  return upload.moderationStatus === "APPROVED";
+  /* M-6: approval alone is not publishability. The media must also be EXIF
+     cleared (`isPublishable`), so an approved-but-unprocessed upload cannot
+     ride through on a moderator's okay — the exact claim B-17 refused to
+     make. Fixture ids (unknown to the media store) keep the demo path open. */
+  return isPublishable({ moderationStatus: upload.moderationStatus, exifStripped: upload.exifStripped }).ok;
 }
 
 function draftGateSubject(draft: ListingDraft): PublishGateSubject {
@@ -223,7 +257,24 @@ function draftGateSubject(draft: ListingDraft): PublishGateSubject {
   };
 }
 
-function draftGatePeers(draft: ListingDraft): PublishGatePeer[] {
+/* Published fixture inventory is a peer too. Duplicate detection is only
+   meaningful against everything that is already publicly visible —
+   `listAllDrafts()` alone misses every listing that was published before this
+   process started (or outside it), which is exactly the copy-paste case the
+   gate exists to catch. */
+function fixtureGatePeers(draft: ListingDraft): PublishGatePeer[] {
+  return getListings()
+    .filter((listing) => listing.localitySlug === draft.localitySlug && listing.id !== draft.stableId && (listing.lifecycle ?? "ACTIVE") === "ACTIVE")
+    .map((listing) => ({
+      stableId: listing.id,
+      title: listing.title,
+      description: listing.note,
+      localitySlug: listing.localitySlug,
+      published: true,
+    }));
+}
+
+function memoryGatePeers(draft: ListingDraft): PublishGatePeer[] {
   return listAllDrafts()
     .filter((peer) => peer.stableId !== draft.stableId && peer.localitySlug === draft.localitySlug)
     .map((peer) => ({
@@ -235,11 +286,41 @@ function draftGatePeers(draft: ListingDraft): PublishGatePeer[] {
     }));
 }
 
+/** Published peers from the database (Prisma mode). */
+async function draftGatePeersForServer(draft: ListingDraft, db: BrokerPrismaClient): Promise<PublishGatePeer[]> {
+  const rows = (await db.listing.findMany({
+    where: { lifecycle: "ACTIVE", locality: { slug: draft.localitySlug } },
+    select: { stableId: true, title: true, description: true, locality: { select: { slug: true } } },
+  })) as Array<{ stableId: string; title: string; description: string; locality: { slug: string } }>;
+  return [
+    ...memoryGatePeers(draft),
+    ...rows
+      .filter((row) => row.stableId !== draft.stableId)
+      .map((row) => ({
+        stableId: row.stableId,
+        title: row.title,
+        description: row.description,
+        localitySlug: row.locality.slug,
+        published: true,
+      })),
+  ];
+}
+
 /** Evaluate whether a draft may become publicly visible, with reasons. */
 export function evaluateDraftPublishGate(draftId: string): { ok: true; draft: ListingDraft; decision: PublishGateDecision } | { ok: false; status: 404; errors: string[] } {
   const draft = listAllDrafts().find((item) => item.id === draftId);
   if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
-  return { ok: true, draft, decision: evaluatePublishGate(draftGateSubject(draft), draftGatePeers(draft)) };
+  const peers = [...memoryGatePeers(draft), ...fixtureGatePeers(draft)];
+  return { ok: true, draft, decision: evaluatePublishGate(draftGateSubject(draft), peers) };
+}
+
+/** Server variant: adds published peers from the database in Prisma mode so
+    duplicate detection works across restarts and instances. */
+export async function evaluateDraftPublishGateForServer(draftId: string): Promise<{ ok: true; draft: ListingDraft; decision: PublishGateDecision } | { ok: false; status: 404; errors: string[] }> {
+  const draft = listAllDrafts().find((item) => item.id === draftId);
+  if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  const peers = isPrismaPersistence() ? await draftGatePeersForServer(draft, prisma()) : [...memoryGatePeers(draft), ...fixtureGatePeers(draft)];
+  return { ok: true, draft, decision: evaluatePublishGate(draftGateSubject(draft), peers) };
 }
 
 /* Moderation is the choke point.
@@ -260,7 +341,7 @@ export function evaluateDraftPublishGate(draftId: string): { ok: true; draft: Li
 export async function moderateListingForServer(draftId: string, decision: ModerationDecision, reason: string, session?: AuthSession) {
   const before = listAllDrafts().find((item) => item.id === draftId) ?? null;
   const previousLifecycle = before?.status ?? null;
-  const gate = decision === "approve" ? evaluateDraftPublishGate(draftId) : null;
+  const gate = decision === "approve" ? await evaluateDraftPublishGateForServer(draftId) : null;
 
   if (gate?.ok && gate.decision.action === "block") {
     await emitListingEvent({
@@ -280,16 +361,42 @@ export async function moderateListingForServer(draftId: string, decision: Modera
   if (!result.ok) return result;
 
   const canonicalToListingId = gate?.ok ? gate.decision.canonicalToListingId : undefined;
+  const canonicalized = decision === "approve" && Boolean(canonicalToListingId);
+
+  /* A canonicalized listing must never stay ACTIVE. The whole point of the
+     DUPLICATE lifecycle is that the page resolves to a 301 at the router, so
+     both the in-memory draft and the Prisma row follow the same rule. */
+  if (canonicalized) {
+    result.draft.status = "DUPLICATE";
+  }
 
   if (isPrismaPersistence()) {
     const db = prisma();
-    await db.listing.updateMany({ where: { stableId: result.draft.stableId }, data: { lifecycle: LIFECYCLE_BY_DECISION[decision] } });
+    const lifecycle: ListingDraft["status"] = canonicalized ? "DUPLICATE" : LIFECYCLE_BY_DECISION[decision];
+    /* B-16: the lifecycle transition is scoped by organization. An
+       unscoped updateMany keyed on a guessable stableId lets any moderator
+       flip any draft in the table; the draft's own organization is the
+       row's brokerOrgId, so scoping on it costs nothing and closes the hole. */
+    await db.listing.updateMany({
+      where: { stableId: result.draft.stableId, brokerOrgId: result.draft.organizationId },
+      data: { lifecycle: lifecycle as string },
+    });
+
     /* The canonical column has existed since the schema was written and was
        referenced by nothing. This is its first writer: a near-duplicate is
-       published but points at the listing it duplicates, so Google sees one
-       page rather than two competing ones. */
+       marked DUPLICATE and points at the listing it duplicates, so the router
+       serves a 301 and Google sees one page rather than two competing ones. */
     if (canonicalToListingId) {
-      await db.listing.updateMany({ where: { stableId: result.draft.stableId }, data: { canonicalToListingId } });
+      /* Resolve the target's row id so the column holds a stable reference
+         (the column is documented as a listing id, not a stableId). */
+      const target = (await db.listing.findFirst({
+        where: { OR: [{ stableId: canonicalToListingId }, { id: canonicalToListingId }, { slug: canonicalToListingId }] },
+        select: { id: true, stableId: true },
+      })) as { id: string; stableId: string } | null;
+      await db.listing.updateMany({
+        where: { stableId: result.draft.stableId, brokerOrgId: result.draft.organizationId },
+        data: { canonicalToListingId: target?.id ?? canonicalToListingId },
+      });
     }
     await db.auditEvent.create({
       data: { action: `listing.review.${decision}`, entityType: "Listing", entityId: result.draft.stableId, metadata: { reason, source: "api.admin.moderation.prisma", canonicalToListingId: canonicalToListingId ?? null } },
@@ -297,13 +404,13 @@ export async function moderateListingForServer(draftId: string, decision: Modera
   }
 
   await emitListingEvent({
-    type: decision !== "approve" ? "listing.unpublished" : canonicalToListingId ? "listing.canonicalized" : "listing.published",
+    type: decision !== "approve" ? "listing.unpublished" : canonicalized ? "listing.canonicalized" : "listing.published",
     stableId: result.draft.stableId,
     draftId,
     localitySlug: result.draft.localitySlug,
     citySlug: getLocalityBySlug(result.draft.localitySlug)?.citySlug,
     previousLifecycle,
-    nextLifecycle: LIFECYCLE_BY_DECISION[decision],
+    nextLifecycle: canonicalized ? "DUPLICATE" : LIFECYCLE_BY_DECISION[decision],
     meta: { reason, actor: session?.user.email ?? "unknown", canonicalToListingId: canonicalToListingId ?? null },
   });
 
@@ -357,6 +464,11 @@ export async function listDraftMediaForServer(draftId: string, session: AuthSess
   return listDraftMediaIds(draftId, session);
 }
 
+function isoOrNow(value: unknown): string {
+  const date = value instanceof Date ? value : new Date(String(value ?? ""));
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
 function contractFromRow(row: Record<string, unknown>): ListingDraft {
   return {
     id: String(row.id ?? ""),
@@ -379,7 +491,7 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     organizationId: String(row.brokerOrgId ?? ""),
     status: (String(row.lifecycle ?? "IN_REVIEW") as ListingDraft["status"]) || "IN_REVIEW",
     auditTrail: [],
-    createdAt: new Date(row.createdAt as string | Date).toISOString(),
-    updatedAt: new Date(row.updatedAt as string | Date).toISOString(),
+    createdAt: isoOrNow(row.createdAt),
+    updatedAt: isoOrNow(row.updatedAt),
   };
 }

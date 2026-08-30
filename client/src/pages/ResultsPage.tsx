@@ -107,12 +107,16 @@ export default function ResultsPage() {
  const facetState: FacetState = useMemo(() => parseFacetState(filterTokens.join(","), groups), [filterTokens, groups]);
  const activeCount = activeFacetCount(facetState);
 
- const [mapMode, setMapMode] = useState(false);
- const reduceMotion = usePrefersReducedMotion();
- const [loading, setLoading] = useState(false);
- const [filterOpen, setFilterOpen] = useState(false);
- const [quickViewOpen, setQuickViewOpen] = useState(false);
- const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapMode, setMapMode] = useState(false);
+  const reduceMotion = usePrefersReducedMotion();
+  const [loading, setLoading] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // B-20: a failed fetch must be retryable. The previous code marked the URL as
+  // consumed BEFORE falling back, so "retry" for the same URL did nothing.
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
 
  /* Server-backed search. `searchListings` is the same predicate the server
  uses, so the SSR payload and the hydrated response cannot disagree. */
@@ -131,40 +135,42 @@ export default function ResultsPage() {
  const fallbackRef = useRef(initialSearch);
  fallbackRef.current = initialSearch;
 
- useEffect(() => {
- if (consumedRef.current === searchStr) return;
- const p = new URLSearchParams(searchStr);
- let cancelled = false;
- // Only show skeletons when there is nothing trustworthy on screen yet.
- setLoading(consumedRef.current !== null);
+  useEffect(() => {
+    if (consumedRef.current === searchStr) return;
+    const p = new URLSearchParams(searchStr);
+    let cancelled = false;
+    // Only show skeletons when there is nothing trustworthy on screen yet.
+    setLoading(consumedRef.current !== null);
 
- fetch(`/api/search/${p.toString() ? `?${p}` : ""}`)
- .then((response) => {
- if (!response.ok) throw new Error(`Search API ${response.status}`);
- return response.json() as Promise<SearchResponse>;
- })
- .then((data) => {
- if (cancelled) return;
- consumedRef.current = searchStr;
- setSearchResponse(data);
- setSelectedId((current) => (current && data.results.some((property) => property.id === current) ? current : data.results[0]?.id ?? null));
- })
- .catch(() => {
- if (cancelled) return;
- // Offline / API failure: keep the locally-computed results, which are
- // correct for the fixture source and stale-but-plausible otherwise.
- consumedRef.current = searchStr;
- setSearchResponse(fallbackRef.current);
- setSelectedId((current) => (current && fallbackRef.current.results.some((property) => property.id === current) ? current : fallbackRef.current.results[0]?.id ?? null));
- })
- .finally(() => {
- if (!cancelled) setLoading(false);
- });
+    fetch(`/api/search/${p.toString() ? `?${p}` : ""}`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Search API ${response.status}`);
+        return response.json() as Promise<SearchResponse>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        consumedRef.current = searchStr;
+        setFetchFailed(false);
+        setSearchResponse(data);
+        setSelectedId((current) => (current && data.results.some((property) => property.id === current) ? current : data.results[0]?.id ?? null));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Offline / API failure: keep the locally-computed results, which are
+        // correct for the fixture source and stale-but-plausible otherwise.
+        // The URL is NOT marked consumed: the user can retry the same search.
+        setFetchFailed(true);
+        setSearchResponse(fallbackRef.current);
+        setSelectedId((current) => (current && fallbackRef.current.results.some((property) => property.id === current) ? current : fallbackRef.current.results[0]?.id ?? null));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
- return () => {
- cancelled = true;
- };
- }, [filterTokens, category, citySlug, intent, pincode, query, sort, searchStr]);
+    return () => {
+      cancelled = true;
+    };
+  }, [filterTokens, category, citySlug, intent, pincode, query, sort, searchStr, retryNonce]);
 
  const results = searchResponse.results;
  const facets = searchResponse.facets;
@@ -543,13 +549,24 @@ export default function ResultsPage() {
  </aside>
  )}
 
- <div className={mapMode ? "lg:col-span-2" : ""}>
- <div className="mb-7 flex items-center justify-between gap-4 border-b border-ink/10 pb-4">
- <p className="stamp ink-2" aria-live="polite" role="status">
- {loading ? t.search.updating : `${results.length} ${results.length === 1 ? t.search.home : t.search.homes}${activeCount ? ` · ${activeCount} ${activeCount === 1 ? "filter" : "filters"}` : ""}`}
- </p>
- <p className="stamp hidden text-trust sm:block">{t.search.demoFixtures}</p>
- </div>
+  <div className={mapMode ? "lg:col-span-2" : ""}>
+    {fetchFailed && (
+      <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-brick/40 bg-sand/60 px-4 py-3">
+        <p className="stamp text-brick">{t.search.loadFailed}</p>
+        <button type="button" onClick={() => setRetryNonce((value) => value + 1)} className="touch-44 rounded-lg border border-brick/50 px-4 py-2 stamp font-semibold text-brick hover:bg-sand">
+          {t.search.retrySearch}
+        </button>
+      </div>
+    )}
+    <div className="mb-7 flex items-center justify-between gap-4 border-b border-ink/10 pb-4">
+      <p className="stamp ink-2" aria-live="polite" role="status">
+        {loading ? t.search.updating : `${results.length} ${results.length === 1 ? t.search.home : t.search.homes}${activeCount ? ` · ${activeCount} ${activeCount === 1 ? "filter" : "filters"}` : ""}`}
+      </p>
+      <p className="stamp hidden text-trust sm:block">{t.search.demoFixtures}</p>
+    </div>
+    {searchResponse.truncated && results.length > 0 && (
+      <p className="mb-5 border border-ink/15 bg-paper px-4 py-3 stamp ink-2">{t.search.truncatedNotice}</p>
+    )}
  <div className={`grid gap-6 ${mapMode ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-1 xl:grid-cols-2"}`} aria-busy={loading}>
  {/* Grouped so a card removed by a filter animates its SURVIVORS into their new
     slots. `layout="position"`, not `layout`: the latter also scales x/y, and a

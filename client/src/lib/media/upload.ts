@@ -23,8 +23,12 @@ export type SignedMediaUpload = {
   publicUrl: string;
   storageProvider?: "memory" | "cloudflare-r2";
   requiredHeaders: Record<string, string>;
+  createdAt: string;
   expiresAt: string;
   exifPolicy: "strip-before-publication";
+  /** False until a real EXIF-strip processor runs (B-17). The publish gate
+      refuses approved-but-unprocessed media rather than claiming it is safe. */
+  exifStripped: boolean;
   moderationStatus: MediaModerationStatus;
   derivatives: MediaDerivative[];
   licenseEvidence: string;
@@ -124,8 +128,10 @@ export function createSignedMediaUpload(input: MediaUploadInput) {
     uploadUrl: `https://uploads.architech.invalid/${id}`,
     publicUrl: `/media/pending/${id}/${encodeURIComponent(input.fileName)}`,
     requiredHeaders: { "content-type": input.mimeType, "x-architech-media-id": id },
+    createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
     exifPolicy: "strip-before-publication",
+    exifStripped: false,
     moderationStatus: "PENDING",
     derivatives: planDerivatives(input),
     licenseEvidence: input.licenseEvidence.trim(),
@@ -138,8 +144,11 @@ export function createSignedMediaUpload(input: MediaUploadInput) {
 export function completeMediaUpload(uploadId: string) {
   const upload = uploads.get(uploadId);
   if (!upload) return { ok: false as const, status: 404, errors: ["Upload not found."] };
-  upload.derivatives = upload.derivatives.map((derivative) => ({ ...derivative, status: "ready" }));
-  upload.auditTrail.push(audit("media.upload.completed", "system", { exifStripped: true, derivatives: upload.derivatives.length }));
+  /* B-17: no transcoder or EXIF processor is attached, so nothing is ready.
+     Marking all derivatives `ready` and claiming `exifStripped: true` let a
+     page believe processed images existed. The record now says what is true:
+     the upload arrived and is queued for processing/moderation. */
+  upload.auditTrail.push(audit("media.upload.completed", "system", { exifStripped: false, derivatives: upload.derivatives.length, derivativesProcessed: false }));
   return { ok: true as const, upload };
 }
 
@@ -153,6 +162,48 @@ export function moderateMedia(uploadId: string, status: Exclude<MediaModerationS
 
 export function getMediaUpload(uploadId: string) {
   return uploads.get(uploadId);
+}
+
+/** Live media records for the retention sweep (M-6). */
+export function listMediaUploadRecords(): Array<Pick<SignedMediaUpload, "id" | "moderationStatus" | "exifStripped" | "createdAt">> {
+  return [...uploads.values()].map((upload) => ({
+    id: upload.id,
+    moderationStatus: upload.moderationStatus,
+    exifStripped: upload.exifStripped,
+    createdAt: upload.createdAt,
+  }));
+}
+
+/** Apply a retention decision to an in-memory record: it leaves display (and
+    the moderation queue) but keeps its row + audit trail for governance. */
+export function applyRetentionDecision(uploadId: string, act: "takedown" | "delete", reason: string, policyId?: string): { ok: true; upload: SignedMediaUpload } | { ok: false; status: number; errors: string[] } {
+  const upload = uploads.get(uploadId);
+  if (!upload) return { ok: false, status: 404, errors: ["Upload not found."] };
+  upload.moderationStatus = "DELETED";
+  upload.auditTrail.push(audit("media.retention.enforced", "system", { act, reason, policyId }));
+  return { ok: true, upload };
+}
+
+/** Test seam: backdate a record so retention tests do not wait 30 days. */
+export function setMediaUploadCreatedAtForTests(uploadId: string, value: string): void {
+  const upload = uploads.get(uploadId);
+  if (upload) upload.createdAt = value;
+}
+
+/** Record that the processing pipeline (EXIF strip / derivative generation)
+    finished for an upload. This is the entry point the handoff worker calls
+    (docs/media/phase-1-media-upload-pipeline.md) — without it, derivatives
+    stay `planned` and `exifStripped` stays false, and the publish gate
+    correctly refuses the media (see B-17 / M-6). */
+export function markMediaProcessingComplete(uploadId: string, options: { exifStripped: boolean; derivativesReady: boolean }): { ok: true; upload: SignedMediaUpload } | { ok: false; status: number; errors: string[] } {
+  const upload = uploads.get(uploadId);
+  if (!upload) return { ok: false, status: 404, errors: ["Upload not found."] };
+  upload.exifStripped = options.exifStripped;
+  if (options.derivativesReady) {
+    upload.derivatives = upload.derivatives.map((derivative) => ({ ...derivative, status: "ready" }));
+  }
+  upload.auditTrail.push(audit("media.processing.completed", "processor", { exifStripped: options.exifStripped, derivativesReady: options.derivativesReady }));
+  return { ok: true, upload };
 }
 
 /** Request a takedown (retention/holding) for a media record. */

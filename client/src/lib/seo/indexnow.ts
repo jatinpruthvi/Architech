@@ -32,7 +32,7 @@ export type IndexNowConfig = {
 };
 
 export type IndexNowResult =
-  | { submitted: false; reason: "not-configured" | "empty" }
+  | { submitted: false; reason: "not-configured" | "empty" | "network-error" }
   | { submitted: true; status: number; urlCount: number };
 
 export function indexNowConfig(env: RuntimeEnvironment = process.env): IndexNowConfig | null {
@@ -76,7 +76,9 @@ export async function submitToIndexNow(
     });
     return { submitted: true, status: response.status, urlCount: urlList.length };
   } catch {
-    // Network failure, DNS, timeout — all equally non-fatal here.
-    return { submitted: false, reason: "not-configured" };
+    /* B-11: "network-error" instead of "not-configured". Conflating the two
+       made an operator diagnose a DNS/auth problem as a missing env var —
+       the fix for the first is credentials, for the second it's ops. */
+    return { submitted: false, reason: "network-error" };
   }
 }

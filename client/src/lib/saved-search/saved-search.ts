@@ -31,6 +31,15 @@ function stableId(prefix: string, key: string): string {
   return `${prefix}_${hash.toString(36)}`;
 }
 
+/** Canonical identity of a saved search: normalized query + sorted filters +
+    sort. Shared by the memory and Prisma paths so duplicate detection means the
+    same thing in both. */
+export function dedupeKeyForSavedSearch(input: Pick<SavedSearchInput, "query" | "filters" | "sort">): string {
+  const query = input.query?.trim() ?? "";
+  const filters = (input.filters ?? []).map((f) => f.trim()).filter(Boolean).sort();
+  return `${query}::${filters.join(",")}::${input.sort ?? ""}`;
+}
+
 export function validateSavedSearchInput(input: Partial<SavedSearchInput>): string[] {
   const errors: string[] = [];
   const hasQuery = typeof input.query === "string" && input.query.trim().length > 0;
@@ -38,6 +47,7 @@ export function validateSavedSearchInput(input: Partial<SavedSearchInput>): stri
   if (!hasQuery && !hasFilters) errors.push("A saved search needs a query or at least one filter.");
   if (input.query && input.query.trim().length > 120) errors.push("Saved search query is too long.");
   if (input.filters && input.filters.some((f) => typeof f !== "string")) errors.push("Filters must be strings.");
+  if (input.sort !== undefined && input.sort !== null && typeof input.sort !== "string") errors.push("Sort must be a string.");
   return errors;
 }
 
@@ -50,7 +60,7 @@ export function createSavedSearch(input: SavedSearchInput): SavedSearchResult {
   const sort = input.sort ?? null;
   const notify = input.notify ?? false;
 
-  const key = `${query}::${[...filters].sort().join(",")}::${sort ?? ""}`;
+  const key = dedupeKeyForSavedSearch({ query, filters, sort });
   const id = stableId("saved_search", key);
   const existing = store.get(id);
   if (existing) return { ok: true, savedSearch: existing, duplicate: true };

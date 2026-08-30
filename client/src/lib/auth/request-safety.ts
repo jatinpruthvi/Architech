@@ -13,10 +13,29 @@ function error(status: number, code: string, message: string) {
   });
 }
 
-function clientKey(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || request.headers.get("x-real-ip")
-    || "unknown";
+/* Client identity for the per-instance rate limiter.
+
+   The first `x-forwarded-for` value is client-controlled when the app is
+   reachable directly: a spoofed header rotates the bucket, and NATed clients
+   without any forwarding header all land on the same "unknown" bucket and get
+   throttled together. So:
+
+   - When a trusted proxy is in front (`TRUST_PROXY_HEADERS=true`), the proxy
+     appends the real client IP, which is the LAST entry of `x-forwarded-for`;
+     the head of the header is attacker-controlled.
+   - Otherwise we only trust `x-real-ip` / `cf-connecting-ip` (set by proxies
+     that overwrite rather than append) and the head of `x-forwarded-for`.
+   - With no usable identity we skip rate limiting rather than lumping every
+     client into one shared bucket (fail-open; body/origin checks still run).
+*/
+function clientKey(request: Request): string | null {
+  const direct = request.headers.get("x-real-ip")?.trim() || request.headers.get("cf-connecting-ip")?.trim();
+  if (direct) return direct;
+
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+  if (forwarded.length === 0) return null;
+  const trustedProxy = process.env.TRUST_PROXY_HEADERS === "true";
+  return (trustedProxy ? forwarded[forwarded.length - 1] : forwarded[0]) || null;
 }
 
 export function enforceMutationSafety(request: Request): NextResponse | null {
@@ -27,14 +46,38 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
     return error(413, "PAYLOAD_TOO_LARGE", "Request body exceeds the 256 KB limit.");
   }
 
+  /* Origin guard. Only enforceable when the site origin is configured; when it
+     is, a browser mutation must come from that origin. A missing Origin header
+     (curl, server-to-server) is allowed in development, but fails closed in
+     production unless explicitly disabled with ALLOW_ORIGINLESS_MUTATIONS=true
+     — otherwise the guard is a no-op exactly when it matters. */
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL;
   const origin = request.headers.get("origin");
-  if (configuredOrigin && origin && new URL(configuredOrigin).origin !== origin) {
-    return error(403, "ORIGIN_REJECTED", "Request origin is not allowed.");
+  if (configuredOrigin) {
+    const allowedOrigin = new URL(configuredOrigin).origin;
+    if (origin) {
+      let originValue: string | null = null;
+      try {
+        originValue = new URL(origin).origin;
+      } catch {
+        originValue = null;
+      }
+      if (originValue !== allowedOrigin) {
+        return error(403, "ORIGIN_REJECTED", "Request origin is not allowed.");
+      }
+    } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_ORIGINLESS_MUTATIONS !== "true") {
+      return error(403, "ORIGIN_REQUIRED", "A matching Origin header is required for mutations in production.");
+    }
   }
 
+  const ip = clientKey(request);
+  if (!ip) return null;
+
   const now = Date.now();
-  const key = `${clientKey(request)}:${request.method}`;
+  /* Scoped by route AND client so one user hammering /api/leads cannot flood
+     another route's bucket, and one buggy polling client cannot 429 a page. */
+  const route = new URL(request.url).pathname;
+  const key = `${ip}:${route}:${request.method}`;
   const current = buckets.get(key);
   if (!current || now - current.startedAt >= WINDOW_MS) {
     buckets.set(key, { startedAt: now, count: 1 });

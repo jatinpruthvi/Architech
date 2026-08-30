@@ -363,9 +363,12 @@ export default function ListingPage({ id }: { id: string }) {
             <p className="mt-3 text-sm leading-6 text-ink/60">{t.listing.maskedCopy}</p>
             <div className="mt-7 border-t border-ink/15 pt-6">
               <div className="flex items-center gap-4">
-                <span className="grid h-12 w-12 place-items-center rounded-t-full bg-night font-display text-xl text-cream">N</span>
+                {/* B-24: the partner name used to be a hardcoded literal, wrong
+                    for every listing whose organization differs. It comes from
+                    the listing record now; the avatar initial is derived. */}
+                <span className="grid h-12 w-12 place-items-center rounded-t-full bg-night font-display text-xl text-cream">{(property.developer?.trim()[0] ?? "A").toUpperCase()}</span>
                 <div>
-                  <p className="font-semibold">Nivasa Partners</p>
+                  <p className="font-semibold">{property.developer || "Architech Curated Homes"}</p>
                   <p className="stamp mt-0.5 flex items-center gap-1.5 !text-[10px] text-trust"><ShieldCheck size={11} /> {t.listing.verifiedPartner}</p>
                 </div>
               </div>

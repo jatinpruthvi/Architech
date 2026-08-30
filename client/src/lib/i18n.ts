@@ -64,6 +64,8 @@ export const strings = {
       readGuides: "Read locality guides", showingAll: "Showing all", demoInventorySuffix: "demo homes — full inventory arrives with the live data build",
       mapLabel: "Map of homes", searchArea: "Search this area", searchingArea: "Searching this area", searchingAreaDescription: "Results refresh for the visible map area with the live data build. Filters kept.",
       liveCartography: "Live cartography · results pinned", mapCopy: "Real OpenStreetMap data for every city we cover — explore the shape of the neighbourhood without losing the list.",
+      loadFailed: "Could not reach the live search. Showing locally-calculated results instead.", retrySearch: "Retry",
+      truncatedNotice: "Showing the most recent 5,000 results. Narrow to a city or add filters for the complete set.",
     },
     saved: {
       title: "Saved homes", emptyTitle1: "Nothing saved —", emptyTitleEm: "yet", emptyCopy: "Tap the heart on any home and it will wait for you here, freshness stamps and all.",
@@ -186,6 +188,8 @@ export const strings = {
       readGuides: "इलाक़ा गाइड पढ़ें", showingAll: "दिखाए जा रहे हैं", demoInventorySuffix: "डेमो घर — पूरा इन्वेंट्री लाइव डेटा बिल्ड में आएगा",
       mapLabel: "अहमदाबाद के घरों का नक़्शा", searchArea: "इस क्षेत्र में खोजें", searchingArea: "इस क्षेत्र में खोज रहे हैं", searchingAreaDescription: "लाइव डेटा बिल्ड में दिख रहे नक़्शा क्षेत्र के लिए परिणाम अपडेट होंगे। फ़िल्टर बने रहेंगे।",
       liveCartography: "लाइव कार्टोग्राफी · पालडी पिन किया", mapCopy: "अहमदाबाद का वास्तविक OpenStreetMap डेटा — सूची खोए बिना इलाक़े का आकार समझें।",
+      loadFailed: "लाइव खोज से नहीं जुड़ पाए। स्थानीय गणना के परिणाम दिखाए जा रहे हैं।", retrySearch: "फिर कोशिश करें",
+      truncatedNotice: "सबसे नए 5,000 परिणाम दिखाए जा रहे हैं। पूरी सूची के लिए शहर चुनें या फ़िल्टर जोड़ें।",
     },
     saved: {
       title: "सहेजे गए घर", emptyTitle1: "अभी कुछ सहेजा नहीं —", emptyTitleEm: "फिलहाल", emptyCopy: "किसी भी घर पर दिल दबाएँ और वह यहाँ आपका इंतज़ार करेगा — ताज़गी स्टैम्प सहित।",
