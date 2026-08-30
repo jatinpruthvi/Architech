@@ -4,6 +4,7 @@ import { cityMarketTrends } from "@/lib/realestate/market-trends";
 import { evaluateSeoPageQuality } from "./page-gate";
 import type { PageQualityDecision } from "./page-quality";
 import { isIndexable } from "./lifecycle";
+import { listingTargetQuery } from "./query-targeting";
 import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, priceIndexPath, priceIndexUrl, cityPriceIndexPath, cityPriceIndexUrl, requirementsPath, requirementsUrl } from "./urls";
 
 export type SeoRouteType = "home" | "hub" | "city" | "locality" | "listing" | "guide" | "report";
@@ -30,6 +31,15 @@ export type SeoPage = {
   entityIds: string[];
   /** Child sitemap this page belongs to. Omit to use the route-type default. */
   sitemapSegment?: SeoSitemapSegment;
+  /** The query this page is the answer to.
+
+      Declared as data rather than left implicit in the title, because
+      measurement needs something to measure against: without a declared
+      target you can only look at impressions and guess what the page was
+      aiming at, which makes a miss indistinguishable from a bad month.
+      Optional because only pages answering a specific query have one — a
+      standing page does not. */
+  targetQuery?: string;
   /** ISO `YYYY-MM-DD` date the page's *content* last changed, from the
       underlying entity — never the request/build clock.
 
@@ -154,6 +164,9 @@ const listingPages: SeoPage[] = getListings().map((property) => ({
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",
   entityIds: [`city:${property.citySlug}`, `locality:${property.localitySlug}`, `listing:${property.id}`],
+  // The query this page is the answer to, declared as data so measurement has
+  // something to measure against. See client/src/lib/seo/query-targeting.ts.
+  targetQuery: listingTargetQuery(property).text,
   // Mirrors `Listing.meaningfulUpdatedAt`, not `updatedAt`: a moderation touch
   // is not a content change and must not bump `lastmod`.
   lastModified: property.meaningfulUpdatedAt,

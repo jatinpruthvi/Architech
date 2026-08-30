@@ -314,11 +314,11 @@ Ordered by value per unit of effort, given what already exists.
 | 0 | **Turn on persistence and public indexing** (`ARCHITECH_DATA_SOURCE=prisma`, `PUBLIC_INDEXING_ENABLED=true`) | Config | A database | Everything below is theatre without it |
 | 1 | **Marginal-value queue** (§6) — **built** | Small | Existing gates | Tells you what inventory to acquire; no external dependency |
 | 2 | **Event spine + publish gate** (§3.1, §3.2) — **built** | Medium | #0 | Stops thin/duplicate listings being published at all |
-| 3 | **Revalidation + dynamic sitemap** (§3.4 1–2) | Medium | #2 | Cuts discovery latency from "next build" to seconds |
-| 4 | **Authority routing on publish** (§3.5) | Small | #3 | New page is reachable in ≤2 hops |
-| 5 | **Declared query targeting** (§3.3) | Medium | #2 | Makes measurement possible |
-| 6 | **GSC per-URL ingestion** (§3.7) | Large | Domain verification + credentials | The feedback loop |
-| 7 | **Indexing requests + IndexNow** (§3.4 3–4) | Medium | #6 | The last mile; quota-limited, so build after the gate |
+| 3 | **Revalidation + dynamic sitemap** (§3.4 1–2) — **built** | Medium | #2 | Cuts discovery latency from "next build" to seconds |
+| 4 | **Authority routing on publish** (§3.5) — **built** | Small | #3 | New page is reachable in ≤2 hops |
+| 5 | **Declared query targeting** (§3.3) — **built** | Medium | #2 | Makes measurement possible |
+| 6 | **GSC per-URL ingestion** (§3.7) — **board built, per-URL blocked** | Large | Domain verification + credentials | The feedback loop |
+| 7 | **Indexing requests + IndexNow** (§3.4 3–4) — **built** | Medium | #6 | The last mile; quota-limited, so build after the gate |
 
 #1 is the standout: it is small, needs no external integration, and changes
 what the business does on Monday. It is built:
@@ -330,6 +330,33 @@ what the business does on Monday. It is built:
 | `app/api/admin/acquisition/route.ts` | `GET`, gated on `moderation.queue.read`, `no-store`, recomputed per request. |
 | `app/admin/acquisition/page.tsx` + `client/src/pages/AcquisitionQueue.tsx` | The worklist UI. |
 | `app/price-index/[city]/page.tsx` | The public half: a withheld index now states exactly what would publish it. |
+
+#3–#7 are built. What they change, in one line each:
+
+| File | Role |
+| --- | --- |
+| `client/src/lib/seo/discovery.ts` | Revalidation + the ping, as one discovery pass. Registered at startup from `instrumentation.ts`. |
+| `client/src/lib/seo/indexnow.ts` | IndexNow submission. Fails closed; Google does not support it. |
+| `client/src/lib/seo/query-targeting.ts` | The declared query, derived from the listing's own fields, plus a check that the SERP title answers it. |
+| `client/src/lib/seo/url-status.ts` | The status board: indexability, gate state, sitemap membership, declared query, and whatever Search Console will admit to. |
+| `app/sitemap.xml/route.ts`, `app/sitemap/[segment]/route.ts` | `force-static` replaced with a one-hour `revalidate`, so a publish can refresh them. |
+| `client/src/lib/repositories/listings.ts` | `getRelatedListings` is now locality-first rather than city-first. |
+
+**The two things that are still not done, and are not closeable by writing
+more code:**
+
+1. **Per-URL Search Console data.** The board reports aggregate figures only
+   and says so. Real per-URL ingestion needs domain verification and the
+   Search Console API; `LiveGscProvider` throws by design until then. The
+   board withholds the demo provider's numbers rather than showing invented
+   impressions.
+2. **A UI-published listing does not enter the sitemap.** The SEO page
+   registry is built from the fixture repository, so a draft approved through
+   moderation has no registry entry and therefore no sitemap URL. Revalidation
+   cannot fix what the registry does not contain. This resolves when step 0
+   lands and the repository reads from Prisma — until then, step 3 makes
+   discovery *fast* for fixture inventory and *correct* the moment
+   persistence is on.
 
 #2 is built. It is the piece that makes the rest possible, because everything
 downstream — revalidation, sitemap, indexing requests — needs to be told that

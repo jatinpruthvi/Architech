@@ -270,6 +270,89 @@ to make a test pass, stop — the test is telling you about a real listing.**
 
 ---
 
+## Decision 13 — Discovery subscribers register at startup, not in a route
+
+**Decision.** `registerSeoDiscovery()` is called once from `instrumentation.ts`.
+
+**Why.** Registering a subscriber inside a route module means a write path
+that never imports that module also never notifies anyone. That is precisely
+the hole the spine was built to close, and it is invisible until someone adds
+the second write path.
+
+**Do not** move the registration into a route handler to "make it simpler". If
+you add a new write path — an import, a bulk lifecycle update — it must either
+go through `moderateListingForServer` or emit through the spine.
+
+---
+
+## Decision 14 — A blocked listing pings nothing
+
+**Decision.** `discoverListingEvent` skips the IndexNow submission entirely for
+`listing.gate_blocked`.
+
+**Why.** Indexing requests are a scarce, quota-limited resource. Spending one
+on a page that does not exist is the worst possible use of it. This is the
+concrete form of §3.4's rule that the gate comes before the last mile.
+
+---
+
+## Decision 15 — The listing's own URL is not pinged, on purpose
+
+**Decision.** `urlsForIndexingRequest` submits the locality hub, the city hub
+and the price index — not `/listing/{id}/`.
+
+**Why.** For a draft approved through moderation there is no public id to build
+that URL from. The SEO page registry is built from the fixture repository, and
+a UI-published listing is not in it. Submitting a constructed guess would
+submit a 404, which is worse than submitting nothing.
+
+The new listing is still crawled: it is one hop from its locality hub, which
+*is* pinged, and revalidated. That is authority routing doing its job.
+
+**Revisit when:** step 0 lands and the repository reads from Prisma, at which
+point `SeoPage.canonicalUrl` becomes derivable and the listing's own URL should
+join the submission.
+
+---
+
+## Decision 16 — Siblings are locality-first, and still capped at three
+
+**Decision.** `getRelatedListings` orders same-locality, then same-city, then
+everything else. The limit stays at 3.
+
+**Why the ordering changed:** a listing's strongest internal links are the ones
+that share its query, and a query is dominated by its locality. Linking a Paldi
+listing to a Bandra one because both are in the country spends a link on a
+different question.
+
+**Why the count did not:** the grid that renders these is three columns, so
+three fills exactly one row. The design doc suggested "3–5 where the layout
+allows" — this layout does not allow five without a ragged second row. Raising
+it is a layout decision, not an SEO one.
+
+---
+
+## Decision 17 — Demo Search Console numbers are withheld, never displayed
+
+**Decision.** `seoStatusBoard` reports the demo provider's snapshot as
+`available: false`, with the source named.
+
+**Why.** `DEMO_GSC_SNAPSHOT` contains 3,200 impressions and 120 clicks. Those
+are constants in a file. A dashboard that renders them invites someone to make
+a real decision on invented data, which is the most dangerous state an SEO
+dashboard can be in — far worse than showing nothing.
+
+`client/src/lib/seo/url-status.test.ts` asserts this. If you change it, you are
+choosing to show numbers that did not come from Google.
+
+**Also true:** the board reports `perUrl: false`. The current snapshot is
+aggregate; nothing in it can be attributed to a single page. Per-URL ingestion
+needs domain verification and the Search Console API, and `LiveGscProvider`
+throws by design until then. Do not present aggregate figures as if they were
+per-URL.
+
+---
+
 ## Summary for an agent about to touch this
 
 - Do not add a permission without the five steps in Decision 1.
@@ -284,3 +367,8 @@ to make a test pass, stop — the test is telling you about a real listing.**
 - Do not count a taken-down photograph (Decision 10).
 - Do not use `listAllDrafts()` in a broker-facing surface (Decision 11).
 - Do not relax the gate to make a test pass (Decision 12).
+- Do not register a subscriber in a route module (Decision 13).
+- Do not ping anything for a blocked listing (Decision 14).
+- Do not invent a listing URL to submit to IndexNow (Decision 15).
+- Do not raise the sibling count without changing the grid (Decision 16).
+- Do not display demo Search Console numbers as measurement (Decision 17).
