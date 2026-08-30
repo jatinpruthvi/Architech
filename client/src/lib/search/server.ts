@@ -21,8 +21,6 @@ import {
 
 export type ServerSearchResponse = SearchResponse & {
   queryPlan?: ReturnType<typeof buildPostgresSearchPlan>;
-  /** True when the nationwide read hit its row ceiling, so totals are bounded. */
-  truncated?: boolean;
 };
 
 /**
@@ -53,8 +51,11 @@ export async function searchListingsForServer(request: SearchRequest = {}): Prom
   // but "nationwide" is now capped, so the fallback cannot become a full read.
   const city = getCityBySlug(request.city)?.slug ?? "all";
   const cityScoped = city === "all" ? undefined : city;
+  /* B-25: the per-city ceiling is the same as the nationwide one, so a huge
+     city cannot pull its whole table. `truncated` is now honest for either
+     scope — a bounded count is a bounded count, whatever the scope. */
   const listings = await getListingsForServer(cityScoped ? { citySlug: cityScoped } : { limit: MAX_UNSCOPED_LISTING_ROWS });
-  const truncated = !cityScoped && listings.length >= MAX_UNSCOPED_LISTING_ROWS;
+  const truncated = listings.length >= MAX_UNSCOPED_LISTING_ROWS;
 
   // A malformed PIN is ignored rather than returning an empty page.
   const pincode = parsePincode(request.pincode);

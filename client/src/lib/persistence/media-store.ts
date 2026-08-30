@@ -38,7 +38,8 @@ export async function createMediaUploadForServer(input: MediaUploadInput) {
         alt: input.fileName,
         derivatives: result.upload.derivatives,
         licenseEvidence: result.upload.licenseEvidence,
-        exifStripped: true,
+        /* Honest until a real EXIF-strip/transcode processor runs (B-17). */
+        exifStripped: false,
         sortOrder: 0,
         moderationStatus: "PENDING",
       },

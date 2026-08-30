@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
-import { getCityBySlug, getListingById, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
+import { getCityBySlug, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
+import { getListingByIdForServer } from "@/lib/repositories/server/prisma";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { socialImage } from "@/lib/seo/social";
 import { httpDecisionForListing } from "@/lib/seo/lifecycle";
@@ -17,9 +18,9 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const property = getListingById(id);
+  const property = await getListingByIdForServer(id);
   if (!property) return { title: "Not found" };
-  const metadataDecision = httpDecisionForListing(property.lifecycle, property.id, { continuingValue: property.continuingSeoValue });
+  const metadataDecision = httpDecisionForListing(property.lifecycle, property.canonicalToListingId, { continuingValue: property.continuingSeoValue });
   // Title and description are composed against a SERP length budget: see
   // `lib/seo/serp.ts`. The page-level title must leave room for the brand
   // suffix the root layout appends, or Google truncates the number off the end.
@@ -35,14 +36,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const property = getListingById(id);
+  const property = await getListingByIdForServer(id);
   if (!property) notFound();
 
   // Enforce listing-indexability per the SEO-004 lifecycle contract. A non-ACTIVE
   // listing resolves to notFound (404) / a permanent redirect here; a DUPLICATE
-  // listing redirects to its canonical stable id. Fixtures default to ACTIVE so
-  // this is a safety net for future lifecycle-aware data.
-  const decision = httpDecisionForListing(property.lifecycle, property.id, { continuingValue: property.continuingSeoValue });
+  // listing redirects to its canonical target. The canonical column is read
+  // here — the moderation path writes it, so this is what makes the 301 real.
+  const decision = httpDecisionForListing(property.lifecycle, property.canonicalToListingId, { continuingValue: property.continuingSeoValue });
   if (decision.status === 301 && "redirectTo" in decision && decision.redirectTo) {
     redirect(listingUrl(decision.redirectTo));
   }

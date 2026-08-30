@@ -36,6 +36,8 @@ export type DbListingRow = {
   availability?: string | null;
   verification?: string | null;
   meaningfulUpdatedAt?: Date | string | null;
+  lifecycle?: string | null;
+  canonicalToListingId?: string | null;
   locality: {
     slug: string;
     name: string;
@@ -171,6 +173,8 @@ export function dbListingToProperty(row: DbListingRow): Property {
     subtype,
     project: row.projectName ?? row.title,
     developer: row.developerName ?? "Verified partner",
+    lifecycle: lifecycleFromRow(row.lifecycle),
+    canonicalToListingId: row.canonicalToListingId ?? undefined,
     /* Structured first, prose second — and "first" only when it is non-empty,
        otherwise a `{}` on the column would mask the fallback entirely.
        `row.details` does not exist on the `Listing` model yet, so today the
@@ -180,4 +184,13 @@ export function dbListingToProperty(row: DbListingRow): Property {
        it is deliberately not in this commit. */
     details: hasAnyListingDetail(row.details) ? normalizeListingDetails(row.details) : listingDetailsFromSourceSummary(row.sourceSummary),
   };
+}
+
+const PROPERTY_LIFECYCLES: ReadonlySet<string> = new Set(["DRAFT", "IN_REVIEW", "ACTIVE", "SOLD", "EXPIRED", "REMOVED", "DUPLICATE", "ARCHIVED"]);
+
+/** Robust parse of a stored lifecycle into the fixture `Property` shape; a row
+    with none is ACTIVE, the documented default for live inventory. */
+function lifecycleFromRow(value?: string | null): NonNullable<Property["lifecycle"]> {
+  const normalized = String(value ?? "").trim().toUpperCase();
+  return PROPERTY_LIFECYCLES.has(normalized) ? (normalized as NonNullable<Property["lifecycle"]>) : "ACTIVE";
 }

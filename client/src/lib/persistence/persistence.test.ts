@@ -17,7 +17,9 @@ const draftInput: ListingDraftInput = {
   areaSqft: 1482,
   propertyType: "APARTMENT",
   availability: "READY_TO_MOVE",
-  description: "Old trees, kota stone floors, and a courtyard that carries the whole house through the day.",
+  /* Deliberately NOT the fixture description (garden-courtyard, Paldi): with
+     published fixtures as gate peers (B-18), reusing it would canonicalize. */
+  description: "A light-filled garden apartment behind the old trees in Paldi, with kota stone floors carried through every room and a private courtyard off the living space. The kitchen was rebuilt in teak last year; the back verandah stays cool all afternoon.",
   mediaRightsConfirmed: true,
 };
 
@@ -133,7 +135,9 @@ describe("media upload persistence (fixture/memory path)", () => {
 
     const completed = await completeMediaUploadForServer(signed.upload.id);
     expect(completed.ok).toBe(true);
-    if (completed.ok) expect(completed.upload.derivatives.every((d) => d.status === "ready")).toBe(true);
+    /* B-17: no processor is attached, so derivatives stay planned — an honest
+       "uploaded, not yet processed" rather than a claim we cannot back. */
+    if (completed.ok) expect(completed.upload.derivatives.every((d) => d.status === "planned")).toBe(true);
 
     const moderated = await moderateMediaForServer(signed.upload.id, "APPROVED", "Rights confirmed.");
     expect(moderated.ok).toBe(true);

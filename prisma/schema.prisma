@@ -247,6 +247,13 @@ model Listing {
   expiresAt           DateTime?
   canonicalToListingId String?
 
+  /* Full-text search vector created by the raw migration
+     `202608240002_search_indexes` (generated column + GIN/trigram indexes).
+     Declared here so `prisma migrate dev` does not generate a DROP for it;
+     Prisma cannot express the generated-column expression, so the migration
+     owns it and `migrate diff` must keep the two in sync. */
+  searchVector Unsupported("tsvector")?
+
   city         City                @relation(fields: [cityId], references: [id], onDelete: Restrict)
   locality     Locality            @relation(fields: [localityId], references: [id], onDelete: Restrict)
   brokerOrg    BrokerOrganization? @relation(fields: [brokerOrgId], references: [id], onDelete: SetNull)
@@ -328,7 +335,13 @@ model SavedSearch {
   localityId String?
   query      String?
   filters    Json
+  sort       String?
   notify     Boolean  @default(false)
+  /* Canonical identity of the search (normalized query + sorted filters +
+     sort), written by the app on every create. The unique index is what makes
+     duplicate detection race-safe: two concurrent identical saves cannot both
+     insert, and a repeat save returns the existing row as a duplicate. */
+  dedupeKey String? @unique
 
   user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   city     City?     @relation(fields: [cityId], references: [id], onDelete: SetNull)
@@ -340,6 +353,48 @@ model SavedSearch {
   @@index([userId, notify])
   @@index([cityId])
   @@index([localityId])
+  @@index([sort])
+}
+
+/* Authority asset & outreach registry (P1-OFF-001).
+   Durable rows for the governance registry so ARCHITECH_AUTHORITY_STORAGE=
+   prisma survives restarts; the in-memory registry remains the fixture path.
+   `type` is a code from the app vocabulary (guide | local-report | field-note
+   | press | partner); `outcome` likewise (sent | accepted | declined). Kept as
+   String so the enum lives in application code and can grow without a
+   migration. */
+model AuthorityAsset {
+  id                 String   @id
+  type               String
+  title              String
+  url                String?
+  isNofollow         Boolean  @default(true)
+  paidForLink        Boolean  @default(false)
+  disclosure         String   @default("required")
+  relationshipRegistry String?
+
+  outreach AuthorityOutreach[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+}
+
+model AuthorityOutreach {
+  id         String   @id
+  date       String
+  target     String
+  assetId    String?
+  outcome    String
+  reviewedBy String?
+
+  asset AuthorityAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([assetId])
+  @@index([date])
 }
 
 model AuditEvent {

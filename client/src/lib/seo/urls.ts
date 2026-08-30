@@ -17,6 +17,15 @@ export function normalizeSiteUrl(value = configuredSiteUrl()): string {
   }
 }
 
+/* B-21: the URL base was evaluated once at module load (`const SITE_URL`), so
+   changing NEXT_PUBLIC_SITE_URL in a long-lived process had no effect. Resolve
+   it per call; SITE_URL stays exported for callers that snapshot it, but new
+   code should use siteUrl(). */
+export function siteUrl(): string {
+  return normalizeSiteUrl();
+}
+
+/** @deprecated Use `siteUrl()` (per-call evaluation) instead. */
 export const SITE_URL = normalizeSiteUrl();
 
 export function withTrailingSlash(path: string): string {
@@ -26,11 +35,11 @@ export function withTrailingSlash(path: string): string {
   return `${pathname.replace(/\/+$/, "")}/${queryOrHash}`;
 }
 
-export function canonicalUrl(path = "/", base = SITE_URL): string {
+export function canonicalUrl(path = "/", base = siteUrl()): string {
   return `${normalizeSiteUrl(base)}${withTrailingSlash(path)}`;
 }
 
-export function assetUrl(path: string, base = SITE_URL): string {
+export function assetUrl(path: string, base = siteUrl()): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return `${normalizeSiteUrl(base)}${normalized}`;
 }

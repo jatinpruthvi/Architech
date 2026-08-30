@@ -59,6 +59,57 @@ export const demoBrokerSession: AuthSession = {
   source: "better-auth-contract-demo",
 };
 
+/* Role → permission grant for live Better Auth sessions. The demo session
+   carries a hardcoded list; a live session derives the same semantics from its
+   role so guarded APIs behave identically in both modes. */
+const ROLE_PERMISSIONS_SOURCE: string[] = [
+  "broker.dashboard.read",
+  "listing.draft.create",
+  "lead.inbox.read",
+  "organization.profile.read",
+  "authority.registry.read",
+  "authority.registry.write",
+  "media.upload.write",
+  "media.moderation.write",
+  "moderation.queue.read",
+  "moderation.listings.write",
+  "listing.review.moderate",
+  "rera.corrections.write",
+  "saved-search.read",
+  "saved-search.write",
+];
+
+const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
+  BUYER: ["saved-search.read", "saved-search.write"],
+  BROKER_MEMBER: [
+    "broker.dashboard.read",
+    "listing.draft.create",
+    "lead.inbox.read",
+    "organization.profile.read",
+    "authority.registry.read",
+    "media.upload.write",
+    "saved-search.read",
+    "saved-search.write",
+  ],
+  BROKER_ADMIN: [...ROLE_PERMISSIONS_SOURCE],
+  MODERATOR: [
+    "moderation.queue.read",
+    "moderation.listings.write",
+    "listing.review.moderate",
+    "media.moderation.write",
+    "authority.registry.read",
+    "authority.registry.write",
+    "rera.corrections.write",
+  ],
+  /* ADMIN bypasses checks via `requirePermission`; the list exists so a
+     session introspection shows the role's surface. */
+  ADMIN: ["platform.admin"],
+};
+
+export function permissionsForRole(role: AuthRole): string[] {
+  return [...ROLE_PERMISSIONS[role]];
+}
+
 export function hasRoleAtLeast(role: AuthRole, minimum: AuthRole): boolean {
   return roleRank[role] >= roleRank[minimum];
 }

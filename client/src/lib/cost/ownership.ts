@@ -124,16 +124,40 @@ export function monthlyEmi(principalInr: number, tenorYears: number, annualRateP
   return (principalInr * r * factor) / (factor - 1);
 }
 
+/** Errors that make the estimate meaningless rather than merely unusual.
+    Returns [] for a callable set of assumptions; the API surfaces these as a
+    400 instead of forwarding NaN into a response. */
+export function validateOwnershipAssumptions(input: Partial<OwnershipAssumptions>): string[] {
+  const errors: string[] = [];
+  const price = input.priceInr;
+  if (price === undefined || !Number.isFinite(price) || price <= 0) errors.push("Price must be a positive INR value.");
+  if (input.loanInr !== undefined) {
+    if (!Number.isFinite(input.loanInr) || input.loanInr < 0) errors.push("Loan must be zero or a positive INR value.");
+    else if (price !== undefined && Number.isFinite(price) && input.loanInr > price) errors.push("Loan cannot exceed the property price.");
+  }
+  if (input.downPaymentInr !== undefined && (!Number.isFinite(input.downPaymentInr) || input.downPaymentInr < 0)) errors.push("Down payment must be zero or a positive INR value.");
+  if (input.tenorYears !== undefined && (!Number.isFinite(input.tenorYears) || input.tenorYears <= 0)) errors.push("Loan tenure must be a positive number of years.");
+  if (input.annualRatePct !== undefined && (!Number.isFinite(input.annualRatePct) || input.annualRatePct < 0 || input.annualRatePct >= 100)) errors.push("Annual interest rate must be between 0 and 100.");
+  if (input.stampDutyRate !== undefined && (!Number.isFinite(input.stampDutyRate) || input.stampDutyRate < 0 || input.stampDutyRate > 1)) errors.push("Stamp duty rate must be a fraction between 0 and 1.");
+  if (input.registrationRate !== undefined && (!Number.isFinite(input.registrationRate) || input.registrationRate < 0 || input.registrationRate > 1)) errors.push("Registration rate must be a fraction between 0 and 1.");
+  return errors;
+}
+
 export function calculateOwnershipCost(input: OwnershipAssumptions): OwnershipCost {
-  const priceInr = Math.max(0, input.priceInr);
-  const loanRatio = input.loanInr ? input.loanInr / priceInr : DEFAULT_LOAN_RATIO;
-  const loanInr = input.loanInr ?? Math.round(priceInr * loanRatio);
-  const downPaymentInr = input.downPaymentInr ?? Math.max(0, priceInr - loanInr);
-  const tenorYears = input.tenorYears ?? 20;
-  const annualRatePct = input.annualRatePct ?? 8.5;
+  const priceInr = Number.isFinite(input.priceInr) ? Math.max(0, input.priceInr) : 0;
+  /* `loanInr` presence is checked by value, not truthiness: an explicit
+     zero-loan (fully cash purchase) must not be silently replaced by the
+     80% LTV default — that is how EMI=0 and downPayment=20% coexisted. */
+  const hasExplicitLoan = input.loanInr !== undefined && Number.isFinite(input.loanInr) && input.loanInr >= 0;
+  const hasExplicitDownPayment = input.downPaymentInr !== undefined && Number.isFinite(input.downPaymentInr) && input.downPaymentInr >= 0;
+  const loanRatio = hasExplicitLoan && priceInr > 0 ? input.loanInr! / priceInr : DEFAULT_LOAN_RATIO;
+  const loanInr = hasExplicitLoan ? input.loanInr! : Math.round(priceInr * loanRatio);
+  const downPaymentInr = hasExplicitDownPayment ? input.downPaymentInr! : Math.max(0, priceInr - loanInr);
+  const tenorYears = Number.isFinite(input.tenorYears) && input.tenorYears! > 0 ? input.tenorYears! : 20;
+  const annualRatePct = Number.isFinite(input.annualRatePct) && input.annualRatePct! >= 0 && input.annualRatePct! < 100 ? input.annualRatePct! : 8.5;
   const charges = transferChargesFor(input.state) ?? DEFAULT_TRANSFER_CHARGES;
-  const stampDutyRate = input.stampDutyRate ?? charges.stampDutyRate;
-  const registrationRate = input.registrationRate ?? charges.registrationRate;
+  const stampDutyRate = input.stampDutyRate !== undefined && Number.isFinite(input.stampDutyRate) && input.stampDutyRate >= 0 && input.stampDutyRate <= 1 ? input.stampDutyRate : charges.stampDutyRate;
+  const registrationRate = input.registrationRate !== undefined && Number.isFinite(input.registrationRate) && input.registrationRate >= 0 && input.registrationRate <= 1 ? input.registrationRate : charges.registrationRate;
 
   const emi = monthlyEmi(loanInr, tenorYears, annualRatePct);
   const totalRepaymentInr = emi > 0 ? emi * tenorYears * 12 : 0;

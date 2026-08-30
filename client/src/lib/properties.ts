@@ -41,6 +41,9 @@ export type Property = {
   details: PropertyDetails;
   featured?: boolean;
   lifecycle?: "DRAFT" | "IN_REVIEW" | "ACTIVE" | "SOLD" | "EXPIRED" | "REMOVED" | "DUPLICATE" | "ARCHIVED";
+  /** Resolved canonical target (row id/stableId) when this listing is a
+      DUPLICATE. Read by the listing route to issue the 301. */
+  canonicalToListingId?: string;
   /** Keep an expired page viewable as noindex only when this value is verified. */
   continuingSeoValue?: boolean;
 };

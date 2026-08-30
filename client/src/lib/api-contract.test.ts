@@ -196,7 +196,8 @@ describe("public API contract", () => {
     const completedBody = await json(completed) as { ok: boolean; upload: { auditTrail: { action: string }[]; derivatives: { status: string }[]; moderationStatus: string } };
     expect(completedBody.ok).toBe(true);
     expect(completedBody.upload.moderationStatus).toBe("PENDING");
-    expect(completedBody.upload.derivatives.every((derivative) => derivative.status === "ready")).toBe(true);
+    /* B-17: no transcoder/EXIF processor runs, so derivatives stay planned. */
+    expect(completedBody.upload.derivatives.every((derivative) => derivative.status === "planned")).toBe(true);
     expect(completedBody.upload.auditTrail.some((entry) => entry.action === "media.upload.completed")).toBe(true);
   });
 

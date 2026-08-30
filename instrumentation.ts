@@ -10,5 +10,10 @@ export async function register() {
        by convention. */
     const { registerSeoDiscovery } = await import("./client/src/lib/seo/discovery");
     registerSeoDiscovery();
+    /* Retention policy enforcement (M-6): policy alone does not remove stale
+       media. Registered at startup, on the same in-process scheduler model as
+       the SEO spine; disable with MEDIA_RETENTION_SWEEP=off. */
+    const { registerMediaRetentionRuntime } = await import("./client/src/lib/media/retention-runtime");
+    registerMediaRetentionRuntime();
   }
 }

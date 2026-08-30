@@ -17,7 +17,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { attachMediaToDraftForServer, createListingDraftForServer, moderateListingForServer, submitListingForReviewForServer } from "./broker-store";
 import { evaluateDraftPublishGate } from "./broker-store";
 import { listAllDrafts, resetBrokerWorkflowForTests, type ListingDraftInput } from "@/lib/broker/workflow";
-import { resetMediaStoreForTests } from "@/lib/media/upload";
+import { markMediaProcessingComplete, resetMediaStoreForTests } from "@/lib/media/upload";
 import { completeMediaUploadForServer, createMediaUploadForServer, moderateMediaForServer } from "./media-store";
 import { onListingEvent, recentListingEvents, resetListingEventBusForTests, type ListingEvent } from "@/lib/listing/events";
 
@@ -192,11 +192,14 @@ describe("a photograph that cannot be shown does not count", () => {
     resetListingEventBusForTests();
   });
 
-  it("publishes with an approved photograph and blocks once it is taken down", async () => {
+  it("publishes with an approved, EXIF-cleared photograph and blocks once it is taken down", async () => {
     const signed = await createMediaUploadForServer(mediaInput);
     if (!signed.ok) throw new Error("upload failed");
     await completeMediaUploadForServer(signed.upload.id);
     await moderateMediaForServer(signed.upload.id, "APPROVED", "Rights confirmed.");
+    /* M-6: approval alone is not publishability. The EXIF-strip must have run —
+       that is what the worker hook records, mirroring the real pipeline. */
+    markMediaProcessingComplete(signed.upload.id, { exifStripped: true, derivativesReady: true });
 
     const draft = await inReview({}, [signed.upload.id]);
     const gate = evaluateDraftPublishGate(draft.id);
@@ -208,6 +211,19 @@ describe("a photograph that cannot be shown does not count", () => {
     if (!after.ok) throw new Error("expected ok");
     expect(after.decision.action).toBe("block");
     expect(after.decision.blockers.join(" ")).toMatch(/photograph/i);
+  });
+
+  it("does not publish approved-but-unprocessed media (EXIF policy)", async () => {
+    const signed = await createMediaUploadForServer(mediaInput);
+    if (!signed.ok) throw new Error("upload failed");
+    await completeMediaUploadForServer(signed.upload.id);
+    await moderateMediaForServer(signed.upload.id, "APPROVED", "Rights confirmed.");
+
+    const draft = await inReview({}, [signed.upload.id]);
+    const gate = evaluateDraftPublishGate(draft.id);
+    if (!gate.ok) throw new Error("expected ok");
+    expect(gate.decision.action).toBe("block");
+    expect(gate.decision.blockers.join(" ")).toMatch(/photograph/i);
   });
 
   it("does not publish on the strength of a pending upload", async () => {

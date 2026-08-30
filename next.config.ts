@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
-const frameAncestors = isProduction ? "'none'" : "'self' https://*.e2b.app";
+/* Preview proxies: both the current (manus.computer) and legacy (e2b.app)
+   wildcard families so dev previews can embed the app in either environment.
+   Exact hostnames are never listed — they rotate per sandbox. */
+const frameAncestors = isProduction ? "'none'" : "'self' https://*.e2b.app https://*.manus.computer";
 const scriptSource = isProduction ? "'self' 'unsafe-inline'" : "'self' 'unsafe-inline' 'unsafe-eval'";
 
 const securityHeaders = [
@@ -33,14 +36,11 @@ const nextConfig: NextConfig = {
   // Match the architecture's canonical URL grammar (/buy/{city}/{locality}/)
   trailingSlash: true,
   // Sandbox live-preview domains changed from *.e2b.app to *.manus.computer.
-  // Keep both allowlists so the Next.js dev client can hydrate through either
-  // proxy family; without this, server-rendered controls remain inert in Chrome.
+  // Wildcards only — exact sandbox hostnames rotate and listing them here
+  // silently breaks the next preview.
   allowedDevOrigins: [
     "*.e2b.app",
     "*.manus.computer",
-    "3000-ic1kcjb43qdag8kqqfuag-1217bc80.sg1.manus.computer",
-    "3000-i3hdv4omcwxuvbaopwpw2-bed17bd0.sg1.manus.computer",
-    "3000-ixa0ycaohqn3uu7gchacy-2d2aebe2.sg1.manus.computer",
     "localhost",
     "127.0.0.1",
   ],
