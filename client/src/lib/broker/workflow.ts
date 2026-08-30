@@ -133,6 +133,17 @@ export function getModerationQueue() {
   return [...drafts.values()].filter((draft) => draft.status === "IN_REVIEW");
 }
 
+/* Every draft, across organizations.
+
+   Exists so the publish gate can see its peers. Duplicate detection is only
+   meaningful across the whole corpus: two brokers pasting the same paragraph
+   is precisely the case being caught, and a per-organization view would never
+   see it. Nothing else should need this — a broker-facing surface must use
+   `listBrokerDrafts`, which is scoped. */
+export function listAllDrafts(): ListingDraft[] {
+  return [...drafts.values()];
+}
+
 /** A broker's own drafts, newest-edit-first. Excludes nothing (all statuses). */
 export function listBrokerDrafts(organizationId: string) {
   return [...drafts.values()]

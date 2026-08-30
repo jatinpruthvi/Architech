@@ -50,6 +50,11 @@ describe("broker draft persistence (fixture/memory path)", () => {
     const queue = await getModerationQueueForServer();
     expect(queue.map((draft) => draft.id)).toContain(created.draft.id);
 
+    // Publication is gated, and a listing with no photograph cannot be
+    // published. Attach one the way the broker flow does, then approve.
+    const attached = await attachMediaToDraftForServer(created.draft.id, "media_courtyard_01");
+    expect(attached.ok).toBe(true);
+
     const moderated = await moderateListingForServer(created.draft.id, "approve", "Facts verified against source.");
     expect(moderated.ok).toBe(true);
     if (moderated.ok) expect(moderated.draft.status).toBe("ACTIVE");

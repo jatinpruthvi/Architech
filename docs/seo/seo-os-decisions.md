@@ -144,6 +144,132 @@ before any number here means anything operationally.**
 
 ---
 
+## Decision 6 — The gate is inside the transition, not beside it
+
+**Decision.** `moderateListingForServer` runs the publish gate *before* it
+mutates anything, and emits the event *after*. The gate is not a separate step
+a caller is trusted to remember.
+
+**Why.** A gate placed beside a transition looks identical in a code review and
+behaves completely differently the first time someone adds a second write path.
+The doc's own words: "if a path can publish without emitting, the OS has a
+hole."
+
+**Do not** extract the gate into a helper that callers invoke before
+`moderateListingForServer`. If you add a new write path that makes a listing
+visible — an import, a CSV ingest, a lifecycle migration — it must go through
+`moderateListingForServer` or emit through the same spine.
+
+**The test that catches this:** `client/src/lib/persistence/publish-gate.test.ts`
+asserts that a blocked approval emits `listing.gate_blocked`, leaves the draft
+at `IN_REVIEW`, and emits no `listing.published`. If the gate is ever routed
+around, that is what fails.
+
+---
+
+## Decision 7 — A near-duplicate is canonicalized, not refused
+
+**Decision.** Three outcomes, not two: `publish`, `canonicalize`, `block`. A
+description that is a near-duplicate of an already-published listing in the
+same locality is approved and pointed at the listing it duplicates.
+
+**Why.** Refusing a duplicate throws away real inventory; publishing it as a
+second page creates two pages competing for the same query. Canonicalizing
+keeps the listing visible and gives Google one page. This is the first writer
+of `Listing.canonicalToListingId`, which has been in `prisma/schema.prisma`
+since it was written and was referenced by nothing.
+
+**The subtlety:** the gate will only canonicalize to a peer that is itself
+`published`. Pointing Google at a page that does not exist is worse than a
+duplicate. A near-duplicate whose twin is still in review therefore publishes
+normally and only raises a warning — see
+`nearestPublishedDuplicate` in `client/src/lib/listing/publish-gate.ts`.
+
+**Do not** drop the `published` check, and do not canonicalize to the
+alphabetically-first or oldest peer. The target is the most similar published
+peer in the same locality.
+
+---
+
+## Decision 8 — RERA is a blocker off-plan, a warning otherwise
+
+**Decision.** No `reraNumber` blocks only when `availability` is `NEW_LAUNCH`,
+`UNDER_CONSTRUCTION`, or `PRE_LAUNCH`. For `RESALE` and `READY_TO_MOVE` it is a
+warning.
+
+**Why.** RERA registration is mandatory in India for a project sold before
+completion; an individual reselling their own flat is generally outside it.
+`ai/moderation.ts` already calls a missing RERA number a warning and says
+"verify whether the listing requires one" — promoting that to a blanket blocker
+would refuse most legitimate resale inventory. The doc said "promote it per
+policy"; this is the policy, and it is the one the existing code already
+implies.
+
+**Revisit when:** someone with authority decides Architech will not list
+unregistered off-plan stock at all, at which point the warning becomes a
+blocker for every availability.
+
+---
+
+## Decision 9 — Thresholds are tunable constants, not settled truth
+
+`MIN_DESCRIPTION_CHARS = 80`, `THIN_DESCRIPTION_CHARS = 200`,
+`DUPLICATE_SIMILARITY_THRESHOLD = 0.75`, `MIN_PUBLISHABLE_MEDIA = 1`. All are
+exported from `client/src/lib/listing/publish-gate.ts`.
+
+These are judgement calls, and they were chosen against the inventory that
+exists today. 80 characters blocks a single clause while passing every real
+listing in the fixture set; if it starts refusing listings that are plainly
+fine, lower it — but change the constant and its tests together, and expect the
+duplicate threshold to need tuning once real broker copy arrives, because
+brokers paste in ways fixtures do not.
+
+**Do not** hard-code any of these numbers at a call site.
+
+---
+
+## Decision 10 — Media rights are not the same as media
+
+`validateListingDraft` confirms the broker *has the rights* to publish
+photographs. It never checks that any exist. The gate checks both, and also
+checks that attached media are still `APPROVED` — a photograph that was
+rejected or taken down does not count, because counting it would publish a page
+whose image cannot be shown.
+
+An id the media store does not recognise is counted rather than refused. Those
+are fixture and legacy ids, and blocking them would refuse listings for a
+bookkeeping reason no broker can see or act on.
+
+---
+
+## Decision 11 — `listAllDrafts()` is not for broker-facing surfaces
+
+`listAllDrafts()` was added to `client/src/lib/broker/workflow.ts` so the gate
+can see its peers. Duplicate detection is only meaningful across the whole
+corpus — two brokers pasting the same paragraph is exactly the case being
+caught, and a per-organization view would never see it.
+
+**Any broker- or organization-facing surface must use `listBrokerDrafts`, which
+is scoped.** Reaching for `listAllDrafts` in a UI would leak one broker's
+inventory to another.
+
+---
+
+## Decision 12 — One existing test was changed, and that was the point
+
+`client/src/lib/persistence/persistence.test.ts` previously approved a draft
+that had no photographs attached, and asserted the approval succeeded. The gate
+made it fail. It now attaches media before approving, the way the broker flow
+does.
+
+This is recorded because a modified existing test is the kind of change that
+deserves suspicion: it can mean someone bent a test to fit their code. It was
+not. The draft was incomplete, the gate was right, and the test now models a
+listing a broker would actually submit. **If you find yourself relaxing a gate
+to make a test pass, stop — the test is telling you about a real listing.**
+
+---
+
 ## Summary for an agent about to touch this
 
 - Do not add a permission without the five steps in Decision 1.
@@ -151,3 +277,10 @@ before any number here means anything operationally.**
 - Do not sum the gaps into the headline (Decision 3).
 - Do not quote fixture numbers as market facts (Decision 4).
 - Do not count pages as indexed when only indexing-eligible (Decision 5).
+- Do not move the gate out of the moderation transition (Decision 6).
+- Do not canonicalize to an unpublished peer (Decision 7).
+- Do not block every listing that lacks a RERA number (Decision 8).
+- Do not hard-code a gate threshold (Decision 9).
+- Do not count a taken-down photograph (Decision 10).
+- Do not use `listAllDrafts()` in a broker-facing surface (Decision 11).
+- Do not relax the gate to make a test pass (Decision 12).

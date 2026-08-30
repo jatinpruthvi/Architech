@@ -313,7 +313,7 @@ Ordered by value per unit of effort, given what already exists.
 | --- | --- | --- | --- | --- |
 | 0 | **Turn on persistence and public indexing** (`ARCHITECH_DATA_SOURCE=prisma`, `PUBLIC_INDEXING_ENABLED=true`) | Config | A database | Everything below is theatre without it |
 | 1 | **Marginal-value queue** (§6) — **built** | Small | Existing gates | Tells you what inventory to acquire; no external dependency |
-| 2 | **Event spine + publish gate** (§3.1, §3.2) | Medium | #0 | Stops thin/duplicate listings being published at all |
+| 2 | **Event spine + publish gate** (§3.1, §3.2) — **built** | Medium | #0 | Stops thin/duplicate listings being published at all |
 | 3 | **Revalidation + dynamic sitemap** (§3.4 1–2) | Medium | #2 | Cuts discovery latency from "next build" to seconds |
 | 4 | **Authority routing on publish** (§3.5) | Small | #3 | New page is reachable in ≤2 hops |
 | 5 | **Declared query targeting** (§3.3) | Medium | #2 | Makes measurement possible |
@@ -330,6 +330,30 @@ what the business does on Monday. It is built:
 | `app/api/admin/acquisition/route.ts` | `GET`, gated on `moderation.queue.read`, `no-store`, recomputed per request. |
 | `app/admin/acquisition/page.tsx` + `client/src/pages/AcquisitionQueue.tsx` | The worklist UI. |
 | `app/price-index/[city]/page.tsx` | The public half: a withheld index now states exactly what would publish it. |
+
+#2 is built. It is the piece that makes the rest possible, because everything
+downstream — revalidation, sitemap, indexing requests — needs to be told that
+something changed, and until now approval told nobody anything.
+
+| File | Role |
+| --- | --- |
+| `client/src/lib/listing/events.ts` | The spine. `emitListingEvent`, `onListingEvent`. Isolates every subscriber; a throwing listener can never fail the write that triggered it. |
+| `client/src/lib/listing/publish-gate.ts` | The rules, pure. Three outcomes: `publish`, `canonicalize`, `block`. |
+| `client/src/lib/persistence/broker-store.ts` | The wiring, inside `moderateListingForServer`. |
+| `client/src/lib/listing/events.test.ts`, `publish-gate.test.ts`, `client/src/lib/persistence/publish-gate.test.ts` | 8 + 24 + 13 tests. |
+
+Three things were decided while building it, and all three are recorded in
+`docs/seo/seo-os-decisions.md` because none is visible in a diff:
+
+- The gate sits **inside** the moderation transition, not beside it. A gate
+  beside a transition is one someone can route around by adding a second write
+  path.
+- A near-duplicate is **canonicalized, not refused**. This is the third
+  outcome and the `canonicalToListingId` column's first writer — it existed in
+  the schema and was referenced by nothing.
+- RERA is a blocker **only off-plan**. Promoting `ai/moderation.ts`'s existing
+  warning to a blanket blocker would refuse most legitimate resale inventory,
+  since an individual reselling their own flat is generally outside RERA.
 
 The one design decision worth recording here: the minimum ask is the **cheapest
 single locality**, never the sum of every locality's gap. Publishing a city

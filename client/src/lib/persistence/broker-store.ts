@@ -1,5 +1,8 @@
 import "server-only";
-import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, updateListingDraft, resumeListingDraft, archiveListingDraft, deleteListingDraft, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
+import { createListingDraft, submitListingForReview, moderateListing, getModerationQueue, listBrokerDrafts, listAllDrafts, attachMediaToDraft, detachMediaFromDraft, listDraftMediaIds, updateListingDraft, resumeListingDraft, archiveListingDraft, deleteListingDraft, type ListingDraftInput, type ModerationDecision, type ListingDraft } from "@/lib/broker/workflow";
+import { evaluatePublishGate, type PublishGateDecision, type PublishGatePeer, type PublishGateSubject } from "@/lib/listing/publish-gate";
+import { emitListingEvent } from "@/lib/listing/events";
+import { getMediaUpload } from "@/lib/media/upload";
 import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
@@ -102,6 +105,7 @@ export async function resumeListingDraftForServer(draftId: string, session: Auth
 }
 
 export async function archiveListingDraftForServer(draftId: string, session: AuthSession = demoBrokerSession) {
+  const before = listAllDrafts().find((item) => item.id === draftId) ?? null;
   const result = archiveListingDraft(draftId, session);
   if (!result.ok) return result;
   if (isPrismaPersistence()) {
@@ -109,10 +113,25 @@ export async function archiveListingDraftForServer(draftId: string, session: Aut
     await db.listing.updateMany({ where: { stableId: result.draft.stableId, brokerOrgId: session.organization?.id ?? result.draft.organizationId }, data: { lifecycle: "ARCHIVED" } });
     await db.auditEvent.create({ data: { action: "listing.draft.archived", entityType: "Listing", entityId: result.draft.stableId, metadata: { source: "api.broker.listings.archive.prisma" } } });
   }
+  /* Removed from public visibility. The spine has to hear about it too: a
+   downstream consumer that only ever sees `listing.published` will keep a
+   de-listed page in the sitemap and keep requesting indexing for it. */
+  await emitListingEvent({
+    type: "listing.unpublished",
+    stableId: result.draft.stableId,
+    draftId,
+    localitySlug: result.draft.localitySlug,
+    citySlug: getLocalityBySlug(result.draft.localitySlug)?.citySlug,
+    previousLifecycle: before?.status ?? null,
+    nextLifecycle: result.draft.status,
+    meta: { actor: session?.user.email ?? "unknown", cause: "listing.draft.archived" },
+  });
+
   return result;
 }
 
 export async function deleteListingDraftForServer(draftId: string, session: AuthSession = demoBrokerSession) {
+  const before = listAllDrafts().find((item) => item.id === draftId) ?? null;
   const result = deleteListingDraft(draftId, session);
   if (!result.ok) return result;
   if (isPrismaPersistence()) {
@@ -120,6 +139,25 @@ export async function deleteListingDraftForServer(draftId: string, session: Auth
     await db.listing.updateMany({ where: { stableId: draftId, brokerOrgId: session.organization?.id ?? "" }, data: { lifecycle: "REMOVED" } });
     await db.auditEvent.create({ data: { action: "listing.draft.deleted", entityType: "Listing", entityId: draftId, metadata: { source: "api.broker.listings.delete.prisma" } } });
   }
+  /* Removed from public visibility. The spine has to hear about it too: a
+     downstream consumer that only ever sees `listing.published` will keep a
+     de-listed page in the sitemap and keep requesting indexing for it.
+
+     Everything but the identity comes from `before`, captured above: deletion
+     returns only an id, and by the time this runs the draft is gone. */
+  if (before) {
+    await emitListingEvent({
+      type: "listing.unpublished",
+      stableId: before.stableId,
+      draftId,
+      localitySlug: before.localitySlug,
+      citySlug: getLocalityBySlug(before.localitySlug)?.citySlug,
+      previousLifecycle: before.status,
+      nextLifecycle: "REMOVED",
+      meta: { actor: session?.user.email ?? "unknown", cause: "listing.draft.deleted" },
+    });
+  }
+
   return result;
 }
 
@@ -136,16 +174,139 @@ export async function submitListingForReviewForServer(draftId: string, session: 
   return result;
 }
 
+/* The publish gate, wired to drafts.
+
+   `evaluatePublishGate` is pure; this is where a draft becomes a subject and
+   the other drafts become peers. Two things here are worth knowing:
+
+   A peer counts as `published` only when its status is ACTIVE. Canonicalizing
+   to a draft that has not been approved would point Google at a page that
+   does not exist, so the gate itself refuses to do it — see
+   `nearestPublishedDuplicate`.
+
+   Media is read live from the media store rather than from the draft, because
+   a broker can detach a photograph after submitting for review. The rights
+   confirmation on the draft is from whatever moment it was filled in; the
+   photographs attached right now are a present fact. */
+/* Whether an attached medium may actually be shown.
+
+   `listDraftMediaIds` returns whatever was attached, with no view of its
+   moderation state. That is a hole in the one promise the gate makes: a
+   listing whose only photograph was later rejected or taken down would still
+   count as having one, and would publish a page whose image cannot be shown —
+   the exact rights failure the media pipeline exists to prevent.
+
+   An id the media store does not recognise is counted rather than rejected.
+   Those are fixture and legacy ids, and refusing them would block listings for
+   a bookkeeping reason the broker cannot see or fix. */
+function isShowableMedium(mediaId: string): boolean {
+  const upload = getMediaUpload(mediaId);
+  if (!upload) return true;
+  return upload.moderationStatus === "APPROVED";
+}
+
+function draftGateSubject(draft: ListingDraft): PublishGateSubject {
+  return {
+    stableId: draft.stableId,
+    draftId: draft.id,
+    title: draft.title,
+    description: draft.description,
+    priceInr: draft.priceInr,
+    bhk: draft.bhk,
+    areaSqft: draft.areaSqft,
+    propertyType: draft.propertyType,
+    availability: draft.availability,
+    localitySlug: draft.localitySlug,
+    reraNumber: draft.reraNumber,
+    mediaRightsConfirmed: draft.mediaRightsConfirmed,
+    mediaCount: listDraftMediaIds(draft.id).filter(isShowableMedium).length,
+  };
+}
+
+function draftGatePeers(draft: ListingDraft): PublishGatePeer[] {
+  return listAllDrafts()
+    .filter((peer) => peer.stableId !== draft.stableId && peer.localitySlug === draft.localitySlug)
+    .map((peer) => ({
+      stableId: peer.stableId,
+      title: peer.title,
+      description: peer.description,
+      localitySlug: peer.localitySlug,
+      published: peer.status === "ACTIVE",
+    }));
+}
+
+/** Evaluate whether a draft may become publicly visible, with reasons. */
+export function evaluateDraftPublishGate(draftId: string): { ok: true; draft: ListingDraft; decision: PublishGateDecision } | { ok: false; status: 404; errors: string[] } {
+  const draft = listAllDrafts().find((item) => item.id === draftId);
+  if (!draft) return { ok: false, status: 404, errors: ["Draft not found."] };
+  return { ok: true, draft, decision: evaluatePublishGate(draftGateSubject(draft), draftGatePeers(draft)) };
+}
+
+/* Moderation is the choke point.
+
+   Every path that makes a listing publicly visible ends here, so this is where
+   the publish gate and the event spine belong — inside the transition, not
+   beside it. A gate placed beside the transition is a gate someone can route
+   around by adding a second write path.
+
+   The gate only runs on `approve`. Requesting changes or rejecting a listing
+   cannot make anything public, and gating them would be refusing to let a
+   moderator send work back.
+
+   A blocked approval leaves the draft at IN_REVIEW and returns the reasons.
+   That is what makes this a gate rather than a wall: the moderator sees
+   exactly what the broker has to fix, and can send it back with those reasons
+   attached instead of guessing. */
 export async function moderateListingForServer(draftId: string, decision: ModerationDecision, reason: string, session?: AuthSession) {
+  const before = listAllDrafts().find((item) => item.id === draftId) ?? null;
+  const previousLifecycle = before?.status ?? null;
+  const gate = decision === "approve" ? evaluateDraftPublishGate(draftId) : null;
+
+  if (gate?.ok && gate.decision.action === "block") {
+    await emitListingEvent({
+      type: "listing.gate_blocked",
+      stableId: gate.draft.stableId,
+      draftId,
+      localitySlug: gate.draft.localitySlug,
+      citySlug: getLocalityBySlug(gate.draft.localitySlug)?.citySlug,
+      previousLifecycle,
+      nextLifecycle: null,
+      meta: { reason, blockers: gate.decision.blockers, warnings: gate.decision.warnings, actor: session?.user.email ?? "unknown" },
+    });
+    return { ok: false as const, status: 422, errors: gate.decision.blockers, warnings: gate.decision.warnings };
+  }
+
   const result = moderateListing(draftId, decision, reason, session);
   if (!result.ok) return result;
+
+  const canonicalToListingId = gate?.ok ? gate.decision.canonicalToListingId : undefined;
+
   if (isPrismaPersistence()) {
     const db = prisma();
     await db.listing.updateMany({ where: { stableId: result.draft.stableId }, data: { lifecycle: LIFECYCLE_BY_DECISION[decision] } });
+    /* The canonical column has existed since the schema was written and was
+       referenced by nothing. This is its first writer: a near-duplicate is
+       published but points at the listing it duplicates, so Google sees one
+       page rather than two competing ones. */
+    if (canonicalToListingId) {
+      await db.listing.updateMany({ where: { stableId: result.draft.stableId }, data: { canonicalToListingId } });
+    }
     await db.auditEvent.create({
-      data: { action: `listing.review.${decision}`, entityType: "Listing", entityId: result.draft.stableId, metadata: { reason, source: "api.admin.moderation.prisma" } },
+      data: { action: `listing.review.${decision}`, entityType: "Listing", entityId: result.draft.stableId, metadata: { reason, source: "api.admin.moderation.prisma", canonicalToListingId: canonicalToListingId ?? null } },
     });
   }
+
+  await emitListingEvent({
+    type: decision !== "approve" ? "listing.unpublished" : canonicalToListingId ? "listing.canonicalized" : "listing.published",
+    stableId: result.draft.stableId,
+    draftId,
+    localitySlug: result.draft.localitySlug,
+    citySlug: getLocalityBySlug(result.draft.localitySlug)?.citySlug,
+    previousLifecycle,
+    nextLifecycle: LIFECYCLE_BY_DECISION[decision],
+    meta: { reason, actor: session?.user.email ?? "unknown", canonicalToListingId: canonicalToListingId ?? null },
+  });
+
   return result;
 }
 
