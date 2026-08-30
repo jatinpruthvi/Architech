@@ -17,7 +17,9 @@
    would overstate the cheapest win in the country by sevenfold and bury it. */
 import { describe, expect, it } from "vitest";
 import { getCities, getLocalities } from "@/lib/repositories";
+import { demoBrokerSession } from "@/lib/auth/roles";
 import { cityMarketTrends } from "@/lib/realestate/market-trends";
+import { ACQUISITION_READ_PERMISSION } from "./acquisition-queue";
 import { localityPriceTrends, MIN_SAMPLE_FOR_PUBLISHED_STAT } from "@/lib/realestate/price-trends";
 import {
   PROGRAMMATIC_BAR_LISTINGS,
@@ -179,5 +181,27 @@ describe("the headline", () => {
     // Guards the caller: `null` means "nothing to do", and must not be
     // confused with "something to do that costs nothing".
     if (withheld.length > 0) expect(acquisitionHeadline()).not.toBeNull();
+  });
+});
+
+/* The access decision, pinned.
+
+   `ACQUISITION_READ_PERMISSION` is exported as a constant precisely so it can
+   be asserted here. The queue reuses `moderation.queue.read` instead of
+   introducing a permission — the reasoning is in docs/seo/seo-os-decisions.md
+   — and the failure mode we are guarding against is a future change that
+   renames or invents a permission and leaves the route granting something
+   that exists in no role's permission set. That is worse than a 403: it is a
+   route that silently works for no one. */
+describe("ACQUISITION_READ_PERMISSION", () => {
+  it("is a permission that exists, rather than a new one that does not", () => {
+    // Not an invented string: it must actually be granted to a real session.
+    expect(demoBrokerSession.permissions).toContain(ACQUISITION_READ_PERMISSION);
+  });
+
+  it("stays in the moderation namespace", () => {
+    // A new permission would need a roles migration. The prefix assertion is
+    // what fails if someone adds `seo.acquisition.read` without doing it.
+    expect(ACQUISITION_READ_PERMISSION.startsWith("moderation.")).toBe(true);
   });
 });

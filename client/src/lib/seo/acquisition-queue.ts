@@ -33,6 +33,19 @@ import { localityPriceTrends, MIN_SAMPLE_FOR_PUBLISHED_STAT } from "@/lib/reales
     Mirrors `EVIDENCE_BAR.programmatic`, which also accepts a verified
     transaction or 300 words — neither of which can be sourced by a broker,
     so listings are the lever this queue reports on. */
+/* The permission required to read the acquisition queue.
+
+   Deliberately not a new permission. The queue is coverage and inventory
+   arithmetic shown to the same operational audience that works the
+   moderation queue; a dedicated permission would cost a roles migration and
+   buy no access-control benefit, because anyone who can see the moderation
+   queue can already infer coverage from it.
+
+   Exported as a constant rather than inlined in the route so this decision is
+   pinned by a test. If it is ever narrowed, the test fails here rather than
+   the change landing silently. See docs/seo/seo-os-decisions.md. */
+export const ACQUISITION_READ_PERMISSION = "moderation.queue.read";
+
 export const PROGRAMMATIC_BAR_LISTINGS = 6;
 
 export type LocalityAsk = {
