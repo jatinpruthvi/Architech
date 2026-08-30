@@ -498,4 +498,4 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Inspect the current managed preview URL, branch, remote, and working tree.
 - [x] Start or repair the live preview and verify representative public, broker, collections, and SEO routes.
 - [x] Run focused review gates for the current review state.
-- [ ] Create or update a GitHub pull request only for unpushed intended changes, then report the preview and PR links.
+- [x] Create or update a GitHub pull request only for unpushed intended changes, then report the preview and PR links. — PR #45 opened (`arena/01a051b3-architech` → `main`) on 2026-08-30, covering the full CODEBASE-AUDIT-2026-08-30 bug pass (B-1..B-25) plus live auth (I-1/M-2) and retention runtime (M-6). Live preview running; gates green (96 files / 894 tests, `pnpm check` 0, `pnpm lint` 0/0).
