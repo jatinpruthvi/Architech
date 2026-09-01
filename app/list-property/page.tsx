@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ListProperty from "@/pages/ListProperty";
 import { homeUrl, listPropertyUrl } from "@/lib/seo/urls";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default function Page() {
   };
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <ListProperty />
     </>
   );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import InvestmentPage from "@/pages/InvestmentPage";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
   title: "India investment lens — Architech",
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 
 export default function Page() {
   const jsonLd = { "@context": "https://schema.org", "@type": "Article", headline: "India investment lens", description: "General editorial context for reading Indian property signals.", url: `${SITE_URL}/investment/`, isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} /><InvestmentPage /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} /><InvestmentPage /></>;
 }

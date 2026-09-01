@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getIndiaLocationCoverageForServer } from "@/lib/location/server/coverage";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function Page() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <main className="bg-paper pt-[78px] text-ink">
         <section className="border-b border-ink/10 bg-sand/70 py-14 md:py-20">
           <div className="container">

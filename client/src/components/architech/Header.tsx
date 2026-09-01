@@ -33,7 +33,7 @@ export default function Header() {
     { href: "/search/", label: t.nav.find },
     { href: "/guide/", label: t.nav.notes },
     { href: "/list-property/", label: t.nav.list },
-    { href: "/sitemap.html/", label: "More" },
+    { href: "/sitemap.html", label: "More" },
   ];
 
   useEffect(() => {

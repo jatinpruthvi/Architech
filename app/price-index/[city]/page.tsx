@@ -8,6 +8,7 @@ import { cityAcquisitionPlan } from "@/lib/seo/acquisition-queue";
 import { cityPriceIndexUrl, localityUrl, priceIndexUrl } from "@/lib/seo/urls";
 import { getCityStaticParams, getLiveCityBySlug } from "@/lib/repositories";
 import NotesList from "@/components/architech/NotesList";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export function generateStaticParams() {
   return getCityStaticParams();
@@ -43,7 +44,7 @@ export default async function Page({ params }: { params: Promise<{ city: string 
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="bg-paper pt-[78px] text-ink">
         <section className="border-b border-ink/10 bg-sand/70 py-14 md:py-20">
           <div className="container">

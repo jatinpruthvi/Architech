@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import GuideArticle from "@/pages/GuideArticle";
 import { getGuideByScope, getScopedGuideStaticParams } from "@/lib/repositories";
 import { guideJsonLd, guideMetadata } from "@/lib/seo/guide-jsonld";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 const ROUTE_KIND = "rera" as const;
 
@@ -28,7 +29,7 @@ export default async function Page({ params }: { params: Promise<{ scope: string
   if (!guide) notFound();
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(guideJsonLd(guide)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(guideJsonLd(guide)) }} />
       <GuideArticle guide={guide} />
     </>
   );

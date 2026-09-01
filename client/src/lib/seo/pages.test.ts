@@ -40,8 +40,13 @@ describe("SeoPage registry", () => {
   });
 
   it("only exposes absolute canonical URLs with route trailing slash policy", () => {
+    /* `/sitemap.html` is the one exception: the dotted segment is served by
+       Next.js like a file, so `/sitemap.html/` only 308-redirects to it. The
+       canonical must be the URL that serves 200 (see htmlSitemapPath). */
+    const unslashedExceptions = new Set(["/sitemap.html"]);
     for (const page of seoPages) {
       expect(page.canonicalUrl).toMatch(/^https:\/\//);
+      if (unslashedExceptions.has(page.path)) continue;
       expect(page.path.endsWith("/")).toBe(true);
       expect(new URL(page.canonicalUrl).pathname.endsWith("/")).toBe(true);
     }

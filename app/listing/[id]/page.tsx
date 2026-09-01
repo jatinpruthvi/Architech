@@ -12,6 +12,7 @@ import { buildAgentJsonLd, buildAgentProfile } from "@/lib/agent/profile";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import { residenceSchemaType } from "@/lib/listing-vocabulary";
 import { listingSerpDescription, listingSerpTitle } from "@/lib/seo/serp";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export function generateStaticParams() {
   return getListingStaticParams();
@@ -150,7 +151,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <ListingPage
         property={property}
         locality={locality}

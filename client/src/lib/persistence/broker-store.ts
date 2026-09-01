@@ -6,6 +6,7 @@ import { getMediaUpload } from "@/lib/media/upload";
 import { isPublishable } from "@/lib/media/retention";
 import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
+import { formatPrice } from "@/lib/property-generator";
 import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
@@ -43,12 +44,22 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
   if (!locality) {
     throw new Error(`Locality "${draft.localitySlug}" is not in city "${draft.citySlug}"; run the location seed/import before persisting broker drafts.`);
   }
+  /* Labels come from the SAME formatters the fixture inventory uses
+     (`formatPrice`: ₹ L below ₹1 Cr, ₹ Cr above) — a hardcoded Cr template
+     rendered ₹45,00,000 as "₹0.45 Cr", and the update arm never refreshed the
+     label at all, so a price edit left `priceLabel` describing the old price.
+     Rate/sqft is derived like the generator's, and stays unset when no area
+     was provided (the mapper then shows "Rate on request"). */
+  const priceLabel = formatPrice(draft.priceInr);
+  const pricePerSqft = draft.areaSqft > 0 ? `₹${Math.round(draft.priceInr / draft.areaSqft).toLocaleString("en-IN")} / sq ft` : null;
   await db.listing.upsert({
     where: { stableId: draft.stableId },
     update: {
       title: draft.title,
       lifecycle: draft.status as string,
       priceInr: draft.priceInr,
+      priceLabel,
+      pricePerSqft,
       bhk: draft.bhk,
       areaSqft: draft.areaSqft,
       propertyType: draft.propertyType,
@@ -69,7 +80,8 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       translationStatus: "ENGLISH_ONLY",
       propertyType: draft.propertyType,
       priceInr: draft.priceInr,
-      priceLabel: `₹${(draft.priceInr / 10000000).toFixed(2)} Cr`,
+      priceLabel,
+      pricePerSqft,
       bhk: draft.bhk,
       areaSqft: draft.areaSqft,
       availability: draft.availability,

@@ -5,7 +5,7 @@ import { evaluateSeoPageQuality } from "./page-gate";
 import type { PageQualityDecision } from "./page-quality";
 import { isIndexable } from "./lifecycle";
 import { listingTargetQuery } from "./query-targeting";
-import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, priceIndexPath, priceIndexUrl, cityPriceIndexPath, cityPriceIndexUrl, requirementsPath, requirementsUrl } from "./urls";
+import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, htmlSitemapPath, htmlSitemapUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, priceIndexPath, priceIndexUrl, cityPriceIndexPath, cityPriceIndexUrl, requirementsPath, requirementsUrl } from "./urls";
 
 export type SeoRouteType = "home" | "hub" | "city" | "locality" | "listing" | "guide" | "report";
 
@@ -334,8 +334,9 @@ const reviewPage: SeoPage = {
 const htmlSitemapPage: SeoPage = {
   id: "page:sitemap-html",
   routeType: "home",
-  path: "/sitemap.html/",
-  canonicalUrl: canonicalUrl("/sitemap.html/"),
+  // Dotted segment: Next serves it only unslashed (see htmlSitemapPath).
+  path: htmlSitemapPath(),
+  canonicalUrl: htmlSitemapUrl(),
   primaryIntent: "Expose Architech’s reviewed public route hierarchy to users and crawlers.",
   indexability: "indexable",
   owner: "SEO",

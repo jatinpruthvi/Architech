@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AboutPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
   title: "About Architech — India property discovery",
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 
 export default function Page() {
   const jsonLd = { "@context": "https://schema.org", "@type": "AboutPage", name: "About Architech", url: canonicalUrl("/about-us/"), isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} /><AboutPage /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} /><AboutPage /></>;
 }

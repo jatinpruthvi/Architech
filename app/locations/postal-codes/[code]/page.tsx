@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { isValidPincode } from "@/lib/pincodes";
 import { resolvePostalCodeForServer } from "@/lib/location/server/postal-resolution";
-import { canonicalUrl } from "@/lib/seo/urls";
+import { canonicalUrl, localityPath } from "@/lib/seo/urls";
 
 type Props = { params: Promise<{ code: string }> };
 export const dynamic = "force-dynamic";
@@ -49,7 +49,7 @@ export default async function Page({ params }: Props) {
               {resolution.administrativeAreas.map((area) => <article key={area.id} className="border-b border-ink/10 py-4 first:pt-0"><div className="flex flex-wrap items-baseline justify-between gap-2"><h3 className="font-display text-xl">{area.name}</h3><span className="font-mono text-xs ink-3">LGD {area.lgdCode ?? "—"}</span></div><p className="mt-2 text-sm leading-6 ink-2">{[area.subtype ?? area.type, area.state?.name].filter(Boolean).join(" · ")}</p></article>)}
             </DirectoryBlock>
             <DirectoryBlock title="Reviewed property localities" count={resolution.localities.length} empty="No reviewed Architech property locality is linked to this PIN.">
-              {resolution.localities.map((locality) => <article key={`${locality.citySlug}-${locality.slug}`} className="border-b border-ink/10 py-4 first:pt-0"><Link href={`/locality/${locality.citySlug}/${locality.slug}/`} className="font-display text-xl link-rail">{locality.name}</Link><p className="mt-2 text-sm ink-2">{locality.cityName} · {locality.linkType.toLowerCase().replaceAll("_", " ")}{locality.confidence === null ? "" : ` · ${Math.round(locality.confidence * 100)}% evidence confidence`}</p></article>)}
+              {resolution.localities.map((locality) => <article key={`${locality.citySlug}-${locality.slug}`} className="border-b border-ink/10 py-4 first:pt-0"><Link href={localityPath(locality.citySlug, locality.slug)} className="font-display text-xl link-rail">{locality.name}</Link><p className="mt-2 text-sm ink-2">{locality.cityName} · {locality.linkType.toLowerCase().replaceAll("_", " ")}{locality.confidence === null ? "" : ` · ${Math.round(locality.confidence * 100)}% evidence confidence`}</p></article>)}
             </DirectoryBlock>
             <DirectoryBlock title="Cities with reviewed links" count={resolution.cities.length} empty="No product city has been linked from reviewed locality evidence.">
               {resolution.cities.map((city) => <article key={city.slug} className="border-b border-ink/10 py-4 first:pt-0"><Link href={`/buy/${city.slug}/`} className="font-display text-xl link-rail">{city.name}</Link><p className="mt-2 text-sm ink-2">{city.state}</p></article>)}

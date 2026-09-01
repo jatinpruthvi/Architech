@@ -7,6 +7,7 @@ import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { organizationJsonLd } from "@/lib/seo/organization";
 import "@/theme.css";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -78,7 +79,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* The hero <img> is eager + high-priority, which is the preload; a
             separate <link rel="preload"> for a URL that can 404 only adds a
             console error. */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }} />
       </head>
       {/* <body> carries suppressHydrationWarning because browser/DOM-instrumentation
           extensions inject attributes (e.g. __processed_*) before React hydrates; it is
