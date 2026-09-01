@@ -5,7 +5,7 @@ import Link from "next/link";
 import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import useTitle from "../hooks/useTitle";
-import { getGuides } from "@/lib/repositories";
+import { getGuides } from "@/lib/repositories/guides";
 
 export default function Guide() {
   useTitle("Field notes — how we verify");

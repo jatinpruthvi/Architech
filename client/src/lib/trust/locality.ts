@@ -4,18 +4,9 @@
 import { getCityBySlug, getListingsByCity, getListingsByLocality, getLocalityBySlug } from "@/lib/repositories";
 import type { getListings } from "@/lib/repositories";
 import { badgesToTrustInput, computeTrustScore, type TrustGrade, type TrustSignalId } from "./score";
+import type { LocalityTrustSummary } from "./summary";
 
-export type LocalityTrustSummary = {
-  slug: string;
-  name: string;
-  total: number;
-  reraVerified: number;
-  verifiedPartner: number;
-  sourceReviewed: number;
-  reraCoveragePct: number;
-  avgScore: number;
-  grade: TrustGrade;
-};
+export type { LocalityTrustSummary } from "./summary";
 
 function trustForListings(slug: string, name: string, listings: ReturnType<typeof getListings>): LocalityTrustSummary {
   const scores = listings.map((listing) => computeTrustScore(badgesToTrustInput(listing.badge, listing.status)));

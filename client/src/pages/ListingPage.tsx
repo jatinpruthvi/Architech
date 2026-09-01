@@ -7,9 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getListingById, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
+import type { Locality } from "@/lib/repositories";
 import { buildAgentProfile } from "@/lib/agent/profile";
-import { comparableListings, derivePriceHistory, type PriceEvent } from "@/lib/listing/history";
+import { derivePriceHistory, type ComparableListing, type PriceEvent } from "@/lib/listing/history";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import PropertyCard from "../components/architech/PropertyCard";
 import { SectionNav, type SectionAnchor } from "../components/architech/SectionNav";
@@ -114,15 +115,24 @@ function formatIsoDate(iso: string): string {
   return `${Number.parseInt(day, 10)} ${MONTH_LABELS[monthIndex]} ${year}`;
 }
 
-export default function ListingPage({ id }: { id: string }) {
-  const property = getListingById(id);
+export default function ListingPage({
+  property,
+  locality,
+  related,
+  comparables,
+  cityState,
+}: {
+  property: Property;
+  locality?: Locality;
+  related: Property[];
+  comparables: ComparableListing[];
+  cityState?: string;
+}) {
   const { t } = useLang();
-  useTitle(property ? `${property.title} — ${property.price}` : "Not found");
+  useTitle(`${property.title} — ${property.price}`);
   const { isSaved, toggle } = useSaved();
-  if (!property) return null;
 
   const saved = isSaved(property.id);
-  const locality = getLocalityBySlug(property.localitySlug, property.citySlug);
   const [leadOpen, setLeadOpen] = useState(false);
 
   // Idempotent, server-safe view tracking (no PII). One view per browser session.
@@ -142,7 +152,7 @@ export default function ListingPage({ id }: { id: string }) {
     { id: "pv-1", kind: "listed", priceInr: property.priceNum, date: "2026-07-01", note: `Listed at ${property.price}` },
   ], [property.priceNum, property.price]);
   const priceHistory = useMemo(() => derivePriceHistory(property.id, priceEvents), [property.id, priceEvents]);
-  const comparables = useMemo(() => comparableListings({ id: property.id, localitySlug: property.localitySlug, priceNum: property.priceNum }, 3), [property.id, property.localitySlug, property.priceNum]);
+
   // Never render invented reviews or ratings; the section stays an honest empty state until verified data exists.
   const agent = useMemo(() => buildAgentProfile(demoBrokerSession, []), []);
 
@@ -279,7 +289,7 @@ export default function ListingPage({ id }: { id: string }) {
 
             {/* Trust dossier */}
             <div id="verification"><TrustPanel property={property} /></div>
-            <OwnershipCost property={property} />
+            <OwnershipCost property={property} state={cityState} />
 
             {/* Price & history + agent trust */}
             <div className="mt-10 grid gap-10 md:grid-cols-2">
@@ -402,7 +412,7 @@ export default function ListingPage({ id }: { id: string }) {
                 with no save and no compare on cards whose only job is "save one
                 of these". Reveal is dropped too: PropertyCard already owns its
                 entrance motion, and nesting both double-animated the grid. */}
-            {getRelatedListings(property.id, 3).map((p, i) => (
+            {related.map((p, i) => (
               <PropertyCard key={p.id} property={p} index={i} />
             ))}
           </div>

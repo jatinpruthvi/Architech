@@ -19,9 +19,9 @@
  a locality with inventory, then capture the brief — pre-filled.
  Filter state lives in the URL, so back/forward and shared links still work,
  and pre-rebuild `?filters=2bhk,rera` links keep resolving. */
-import { ArrowUpRight, Check, LayoutList, Map as MapIcon, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpRight, LayoutList, Map as MapIcon, Search, SlidersHorizontal, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LayoutGroup, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -33,37 +33,56 @@ import { type MarketCategory, type MarketIntent, type SortId } from "@/lib/filte
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCities, getCityBySlug } from "@/lib/repositories";
-import { parsePincode, resolvePincode, PINCODE_PROVENANCE } from "@/lib/pincodes";
-import { applyParsedQueryToParams, describeParsedQuery, parseSearchQuery } from "@/lib/search/parse-query";
-import { popularQueries } from "@/lib/search/suggest";
-import { searchListings, type SearchResponse } from "@/lib/search/search";
+import type { SearchSuggestion } from "@/lib/search/suggestion-types";
+import type { SearchResponse } from "@/lib/search/search-types";
 import { activeFacetCount, facetGroups, groupsForProjection, parseFacetState, serializeFacetState, type FacetState } from "@/lib/search/facets";
-import MapListSync from "@/components/architech/MapListSync";
-import Pic from "@/components/architech/Pic";
 import SuggestRow from "@/components/architech/SuggestRow";
 import { useSearchSuggestions } from "@/components/architech/useSearchSuggestions";
 import { useSuggestCombobox } from "@/components/architech/useSuggestCombobox";
 import { rememberRecentSearch } from "@/lib/search/recent";
-import { labelForFacing, labelForFurnishing, propertyFactRows } from "@/lib/listing-details";
 
-/**
- * Does this browser want less motion? Mirrors the two existing JS answers in this
- * repo (`magicui/NumberTicker`, `magicui/TiltCard`) rather than inventing a
- * third. CSS cannot answer it for a FLIP: the transform motion writes lands in
- * the element's inline `style`, so no media query can reach it — the only lever
- * is not setting `layout` at all.
- */
-function usePrefersReducedMotion() {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduce(query.matches);
-    sync();
-    query.addEventListener("change", sync);
-    return () => query.removeEventListener("change", sync);
-  }, []);
-  return reduce;
+const MapListSync = dynamic(() => import("@/components/architech/MapListSync"), { ssr: false });
+const SearchQuickView = dynamic(() => import("@/components/architech/SearchQuickView"), { ssr: false });
+
+export type SearchCityOption = { slug: string; name: string };
+
+const EMPTY_PAGE = { page: 1, pageSize: 24, total: 0, totalPages: 1, hasNextPage: false, hasPreviousPage: false };
+
+function emptySearch(input: {
+  query: string;
+  city: string;
+  pincode: string | null;
+  filters: string[];
+  category: MarketCategory;
+  intent: MarketIntent;
+  sort: SortId;
+}): SearchResponse {
+  return {
+    query: input.query,
+    city: input.city,
+    pincode: input.pincode,
+    filters: input.filters,
+    category: input.category,
+    intent: input.intent,
+    sort: input.sort,
+    count: 0,
+    source: "fixture-repository",
+    indexPlan: "deterministic-parser-now-postgres-fts-trigram-next",
+    page: EMPTY_PAGE,
+    results: [],
+    projection: "consumer",
+    facets: {},
+    applied: [],
+    relaxations: [],
+    widening: [],
+  };
+}
+
+function parsePincodeParam(value: string | null): string | null {
+  if (!value) return null;
+  const compact = value.replace(/[\s-]/g, "");
+  const match = compact.match(/(?<![0-9])([1-9][0-9]{5})(?![0-9])/);
+  return match ? match[1] : null;
 }
 
 function SkeletonCard() {
@@ -80,7 +99,13 @@ function SkeletonCard() {
  );
 }
 
-export default function ResultsPage() {
+export default function ResultsPage({
+ cities,
+ popularSearches,
+}: {
+ cities: SearchCityOption[];
+ popularSearches: SearchSuggestion[];
+}) {
  useTitle("Search homes across India");
  const { t, lang } = useLang();
  const sp = useSearchParams();
@@ -93,12 +118,11 @@ export default function ResultsPage() {
  const intent: MarketIntent = params.get("intent") === "rent" ? "rent" : "buy";
  const sort = (params.get("sort") as SortId) || "fresh";
  // City scope: a known city slug narrows every result, "all" searches India.
- const citySlug = getCityBySlug(params.get("city") ?? undefined)?.slug ?? "all";
- const activeCity = citySlug === "all" ? undefined : getCityBySlug(citySlug);
- // PIN scope: narrows to localities serving the PIN; a malformed value is
- // dropped rather than returning an empty page.
- const pincode = parsePincode(params.get("pincode"));
- const pincodeMatch = pincode ? resolvePincode(pincode) : null;
+ const requestedCity = params.get("city") ?? "";
+ const citySlug = cities.some((city) => city.slug === requestedCity) ? requestedCity : "all";
+ const activeCity = citySlug === "all" ? undefined : cities.find((city) => city.slug === citySlug);
+ // PIN scope: a malformed value is dropped rather than returning an empty page.
+ const pincode = parsePincodeParam(params.get("pincode"));
 
  // Facet state is DERIVED from the URL, never held in component state — one
  // source of truth, so back/forward, sharing, and a reload agree.
@@ -108,8 +132,7 @@ export default function ResultsPage() {
  const activeCount = activeFacetCount(facetState);
 
   const [mapMode, setMapMode] = useState(false);
-  const reduceMotion = usePrefersReducedMotion();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -118,10 +141,8 @@ export default function ResultsPage() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
 
- /* Server-backed search. `searchListings` is the same predicate the server
- uses, so the SSR payload and the hydrated response cannot disagree. */
  const initialSearch = useMemo(
- () => searchListings({ q: query, city: citySlug, pincode: pincode ?? undefined, filters: filterTokens, category, intent, sort }),
+ () => emptySearch({ query, city: citySlug, pincode, filters: filterTokens, category, intent, sort }),
  [category, citySlug, filterTokens, intent, pincode, query, sort],
  );
  const [searchResponse, setSearchResponse] = useState<SearchResponse>(initialSearch);
@@ -140,7 +161,7 @@ export default function ResultsPage() {
     const p = new URLSearchParams(searchStr);
     let cancelled = false;
     // Only show skeletons when there is nothing trustworthy on screen yet.
-    setLoading(consumedRef.current !== null);
+    setLoading(true);
 
     fetch(`/api/search/${p.toString() ? `?${p}` : ""}`)
       .then((response) => {
@@ -254,20 +275,13 @@ export default function ResultsPage() {
  if (trimmed) runQueryRef.current(trimmed);
  }, [router]);
 
- /** Run a typed query. It is parsed into structured scope first — city, PIN,
- * intent, category and facets become real URL parameters — and anything a
- * parameter cannot carry stays as free text, so nothing typed is lost. */
+ /** Run a typed query. Structured parsing lives on the search API so this
+  * island does not ship the locality registry or fixture inventory. */
  const runQuery = (value: string) => {
  const trimmed = value.trim();
  if (!trimmed) return;
- const parsed = parseSearchQuery(trimmed, citySlug);
  patch((p) => {
- const next = parsed.understood ? applyParsedQueryToParams(parsed, p) : (p.set("q", trimmed), p);
- // copy next into p
- p.forEach((_v, key) => {
- if (!next.has(key)) p.delete(key);
- });
- next.forEach((v, key) => p.set(key, v));
+ p.set("q", trimmed);
  });
  };
 
@@ -285,16 +299,18 @@ export default function ResultsPage() {
  commit: selectSuggestion,
  });
 
- /* What the box will do with the current text, shown before it runs. */
- const typedPreview = useMemo(() => {
- const trimmed = sugQuery.trim();
- if (trimmed.length < 3 || trimmed === query) return "";
- const parsed = parseSearchQuery(trimmed, citySlug);
- return parsed.understood ? describeParsedQuery(parsed) : "";
- }, [citySlug, sugQuery, query]);
-
- /* Recovery chips derived from real inventory in the active scope. */
- const trending = useMemo(() => popularQueries({ citySlug }, 4), [citySlug]);
+ const [trending, setTrending] = useState<SearchSuggestion[]>(popularSearches);
+ useEffect(() => {
+   const scope = citySlug !== "all" ? `?city=${encodeURIComponent(citySlug)}` : "";
+   const controller = new AbortController();
+   void fetch(`/api/search/suggest/${scope}`, { signal: controller.signal })
+     .then((response) => (response.ok ? response.json() as Promise<{ suggestions?: SearchSuggestion[] }> : Promise.reject(response.status)))
+     .then((payload) => {
+       if (Array.isArray(payload.suggestions) && payload.suggestions.length) setTrending(payload.suggestions.slice(0, 4));
+     })
+     .catch(() => undefined);
+   return () => controller.abort();
+ }, [citySlug]);
 
  const saveSearch = async () => {
  if (savingSearch) return;
@@ -391,12 +407,7 @@ export default function ResultsPage() {
  it says "here is what I understood", so it is typeset as a
  statement (13px sentence case, check rule) and not as 10px
  micro-caps in a 60%-opacity brown. */}
- {typedPreview && (
- <p className="mt-2 flex items-start gap-2 text-[13px] leading-5 text-ink">
- <Check size={13} className="mt-0.5 shrink-0 text-trust" aria-hidden="true" />
- <span><span className="ink-2">Reads as</span> {typedPreview}</span>
- </p>
- )}
+
  {sug.open && (
  <div
  ref={sug.listRef}
@@ -437,7 +448,7 @@ export default function ResultsPage() {
  className="touch-44 min-w-0 max-w-[190px] border border-ink/15 bg-transparent px-3 py-2 stamp font-semibold text-ink transition-colors hover:border-brick hover:text-brick focus:border-brick focus:outline-none"
  >
  <option value="all">All India</option>
- {getCities().map((option) => (
+ {cities.map((option) => (
  <option key={option.slug} value={option.slug}>{option.name}</option>
  ))}
  </select>
@@ -472,13 +483,9 @@ export default function ResultsPage() {
  and a way out, so the smaller result count is never a mystery. */
  <p className="stamp mt-4 ink-2">
  PIN {pincode}
- {pincodeMatch
- ? ` · ${pincodeMatch.localities.map((locality) => locality.name).join(", ")}${pincodeMatch.city ? `, ${pincodeMatch.city.name}` : ""}${pincodeMatch.ambiguous ? " (shared postal area)" : ""}`
- : " · no exact reviewed mapping"}
  <button type="button" onClick={() => patch((p) => p.delete("pincode"))} className="ml-3 underline decoration-brick underline-offset-4 hover:text-brick">
  Clear PIN
  </button>
- <span className="ml-3 ink-3">{PINCODE_PROVENANCE}</span>
  </p>
  )}
  </div>
@@ -572,20 +579,11 @@ export default function ResultsPage() {
     Position morphing composes with the image aspect reservation and with
     `.architech-reveal`, because the transform motion writes land on THIS wrapper
     while the CSS animation lives on the Reveal element inside it. */}
- <LayoutGroup>
  {loading ? (
  Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
  ) : (
  results.map((property, i) => (
- /* Keyed on the listing alone, and the stagger is capped at 4
- items / 40ms and only on the first paint. v4 keyed on
- filters+sort and staggered 24 cards by 60ms, so clicking a
- filter replayed ~1.4s of choreography over results that were
- already on screen. The animation itself is `.architech-reveal` in theme.css and
- runs on MOUNT only, so surviving cards keep their DOM across a filter change
- and do not re-animate. */
- <motion.div key={property.id} layout={reduceMotion ? false : "position"} transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }}>
-  <Reveal delay={Math.min(i, 3) * 40}>
+ <Reveal key={property.id} delay={Math.min(i, 3) * 40}>
  <div id={`listing-${property.id}`} onMouseEnter={() => setSelectedId(property.id)} onFocus={() => setSelectedId(property.id)} className={selectedId === property.id ? "ring-2 ring-brick ring-offset-4 ring-offset-paper" : undefined}>
  <PropertyCard property={property} index={i} />
  {!mapMode && (
@@ -594,11 +592,9 @@ export default function ResultsPage() {
  </button>
  )}
  </div>
-  </Reveal>
-  </motion.div>
+ </Reveal>
  ))
  )}
-  </LayoutGroup>
  </div>
 
  {/* Zero-result ladder: never a dead end. For a product paid by leads,
@@ -736,39 +732,7 @@ export default function ResultsPage() {
  </DrawerContent>
  </Drawer>
 
- <Drawer open={quickViewOpen} onOpenChange={setQuickViewOpen}>
- <DrawerContent className="border-t-2 border-brick bg-paper text-ink sm:max-w-[520px] sm:ml-auto sm:rounded-none">
- {selectedProperty && (
- <div className="p-5 sm:p-7">
- <div className="flex items-start justify-between gap-4">
- <div>
- <p className="kicker text-brick">Quick view · {selectedProperty.city}</p>
- <h2 className="mt-2 font-display text-2xl font-medium leading-tight tracking-[-0.02em]">{selectedProperty.title}<span className="text-brick">.</span></h2>
- </div>
- <button type="button" onClick={() => setQuickViewOpen(false)} className="touch-44 rounded-lg border border-ink/15 px-3 stamp font-semibold ink-2 hover:border-brick hover:text-brick">Close</button>
- </div>
- <div className="mt-5 overflow-hidden border border-ink/12 bg-sand">
- <Pic name={selectedProperty.image} alt={`${selectedProperty.title}, ${selectedProperty.locality}`} className="aspect-[1.6] h-full w-full object-cover" sizes="520px" />
- </div>
- <div className="mt-5 grid grid-cols-2 gap-4 border-y border-ink/12 py-4 sm:grid-cols-4">
- <div><p className="stamp ink-3">Price</p><p className="mt-1 font-display text-lg font-semibold [font-variant-numeric:tabular-nums]">{selectedProperty.price}</p></div>
- <div><p className="stamp ink-3">Layout</p><p className="mt-1 text-sm font-semibold">{selectedProperty.meta}</p></div>
- <div><p className="stamp ink-3">Area</p><p className="mt-1 text-sm font-semibold [font-variant-numeric:tabular-nums]">{selectedProperty.area}</p></div>
- <div><p className="stamp ink-3">Status</p><p className="mt-1 text-sm font-semibold text-trust">{selectedProperty.status}</p></div>
- </div>
- <div className="mt-5 grid grid-cols-2 gap-px border border-ink/10 bg-ink/10 sm:grid-cols-3">
- {propertyFactRows(selectedProperty.details).map(([label, value]) => <div key={label} className="bg-paper p-3"><p className="stamp ink-3">{label}</p><p className="mt-1 text-sm font-semibold text-ink">{value}</p></div>)}
- </div>
- <p className="mt-5 text-sm leading-7 ink-2">{selectedProperty.note}</p>
- <p className="mt-4 border-l-2 border-brick/50 pl-3 text-xs leading-5 ink-2"><span className="font-semibold text-ink">Amenities.</span> {selectedProperty.details.amenities?.join(" · ") || "Not specified"} · {labelForFurnishing(selectedProperty.details.furnishing)} · {labelForFacing(selectedProperty.details.facing)}</p>
- <div className="mt-6 flex flex-col gap-3 sm:flex-row">
- <Link href={`/listing/${selectedProperty.id}`} onClick={() => setQuickViewOpen(false)} className="night-fill btn-sweep touch-44 inline-flex flex-1 items-center justify-center bg-night px-5 py-3 stamp font-semibold text-cream">Full details <ArrowUpRight size={13} className="ml-1" /></Link>
- <Link href={`/requirements/?listing=${encodeURIComponent(selectedProperty.id)}`} onClick={() => setQuickViewOpen(false)} className="touch-44 inline-flex flex-1 items-center justify-center rounded-lg border border-ink/20 px-5 py-3 stamp font-semibold text-brick hover:border-brick">Schedule a visit</Link>
- </div>
- </div>
- )}
- </DrawerContent>
- </Drawer>
+ <SearchQuickView property={selectedProperty} open={quickViewOpen} onOpenChange={setQuickViewOpen} />
  </div>
  );
 }

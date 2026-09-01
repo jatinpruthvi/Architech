@@ -2,10 +2,10 @@
 /* ARCHITECH — Amdavad Modern compare tray: four-home decision surface, shareable state, no payment assumptions. */
 import { ArrowUpRight, Scale, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCompare } from "@/contexts/CompareContext";
-import { getListings, type Property } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
 import Pic from "./Pic";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
@@ -22,9 +22,25 @@ const rows: [string, (p: Property) => string][] = [
 
 export default function CompareTray() {
   const { compared, toggle, clear } = useCompare();
-  const homes = getListings().filter((p) => compared.includes(p.id));
+  const [homes, setHomes] = useState<Property[]>([]);
   const [copied, setCopied] = useState(false);
-  if (homes.length === 0) return null;
+
+  useEffect(() => {
+    if (compared.length === 0) {
+      setHomes([]);
+      return;
+    }
+    const controller = new AbortController();
+    void fetch(`/api/listings/?ids=${compared.map(encodeURIComponent).join(",")}`, { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() as Promise<{ listings?: Property[] }> : Promise.reject(response.status)))
+      .then((payload) => {
+        if (Array.isArray(payload.listings)) setHomes(payload.listings.filter((listing) => compared.includes(listing.id)));
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [compared]);
+
+  if (compared.length === 0) return null;
 
   /* Copy that survives an iframe whose permissions policy blocks `clipboard-write`.
      `document.execCommand("copy")` goes through a legacy path the policy doesn't gate,

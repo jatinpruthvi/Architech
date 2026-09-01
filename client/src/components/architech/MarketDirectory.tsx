@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ArrowUpRight, Banknote, Building2, Home, MapPinned, Newspaper, Sprout } from "lucide-react";
 import RequirementCapture from "@/components/architech/RequirementCapture";
-import { getCities, getListingsByCity, getLocalities } from "@/lib/repositories";
 
 const categories = [
   { key: "residential", label: "Homes", icon: Home },
@@ -14,27 +13,34 @@ const categories = [
   { key: "auction", label: "Bank auctions", icon: Banknote },
 ] as const;
 
-const showcaseCities = ["mumbai", "bengaluru", "ahmedabad"];
-const projects = showcaseCities.flatMap((citySlug) => getListingsByCity(citySlug).slice(0, 1)).map((listing) => ({
-  name: listing.project,
-  developer: listing.developer,
-  locality: `${listing.locality}, ${listing.city}`,
-  href: `/listing/${listing.id}/`,
-  label: listing.badge,
-}));
-
 const developers = [
   ["India builder index", "City-scoped evidence"],
   ["Verified partner directory", "Review status in view"],
   ["Project document register", "Applicable RERA context"],
 ] as const;
 
-const localityLinks = getCities().flatMap((city) => {
-  const locality = getLocalities(city.slug)[0];
-  return locality ? [{ ...locality, city }] : [];
-});
+export type MarketProject = {
+  name: string;
+  developer: string;
+  locality: string;
+  href: string;
+  label: string;
+};
 
-export default function MarketDirectory() {
+export type MarketLocalityLink = {
+  slug: string;
+  name: string;
+  citySlug: string;
+  cityName: string;
+};
+
+export default function MarketDirectory({
+  projects,
+  localityLinks,
+}: {
+  projects: MarketProject[];
+  localityLinks: MarketLocalityLink[];
+}) {
   return (
     <section className="border-y border-ink/12 bg-sand/60 py-20 md:py-28" aria-labelledby="market-directory-title">
       <div className="container">
@@ -81,7 +87,7 @@ export default function MarketDirectory() {
         </div>
 
         <div className="mt-16 grid gap-8 border-t border-ink/15 pt-8 lg:grid-cols-[1fr_auto] lg:items-start">
-          <div><p className="kicker text-brick">Locality search index</p><div className="mt-4 flex max-w-3xl flex-wrap gap-x-5 gap-y-3">{localityLinks.map(({ city, ...locality }) => <Link key={`${city.slug}:${locality.slug}`} href={`/search/?city=${city.slug}&q=${encodeURIComponent(locality.name)}`} className="link-rail font-display text-xl tracking-[-0.02em] text-ink/75 hover:text-brick">{locality.name} <span className="text-sm ink-3">· {city.name}</span></Link>)}</div></div>
+          <div><p className="kicker text-brick">Locality search index</p><div className="mt-4 flex max-w-3xl flex-wrap gap-x-5 gap-y-3">{localityLinks.map((locality) => <Link key={`${locality.citySlug}:${locality.slug}`} href={`/search/?city=${locality.citySlug}&q=${encodeURIComponent(locality.name)}`} className="link-rail font-display text-xl tracking-[-0.02em] text-ink/75 hover:text-brick">{locality.name} <span className="text-sm ink-3">· {locality.cityName}</span></Link>)}</div></div>
           <div className="flex flex-col items-start gap-3 lg:items-end"><Link href="/investment/" className="inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick"><Newspaper size={14} /> India investment lens <ArrowUpRight size={13} /></Link><Link href="/guide/" className="inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-ink/65 hover:text-brick">Buying guides and field notes <ArrowUpRight size={13} /></Link></div>
         </div>
 

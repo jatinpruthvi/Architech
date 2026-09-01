@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { comparableListings, derivePriceHistory, sortPriceEvents, type PriceEvent } from "./history";
+import { derivePriceHistory, sortPriceEvents, type PriceEvent } from "./history";
+import { comparableListings } from "./comparables";
 
 const events: PriceEvent[] = [
   { id: "e1", kind: "listed", priceInr: 19_000_000, date: "2026-07-01", note: "Listed" },

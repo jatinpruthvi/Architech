@@ -4,7 +4,7 @@
    source review, and the average trust score derived from structured facts. */
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import type { LocalityTrustSummary } from "@/lib/trust/locality";
+import type { LocalityTrustSummary } from "@/lib/trust/summary";
 import { useLang } from "@/contexts/LangContext";
 
 export function LocalityTrust({ summary }: { summary: LocalityTrustSummary }) {

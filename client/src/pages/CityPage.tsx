@@ -9,37 +9,36 @@ import Reveal from "../components/architech/Reveal";
 import Pic from "../components/architech/Pic";
 import LocalityIntel from "../components/architech/LocalityIntel";
 import useTitle from "../hooks/useTitle";
-import { getCityBySlug, getListingsByCity, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
-import { compactInr } from "@/lib/realestate/price-trends";
-import { localityIntel, formatPsf } from "@/lib/realestate/locality-intel";
-import { localityTrustSummary } from "@/lib/trust/locality";
+import type { City } from "@/lib/cities";
+import type { Locality } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
+import { compactInr, formatPsf } from "@/lib/realestate/format-inr";
+import type { LocalityIntel as LocalityIntelData } from "@/lib/realestate/locality-intel";
+import type { LocalityTrustSummary } from "@/lib/trust/summary";
 import { useLang } from "@/contexts/LangContext";
 import { fillTokens } from "@/lib/i18n";
 
-export default function CityPage({ localitySlug, citySlug }: { localitySlug: string; citySlug: string }) {
-  const locality = getLocalityBySlug(localitySlug, citySlug);
-  const city = getCityBySlug(locality?.citySlug ?? citySlug);
+export default function CityPage({
+  locality,
+  city,
+  showcase,
+  nearby,
+  intel,
+  trust,
+  newProjects,
+}: {
+  locality: Locality;
+  city: City;
+  showcase: Property[];
+  nearby: Locality[];
+  intel: LocalityIntelData;
+  trust: LocalityTrustSummary;
+  newProjects: Property[];
+}) {
   const { t } = useLang();
-  const cityLabel = city?.name ?? t.common.india;
-  useTitle(locality ? `${locality.name}, ${cityLabel} — homes & locality context` : "Not found");
-  if (!locality || !city) return null;
+  useTitle(`${locality.name}, ${city.name} — homes & locality context`);
 
   const isPaldi = locality.slug === "paldi";
-  const cityHomes = getListingsByCity(city.slug);
-  const localHomes = getListingsByLocality(locality.slug, city.slug);
-  const showcase = localHomes.length ? [...localHomes, ...cityHomes.filter((p) => p.localitySlug !== locality.slug)].slice(0, 4) : cityHomes.slice(0, 4);
-  /* Every sibling locality the city has, not a rounded four. E §6 asks for
-     parent plus five siblings, and with six localities per city all five are
-     available — the previous slice(0, 4) silently dropped one, which is one
-     fewer internal link into each locality and one fewer path a crawler can
-     find the last locality by. The chips wrap, so five costs no layout. */
-  const nearby = getLocalities(city.slug).filter((l) => l.slug !== locality.slug).slice(0, 5);
-
-  const intel = localityIntel(locality.slug, city.slug);
-  const trust = localityTrustSummary(locality.slug, city.slug);
-  const newProjects = localHomes.filter(
-    (p) => p.availability === "NEW_LAUNCH" || p.availability === "UNDER_CONSTRUCTION",
-  );
   const riverfrontKm = locality.landmarks?.find(([place]) => place.toLowerCase().includes("riverfront"))?.[1] ?? "—";
 
   return (

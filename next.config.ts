@@ -1,4 +1,18 @@
+import { copyFileSync, mkdirSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import type { NextConfig } from "next";
+
+/* Serve the production MapLibre build from /vendor so Turbopack does not
+   inline ~1 MiB of map code into `.next/static/chunks` (the total-JS budget
+   counts those chunks). Copied at config-eval so `next dev` and `next build`
+   both see the files. */
+const maplibreRoot = dirname(createRequire(import.meta.url).resolve("maplibre-gl/package.json"));
+const maplibreVendor = join(process.cwd(), "public/vendor");
+mkdirSync(maplibreVendor, { recursive: true });
+for (const file of ["maplibre-gl.mjs", "maplibre-gl-shared.mjs", "maplibre-gl-worker.mjs", "maplibre-gl.css"]) {
+  copyFileSync(join(maplibreRoot, "dist", file), join(maplibreVendor, file));
+}
 
 const isProduction = process.env.NODE_ENV === "production";
 /* Preview proxies: both the current (manus.computer) and legacy (e2b.app)
@@ -35,6 +49,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Match the architecture's canonical URL grammar (/buy/{city}/{locality}/)
   trailingSlash: true,
+  // Named imports from these packages otherwise drag the whole icon/motion
+  // barrel into every client route and blow the first-load JS budget.
+  experimental: {
+    optimizePackageImports: ["lucide-react", "motion"],
+  },
   // Sandbox live-preview domains changed from *.e2b.app to *.manus.computer.
   // Wildcards only — exact sandbox hostnames rotate and listing them here
   // silently breaks the next preview.

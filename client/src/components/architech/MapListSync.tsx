@@ -5,8 +5,26 @@ import type { LngLatBoundsLike, Map as MapLibreMap, Marker } from "maplibre-gl";
 import { Crosshair } from "lucide-react";
 import { toast } from "sonner";
 import type { Property } from "@/lib/repositories";
-import { getLocalities } from "@/lib/repositories";
+import { getLocalities } from "@/lib/repositories/localities";
 import { boundsForPoints, makeListingMapPoints, makeLocalityClusters } from "@/lib/map";
+
+type MapLibreModule = typeof import("maplibre-gl");
+
+function ensureMaplibreCss() {
+  if (document.getElementById("maplibre-css")) return;
+  const link = document.createElement("link");
+  link.id = "maplibre-css";
+  link.rel = "stylesheet";
+  link.href = "/vendor/maplibre-gl.css";
+  document.head.appendChild(link);
+}
+
+/** Load the production ESM build from /public/vendor (copied in next.config).
+ *  A non-literal specifier keeps Turbopack from inlining MapLibre into chunks. */
+function loadMaplibre(): Promise<MapLibreModule> {
+  const spec = "/vendor/maplibre-gl.mjs";
+  return import(/* webpackIgnore: true */ /* turbopackIgnore: true */ spec) as Promise<MapLibreModule>;
+}
 
 type MapListSyncProps = {
   listings: Property[];
@@ -29,7 +47,7 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
   const markersRef = useRef<Map<string, Marker>>(new Map());
   const [mapFailed, setMapFailed] = useState(false);
   const [mapReady, setMapReady] = useState(false);
-  const [maplibreModule, setMaplibreModule] = useState<typeof import("maplibre-gl") | null>(null);
+  const [maplibreModule, setMaplibreModule] = useState<MapLibreModule | null>(null);
   /* B-19: a single transient tile/network error used to disable the map for
      the whole session. Attempts are retryable — a failed map must degrade, not
      be a dead end. */
@@ -46,7 +64,8 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
     if (!container || mapRef.current || mapFailed) return;
     let disposed = false;
 
-    void import("maplibre-gl")
+    ensureMaplibreCss();
+    void loadMaplibre()
       .then((maplibregl) => {
         if (disposed || !containerRef.current) return;
         const map = new maplibregl.Map({

@@ -6,7 +6,7 @@
    rather than a client-side reimplementation. */
 
 import { useEffect, useState } from "react";
-import type { SearchSuggestion } from "@/lib/search/suggest";
+import type { SearchSuggestion } from "@/lib/search/suggestion-types";
 
 const DEBOUNCE_MS = 180;
 

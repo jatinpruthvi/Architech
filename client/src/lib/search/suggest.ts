@@ -26,18 +26,9 @@ import { getListings } from "@/lib/repositories";
 import { localitiesForPincode, parsePincode } from "@/lib/pincodes";
 import { describeParsedQuery, formatBudget, parseSearchQuery, parsedQueryToSearchUrl } from "./parse-query";
 import { bestMatch, fold } from "./text-match";
+import type { SearchSuggestion } from "./suggestion-types";
 
-export type SearchSuggestionKind = "locality" | "listing" | "popular" | "query" | "city" | "pincode" | "structured";
-
-export type SearchSuggestion = {
-  kind: SearchSuggestionKind;
-  label: string;
-  query: string;
-  /** Optional human hint (e.g. "42 homes · Paldi"). */
-  hint?: string;
-  /** Canonical destination when the suggestion maps to a structured search. */
-  href?: string;
-};
+export type { SearchSuggestion, SearchSuggestionKind } from "./suggestion-types";
 
 export const MAX_SUGGESTIONS = 8;
 
