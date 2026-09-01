@@ -21,6 +21,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:setup:sandbox": "node scripts/sandbox/setup-local-db.mjs",
     "location:fetch:ogd": "node scripts/location/fetch-ogd-snapshot.mjs",
     "location:fetch:india-post": "node scripts/location/fetch-ogd-snapshot.mjs --resource india-post --output tmp/location/india-post.csv",
     "location:fetch:lgd": "node scripts/location/fetch-ogd-snapshot.mjs --resource lgd-local-bodies --output tmp/location/lgd-local-bodies.csv",
@@ -46,6 +47,7 @@
     "provisioning:smoke": "node scripts/operations/provisioning-smoke.mjs"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "^7.9.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -82,6 +84,7 @@
     "eslint": "^9.15.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "globals": "^15.12.0",
+    "pg": "^8.23.0",
     "prettier": "^3.6.2",
     "prisma": "^7.9.1",
     "storybook": "^10.5.10",

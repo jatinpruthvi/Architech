@@ -58,7 +58,9 @@ async function main() {
   }
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.");
   const { PrismaClient } = await import("@prisma/client");
-  const prisma = new PrismaClient();
+  const { PrismaPg } = await import("@prisma/adapter-pg");
+  // Prisma 7 clients require a driver adapter.
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
   try {
     const result = await purgeExpiredRequirements(prisma, options);
     console.log(JSON.stringify(result));

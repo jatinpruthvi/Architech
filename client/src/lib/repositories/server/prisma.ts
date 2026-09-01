@@ -19,9 +19,9 @@ declare global {
   var __architechPrisma: PrismaClientLike | undefined;
 }
 
-function loadPrismaClientConstructor(): new () => PrismaClientLike {
+function loadPrismaClientConstructor(): new (options?: unknown) => PrismaClientLike {
   const require = createRequire(import.meta.url);
-  const clientModule = require("@prisma/client") as { PrismaClient?: new () => PrismaClientLike };
+  const clientModule = require("@prisma/client") as { PrismaClient?: new (options?: unknown) => PrismaClientLike };
   if (!clientModule.PrismaClient) {
     throw new Error("PrismaClient is not generated. Run `pnpm db:generate` before using ARCHITECH_DATA_SOURCE=prisma.");
   }
@@ -31,7 +31,17 @@ function loadPrismaClientConstructor(): new () => PrismaClientLike {
 export function getPrismaClient() {
   if (!globalThis.__architechPrisma) {
     const PrismaClient = loadPrismaClientConstructor();
-    globalThis.__architechPrisma = new PrismaClient();
+    // Prisma 7 clients require a driver adapter; the pg adapter connects
+    // through DATABASE_URL (the same URL `prisma migrate deploy` uses).
+    const require = createRequire(import.meta.url);
+    const { PrismaPg } = require("@prisma/adapter-pg") as {
+      PrismaPg: new (options: { connectionString: string }) => unknown;
+    };
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error("DATABASE_URL is required when ARCHITECH_DATA_SOURCE=prisma.");
+    }
+    globalThis.__architechPrisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
   }
   return globalThis.__architechPrisma;
 }

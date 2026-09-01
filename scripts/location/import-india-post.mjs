@@ -192,7 +192,9 @@ async function writeJson(file, value) {
 async function applyRows(rows, metadata, rejectionReportUri, options) {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required with --apply.");
   const { PrismaClient } = await import("@prisma/client");
-  const prisma = new PrismaClient();
+  const { PrismaPg } = await import("@prisma/adapter-pg");
+  // Prisma 7 clients require a driver adapter.
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
   let run;
   try {
     const concurrentRuns = await prisma.locationImportRun.count({ where: { status: "RUNNING", source: { key: metadata.sourceKey } } });
