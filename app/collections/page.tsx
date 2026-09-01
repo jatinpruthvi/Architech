@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Collections from "@/pages/Collections";
+import { getListings } from "@/lib/repositories/listings";
 import { canonicalUrl } from "@/lib/seo/urls";
 
 export const dynamic = "force-dynamic";
@@ -11,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <Collections />;
+  return <Collections catalog={getListings()} />;
 }

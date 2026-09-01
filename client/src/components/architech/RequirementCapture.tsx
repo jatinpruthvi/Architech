@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ArrowUpRight, Check, X } from "lucide-react";
 import type { RequirementCategory, RequirementInput, RequirementIntent, RequirementRole } from "@/lib/requirements";
-import { getCities, getLocalities } from "@/lib/repositories";
+import { getCities } from "@/lib/repositories/cities";
+import { getLocalities } from "@/lib/repositories/localities";
 const categories: Array<{ value: RequirementCategory; label: string; subtypes: string[] }> = [
   { value: "residential", label: "Homes", subtypes: ["Flat/Apartment", "Villa"] },
   { value: "commercial", label: "Commercial", subtypes: ["Office", "Shop"] },

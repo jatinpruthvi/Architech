@@ -1,13 +1,22 @@
 "use client";
 /* Site header: scroll-aware, theme toggle, Hindi toggle, saved badge, mobile menu. */
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Bookmark, Languages, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useSaved } from "@/contexts/SavedContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLang } from "@/contexts/LangContext";
-import RequirementCapture from "@/components/architech/RequirementCapture";
+
+const RequirementCapture = dynamic(() => import("@/components/architech/RequirementCapture"), {
+  ssr: false,
+  loading: () => (
+    <span className="hidden border border-ember/40 px-4 py-2.5 stamp font-semibold text-ember/70 lg:inline-flex">
+      Tell us what you need
+    </span>
+  ),
+});
 
 export default function Header() {
   const [open, setOpen] = useState(false);

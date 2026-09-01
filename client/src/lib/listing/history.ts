@@ -5,8 +5,6 @@
    history is only shown when events exist, and comparables are derived from
    live listing facts. */
 
-import { getListingsByLocality } from "@/lib/repositories";
-
 export type PriceEventKind = "listed" | "price_change" | "sold";
 
 export type PriceEvent = {
@@ -55,20 +53,4 @@ export function derivePriceHistory(listingId: string, events: PriceEvent[]): Pri
   return { listingId, currency: "INR", events: sorted, currentPriceInr: current, hasDecline };
 }
 
-/** Comparable homes from the same locality, ordered by price proximity. */
-export function comparableListings(subject: { id: string; localitySlug: string; priceNum: number }, limit = 3): ComparableListing[] {
-  const peers = getListingsByLocality(subject.localitySlug)
-    .filter((listing) => listing.id !== subject.id && listing.priceNum > 0)
-    .sort((a, b) => Math.abs(a.priceNum - subject.priceNum) - Math.abs(b.priceNum - subject.priceNum))
-    .slice(0, limit);
-  return peers.map((listing) => ({
-    id: listing.id,
-    title: listing.title,
-    priceNum: listing.priceNum,
-    locality: listing.locality,
-    areaNum: listing.areaNum,
-    pricePerSqft: listing.pricePerSqft,
-    badge: listing.badge,
-    deltaPct: Math.round(((listing.priceNum - subject.priceNum) / subject.priceNum) * 100),
-  }));
-}
+

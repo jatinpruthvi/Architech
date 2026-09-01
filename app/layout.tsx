@@ -6,7 +6,6 @@ import Footer from "@/components/architech/Footer";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { organizationJsonLd } from "@/lib/seo/organization";
-import "maplibre-gl/dist/maplibre-gl.css";
 import "@/theme.css";
 
 export const metadata: Metadata = {

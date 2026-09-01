@@ -2,7 +2,6 @@
 /* ARCHITECH — Property card v4: shared persistent saves, responsive WebP images,
  price-first hierarchy, honest demo labels, 44px touch targets. */
 import { ArrowUpRight, BedDouble, Heart, MapPin, Ruler, Scale, ShieldCheck } from "lucide-react";
-import { motion } from "motion/react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -76,17 +75,15 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  </div>
  <div className="flex items-center justify-between p-2.5">
  <p className="text-xs font-semibold text-ink">{property.locality} · {property.bhk} BHK</p>
- <motion.button
+ <button
+ type="button"
  onClick={onSave}
- whileTap={{ transform: "scale(0.94)" }}
- animate={saved ? { transform: ["scale(1)", "scale(1.12)", "scale(1)"] } : { transform: "scale(1)" }}
- transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
  aria-pressed={saved}
  aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`}
- className={`touch-44 grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick"}`}
+ className={`touch-44 motion-press grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick"}`}
  >
  <Heart size={14} fill={saved ? "currentColor" : "none"} />
- </motion.button>
+ </button>
  </div>
  </Link>
  </article>
@@ -153,15 +150,13 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  aria-label={compared ? `${t.property.removeCompare} ${property.title}` : `${t.property.compare} ${property.title}`} aria-pressed={compared}>
  <Scale size={15} strokeWidth={1.8} />
  </button>
- <motion.button
+ <button
+ type="button"
  onClick={onSave}
- whileTap={{ transform: "scale(0.94)" }}
- animate={saved ? { transform: ["scale(1)", "scale(1.1)", "scale(1)"] } : { transform: "scale(1)" }}
- transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
- className={`touch-44 grid place-items-center rounded-full transition-all duration-200 ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick"}`}
+ className={`touch-44 motion-press grid place-items-center rounded-full transition-all duration-200 ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick"}`}
  aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`} aria-pressed={saved}>
  <Heart size={16} strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
- </motion.button>
+ </button>
  </div>
  </div>
  {typeof index === "number" && <span className="stamp absolute bottom-3 left-4 z-10 bg-night/80 px-2 py-1 text-cream/90">Nº {String(index + 1).padStart(2, "0")}</span>}

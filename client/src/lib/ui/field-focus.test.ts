@@ -15,7 +15,7 @@ import { readFileSync } from "node:fs";
  * edge, and the text control inside it draws none.
  */
 const css = readFileSync("client/src/theme.css", "utf8");
-const home = readFileSync("client/src/pages/Home.tsx", "utf8");
+const home = readFileSync("client/src/components/architech/HeroSearch.tsx", "utf8");
 const results = readFileSync("client/src/pages/ResultsPage.tsx", "utf8");
 
 describe("composed field focus styling", () => {

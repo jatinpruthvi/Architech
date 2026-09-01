@@ -6,16 +6,16 @@ import { useMemo, useState } from "react";
 import PropertyCard from "@/components/architech/PropertyCard";
 import { useCollections } from "@/contexts/CollectionsContext";
 import { useSaved } from "@/contexts/SavedContext";
-import { getListings } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
 import useTitle from "@/hooks/useTitle";
 
-export default function Collections() {
+export default function Collections({ catalog }: { catalog: Property[] }) {
   useTitle("Collections");
   const { saved } = useSaved();
   const { collections, add, update, toggleListing, remove } = useCollections();
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
-  const listings = useMemo(() => getListings().filter((listing) => saved.includes(listing.id)), [saved]);
+  const listings = useMemo(() => catalog.filter((listing) => saved.includes(listing.id)), [catalog, saved]);
 
   const create = () => {
     if (!name.trim()) return;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Saved from "@/pages/Saved";
+import { getListings } from "@/lib/repositories/listings";
 import { savedUrl } from "@/lib/seo/urls";
 
 export const dynamic = "force-dynamic";
@@ -11,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <Saved />;
+  return <Saved listings={getListings()} />;
 }

@@ -2,271 +2,66 @@
 /* ARCHITECH — Home v2 "Amdavad Modern". Hero rule: preserve the centered search hierarchy,
    use locally grounded right-weighted architecture, a calm text-safe zone, responsive art direction,
    real HTML copy, and reduced-motion-safe movement. */
-import { ArrowDown, ArrowUpRight, Search, TrendingUp } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { ArrowDown, ArrowUpRight, TrendingUp } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
 import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import NumberTicker from "../components/magicui/NumberTicker";
 import TiltCard from "../components/magicui/TiltCard";
 import Pic from "../components/architech/Pic";
-import MarketDirectory from "../components/architech/MarketDirectory";
+import HeroSearch, { type HeroPreset, type HeroSearchCity } from "../components/architech/HeroSearch";
+import type { MarketLocalityLink, MarketProject } from "../components/architech/MarketDirectory";
 import useTitle from "../hooks/useTitle";
-import { getCities, getFeaturedListings, getListings, getLocalities } from "@/lib/repositories";
-import { applyMarket, applyQuery, type MarketCategory, type MarketIntent } from "@/lib/filters";
-import { parseSearchQuery, parsedQueryToSearchUrl, describeParsedQuery, formatBudget } from "@/lib/search/parse-query";
-import SuggestRow from "@/components/architech/SuggestRow";
-import { useSuggestCombobox } from "@/components/architech/useSuggestCombobox";
-import { exampleQuery, popularQueries, type SearchSuggestion } from "@/lib/search/suggest";
-import { readRecentSearches, rememberRecentSearch } from "@/lib/search/recent";
+import type { Property } from "@/lib/repositories";
+import type { SearchSuggestion } from "@/lib/search/suggestion-types";
 import { useLang } from "@/contexts/LangContext";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const faqs = [
-  { q: "How does RERA verification work across India?", a: "The listing’s reviewed state or union territory selects the applicable authority. A badge requires an approved adapter and a matching registration, promoter, project, and status record; unsupported authorities remain visibly unverified and are never checked against Gujarat as a fallback." },
-  { q: "What does the freshness stamp mean?", a: "In production it records when price, availability, and listing facts were last confirmed. Current concept-preview dates are deterministic demo data, not evidence that a live listing was re-checked." },
-  { q: "Will brokers get my phone number?", a: "Requirement capture stores contact digits encrypted and displays only a masked number. Production partner access and explicit sharing remain gated until the consent and access-control workflow is approved." },
-  { q: "Which cities do you cover?", a: `The concept registry currently demonstrates ${getCities().length} Indian city markets — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — across ${getLocalities().length} locality fixtures. Production coverage goes live city by city only after source and locality review.` },
-];
+const MarketDirectory = dynamic(() => import("../components/architech/MarketDirectory"), { ssr: false });
 
-/* Popular searches are derived from live inventory, so the labels and the
-   counts beside them are the same numbers the results page will show. */
-const popularSearches = popularQueries({}, 4);
+export type HomeCity = HeroSearchCity & {
+  hindi: string;
+  state: string;
+  coords: string;
+  tagline: string;
+  localityCount: number;
+};
 
-type HeroIntent = MarketIntent;
-type HeroCategory = Exclude<MarketCategory, "all">;
+export type HomeProps = {
+  featured: Property[];
+  listingCount: number;
+  localityCount: number;
+  cityCount: number;
+  cities: HomeCity[];
+  popularSearches: SearchSuggestion[];
+  heroPresets: HeroPreset[];
+  example: string;
+  marketProjects: MarketProject[];
+  marketLocalityLinks: MarketLocalityLink[];
+};
 
-function HeroSearch() {
-  const router = useRouter();
-  const navigate = (url: string) => router.push(url);
-  const { t } = useLang();
-  const reducedMotion = useReducedMotion();
-  const [intent, setIntent] = useState<HeroIntent>("buy");
-  const [category, setCategory] = useState<HeroCategory>("residential");
-  const [query, setQuery] = useState("");
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const queryLen = query.trim().length;
-
-  // Build the search URL, ALWAYS carrying intent + category so the toggle works.
-  const buildParams = useMemo(() => {
-    const p = new URLSearchParams();
-    if (intent !== "buy") p.set("intent", intent);
-    if (category !== "residential") p.set("category", category);
-    return p;
-  }, [intent, category]);
-
-  /**
-   * Navigate for a typed query. The query is parsed first, so "3 bhk in
-   * koramangala under 2 cr" arrives as real city/filter parameters instead of
-   * an opaque `q=` string the results page has to re-guess.
-   */
-  const go = (q: string, href?: string) => {
-    const trimmed = q.trim();
-    if (trimmed) rememberRecentSearch(trimmed);
-    if (href) { navigate(href); return; }
-
-    const parsed = parseSearchQuery(trimmed);
-    if (parsed.understood) {
-      const url = new URL(parsedQueryToSearchUrl(parsed), "https://architech.local");
-      // The hero's own intent/category toggles are explicit user choices and
-      // outrank anything inferred from the words.
-      if (intent !== "buy") url.searchParams.set("intent", intent);
-      if (category !== "residential") url.searchParams.set("category", category);
-      navigate(`${url.pathname}${url.search}`);
-      return;
-    }
-
-    const p = new URLSearchParams(buildParams);
-    if (trimmed) p.set("q", trimmed);
-    navigate(`/search?${p.toString()}`);
-  };
-
-  // Server-backed, debounced suggestion ranking from the canonical suggest
-  // module. Suggestions are objects, not bare strings, so the panel can show
-  // what each one means (how many homes, which city) before it is chosen.
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [recents, setRecents] = useState<SearchSuggestion[]>([]);
-
-  // Real recent searches, read once on mount — never a hardcoded sample.
-  useEffect(() => { setRecents(readRecentSearches()); }, []);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (trimmed.length === 0) {
-      setSuggestions([...recents, ...popularSearches]);
-      return;
-    }
-    const ctrl = new AbortController();
-    const timer = setTimeout(async () => {
-      try {
-        const r = await fetch(`/api/search/suggest/?q=${encodeURIComponent(trimmed)}`, { signal: ctrl.signal });
-        const data = await r.json();
-        if (Array.isArray(data.suggestions)) setSuggestions(data.suggestions as SearchSuggestion[]);
-      } catch {
-        /* aborted, or the endpoint is down: the panel simply shows nothing extra */
-      }
-    }, 160);
-    return () => { clearTimeout(timer); ctrl.abort(); };
-  }, [query, recents]);
-
-  /* One option list for the panel: recents + curated populars while the box is
-     empty, fetched suggestions once there is a query. */
-  const options = query.trim().length === 0 ? [...recents, ...popularSearches] : suggestions;
-
-  /* Focus, highlight and the ↑↓/Enter/Escape contract come from the shared
-     combobox module — the results page uses the same one, so the two search
-     boxes cannot drift into two different controls again. */
-  const sug = useSuggestCombobox({
-    query,
-    suggestions: options,
-    openWhenEmpty: true,
-    commit: (q, href) => go(q, href),
-  });
-  const inputRef = sug.inputRef;
-
-  const setIntentAndFocus = (v: HeroIntent) => { setIntent(v); inputRef.current?.focus(); };
-
-  const intentLabel = intent === "rent" ? t.hero.rent : t.hero.buy;
-  // The placeholder names a locality that genuinely has inventory, so the
-  // example in the box is never a query that returns nothing.
-  const heroExample = useMemo(() => exampleQuery(), []);
-  const parsedPreview = useMemo(() => {
-    const trimmed = query.trim();
-    if (trimmed.length < 3) return "";
-    const parsed = parseSearchQuery(trimmed);
-    return parsed.understood ? describeParsedQuery(parsed) : "";
-  }, [query]);
-  const categoryLabel = category === "residential" ? "homes" : category === "pg" ? "PG / co-living" : category;
-  const searchContext = `${intentLabel} ${categoryLabel} in`;
-  /* Budget chips derived from the real price distribution rather than two
-     round numbers that may not split the inventory at all. */
-  const heroPresets = useMemo(() => {
-    const buyPrices = getListings().filter((l) => (l.transaction ?? "buy") === "buy").map((l) => l.priceNum).sort((a, b) => a - b);
-    const at = (fraction: number) => buyPrices[Math.floor(buyPrices.length * fraction)] ?? 0;
-    const round = (value: number) => Math.max(5_000_000, Math.round(value / 2_500_000) * 2_500_000);
-    const cheap = round(at(0.25));
-    const mid = round(at(0.6));
-    const presets = [{ query: `under ${cheap / 10_000_000} cr`, label: `Under ${formatBudget(cheap)}` }];
-    if (mid > cheap) presets.push({ query: `under ${mid / 10_000_000} cr`, label: `Under ${formatBudget(mid)}` });
-    presets.push({ query: "ready to move", label: "Ready to move" });
-    return presets;
-  }, []);
-
-  const resultCount = useMemo(() => {
-    const listings = getListings();
-    const cat: MarketCategory = category;
-    return applyQuery(applyMarket(listings, cat, intent), query.trim()).length;
-  }, [intent, category, query]);
-
-  return (
-    <div ref={wrapRef} className="fade-rise relative w-full max-w-[700px]" style={{ "--d": "560ms" } as React.CSSProperties}>
-      {/* Intent + category controls */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex rounded-2xl border border-cream/25 bg-paper/10 p-1 backdrop-blur-md" role="tablist" aria-label="Buy or rent">
-          {(["buy", "rent"] as HeroIntent[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setIntentAndFocus(v)}
-              role="tab"
-              aria-selected={intent === v}
-              className={`relative rounded-xl px-6 py-2.5 stamp !text-[11px] font-semibold transition-all duration-300 ${intent === v ? "text-cream" : "text-cream/60 hover:text-cream"}`}
-            >
-              {intent === v && <motion.span layoutId="hero-intent-highlight" transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 34 }} className="absolute inset-0 rounded-xl bg-brick motion-spring-in" aria-hidden="true" />}
-              <span className="relative z-10">{v === "buy" ? t.hero.buy : t.hero.rent}</span>
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {(["residential", "commercial", "pg", "plot", "land", "auction"] as HeroCategory[]).map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => { setCategory(c); }}
-              aria-pressed={category === c}
-              className={`rounded-full px-3 py-1.5 stamp !text-[10px] font-semibold transition-colors duration-200 ${category === c ? "bg-cream/20 text-cream ring-1 ring-cream/30" : "text-cream/55 hover:bg-cream/10 hover:text-cream"}`}
-            >
-              {c === "residential" ? t.hero.buy : c}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <form
-        onSubmit={(e) => { e.preventDefault(); go(query); }}
-        className="search-composer field-shell [--field-focus:var(--ember)] mt-3 flex items-stretch rounded-2xl border border-cream/25 bg-paper/10 backdrop-blur-md transition-all duration-300 focus-within:border-ember focus-within:bg-paper/20 focus-within:shadow-[0_14px_40px_rgba(0,0,0,0.32)]"
-        role="search" aria-label={`Search ${intentLabel} across India`}>
-        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/15 text-cream/60 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="block stamp !text-[9px] text-cream/45">{searchContext}</span><span className="mt-1 block font-display text-sm text-cream/90">All India</span></span><Search size={19} className="sm:hidden" /></span>
-        <input
-          value={query} onChange={(e) => { setQuery(e.target.value); }}
-          placeholder={`Try “${heroExample}”, a PIN code, or any city…`}
-          className="w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
-          aria-label={`Search ${intentLabel} by locality, project, or BHK`}
-          {...sug.inputProps}
-        />
-        <button type="submit" className="clay-fill shimmer-btn motion-press mx-1.5 my-1.5 inline-flex items-center justify-center rounded-xl bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
-      </form>
-
-      {/* Animated suggestions */}
-      {sug.open && (
-      <div className="overflow-hidden transition-[opacity,transform,max-height] duration-300 ease-out max-h-[420px] translate-y-0 opacity-100">
-        <div
-          ref={sug.listRef}
-          id={sug.listId}
-          className="mt-2 rounded-2xl border border-ink/15 bg-paper text-ink shadow-lg"
-          role="listbox"
-          aria-label="Search suggestions"
-        >
-          {sug.visible.length ? (
-            <div className="max-h-[360px] overflow-y-auto p-3">
-              <p className="stamp px-1 ink-3">{queryLen ? `Suggestions for “${query.trim()}”` : recents.length ? "Recent and popular" : `${intentLabel} starts here`}</p>
-              {/* Say out loud how the typed words were understood, before the
-                  search runs, so a misread is visible rather than mysterious. */}
-              {parsedPreview && <p className="mt-1 px-1 stamp text-brick">Reads as: {parsedPreview}</p>}
-              <div className="mt-2 grid gap-1 sm:grid-cols-2">
-                {sug.visible.map((option, i) => (
-                  <SuggestRow
-                    key={`${option.kind}-${option.query}-${i}`}
-                    option={option}
-                    index={i}
-                    id={`${sug.listId}-opt-${i}`}
-                    highlighted={sug.highlight === i}
-                    onHover={sug.optionHandlers.onHover}
-                    onSelect={sug.optionHandlers.onSelect}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div role="group" aria-label="No search matches" className="p-4 text-center text-sm text-ink/55">No matches — try a locality, a city, a PIN, or “2 bhk under 1.5 cr”.</div>
-          )}
-          <p role="group" aria-label="Search keyboard help" className="stamp border-t border-ink/10 px-4 py-2.5 !text-[9px] text-ink/50">↑↓ to move · Enter to search · Esc to close · {resultCount} {intentLabel} match{resultCount === 1 ? "" : "es"} for this scope</p>
-        </div>
-      </div>
-      )}
-
-      {/* Quick chips */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="stamp !text-[10px] text-cream/60">{t.hero.beginWith}</span>
-        {getCities().slice(0, 4).map((city) => city.name).map((l) => (
-          <Link
-            key={l}
-            href={`/search?q=${encodeURIComponent(l)}&${buildParams.toString()}`}
-            className="rounded-full border border-cream/25 px-3 py-1.5 stamp !text-[11px] text-cream/85 transition-all duration-200 hover:-translate-y-0.5 hover:border-ember hover:bg-cream/10 hover:text-ember"
-          >{l}</Link>
-        ))}
-        <span className="mx-1 h-4 w-px bg-cream/20" aria-hidden="true" />
-        {heroPresets.map((preset) => (
-          <button key={preset.query} type="button" onClick={() => { setQuery(preset.query); go(preset.query); }} className="rounded-full border border-cream/15 px-3 py-1.5 stamp !text-[10px] text-cream/65 transition-all duration-200 hover:-translate-y-0.5 hover:border-ember hover:text-ember">{preset.label}</button>
-        ))}
-      </div>
-    </div>
-  );
+function faqsFor(cityCount: number, localityCount: number) {
+  return [
+    { q: "How does RERA verification work across India?", a: "The listing’s reviewed state or union territory selects the applicable authority. A badge requires an approved adapter and a matching registration, promoter, project, and status record; unsupported authorities remain visibly unverified and are never checked against Gujarat as a fallback." },
+    { q: "What does the freshness stamp mean?", a: "In production it records when price, availability, and listing facts were last confirmed. Current concept-preview dates are deterministic demo data, not evidence that a live listing was re-checked." },
+    { q: "Will brokers get my phone number?", a: "Requirement capture stores contact digits encrypted and displays only a masked number. Production partner access and explicit sharing remain gated until the consent and access-control workflow is approved." },
+    { q: "Which cities do you cover?", a: `The concept registry currently demonstrates ${cityCount} Indian city markets — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — across ${localityCount} locality fixtures. Production coverage goes live city by city only after source and locality review.` },
+  ];
 }
 
-export default function Home() {
+export default function Home({
+  featured,
+  listingCount,
+  localityCount,
+  cityCount,
+  cities,
+  popularSearches,
+  heroPresets,
+  example,
+  marketProjects,
+  marketLocalityLinks,
+}: HomeProps) {
+
   useTitle("");
   const { t } = useLang();
   return (
@@ -290,14 +85,14 @@ export default function Home() {
             </p>
             <div className="field-rule fade-rise mt-5 w-full max-w-[760px] border border-cream/25 bg-night/45 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-sm md:mt-6 md:p-2.5" style={{ "--d": "620ms" } as React.CSSProperties}>
               <div className="mx-auto flex justify-center">
-                <HeroSearch />
+                <HeroSearch cities={cities} popularSearches={popularSearches} heroPresets={heroPresets} example={example} />
               </div>
             </div>
           </div>
           <div className="fade-rise mt-7 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-4 md:mt-9" style={{ "--d": "760ms" } as React.CSSProperties}>
             <div className="flex gap-10 md:gap-16">
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getListings().length} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getLocalities().length} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={listingCount} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={localityCount} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
               <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[2]}</p></div>
             </div>
             <p className="hidden items-center gap-2 stamp !text-[10px] text-cream/60 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
@@ -316,7 +111,7 @@ export default function Home() {
           <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.sections.all281Homes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
         </Reveal>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {getFeaturedListings(6).map((property, i) => (
+          {featured.map((property, i) => (
             <Reveal key={property.id} delay={i * 90}>
               <TiltCard><PropertyCard property={property} index={i} arch={i === 0} /></TiltCard>
             </Reveal>
@@ -325,7 +120,7 @@ export default function Home() {
       </section>
 
       {/* ================= MARKET DIRECTORY ================= */}
-      <MarketDirectory />
+      <MarketDirectory projects={marketProjects} localityLinks={marketLocalityLinks} />
 
       {/* ================= CITY INDEX (real OSM coords) ================= */}
       <section className="border-t border-ink/12 bg-sand/40 py-24 md:py-32">
@@ -338,7 +133,7 @@ export default function Home() {
             <p className="stamp hidden !text-[10px] text-ink/60 md:block">Coordinates © OpenStreetMap contributors</p>
           </Reveal>
           <div className="mt-14 border-t border-ink/15">
-            {getCities().map((city, i) => (
+            {cities.map((city, i) => (
               <Reveal key={city.slug} delay={i * 40}>
                 <Link href={`/buy/${city.slug}/`} className="group grid grid-cols-[48px_1fr_auto] items-center gap-4 border-b border-ink/15 py-6 transition-colors hover:bg-paper md:grid-cols-[90px_1.1fr_0.9fr_auto] md:gap-8 md:py-7">
                   <span className="index-num text-[28px] text-ink/25 transition-colors group-hover:text-brick md:text-[44px]">{String(i + 1).padStart(2, "0")}</span>
@@ -348,7 +143,7 @@ export default function Home() {
                   </div>
                   <p className="hidden text-sm text-ink/55 md:block">{city.tagline}</p>
                   <div className="flex items-center gap-4">
-                    <span className="stamp !text-[11px] text-ink/60">{getLocalities(city.slug).length} localities</span>
+                    <span className="stamp !text-[11px] text-ink/60">{city.localityCount} localities</span>
                     <span className="clay-fill group-hover:border-brick group-hover:bg-brick grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300"><ArrowUpRight size={16} /></span>
                   </div>
                 </Link>
@@ -389,14 +184,16 @@ export default function Home() {
           <p className="mt-6 flex items-center gap-2 text-sm text-ink/60"><TrendingUp size={15} className="text-trust" /> Answers reviewed with every product release.</p>
         </Reveal>
         <Reveal delay={120}>
-          <Accordion type="single" collapsible className="border-t border-ink/15">
-            {faqs.map((f, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border-b border-ink/15">
-                <AccordionTrigger className="py-6 text-left font-display text-lg font-medium tracking-[-0.01em] hover:text-brick hover:no-underline md:text-xl">{f.q}</AccordionTrigger>
-                <AccordionContent className="pb-6 text-[15px] leading-7 text-ink/65">{f.a}</AccordionContent>
-              </AccordionItem>
+          <div className="border-t border-ink/15">
+            {faqsFor(cityCount, localityCount).map((f, i) => (
+              <details key={i} className="border-b border-ink/15">
+                <summary className="cursor-pointer list-none py-6 text-left font-display text-lg font-medium tracking-[-0.01em] hover:text-brick md:text-xl [&::-webkit-details-marker]:hidden">
+                  {f.q}
+                </summary>
+                <p className="pb-6 text-[15px] leading-7 text-ink/65">{f.a}</p>
+              </details>
             ))}
-          </Accordion>
+          </div>
         </Reveal>
       </section>
 

@@ -298,7 +298,7 @@ describe("aria wiring is wired, not merely present", () => {
   it("routes both search boxes through the one combobox module", () => {
     // The drift itself is what must not come back: the hero had arrow keys,
     // the results page did not, and both claimed to be the same control.
-    for (const page of ["client/src/pages/Home.tsx", "client/src/pages/ResultsPage.tsx"]) {
+    for (const page of ["client/src/components/architech/HeroSearch.tsx", "client/src/pages/ResultsPage.tsx"]) {
       expect(source(page), `${page} must use the shared combobox`).toContain("useSuggestCombobox");
       expect(strip(source(page)), `${page} must not re-implement the combobox keys`).not.toMatch(/const onKeyDown = \(e: React\.KeyboardEvent/);
     }
@@ -580,24 +580,18 @@ describe("modal surfaces are one implementation", () => {
 describe("results-grid motion stays a reflow, not a show", () => {
   const results = source("client/src/pages/ResultsPage.tsx");
 
-  it("animates position only, never size", () => {
-    /* `layout` alone also scales x/y to the new box. On a card whose image is a
-       1.5-crop, that reads as the photo squashing mid-flight. */
-    expect(results).toMatch(/layout=\{reduceMotion \? false : "position"\}/);
+  it("does not FLIP-scale result cards", () => {
+    /* Motion `layout` scales x/y to the new box. On a 1.5-crop card that reads
+       as the photo squashing mid-flight, and the library itself blew the
+       search first-load budget. CSS reveal + listing keys is the contract. */
+    expect(results).not.toMatch(/from "motion\/react"/);
     expect(results, "bare `layout` = scaling artefacts on card-sized elements").not.toMatch(/<[a-zA-Z.][^>]*\slayout(\s|>)/);
-  });
-
-  it("has a JS escape hatch, because a motion transform is inline style", () => {
-    /* A media query cannot override `style="transform: …"` written by JS. So the
-       reduced-motion contract here is NOT setting `layout` in the first place. */
-    expect(results).toMatch(/usePrefersReducedMotion/);
-    expect(results).toMatch(/matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
   });
 
   it("keys the grid on the listing, so re-ordering does not remount cards", () => {
     // Keyed on filters+sort, every card remounts on each click and FLIP becomes
     // a full re-entry animation — the v4 regression this file keeps citing.
-    expect(results).toMatch(/<motion\.div key=\{property\.id\}/);
+    expect(results).toMatch(/<Reveal key=\{property\.id\}/);
     expect(results).not.toMatch(/key=\{[^}]*filter/i);
   });
 });

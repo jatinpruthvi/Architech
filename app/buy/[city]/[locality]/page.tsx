@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CityPage from "@/pages/CityPage";
-import { getListingsByLocality, getLiveCityBySlug, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
+import { getListingsByCity, getListingsByLocality, getLiveCityBySlug, getLocalities, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
 import { isIndexable } from "@/lib/seo/lifecycle";
 import { cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { socialImage } from "@/lib/seo/social";
@@ -53,9 +53,9 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   const intel = localityIntel(slug, city.slug);
   // Only publicly indexable (ACTIVE) listings belong in the page's ItemList:
   // schema must describe what the page actually publishes.
-  const listings = getListingsByLocality(locality.slug, city.slug).filter((listing) =>
-    isIndexable(listing.lifecycle ?? "ACTIVE"),
-  );
+  const localHomes = getListingsByLocality(locality.slug, city.slug);
+  const cityHomes = getListingsByCity(city.slug);
+  const listings = localHomes.filter((listing) => isIndexable(listing.lifecycle ?? "ACTIVE"));
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -118,7 +118,15 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <CityPage localitySlug={locality.slug} citySlug={city.slug} />
+      <CityPage
+        locality={locality}
+        city={city}
+        showcase={(localHomes.length ? [...localHomes, ...cityHomes.filter((p) => p.localitySlug !== locality.slug)] : cityHomes).slice(0, 4)}
+        nearby={getLocalities(city.slug).filter((item) => item.slug !== locality.slug).slice(0, 5)}
+        intel={intel}
+        trust={trust}
+        newProjects={localHomes.filter((p) => p.availability === "NEW_LAUNCH" || p.availability === "UNDER_CONSTRUCTION")}
+      />
       <LocalityTrust summary={trust} />
     </>
   );
