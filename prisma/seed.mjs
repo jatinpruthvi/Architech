@@ -86,11 +86,42 @@ async function main() {
     }
   }
 
+  // The demo session (client/src/lib/auth/roles.ts) references this
+  // organization by its stable id; pinning it here keeps draft creation,
+  // the broker dashboard, and moderation working in demo auth mode.
+  const DEMO_ORG_ID = "demo-org-nivasa-partners";
   const broker = await prisma.brokerOrganization.upsert({
     where: { slug: "nivasa-partners" },
     update: { name: "Nivasa Partners", cityId: city.id, verificationStatus: "VERIFIED_PARTNER", email: "demo-broker@example.com" },
-    create: { slug: "nivasa-partners", name: "Nivasa Partners", cityId: city.id, verificationStatus: "VERIFIED_PARTNER", email: "demo-broker@example.com" },
+    create: { id: DEMO_ORG_ID, slug: "nivasa-partners", name: "Nivasa Partners", cityId: city.id, verificationStatus: "VERIFIED_PARTNER", email: "demo-broker@example.com" },
   });
+  if (broker.id !== DEMO_ORG_ID) {
+    // Older seeds created this row with a generated id. Re-pointing the FKs is
+    // a chicken-and-egg under strict constraints (children can't point at the
+    // new id until the parent has it, and the parent can't change while
+    // children point at the old one), so the constraints are lifted around
+    // the update inside a single transaction.
+    const oldOrgId = broker.id;
+    const reorg = async (tx) => {
+      await tx.$executeRawUnsafe(`
+        ALTER TABLE "Listing" DROP CONSTRAINT IF EXISTS "Listing_brokerOrgId_fkey";
+        ALTER TABLE "Lead" DROP CONSTRAINT IF EXISTS "Lead_organizationId_fkey";
+        ALTER TABLE "AuditEvent" DROP CONSTRAINT IF EXISTS "AuditEvent_organizationId_fkey";
+        ALTER TABLE "BrokerUser" DROP CONSTRAINT IF EXISTS "BrokerUser_organizationId_fkey";
+        UPDATE "Listing" SET "brokerOrgId" = '${DEMO_ORG_ID}' WHERE "brokerOrgId" = '${oldOrgId}';
+        UPDATE "Lead" SET "organizationId" = '${DEMO_ORG_ID}' WHERE "organizationId" = '${oldOrgId}';
+        UPDATE "AuditEvent" SET "organizationId" = '${DEMO_ORG_ID}' WHERE "organizationId" = '${oldOrgId}';
+        UPDATE "BrokerUser" SET "organizationId" = '${DEMO_ORG_ID}' WHERE "organizationId" = '${oldOrgId}';
+        UPDATE "BrokerOrganization" SET "id" = '${DEMO_ORG_ID}' WHERE "id" = '${oldOrgId}';
+        ALTER TABLE "Listing" ADD CONSTRAINT "Listing_brokerOrgId_fkey" FOREIGN KEY ("brokerOrgId") REFERENCES "BrokerOrganization"("id") ON DELETE SET NULL;
+        ALTER TABLE "Lead" ADD CONSTRAINT "Lead_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "BrokerOrganization"("id") ON DELETE SET NULL;
+        ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "BrokerOrganization"("id") ON DELETE SET NULL;
+        ALTER TABLE "BrokerUser" ADD CONSTRAINT "BrokerUser_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "BrokerOrganization"("id") ON DELETE CASCADE;
+      `);
+    };
+    await prisma.$transaction(reorg, { timeout: 60_000 });
+    broker.id = DEMO_ORG_ID;
+  }
 
   const rera = await prisma.reraRecord.upsert({
     where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug: "gujarat", registrationNumber: "GJ/RERA/AHM/2026/04821-DEMO" } },

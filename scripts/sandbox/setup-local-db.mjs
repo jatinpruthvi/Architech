@@ -175,6 +175,11 @@ function ensureEnvFile() {
         return `ARCHITECH_CONTACT_ENCRYPTION_KEY=${key}`;
       if (line.startsWith("DATABASE_URL="))
         return `DATABASE_URL=${DATABASE_URL}`;
+      if (line.startsWith("NEXT_PUBLIC_SITE_URL="))
+        // The sandbox is reached through an ephemeral preview-proxy origin, so
+        // the fixed example URL would reject every browser mutation with
+        // ORIGIN_REJECTED (request-safety.ts only enforces when set).
+        return "NEXT_PUBLIC_SITE_URL= # sandbox: empty on purpose; real deployments set their public origin";
       return line;
     })
     .join("\n");
