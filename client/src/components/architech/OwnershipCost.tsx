@@ -4,14 +4,13 @@
    educational — assumes 80% LTV, 20y, 8.5% by default, all adjustable/labelled. */
 import { Calculator } from "lucide-react";
 import { useMemo, useState } from "react";
-import { getCityBySlug, type Property } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
 import { calculateOwnershipCost, compactInr, type OwnershipAssumptions } from "@/lib/cost/ownership";
 import { useLang } from "@/contexts/LangContext";
 
-export function OwnershipCost({ property }: { property: Property }) {
+export function OwnershipCost({ property, state }: { property: Property; state?: string }) {
   const { t } = useLang();
   const [cash, setCash] = useState<{ loanInr?: number; tenorYears?: number; annualRatePct?: number }>({});
-  const state = getCityBySlug(property.citySlug)?.state;
 
   const assumptions: OwnershipAssumptions = useMemo(() => ({
     priceInr: property.priceNum,

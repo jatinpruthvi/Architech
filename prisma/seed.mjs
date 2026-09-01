@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { CITIES, LOCALITIES } from "./seed-registry.mjs";
 
-const prisma = new PrismaClient();
+// Prisma 7 clients require a driver adapter.
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
 const listings = [
   { stableId: "garden-courtyard", slug: "garden-courtyard", title: "A garden courtyard in Paldi", localitySlug: "paldi", priceLabel: "₹1.85 Cr", priceInr: 18_500_000, pricePerSqft: "₹12,480 / sq ft", bhk: 3, areaSqft: 1482, propertyType: "APARTMENT", availability: "READY_TO_MOVE", verification: "RERA_VERIFIED", description: "Old trees, kota stone floors, and a courtyard that carries the whole house.", image: "prop-courtyard" },

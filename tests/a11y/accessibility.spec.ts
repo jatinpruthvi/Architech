@@ -37,11 +37,12 @@ test.describe("accessibility smoke", () => {
 
   test("theme and language controls are keyboard reachable", async ({ page }) => {
     await page.goto("/");
-    const themeButton = page.getByRole("button", { name: /switch to dark mode/i });
+    // Night-first: the landing theme is dark, so the control offers light mode.
+    const themeButton = page.getByRole("button", { name: /switch to light mode/i });
     await themeButton.focus();
     await expect(themeButton).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
 
     const languageButton = page.getByRole("button", { name: /हिन्दी में देखें|switch to english/i });
     await languageButton.focus();

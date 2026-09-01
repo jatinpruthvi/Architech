@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import ListingPage from "@/pages/ListingPage";
-import { getCityBySlug, getListingStaticParams, getLocalityBySlug } from "@/lib/repositories";
+import { getCityBySlug, getListingStaticParams, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
+import { comparableListings } from "@/lib/listing/comparables";
 import { getListingByIdForServer } from "@/lib/repositories/server/prisma";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { socialImage } from "@/lib/seo/social";
@@ -150,7 +151,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ListingPage id={property.id} />
+      <ListingPage
+        property={property}
+        locality={locality}
+        related={getRelatedListings(property.id, 3)}
+        comparables={comparableListings({ id: property.id, localitySlug: property.localitySlug, priceNum: property.priceNum }, 3)}
+        cityState={city?.state}
+      />
     </>
   );
 }

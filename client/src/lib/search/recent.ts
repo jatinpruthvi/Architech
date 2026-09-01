@@ -10,7 +10,7 @@
    defensive, because localStorage throws in private-mode Safari and can hold
    anything a previous version wrote. */
 
-import type { SearchSuggestion } from "./suggest";
+import type { SearchSuggestion } from "./suggestion-types";
 
 const STORAGE_KEY = "architech:recent-searches";
 const MAX_RECENTS = 3;

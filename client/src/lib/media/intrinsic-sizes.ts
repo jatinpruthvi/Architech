@@ -14,6 +14,7 @@ export type IntrinsicSize = { width: number; height: number };
 
 export const IMAGE_INTRINSIC_SIZES: Record<string, IntrinsicSize> = {
   "hero-ahmedabad": { width: 1376, height: 768 },
+  "hero-glow": { width: 1584, height: 672 },
   "locality-street": { width: 1264, height: 848 },
   "prop-courtyard": { width: 1200, height: 896 },
   "prop-light": { width: 1200, height: 896 },

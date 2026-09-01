@@ -16,7 +16,7 @@ import type { Locality } from "@/lib/repositories";
 import type { LocalityIntel } from "@/lib/realestate/locality-intel";
 import { AMENITY_LABELS, type AmenityCategory } from "@/lib/realestate/amenities";
 import type { Property } from "@/lib/repositories";
-import { compactInr, formatPsf } from "@/lib/realestate/locality-intel";
+import { compactInr, formatPsf } from "@/lib/realestate/format-inr";
 import { useLang } from "@/contexts/LangContext";
 import PropertyCard from "./PropertyCard";
 import Reveal from "./Reveal";

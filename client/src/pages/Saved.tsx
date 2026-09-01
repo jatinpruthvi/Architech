@@ -7,12 +7,12 @@ import Reveal from "../components/architech/Reveal";
 import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
 import { useLang } from "@/contexts/LangContext";
-import { getListings } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
 
-export default function Saved() {
+export default function Saved({ listings }: { listings: Property[] }) {
   const { saved } = useSaved();
   const { t } = useLang();
-  const savedHomes = getListings().filter((p) => saved.includes(p.id));
+  const savedHomes = listings.filter((p) => saved.includes(p.id));
   useTitle(savedHomes.length ? `${t.saved.title} (${savedHomes.length})` : t.saved.title);
 
   if (savedHomes.length === 0) {

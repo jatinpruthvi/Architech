@@ -46,6 +46,7 @@
     "provisioning:smoke": "node scripts/operations/provisioning-smoke.mjs"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "^7.9.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.15",

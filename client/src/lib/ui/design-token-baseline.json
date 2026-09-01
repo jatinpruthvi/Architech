@@ -45,6 +45,11 @@
     "microText": 1,
     "nanoText": 0
   },
+  "client/src/components/architech/HeroSearch.tsx": {
+    "alphaText": 11,
+    "microText": 0,
+    "nanoText": 0
+  },
   "client/src/components/architech/ListingGallery.tsx": {
     "alphaText": 5,
     "microText": 4,

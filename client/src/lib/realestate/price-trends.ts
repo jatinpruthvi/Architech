@@ -24,6 +24,7 @@
    The unit encoding itself is pre-existing and has many consumers, so it is
    documented and converted here rather than silently changed. */
 import { getCityBySlug, getListingsByCity, getListingsByLocality, type Property } from "@/lib/repositories";
+import { compactInr } from "./format-inr";
 
 /** Minimum listings behind an aggregate before it is published.
 
@@ -145,10 +146,4 @@ export function cityPriceTrends(citySlug: string): PriceTrendSummary {
   return summarize(citySlug, city?.name ?? citySlug, getListingsByCity(citySlug));
 }
 
-/** Human-readable INR label for a price value. */
-export function compactInr(value: number | null): string {
-  if (value === null) return "—";
-  if (value >= 10_000_000) return `₹${(value / 10_000_000).toFixed(2)} Cr`;
-  if (value >= 100_000) return `₹${(value / 100_000).toFixed(1)} L`;
-  return `₹${value.toLocaleString("en-IN")}`;
-}
+export { compactInr };

@@ -82,7 +82,9 @@ export async function main(argv = process.argv.slice(2)) {
   const unknown = argv.filter((argument) => argument !== "--allow-incomplete");
   if (unknown.length) throw new Error(`Unknown argument: ${unknown[0]}`);
   const { PrismaClient } = await import("@prisma/client");
-  const prisma = new PrismaClient();
+  const { PrismaPg } = await import("@prisma/adapter-pg");
+  // Prisma 7 clients require a driver adapter.
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
   try {
     const result = await auditLocationCoverage(prisma);
     console.log(JSON.stringify(result, null, 2));

@@ -10,7 +10,6 @@
    Server-safe: no client directive, no side effects. Deterministic for a given
    fixture set, so it can be unit-tested and SSR'd. */
 import { getListingsByLocality, getListingsByCity, getLocalityBySlug, type Property } from "@/lib/repositories";
-import { compactInr } from "@/lib/realestate/price-trends";
 import { FIXTURE_AS_OF_ISO, FIXTURE_AS_OF_LABEL } from "@/lib/properties";
 import { normalizeAmenities, type AmenityCategory } from "./amenities";
 import { MIN_SAMPLE_FOR_PUBLISHED_STAT, monthlyRentInr, salePriceInr } from "./price-trends";
@@ -192,10 +191,4 @@ export function localityIntel(slug: string, citySlug?: string): LocalityIntel {
   };
 }
 
-/** Format a ₹/sq ft for a compact label. */
-export function formatPsf(value: number | null): string {
-  if (value === null) return "—";
-  return `₹${Math.round(value).toLocaleString("en-IN")}`;
-}
-
-export { compactInr };
+export { compactInr, formatPsf } from "@/lib/realestate/format-inr";

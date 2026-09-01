@@ -2,10 +2,10 @@
 /* ARCHITECH — Amdavad Modern compare tray: four-home decision surface, shareable state, no payment assumptions. */
 import { ArrowUpRight, Scale, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCompare } from "@/contexts/CompareContext";
-import { getListings, type Property } from "@/lib/repositories";
+import type { Property } from "@/lib/repositories";
 import Pic from "./Pic";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
@@ -22,18 +22,65 @@ const rows: [string, (p: Property) => string][] = [
 
 export default function CompareTray() {
   const { compared, toggle, clear } = useCompare();
-  const homes = getListings().filter((p) => compared.includes(p.id));
+  const [homes, setHomes] = useState<Property[]>([]);
   const [copied, setCopied] = useState(false);
-  if (homes.length === 0) return null;
+
+  useEffect(() => {
+    if (compared.length === 0) {
+      setHomes([]);
+      return;
+    }
+    const controller = new AbortController();
+    void fetch(`/api/listings/?ids=${compared.map(encodeURIComponent).join(",")}`, { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() as Promise<{ listings?: Property[] }> : Promise.reject(response.status)))
+      .then((payload) => {
+        if (Array.isArray(payload.listings)) setHomes(payload.listings.filter((listing) => compared.includes(listing.id)));
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [compared]);
+
+  if (compared.length === 0) return null;
+
+  /* Copy that survives an iframe whose permissions policy blocks `clipboard-write`.
+     `document.execCommand("copy")` goes through a legacy path the policy doesn't gate,
+     so we lead with it and only touch `navigator.clipboard.writeText` as a last resort
+     (guarded so its NotAllowedError is never surfaced to the console). */
+  const legacyCopy = (text: string) => {
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.setAttribute("readonly", "");
+    el.style.position = "fixed";
+    el.style.top = "-9999px";
+    el.style.opacity = "0";
+    try {
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand("copy");
+      return ok;
+    } catch {
+      return false;
+    } finally {
+      document.body.removeChild(el);
+    }
+  };
 
   const share = async () => {
     const url = `${window.location.origin}/compare?ids=${encodeURIComponent(homes.map((home) => home.id).join(","))}`;
-    try {
-      await navigator.clipboard.writeText(url);
+    let ok = legacyCopy(url);
+    if (!ok && typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      } catch {
+        ok = false;
+      }
+    }
+    if (ok) {
       setCopied(true);
       toast("Comparison link copied", { description: "Share this shortlisting with your family or advisor." });
       window.setTimeout(() => setCopied(false), 1800);
-    } catch {
+    } else {
       toast("Comparison ready", { description: url });
     }
   };

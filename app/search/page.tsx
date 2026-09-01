@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import ResultsPage from "@/pages/ResultsPage";
+import { getCities } from "@/lib/repositories/cities";
+import { popularQueries } from "@/lib/search/suggest";
 import { searchUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
@@ -13,7 +15,10 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <Suspense fallback={<div className="flex min-h-[70vh] items-center justify-center bg-paper pt-[78px]" role="status" aria-label="Loading search"><span className="arch-mark grid h-14 w-14 animate-pulse place-items-center"><span className="arch-mark-arch" /></span></div>}>
-      <ResultsPage />
+      <ResultsPage
+        cities={getCities().map((city) => ({ slug: city.slug, name: city.name }))}
+        popularSearches={popularQueries({}, 4)}
+      />
     </Suspense>
   );
 }

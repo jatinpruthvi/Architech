@@ -13,15 +13,13 @@ import {
   parseFacetState,
   serializeFacetState,
   wideningSuggestions,
-  type DerivedFacetValue,
   type FacetCounts,
   type FacetGroup,
   type FacetState,
-  type Relaxation,
 } from "./facets";
+import type { AppliedFacet, FacetProjection, SearchResponse, SearchSource } from "./search-types";
 
-export type SearchSource = "fixture-repository" | "postgres-fts-trigram";
-export type FacetProjection = "consumer" | "desk";
+export type { AppliedFacet, FacetProjection, SearchResponse, SearchSource } from "./search-types";
 
 export type SearchRequest = {
   q?: string;
@@ -42,38 +40,6 @@ export type SearchRequest = {
   page?: number;
   /** Which facet groups the response describes. Desk callers get every group. */
   projection?: FacetProjection;
-};
-
-export type AppliedFacet = { groupId: string; groupLabel: string; valueId: string; label: string };
-
-export type SearchResponse = {
-  query: string;
-  /** Echoes the resolved city scope: a city slug, or "all" for nationwide. */
-  city: string;
-  /** Echoes the resolved PIN filter, or null when none was applied. */
-  pincode: string | null;
-  /** Canonical serialisation of the active facet state. */
-  filters: string[];
-  category: MarketCategory;
-  intent: MarketIntent;
-  sort: SortId;
-  count: number;
-  source: SearchSource;
-  indexPlan: "deterministic-parser-now-postgres-fts-trigram-next" | "postgres-fts-trigram-ready";
-  /** True when the underlying read hit its row ceiling (5000), so `count` is a
-      bounded total rather than the real one. Set by the server path. */
-  truncated?: boolean;
-  page: PaginationMeta;
-  results: Property[];
-  /** --- facet rebuild --- */
-  projection: FacetProjection;
-  facets: FacetCounts;
-  /** What is currently applied, in display order. */
-  applied: AppliedFacet[];
-  /** Zero-result ladder rung 1: the single constraint that costs the most. */
-  relaxations: Relaxation[];
-  /** Zero-result ladder rung 2: nearest localities with real inventory. */
-  widening: DerivedFacetValue[];
 };
 
 // Deliberately not widened to a "relevance" sort yet: applySort has no

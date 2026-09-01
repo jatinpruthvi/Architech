@@ -2,7 +2,6 @@
 /* ARCHITECH — Property card v4: shared persistent saves, responsive WebP images,
  price-first hierarchy, honest demo labels, 44px touch targets. */
 import { ArrowUpRight, BedDouble, Heart, MapPin, Ruler, Scale, ShieldCheck } from "lucide-react";
-import { motion } from "motion/react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -76,17 +75,15 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  </div>
  <div className="flex items-center justify-between p-2.5">
  <p className="text-xs font-semibold text-ink">{property.locality} · {property.bhk} BHK</p>
- <motion.button
+ <button
+ type="button"
  onClick={onSave}
- whileTap={{ transform: "scale(0.94)" }}
- animate={saved ? { transform: ["scale(1)", "scale(1.12)", "scale(1)"] } : { transform: "scale(1)" }}
- transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
  aria-pressed={saved}
  aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`}
- className={`touch-44 grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick"}`}
+ className={`touch-44 motion-press grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick"}`}
  >
  <Heart size={14} fill={saved ? "currentColor" : "none"} />
- </motion.button>
+ </button>
  </div>
  </Link>
  </article>
@@ -96,7 +93,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  // Horizontal variant: image left, content right.
  if (variant === "horizontal") {
  return (
- <article className="group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
+    <article className="card-warm-hover group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm">
  <div className="flex">
  <Link href={`/listing/${property.id}`} className="relative block w-[200px] shrink-0 overflow-hidden bg-sand" aria-label={`View ${property.title}`}>
  <div className="img-hover relative aspect-[4/3]">
@@ -123,8 +120,8 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  );
  }
 
- return (
- <article className="group relative overflow-hidden rounded-[1.25rem] border border-ink/15 border-t-2 border-t-brick/70 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
+  return (
+    <article className="card-warm-hover group relative overflow-hidden rounded-[1.5rem] border border-ink/15 border-t-2 border-t-brick/70 bg-card shadow-sm">
  <Link href={`/listing/${property.id}`} className="block" aria-label={`View ${property.title}, ${property.price}, ${property.locality}`}>
  <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm overflow-hidden" : "rounded-t-2xl"}`}>
  {/* 3:2 — the widest crop a 2-up grid can hold. v4 used
@@ -153,15 +150,13 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  aria-label={compared ? `${t.property.removeCompare} ${property.title}` : `${t.property.compare} ${property.title}`} aria-pressed={compared}>
  <Scale size={15} strokeWidth={1.8} />
  </button>
- <motion.button
+ <button
+ type="button"
  onClick={onSave}
- whileTap={{ transform: "scale(0.94)" }}
- animate={saved ? { transform: ["scale(1)", "scale(1.1)", "scale(1)"] } : { transform: "scale(1)" }}
- transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
- className={`touch-44 grid place-items-center rounded-full transition-all duration-200 ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick"}`}
+ className={`touch-44 motion-press grid place-items-center rounded-full transition-all duration-200 ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick"}`}
  aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`} aria-pressed={saved}>
  <Heart size={16} strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
- </motion.button>
+ </button>
  </div>
  </div>
  {typeof index === "number" && <span className="stamp absolute bottom-3 left-4 z-10 bg-night/80 px-2 py-1 text-cream/90">Nº {String(index + 1).padStart(2, "0")}</span>}
@@ -172,7 +167,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  {/* PRIMARY: price + location */}
  <div className="flex items-start justify-between gap-3">
  <strong className="font-display text-[26px] font-semibold leading-none tracking-[-0.025em] text-ink [font-variant-numeric:tabular-nums]">{property.price}</strong>
- <span className="mt-1 flex items-center gap-1 text-[13px] font-semibold text-ink"><MapPin size={13} className="text-brick" /> {property.locality}</span>
+    <span className="mt-1 flex items-center gap-1 text-[13px] font-semibold text-ink"><MapPin size={13} className="text-ember" /> {property.locality}</span>
  </div>
  <p className="stamp mt-1.5 ink-2 [font-variant-numeric:tabular-nums]">{property.pricePerSqft}</p>
 
@@ -207,16 +202,17 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  )}
  <p className="mt-3 hidden border-l-2 border-brick/50 pl-3 text-[13px] leading-5 ink-2 sm:block">{property.note}</p>
 
- {/* TERTIARY: verification + freshness + action */}
- <div className="mt-4 flex items-center justify-between gap-2 border-t border-ink/10 pt-3.5">
- <span className="flex min-w-0 flex-col">
- <span className="stamp truncate text-trust">
- <ShieldCheck size={11} className="mr-1 inline" aria-hidden="true" /> {property.badge}
- </span>
- <span className="stamp mt-0.5 ink-3">{property.status}</span>
- </span>
- <Link href={`/listing/${property.id}`} className="inline-flex min-h-[44px] shrink-0 items-center gap-1 stamp font-semibold text-brick">{t.property.view} <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link>
- </div>
+  {/* TERTIARY: verification + freshness + action */}
+  <div className="mt-4 flex items-center justify-between gap-2 border-t border-ink/10 pt-3.5">
+    <span className="flex min-w-0 flex-col">
+      <span className="stamp truncate text-trust">
+        <ShieldCheck size={11} className="mr-1 inline" aria-hidden="true" /> {property.badge}
+      </span>
+      {/* Freshness is a trust signal — golden, not alarming red. */}
+      <span className="stamp mt-0.5 text-gold">{property.status}</span>
+    </span>
+    <Link href={`/listing/${property.id}`} className="clay-fill btn-sweep motion-press inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full bg-brick px-4 stamp font-semibold text-cream">{t.property.view} <ArrowUpRight size={13} aria-hidden="true" /></Link>
+  </div>
  </div>
  </article>
  );
