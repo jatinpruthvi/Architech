@@ -64,14 +64,14 @@ export default function MarketDirectory({
 
         <div className="mt-16 grid gap-12 lg:grid-cols-[1.4fr_0.6fr]">
           <div>
-            <div className="flex items-end justify-between border-b border-ink/15 pb-4"><div><p className="kicker text-brick">Featured project rail</p><h3 className="mt-2 font-display text-3xl font-medium tracking-[-0.03em]">Projects worth a second look.</h3></div><span className="stamp !text-[10px] text-ink/55">curated · demo inventory</span></div>
+            <div className="flex items-end justify-between border-b border-ink/15 pb-4"><div><p className="kicker text-brick">Featured project rail</p><h3 className="mt-2 font-display text-3xl font-medium tracking-[-0.03em]">Projects worth a second look.</h3></div><span className="stamp !text-[12px] text-ink/55">curated · demo inventory</span></div>
             <div className="grid gap-4 pt-5 md:grid-cols-3">
               {projects.map((project, index) => (
                 <Link key={project.name} href={project.href} className="group border border-ink/15 bg-paper p-5 transition-transform duration-300 hover:-translate-y-1 hover:border-brick">
-                  <p className="stamp !text-[10px] text-brick">Nº {String(index + 1).padStart(2, "0")} · {project.label}</p>
+                  <p className="stamp !text-[12px] text-brick">Nº {String(index + 1).padStart(2, "0")} · {project.label}</p>
                   <h4 className="mt-14 font-display text-2xl font-medium leading-tight tracking-[-0.03em] group-hover:text-brick">{project.name}</h4>
                   <p className="mt-3 text-sm text-ink/60">{project.developer}</p>
-                  <p className="stamp mt-6 !text-[10px] text-ink/55">{project.locality} · source trail on page <ArrowUpRight size={12} className="ml-1 inline" /></p>
+                  <p className="stamp mt-6 !text-[12px] text-ink/55">{project.locality} · source trail on page <ArrowUpRight size={12} className="ml-1 inline" /></p>
                 </Link>
               ))}
             </div>
@@ -80,7 +80,7 @@ export default function MarketDirectory({
             <p className="kicker text-brick">Developer index</p>
             <h3 className="mt-2 font-display text-3xl font-medium tracking-[-0.03em]">Build with context.</h3>
             <div className="mt-6 divide-y divide-ink/15 border-y border-ink/15">
-              {developers.map(([name, detail]) => <Link key={name} href="/developers/" className="group flex items-center justify-between gap-4 py-4 text-sm transition-colors hover:text-brick"><span><strong className="block font-medium">{name}</strong><span className="stamp mt-1 block !text-[9px] text-ink/50">{detail}</span></span><ArrowUpRight size={14} className="shrink-0 text-brick transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>)}
+              {developers.map(([name, detail]) => <Link key={name} href="/developers/" className="group flex items-center justify-between gap-4 py-4 text-sm transition-colors hover:text-brick"><span><strong className="block font-medium">{name}</strong><span className="stamp mt-1 block !text-[12px] text-ink/50">{detail}</span></span><ArrowUpRight size={14} className="shrink-0 text-brick transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>)}
             </div>
             <Link href="/developers/" className="link-rail mt-5 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-brick">Browse the developer index <ArrowUpRight size={13} /></Link>
           </aside>

@@ -155,8 +155,8 @@ describe("legacy debt may only shrink", () => {
 
 describe("ink ramp tokens clear AA in BOTH themes", () => {
   it.each([
-    { theme: "light", card: "#fffaf2", ink2: "#51453d", ink3: "#6e6058" },
-    { theme: "dark", card: "#33251f", ink2: "#c9b8ab", ink3: "#a9998d" },
+    { theme: "light", card: "#fdf7ec", ink2: "#5c4837", ink3: "#7a6450" },
+    { theme: "dark", card: "#2f160b", ink2: "#e0c298", ink3: "#c9a87a" },
   ])("$theme secondary ink clears 5:1 and tertiary clears 4.5:1", ({ card, ink2, ink3 }) => {
     expect(contrast(card, ink2)).toBeGreaterThanOrEqual(5);
     expect(contrast(card, ink3)).toBeGreaterThanOrEqual(4.5);
@@ -244,14 +244,19 @@ describe("the filter surface works without a mouse", () => {
   });
 
   it("does not let small mono labels sit at 4.5:1 or worse in either theme", () => {
-    // `--brick` is 5.77:1 in light but only 4.16:1 in dark. That is fine for a
-    // 26px display price and short for a 12px mono action, so small actions use
-    // --facet-link (5.31:1 in dark). This pins both halves of that decision.
+    // `--brick` must clear AA on the card in BOTH themes — a small mono action
+    // is only legible if its colour passes here. In the original terracotta
+    // theme the dark brick was a 4.16:1 trap that `--facet-link` had to rescue;
+    // the night survey brightened the dark action to marigold, so this guard now
+    // checks the LIVE dark brick against the LIVE dark card instead of a stale
+    // literal (#d36a48 no longer exists in the palette).
     expect(contrast(tokenAfter(":root", "brick"), tokenAfter(":root", "card"))).toBeGreaterThanOrEqual(4.5);
     const darkBlock = css.slice(css.indexOf(".dark {"));
     const darkCard = darkBlock.slice(0, darkBlock.indexOf("}")).match(/--card:\s*(#[0-9a-fA-F]{6})/)?.[1] ?? "";
+    const darkBrick = darkBlock.slice(0, darkBlock.indexOf("}")).match(/--brick:\s*(#[0-9a-fA-F]{6})/)?.[1] ?? "";
     expect(darkCard).not.toBe("");
-    expect(contrast("#d36a48", darkCard)).toBeLessThan(4.5); // the trap this token exists to avoid
+    expect(darkBrick).not.toBe("");
+    expect(contrast(darkBrick, darkCard)).toBeGreaterThanOrEqual(4.5); // dark night actions stay AA on the dark card
     expect(css).toContain("--facet-link: color-mix(in srgb, var(--brick) 82%, #fff);");
     expect(css).toMatch(/\.facet-link \{[\s\S]*?color: var\(--facet-link\)/);
   });

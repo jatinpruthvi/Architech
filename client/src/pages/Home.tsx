@@ -70,9 +70,14 @@ export default function Home({
       {/* ================= HERO ================= */}
       <section className="relative min-h-[540px] overflow-hidden bg-night text-cream md:min-h-[620px]">
         <div className="grain !absolute inset-0">
-          <Pic name="hero-ahmedabad" alt="" className="hero-zoom hero-art h-full w-full object-cover opacity-75" sizes="100vw" eager />
+          <Pic name="hero-glow" alt="" className="hero-golden-hour survey-drift hero-zoom hero-art h-full w-full object-cover opacity-70" sizes="100vw" eager />
         </div>
-        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(34,24,21,0.94)_0%,rgba(34,24,21,0.66)_42%,rgba(34,24,21,0.18)_100%)]" />
+        {/* Warm dusk scrim: deep saffron-brown reads on the text side, breaking
+            into a soft ember glow on the figure side — the night sheet at golden hour. */}
+        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(24,11,5,0.97)_0%,rgba(48,22,8,0.82)_42%,rgba(66,30,10,0.55)_78%,rgba(94,44,12,0.30)_100%)]" />
+        {/* Golden-hour bloom + slow light sweep — the figure is lit, not just scrimmed. */}
+        <div className="ember-bloom -right-24 top-1/4 h-[420px] w-[420px] opacity-50 md:-right-10 md:h-[520px] md:w-[520px]" aria-hidden="true" />
+        <div className="glow-sweep right-0" aria-hidden="true" />
         <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
             <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>
@@ -80,10 +85,10 @@ export default function Home({
               <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="font-normal not-italic text-cream/90">{t.hero.h1em}</em></span></span>
               <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
             </h1>
-            <p className="fade-rise mt-4 max-w-[520px] text-[14px] leading-6 text-cream/70 md:mt-5 md:text-[15px]" style={{ "--d": "480ms" } as React.CSSProperties}>
+            <p className="fade-rise mt-4 max-w-[520px] text-[14px] leading-6 text-cream/80 md:mt-5 md:text-[15px]" style={{ "--d": "480ms" } as React.CSSProperties}>
               {t.hero.sub}
             </p>
-            <div className="field-rule fade-rise mt-5 w-full max-w-[760px] border border-cream/25 bg-night/45 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-sm md:mt-6 md:p-2.5" style={{ "--d": "620ms" } as React.CSSProperties}>
+            <div className="search-spring-in mt-5 w-full max-w-[760px] rounded-[2rem] p-2 md:mt-6 md:p-2.5" style={{ "--d": "620ms" } as React.CSSProperties}>
               <div className="mx-auto flex justify-center">
                 <HeroSearch cities={cities} popularSearches={popularSearches} heroPresets={heroPresets} example={example} />
               </div>
@@ -91,13 +96,13 @@ export default function Home({
           </div>
           <div className="fade-rise mt-7 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-4 md:mt-9" style={{ "--d": "760ms" } as React.CSSProperties}>
             <div className="flex gap-10 md:gap-16">
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={listingCount} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={localityCount} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[2]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={listingCount} /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[0]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={localityCount} /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[1]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[2]}</p></div>
             </div>
-            <p className="hidden items-center gap-2 stamp !text-[10px] text-cream/60 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
+            <p className="hidden items-center gap-2 stamp !text-[11px] text-cream/80 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
           </div>
-          <p className="fade-rise mt-2 stamp !text-[9px] text-cream/60" style={{ "--d": "860ms" } as React.CSSProperties}>{t.hero.demoNote}</p>
+          <p className="fade-rise mt-2 stamp !text-[12px] text-cream/85" style={{ "--d": "860ms" } as React.CSSProperties}>{t.hero.demoNote}</p>
         </div>
       </section>
 
@@ -123,8 +128,8 @@ export default function Home({
       <MarketDirectory projects={marketProjects} localityLinks={marketLocalityLinks} />
 
       {/* ================= CITY INDEX (real OSM coords) ================= */}
-      <section className="border-t border-ink/12 bg-sand/40 py-24 md:py-32">
-        <div className="container">
+      <section className="contour-field border-t border-ink/12 py-24 md:py-32">
+        <div className="container relative">
           <Reveal className="flex items-end justify-between gap-6">
             <div>
               <p className="kicker text-brick">{t.sections.localityKicker}</p>
@@ -169,7 +174,7 @@ export default function Home({
               <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Adalaj — evidence, level by level</span><span>Study frame</span></figcaption>
             </figure>
           </Reveal>
-          <Reveal delay={100} className="border-l-2 border-brick pl-6 md:pl-8">
+          <Reveal delay={100} className="survey-corner border-l-2 border-brick pl-6 pt-4 md:pl-8 md:pt-6">
             <p className="max-w-2xl text-[15px] leading-7 text-ink/70">We do not publish invented reviews, ratings, or partner praise. The useful signal is already on the page: source, freshness, RERA context, and a clear next action.</p>
             <div className="mt-7 flex flex-wrap gap-3"><Link href="/guide/" className="night-fill inline-flex items-center gap-2 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link><Link href="/review/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link></div>
           </Reveal>
@@ -219,7 +224,8 @@ export default function Home({
 
       {/* ================= CTA ================= */}
       <section className="clay-fill grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
-        <span className="pointer-events-none absolute -right-24 -top-40 h-[480px] w-[300px] rounded-t-full bg-ember/20 md:-right-10" aria-hidden="true" />
+        <span className="ember-bloom -right-16 -top-32 h-[480px] w-[300px] opacity-40 md:-right-6" aria-hidden="true" />
+        <span className="glow-sweep right-0" aria-hidden="true" />
         <div className="container relative z-10 flex flex-col items-start gap-10 md:flex-row md:items-end md:justify-between">
           <Reveal>
             <p className="kicker text-ember">{t.cta.kicker}</p>

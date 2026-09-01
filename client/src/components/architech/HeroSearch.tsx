@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { MarketCategory, MarketIntent } from "@/lib/filters";
+import type { MarketIntent } from "@/lib/filters";
 import SuggestRow from "@/components/architech/SuggestRow";
 import { useSuggestCombobox } from "@/components/architech/useSuggestCombobox";
 import type { SearchSuggestion } from "@/lib/search/suggestion-types";
@@ -14,7 +14,6 @@ import { readRecentSearches, rememberRecentSearch } from "@/lib/search/recent";
 import { useLang } from "@/contexts/LangContext";
 
 type HeroIntent = MarketIntent;
-type HeroCategory = Exclude<MarketCategory, "all">;
 
 export type HeroSearchCity = { slug: string; name: string };
 export type HeroPreset = { query: string; label: string };
@@ -34,7 +33,7 @@ export default function HeroSearch({
   const navigate = (url: string) => router.push(url);
   const { t } = useLang();
   const [intent, setIntent] = useState<HeroIntent>("buy");
-  const [category, setCategory] = useState<HeroCategory>("residential");
+  const [newProjects, setNewProjects] = useState(false);
   const [query, setQuery] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
   const queryLen = query.trim().length;
@@ -43,9 +42,9 @@ export default function HeroSearch({
   const buildParams = useMemo(() => {
     const p = new URLSearchParams();
     if (intent !== "buy") p.set("intent", intent);
-    if (category !== "residential") p.set("category", category);
+    if (newProjects) p.set("filters", "availability-new");
     return p;
-  }, [intent, category]);
+  }, [intent, newProjects]);
 
   const go = (q: string, href?: string) => {
     const trimmed = q.trim();
@@ -111,37 +110,26 @@ export default function HeroSearch({
   const setIntentAndFocus = (v: HeroIntent) => { setIntent(v); inputRef.current?.focus(); };
 
   const intentLabel = intent === "rent" ? t.hero.rent : t.hero.buy;
-  const categoryLabel = category === "residential" ? "homes" : category === "pg" ? "PG / co-living" : category;
-  const searchContext = `${intentLabel} ${categoryLabel} in`;
+  const searchContext = `${intentLabel} homes in`;
 
   return (
     <div ref={wrapRef} className="fade-rise relative w-full max-w-[700px]" style={{ "--d": "560ms" } as React.CSSProperties}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex rounded-2xl border border-cream/25 bg-paper/10 p-1 backdrop-blur-md" role="tablist" aria-label="Buy or rent">
-          {(["buy", "rent"] as HeroIntent[]).map((v) => (
+      <div className="flex justify-center">
+        <div className="glass-tabs inline-flex rounded-full p-1" role="tablist" aria-label="Buy, rent or new projects">
+          {([
+            { id: "buy", label: t.hero.buy, on: () => { setNewProjects(false); setIntentAndFocus("buy"); }, active: intent === "buy" && !newProjects },
+            { id: "rent", label: t.hero.rent, on: () => { setNewProjects(false); setIntentAndFocus("rent"); }, active: intent === "rent" },
+            { id: "new", label: t.hero.newProjects, on: () => { setNewProjects(true); setIntent("buy"); inputRef.current?.focus(); }, active: newProjects },
+          ] as const).map((v) => (
             <button
-              key={v}
+              key={v.id}
               type="button"
-              onClick={() => setIntentAndFocus(v)}
+              onClick={v.on}
               role="tab"
-              aria-selected={intent === v}
-              className={`relative rounded-xl px-6 py-2.5 stamp font-semibold transition-all duration-300 ${intent === v ? "text-cream" : "text-cream/60 hover:text-cream"}`}
+              aria-selected={v.active}
+              className={`relative rounded-full px-4 py-2.5 stamp !text-[13px] font-semibold transition-all duration-300 sm:px-5 ${v.active ? "seg-active text-cream dark:text-[#2a1305]" : "text-cream/70 hover:text-cream"}`}
             >
-              {intent === v && <span className="absolute inset-0 rounded-xl bg-brick" aria-hidden="true" />}
-              <span className="relative z-10">{v === "buy" ? t.hero.buy : t.hero.rent}</span>
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {(["residential", "commercial", "pg", "plot", "land", "auction"] as HeroCategory[]).map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => { setCategory(c); }}
-              aria-pressed={category === c}
-              className={`rounded-full px-3 py-1.5 stamp font-semibold transition-colors duration-200 ${category === c ? "bg-cream/20 text-cream ring-1 ring-cream/30" : "text-cream/55 hover:bg-cream/10 hover:text-cream"}`}
-            >
-              {c === "residential" ? t.hero.buy : c}
+              <span className="relative z-10">{v.label}</span>
             </button>
           ))}
         </div>
@@ -149,17 +137,17 @@ export default function HeroSearch({
 
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}
-        className="search-composer field-shell [--field-focus:var(--ember)] mt-3 flex items-stretch rounded-2xl border border-cream/25 bg-paper/10 backdrop-blur-md transition-all duration-300 focus-within:border-ember focus-within:bg-paper/20 focus-within:shadow-[0_14px_40px_rgba(0,0,0,0.32)]"
+        className="search-composer field-shell [--field-focus:var(--ember)] search-glass mt-4 flex items-stretch rounded-2xl transition-all duration-300"
         role="search" aria-label={`Search ${intentLabel} across India`}>
-        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/15 text-cream/60 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="block stamp text-cream/45">{searchContext}</span><span className="mt-1 block font-display text-sm text-cream/90">All India</span></span><Search size={19} className="sm:hidden" /></span>
+        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/20 text-cream/80 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="hero-read block stamp !text-[12px] text-cream/95">{searchContext}</span><span className="hero-read mt-1 block font-display text-sm text-cream/95">All India</span></span><Search size={19} className="sm:hidden" /></span>
         <input
           value={query} onChange={(e) => { setQuery(e.target.value); }}
           placeholder={`Try “${example}”, a PIN code, or any city…`}
-          className="w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
+          className="hero-read w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/80 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
           aria-label={`Search ${intentLabel} by locality, project, or BHK`}
           {...sug.inputProps}
         />
-        <button type="submit" className="clay-fill shimmer-btn motion-press mx-1.5 my-1.5 inline-flex items-center justify-center rounded-xl bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
+        <button type="submit" className="clay-fill shimmer-btn motion-press btn-primary mx-1.5 my-1.5 inline-flex items-center justify-center border border-white/15 bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
 
       {sug.open && (
@@ -196,18 +184,18 @@ export default function HeroSearch({
       </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="stamp text-cream/60">{t.hero.beginWith}</span>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        <span className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px]">{t.hero.beginWith}</span>
         {cities.slice(0, 4).map((city) => (
           <Link
             key={city.slug}
             href={`/search?q=${encodeURIComponent(city.name)}&${buildParams.toString()}`}
-            className="rounded-full border border-cream/25 px-3 py-1.5 stamp text-cream/85 transition-all duration-200 hover:-translate-y-0.5 hover:border-ember hover:bg-cream/10 hover:text-ember"
+            className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px] hover:-translate-y-0.5"
           >{city.name}</Link>
         ))}
-        <span className="mx-1 h-4 w-px bg-cream/20" aria-hidden="true" />
+        <span className="mx-1 h-4 w-px bg-cream/30" aria-hidden="true" />
         {heroPresets.map((preset) => (
-          <button key={preset.query} type="button" onClick={() => { setQuery(preset.query); go(preset.query); }} className="rounded-full border border-cream/15 px-3 py-1.5 stamp text-cream/65 transition-all duration-200 hover:-translate-y-0.5 hover:border-ember hover:text-ember">{preset.label}</button>
+          <button key={preset.query} type="button" onClick={() => { setQuery(preset.query); go(preset.query); }} className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px] hover:-translate-y-0.5">{preset.label}</button>
         ))}
       </div>
     </div>

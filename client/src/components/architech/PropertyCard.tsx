@@ -93,7 +93,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  // Horizontal variant: image left, content right.
  if (variant === "horizontal") {
  return (
- <article className="group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
+    <article className="card-warm-hover group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm">
  <div className="flex">
  <Link href={`/listing/${property.id}`} className="relative block w-[200px] shrink-0 overflow-hidden bg-sand" aria-label={`View ${property.title}`}>
  <div className="img-hover relative aspect-[4/3]">
@@ -120,8 +120,8 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  );
  }
 
- return (
- <article className="group relative overflow-hidden rounded-[1.25rem] border border-ink/15 border-t-2 border-t-brick/70 bg-card shadow-sm motion-lift hover:editorial-shadow hover:shadow-lg">
+  return (
+    <article className="card-warm-hover group relative overflow-hidden rounded-[1.5rem] border border-ink/15 border-t-2 border-t-brick/70 bg-card shadow-sm">
  <Link href={`/listing/${property.id}`} className="block" aria-label={`View ${property.title}, ${property.price}, ${property.locality}`}>
  <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm overflow-hidden" : "rounded-t-2xl"}`}>
  {/* 3:2 — the widest crop a 2-up grid can hold. v4 used
@@ -167,7 +167,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  {/* PRIMARY: price + location */}
  <div className="flex items-start justify-between gap-3">
  <strong className="font-display text-[26px] font-semibold leading-none tracking-[-0.025em] text-ink [font-variant-numeric:tabular-nums]">{property.price}</strong>
- <span className="mt-1 flex items-center gap-1 text-[13px] font-semibold text-ink"><MapPin size={13} className="text-brick" /> {property.locality}</span>
+    <span className="mt-1 flex items-center gap-1 text-[13px] font-semibold text-ink"><MapPin size={13} className="text-ember" /> {property.locality}</span>
  </div>
  <p className="stamp mt-1.5 ink-2 [font-variant-numeric:tabular-nums]">{property.pricePerSqft}</p>
 
@@ -202,16 +202,17 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  )}
  <p className="mt-3 hidden border-l-2 border-brick/50 pl-3 text-[13px] leading-5 ink-2 sm:block">{property.note}</p>
 
- {/* TERTIARY: verification + freshness + action */}
- <div className="mt-4 flex items-center justify-between gap-2 border-t border-ink/10 pt-3.5">
- <span className="flex min-w-0 flex-col">
- <span className="stamp truncate text-trust">
- <ShieldCheck size={11} className="mr-1 inline" aria-hidden="true" /> {property.badge}
- </span>
- <span className="stamp mt-0.5 ink-3">{property.status}</span>
- </span>
- <Link href={`/listing/${property.id}`} className="inline-flex min-h-[44px] shrink-0 items-center gap-1 stamp font-semibold text-brick">{t.property.view} <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link>
- </div>
+  {/* TERTIARY: verification + freshness + action */}
+  <div className="mt-4 flex items-center justify-between gap-2 border-t border-ink/10 pt-3.5">
+    <span className="flex min-w-0 flex-col">
+      <span className="stamp truncate text-trust">
+        <ShieldCheck size={11} className="mr-1 inline" aria-hidden="true" /> {property.badge}
+      </span>
+      {/* Freshness is a trust signal — golden, not alarming red. */}
+      <span className="stamp mt-0.5 text-gold">{property.status}</span>
+    </span>
+    <Link href={`/listing/${property.id}`} className="clay-fill btn-sweep motion-press inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full bg-brick px-4 stamp font-semibold text-cream">{t.property.view} <ArrowUpRight size={13} aria-hidden="true" /></Link>
+  </div>
  </div>
  </article>
  );
