@@ -46,15 +46,35 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
     return error(413, "PAYLOAD_TOO_LARGE", "Request body exceeds the 256 KB limit.");
   }
 
-  /* Origin guard. Only enforceable when the site origin is configured; when it
-     is, a browser mutation must come from that origin. A missing Origin header
-     (curl, server-to-server) is allowed in development, but fails closed in
-     production unless explicitly disabled with ALLOW_ORIGINLESS_MUTATIONS=true
-     — otherwise the guard is a no-op exactly when it matters. */
+  /* Origin guard. A browser mutation must come from a first-party origin:
+     either the configured site origin (`NEXT_PUBLIC_SITE_URL`) or the very
+     host that served this request. Host equality is the classic CSRF check
+     (Django's CsrfViewMiddleware and Next.js Server Actions both compare
+     Origin against Host): a cross-site page can make the browser send
+     *its* Origin to us, but cannot make it send our Host with a foreign
+     Origin, so `Origin === Host` proves the form was served by us. Without
+     this arm, every first-party form 403s in local dev and on any preview
+     deployment whose public host differs from the configured site URL.
+     A missing Origin header (curl, server-to-server) is allowed in
+     development, but fails closed in production unless explicitly disabled
+     with ALLOW_ORIGINLESS_MUTATIONS=true — otherwise the guard is a no-op
+     exactly when it matters. */
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL;
   const origin = request.headers.get("origin");
   if (configuredOrigin) {
-    const allowedOrigin = new URL(configuredOrigin).origin;
+    const allowedOrigins = new Set<string>();
+    try {
+      allowedOrigins.add(new URL(configuredOrigin).origin);
+    } catch {
+      /* An unparseable site URL must not disable the guard. */
+    }
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const requestHost = forwardedHost || request.headers.get("host")?.trim();
+    const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    if (requestHost) {
+      const proto = forwardedProto || (requestHost.startsWith("localhost") || requestHost.startsWith("127.0.0.1") ? "http" : "https");
+      allowedOrigins.add(`${proto}://${requestHost}`);
+    }
     if (origin) {
       let originValue: string | null = null;
       try {
@@ -62,7 +82,7 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
       } catch {
         originValue = null;
       }
-      if (originValue !== allowedOrigin) {
+      if (!originValue || !allowedOrigins.has(originValue)) {
         return error(403, "ORIGIN_REJECTED", "Request origin is not allowed.");
       }
     } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_ORIGINLESS_MUTATIONS !== "true") {

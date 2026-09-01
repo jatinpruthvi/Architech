@@ -32,7 +32,7 @@ export default function Footer() {
               <li><Link href="/about-us/" className="link-rail">About Architech</Link></li>
               <li><Link href="/contact-us/" className="link-rail">Contact desk</Link></li>
               <li><Link href="/review/" className="link-rail">Give feedback</Link></li>
-              <li><Link href="/sitemap.html/" className="link-rail">HTML sitemap</Link></li>
+              <li><Link href="/sitemap.html" className="link-rail">HTML sitemap</Link></li>
               <li><Link href="/privacy/" className="link-rail">Privacy & terms</Link></li>
             </ul>
           </nav>

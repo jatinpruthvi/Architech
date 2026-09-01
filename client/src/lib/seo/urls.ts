@@ -44,6 +44,21 @@ export function assetUrl(path: string, base = siteUrl()): string {
   return `${normalizeSiteUrl(base)}${normalized}`;
 }
 
+/* The HTML sitemap is the one route whose canonical form has NO trailing
+   slash: the segment is dotted, so Next.js treats it like a file and serves
+   it only at `/sitemap.html` — `/sitemap.html/` 308-redirects back to the
+   unslashed form. Advertising the slashed form in a sitemap or canonical tag
+   would hand search engines a redirect instead of the page, so this route
+   deliberately bypasses `withTrailingSlash` (and the registry's slash-policy
+   test carves out the same exception). */
+export function htmlSitemapPath() {
+  return "/sitemap.html";
+}
+
+export function htmlSitemapUrl(base?: string) {
+  return `${normalizeSiteUrl(base)}${htmlSitemapPath()}`;
+}
+
 export function homePath() {
   return "/";
 }
