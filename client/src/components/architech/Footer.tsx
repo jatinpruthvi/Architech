@@ -48,7 +48,7 @@ export default function Footer() {
       <div className="border-t border-cream/10">
         <div className="container flex flex-col items-start justify-between gap-3 py-6 md:flex-row md:items-center">
           <p className="stamp text-cream/60">© 2026 Architech · Property listings and market stats may use labelled demo records; official references retain their source trails</p>
-          <p className="stamp text-cream/60">Brick · Plaster · Light — after Kahn, Corbusier & Adalaj</p>
+          <p className="stamp text-cream/60">Saffron survey · Ember · Night sheet — a country drawn at golden hour</p>
         </div>
       </div>
     </footer>

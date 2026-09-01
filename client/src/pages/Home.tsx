@@ -3,7 +3,6 @@
    use locally grounded right-weighted architecture, a calm text-safe zone, responsive art direction,
    real HTML copy, and reduced-motion-safe movement. */
 import { ArrowDown, ArrowUpRight, Search, TrendingUp } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +14,7 @@ import Pic from "../components/architech/Pic";
 import MarketDirectory from "../components/architech/MarketDirectory";
 import useTitle from "../hooks/useTitle";
 import { getCities, getFeaturedListings, getListings, getLocalities } from "@/lib/repositories";
-import { applyMarket, applyQuery, type MarketCategory, type MarketIntent } from "@/lib/filters";
+import { applyMarket, applyQuery, type MarketIntent } from "@/lib/filters";
 import { parseSearchQuery, parsedQueryToSearchUrl, describeParsedQuery, formatBudget } from "@/lib/search/parse-query";
 import SuggestRow from "@/components/architech/SuggestRow";
 import { useSuggestCombobox } from "@/components/architech/useSuggestCombobox";
@@ -36,26 +35,28 @@ const faqs = [
 const popularSearches = popularQueries({}, 4);
 
 type HeroIntent = MarketIntent;
-type HeroCategory = Exclude<MarketCategory, "all">;
 
 function HeroSearch() {
   const router = useRouter();
   const navigate = (url: string) => router.push(url);
   const { t } = useLang();
-  const reducedMotion = useReducedMotion();
   const [intent, setIntent] = useState<HeroIntent>("buy");
-  const [category, setCategory] = useState<HeroCategory>("residential");
+  // "New projects" is not a transaction intent (buy/rent) but an availability
+  // scope, so it stays a separate hero state that maps to the `availability-new`
+  // filter token — the market model is unchanged.
+  const [newProjects, setNewProjects] = useState(false);
   const [query, setQuery] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
   const queryLen = query.trim().length;
 
-  // Build the search URL, ALWAYS carrying intent + category so the toggle works.
+  // Build the search URL, always carrying the intent toggle.
+  // "New projects" carries the availability-new filter instead of a fake intent.
   const buildParams = useMemo(() => {
     const p = new URLSearchParams();
     if (intent !== "buy") p.set("intent", intent);
-    if (category !== "residential") p.set("category", category);
+    if (newProjects) p.set("filters", "availability-new");
     return p;
-  }, [intent, category]);
+  }, [intent, newProjects]);
 
   /**
    * Navigate for a typed query. The query is parsed first, so "3 bhk in
@@ -70,10 +71,10 @@ function HeroSearch() {
     const parsed = parseSearchQuery(trimmed);
     if (parsed.understood) {
       const url = new URL(parsedQueryToSearchUrl(parsed), "https://architech.local");
-      // The hero's own intent/category toggles are explicit user choices and
-      // outrank anything inferred from the words.
+      // The hero's own intent toggle is an explicit user choice and outranks
+      // anything inferred from the words.
       if (intent !== "buy") url.searchParams.set("intent", intent);
-      if (category !== "residential") url.searchParams.set("category", category);
+      if (newProjects) url.searchParams.set("filters", "availability-new");
       navigate(`${url.pathname}${url.search}`);
       return;
     }
@@ -138,8 +139,7 @@ function HeroSearch() {
     const parsed = parseSearchQuery(trimmed);
     return parsed.understood ? describeParsedQuery(parsed) : "";
   }, [query]);
-  const categoryLabel = category === "residential" ? "homes" : category === "pg" ? "PG / co-living" : category;
-  const searchContext = `${intentLabel} ${categoryLabel} in`;
+  const searchContext = `${intentLabel} homes in`;
   /* Budget chips derived from the real price distribution rather than two
      round numbers that may not split the inventory at all. */
   const heroPresets = useMemo(() => {
@@ -156,39 +156,31 @@ function HeroSearch() {
 
   const resultCount = useMemo(() => {
     const listings = getListings();
-    const cat: MarketCategory = category;
-    return applyQuery(applyMarket(listings, cat, intent), query.trim()).length;
-  }, [intent, category, query]);
+    const scoped = newProjects
+      ? listings.filter((l) => (l as { availability?: string }).availability === "NEW_LAUNCH")
+      : applyMarket(listings, "residential", intent);
+    return applyQuery(scoped, query.trim()).length;
+  }, [intent, query, newProjects]);
 
   return (
     <div ref={wrapRef} className="fade-rise relative w-full max-w-[700px]" style={{ "--d": "560ms" } as React.CSSProperties}>
-      {/* Intent + category controls */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex rounded-2xl border border-cream/25 bg-paper/10 p-1 backdrop-blur-md" role="tablist" aria-label="Buy or rent">
-          {(["buy", "rent"] as HeroIntent[]).map((v) => (
+      {/* Primary intent segmented control — Buy / Rent / New projects */}
+      <div className="flex justify-center">
+        <div className="glass-tabs inline-flex rounded-full p-1" role="tablist" aria-label="Buy, rent or new projects">
+          {([
+            { id: "buy", label: t.hero.buy, on: () => { setNewProjects(false); setIntentAndFocus("buy"); }, active: intent === "buy" && !newProjects },
+            { id: "rent", label: t.hero.rent, on: () => { setNewProjects(false); setIntentAndFocus("rent"); }, active: intent === "rent" },
+            { id: "new", label: t.hero.newProjects, on: () => { setNewProjects(true); setIntent("buy"); inputRef.current?.focus(); }, active: newProjects },
+          ] as const).map((v) => (
             <button
-              key={v}
+              key={v.id}
               type="button"
-              onClick={() => setIntentAndFocus(v)}
+              onClick={v.on}
               role="tab"
-              aria-selected={intent === v}
-              className={`relative rounded-xl px-6 py-2.5 stamp !text-[11px] font-semibold transition-all duration-300 ${intent === v ? "text-cream" : "text-cream/60 hover:text-cream"}`}
+              aria-selected={v.active}
+              className={`relative rounded-full px-4 py-2.5 stamp !text-[13px] font-semibold transition-all duration-300 sm:px-5 ${v.active ? "seg-active text-cream dark:text-[#2a1305]" : "text-cream/70 hover:text-cream"}`}
             >
-              {intent === v && <motion.span layoutId="hero-intent-highlight" transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 34 }} className="absolute inset-0 rounded-xl bg-brick motion-spring-in" aria-hidden="true" />}
-              <span className="relative z-10">{v === "buy" ? t.hero.buy : t.hero.rent}</span>
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {(["residential", "commercial", "pg", "plot", "land", "auction"] as HeroCategory[]).map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => { setCategory(c); }}
-              aria-pressed={category === c}
-              className={`rounded-full px-3 py-1.5 stamp !text-[10px] font-semibold transition-colors duration-200 ${category === c ? "bg-cream/20 text-cream ring-1 ring-cream/30" : "text-cream/55 hover:bg-cream/10 hover:text-cream"}`}
-            >
-              {c === "residential" ? t.hero.buy : c}
+              <span className="relative z-10">{v.label}</span>
             </button>
           ))}
         </div>
@@ -196,17 +188,17 @@ function HeroSearch() {
 
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}
-        className="search-composer field-shell [--field-focus:var(--ember)] mt-3 flex items-stretch rounded-2xl border border-cream/25 bg-paper/10 backdrop-blur-md transition-all duration-300 focus-within:border-ember focus-within:bg-paper/20 focus-within:shadow-[0_14px_40px_rgba(0,0,0,0.32)]"
+        className="search-composer field-shell [--field-focus:var(--ember)] search-glass mt-4 flex items-stretch rounded-2xl transition-all duration-300"
         role="search" aria-label={`Search ${intentLabel} across India`}>
-        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/15 text-cream/60 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="block stamp !text-[9px] text-cream/45">{searchContext}</span><span className="mt-1 block font-display text-sm text-cream/90">All India</span></span><Search size={19} className="sm:hidden" /></span>
+        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/20 text-cream/80 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="hero-read block stamp !text-[12px] text-cream/95">{searchContext}</span><span className="hero-read mt-1 block font-display text-sm text-cream/95">All India</span></span><Search size={19} className="sm:hidden" /></span>
         <input
           value={query} onChange={(e) => { setQuery(e.target.value); }}
           placeholder={`Try “${heroExample}”, a PIN code, or any city…`}
-          className="w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/60 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
+          className="hero-read w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/80 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
           aria-label={`Search ${intentLabel} by locality, project, or BHK`}
           {...sug.inputProps}
         />
-        <button type="submit" className="clay-fill shimmer-btn motion-press mx-1.5 my-1.5 inline-flex items-center justify-center rounded-xl bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
+        <button type="submit" className="clay-fill shimmer-btn motion-press btn-primary mx-1.5 my-1.5 inline-flex items-center justify-center border border-white/15 bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
 
       {/* Animated suggestions */}
@@ -242,24 +234,24 @@ function HeroSearch() {
           ) : (
             <div role="group" aria-label="No search matches" className="p-4 text-center text-sm text-ink/55">No matches — try a locality, a city, a PIN, or “2 bhk under 1.5 cr”.</div>
           )}
-          <p role="group" aria-label="Search keyboard help" className="stamp border-t border-ink/10 px-4 py-2.5 !text-[9px] text-ink/50">↑↓ to move · Enter to search · Esc to close · {resultCount} {intentLabel} match{resultCount === 1 ? "" : "es"} for this scope</p>
+          <p role="group" aria-label="Search keyboard help" className="stamp border-t border-ink/10 px-4 py-2.5 !text-[11px] text-ink/50">↑↓ to move · Enter to search · Esc to close · {resultCount} {intentLabel} match{resultCount === 1 ? "" : "es"} for this scope</p>
         </div>
       </div>
       )}
 
       {/* Quick chips */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="stamp !text-[10px] text-cream/60">{t.hero.beginWith}</span>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        <span className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px]">{t.hero.beginWith}</span>
         {getCities().slice(0, 4).map((city) => city.name).map((l) => (
           <Link
             key={l}
             href={`/search?q=${encodeURIComponent(l)}&${buildParams.toString()}`}
-            className="rounded-full border border-cream/25 px-3 py-1.5 stamp !text-[11px] text-cream/85 transition-all duration-200 hover:-translate-y-0.5 hover:border-ember hover:bg-cream/10 hover:text-ember"
+            className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px] hover:-translate-y-0.5"
           >{l}</Link>
         ))}
-        <span className="mx-1 h-4 w-px bg-cream/20" aria-hidden="true" />
+        <span className="mx-1 h-4 w-px bg-cream/30" aria-hidden="true" />
         {heroPresets.map((preset) => (
-          <button key={preset.query} type="button" onClick={() => { setQuery(preset.query); go(preset.query); }} className="rounded-full border border-cream/15 px-3 py-1.5 stamp !text-[10px] text-cream/65 transition-all duration-200 hover:-translate-y-0.5 hover:border-ember hover:text-ember">{preset.label}</button>
+          <button key={preset.query} type="button" onClick={() => { setQuery(preset.query); go(preset.query); }} className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px] hover:-translate-y-0.5">{preset.label}</button>
         ))}
       </div>
     </div>
@@ -275,9 +267,14 @@ export default function Home() {
       {/* ================= HERO ================= */}
       <section className="relative min-h-[540px] overflow-hidden bg-night text-cream md:min-h-[620px]">
         <div className="grain !absolute inset-0">
-          <Pic name="hero-ahmedabad" alt="" className="hero-zoom hero-art h-full w-full object-cover opacity-75" sizes="100vw" eager />
+          <Pic name="hero-glow" alt="" className="hero-golden-hour survey-drift hero-zoom hero-art h-full w-full object-cover opacity-70" sizes="100vw" eager />
         </div>
-        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(34,24,21,0.94)_0%,rgba(34,24,21,0.66)_42%,rgba(34,24,21,0.18)_100%)]" />
+        {/* Warm dusk scrim: deep saffron-brown reads on the text side, breaking
+            into a soft ember glow on the figure side — the night sheet at golden hour. */}
+        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(24,11,5,0.97)_0%,rgba(48,22,8,0.82)_42%,rgba(66,30,10,0.55)_78%,rgba(94,44,12,0.30)_100%)]" />
+        {/* Golden-hour bloom + slow light sweep — the figure is lit, not just scrimmed. */}
+        <div className="ember-bloom -right-24 top-1/4 h-[420px] w-[420px] opacity-50 md:-right-10 md:h-[520px] md:w-[520px]" aria-hidden="true" />
+        <div className="glow-sweep right-0" aria-hidden="true" />
         <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
             <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>
@@ -285,10 +282,10 @@ export default function Home() {
               <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="font-normal not-italic text-cream/90">{t.hero.h1em}</em></span></span>
               <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
             </h1>
-            <p className="fade-rise mt-4 max-w-[520px] text-[14px] leading-6 text-cream/70 md:mt-5 md:text-[15px]" style={{ "--d": "480ms" } as React.CSSProperties}>
+            <p className="fade-rise mt-4 max-w-[520px] text-[14px] leading-6 text-cream/80 md:mt-5 md:text-[15px]" style={{ "--d": "480ms" } as React.CSSProperties}>
               {t.hero.sub}
             </p>
-            <div className="field-rule fade-rise mt-5 w-full max-w-[760px] border border-cream/25 bg-night/45 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-sm md:mt-6 md:p-2.5" style={{ "--d": "620ms" } as React.CSSProperties}>
+            <div className="search-spring-in mt-5 w-full max-w-[760px] rounded-[2rem] p-2 md:mt-6 md:p-2.5" style={{ "--d": "620ms" } as React.CSSProperties}>
               <div className="mx-auto flex justify-center">
                 <HeroSearch />
               </div>
@@ -296,13 +293,13 @@ export default function Home() {
           </div>
           <div className="fade-rise mt-7 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-4 md:mt-9" style={{ "--d": "760ms" } as React.CSSProperties}>
             <div className="flex gap-10 md:gap-16">
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getListings().length} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[0]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getLocalities().length} /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[1]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[10px] text-cream/65">{t.hero.stats[2]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getListings().length} /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[0]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={getLocalities().length} /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[1]}</p></div>
+              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[2]}</p></div>
             </div>
-            <p className="hidden items-center gap-2 stamp !text-[10px] text-cream/60 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
+            <p className="hidden items-center gap-2 stamp !text-[11px] text-cream/80 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
           </div>
-          <p className="fade-rise mt-2 stamp !text-[9px] text-cream/60" style={{ "--d": "860ms" } as React.CSSProperties}>{t.hero.demoNote}</p>
+          <p className="fade-rise mt-2 stamp !text-[12px] text-cream/85" style={{ "--d": "860ms" } as React.CSSProperties}>{t.hero.demoNote}</p>
         </div>
       </section>
 
@@ -328,8 +325,8 @@ export default function Home() {
       <MarketDirectory />
 
       {/* ================= CITY INDEX (real OSM coords) ================= */}
-      <section className="border-t border-ink/12 bg-sand/40 py-24 md:py-32">
-        <div className="container">
+      <section className="contour-field border-t border-ink/12 py-24 md:py-32">
+        <div className="container relative">
           <Reveal className="flex items-end justify-between gap-6">
             <div>
               <p className="kicker text-brick">{t.sections.localityKicker}</p>
@@ -374,7 +371,7 @@ export default function Home() {
               <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Adalaj — evidence, level by level</span><span>Study frame</span></figcaption>
             </figure>
           </Reveal>
-          <Reveal delay={100} className="border-l-2 border-brick pl-6 md:pl-8">
+          <Reveal delay={100} className="survey-corner border-l-2 border-brick pl-6 pt-4 md:pl-8 md:pt-6">
             <p className="max-w-2xl text-[15px] leading-7 text-ink/70">We do not publish invented reviews, ratings, or partner praise. The useful signal is already on the page: source, freshness, RERA context, and a clear next action.</p>
             <div className="mt-7 flex flex-wrap gap-3"><Link href="/guide/" className="night-fill inline-flex items-center gap-2 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link><Link href="/review/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link></div>
           </Reveal>
@@ -422,7 +419,8 @@ export default function Home() {
 
       {/* ================= CTA ================= */}
       <section className="clay-fill grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
-        <span className="pointer-events-none absolute -right-24 -top-40 h-[480px] w-[300px] rounded-t-full bg-ember/20 md:-right-10" aria-hidden="true" />
+        <span className="ember-bloom -right-16 -top-32 h-[480px] w-[300px] opacity-40 md:-right-6" aria-hidden="true" />
+        <span className="glow-sweep right-0" aria-hidden="true" />
         <div className="container relative z-10 flex flex-col items-start gap-10 md:flex-row md:items-end md:justify-between">
           <Reveal>
             <p className="kicker text-ember">{t.cta.kicker}</p>

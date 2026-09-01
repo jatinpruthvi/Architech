@@ -465,7 +465,7 @@ export default function ResultsPage() {
  </div>
 
  <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
- <div className="field-rule">
+ <div>
  <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="ink-3">in</span> <em>{activeCity ? `${activeCity.name}.` : t.search.cityName}</em></h1>
  {pincode && (
  /* A PIN filter is stated plainly, with the places it resolved to

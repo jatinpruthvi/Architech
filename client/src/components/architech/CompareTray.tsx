@@ -26,14 +26,45 @@ export default function CompareTray() {
   const [copied, setCopied] = useState(false);
   if (homes.length === 0) return null;
 
+  /* Copy that survives an iframe whose permissions policy blocks `clipboard-write`.
+     `document.execCommand("copy")` goes through a legacy path the policy doesn't gate,
+     so we lead with it and only touch `navigator.clipboard.writeText` as a last resort
+     (guarded so its NotAllowedError is never surfaced to the console). */
+  const legacyCopy = (text: string) => {
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.setAttribute("readonly", "");
+    el.style.position = "fixed";
+    el.style.top = "-9999px";
+    el.style.opacity = "0";
+    try {
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand("copy");
+      return ok;
+    } catch {
+      return false;
+    } finally {
+      document.body.removeChild(el);
+    }
+  };
+
   const share = async () => {
     const url = `${window.location.origin}/compare?ids=${encodeURIComponent(homes.map((home) => home.id).join(","))}`;
-    try {
-      await navigator.clipboard.writeText(url);
+    let ok = legacyCopy(url);
+    if (!ok && typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      } catch {
+        ok = false;
+      }
+    }
+    if (ok) {
       setCopied(true);
       toast("Comparison link copied", { description: "Share this shortlisting with your family or advisor." });
       window.setTimeout(() => setCopied(false), 1800);
-    } catch {
+    } else {
       toast("Comparison ready", { description: url });
     }
   };

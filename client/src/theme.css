@@ -1,8 +1,12 @@
 /* ============================================================
-   ARCHITECH design system (2026) — India locality-first editorial system
-   Palette: Kahn brick · warm plaster · deep ink · ember · trust green.
-   Architectural frames, measured rules, evidence stamps, and calm depth.
-   Trust green is semantic: verification, source, and freshness only.
+   ARCHITECH design system — SAFFRON SURVEY  (2026)
+   A night-first drafting-board atlas of Indian places at golden
+   hour: roasted saffron sheet · ember saffron · ember light ·
+   warm parchment ink · verification emerald. Default is the
+   SAFFRON NIGHT survey; light is the deliberate day toggle.
+   Contour/registration linework, survey windows, mono evidence
+   stamps, warm forward-swept light. Trust green is semantic:
+   verification, source, and freshness only.
    ============================================================ */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -33,33 +37,36 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  /* India locality-first palette */
+  /* India atlas palette (slot names kept so 100s of call sites re-map) */
   --color-ink: var(--ink);
   --color-paper: var(--paper);
   --color-sand: var(--sand);
   --color-brick: var(--brick);
   --color-ember: var(--ember);
   --color-trust: var(--trust);
-  /* Fixed (theme-independent) surfaces: dark-section night + light-on-dark cream */
+  --color-gold: var(--gold);
+  /* Fixed (theme-independent) surfaces: night-section deep sea + light-on-dark bone */
   --color-cream: var(--cream);
   --color-night: var(--night);
-  --font-display: "Fraunces", "Noto Sans Devanagari", Georgia, serif;
-  --font-sans: "Archivo", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-sans: "Instrument Sans", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 :root {
   --radius: 1rem;
-  /* Locality-first: warm plaster, deep ink, Kahn brick, ember, trust green */
-  --ink: #241c18;
-  --paper: #f7f1e8;
-  --sand: #e9ded2;
-  --brick: #a8432a;
-  --brick-deep: #82341f;
-  --ember: #d07a4f;
-  --trust: #2f6b5a;
-  --cream: #fff8ee;
-  --night: #221815;
+  /* Saffron Survey: warm burnt-saffron primary, parchment paper, espresso ink,
+     amber glow, verification emerald. Light is the deliberate day toggle. */
+  --ink: #3a241a;
+  --paper: #f7efe0;
+  --sand: #e9dcc6;
+  --brick: #c2410c;      /* deep vibrant saffron (brief's action) */
+  --brick-deep: #8f2a06; /* pressed saffron surface */
+  --ember: #d97706;      /* amber-600 glow */
+  --trust: #217a50;      /* verification emerald */
+  --gold: #9c5b05;       /* golden trust / real-time tags */
+  --cream: #fff3e4;
+  --night: #2a170e;
 
   /* Motion design system — single source of truth for durations & easing */
   --dur-1: 160ms;  /* taps, toggles */
@@ -71,59 +78,76 @@
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: #fffaf2;
+  --card: #fdf7ec;
   --card-foreground: var(--ink);
-  --popover: #fffaf2;
+  --popover: #fdf7ec;
   --popover-foreground: var(--ink);
   --primary: var(--brick);
-  --primary-foreground: #fff8ee;
+  --primary-foreground: var(--cream);
   --secondary: var(--sand);
   --secondary-foreground: var(--ink);
-  --muted: #efe5da;
-  --muted-foreground: #66564c;
+  --muted: #ece0cc;
+  --muted-foreground: #6b5647;
   --accent: var(--sand);
   --accent-foreground: var(--ink);
-  --destructive: #dc2626;
+  --destructive: #c3392e;
   --destructive-foreground: #ffffff;
-  --border: rgba(17, 24, 39, 0.10);
-  --input: rgba(17, 24, 39, 0.16);
-  --ring: #2f6b5a;
-  --shadow-editorial: 0 12px 32px rgba(17, 24, 39, 0.10);
+  --border: rgba(58, 36, 26, 0.14);
+  --input: rgba(58, 36, 26, 0.2);
+  --ring: #217a50;
+  --shadow-editorial: 0 12px 28px rgba(42, 23, 14, 0.16);
 }
 
-/* ---------- Dark theme (locality-first, night edition) ---------- */
+/* ---------- Dark theme (Saffron Survey — the DEFAULT landing state) ----------
+   The night atlas at golden hour: a warm saffron-brown sheet, not an espresso
+   void. The action is saffron and the surfaces carry its ember warmth, so the
+   dark voice reads as a survey board set beside a marigold lamp rather than a
+   black-and-white plan. Deeper than a "after dusk" pass: still always-night
+   (dark is the default), but the warmth is in the palette, not the gimmick. */
 .dark {
-  --ink: #f5eadf;          /* warm light foreground */
-  --paper: #241b18;        /* dark plaster canvas */
-  --sand: #3a2b26;         /* raised earthen surface */
-  --brick: #d36a48;        /* readable clay action */
-  --brick-deep: #b04b31;   /* pressed clay */
-  --ember: #e4a17b;        /* warm highlight */
-  --trust: #78b09b;        /* verification green */
-  --night: #120d0b;        /* deep ink section */
-  --cream: #fff6eb;        /* light-on-dark copy */
+  --ink: #f6e6cf;          /* warm parchment linework */
+  --paper: #2f180b;        /* the drafting sheet — roasted saffron night, warmed */
+  --sand: #47240f;         /* raised burnt cherrywood panel */
+  --brick: #f79b2e;        /* saffron action */
+  --brick-deep: #a94f07;   /* pressed saffron surface */
+  --ember: #ffbd66;        /* ember / amber glow */
+  --trust: #7cc9a5;        /* verification green */
+  --gold: #e8b13c;         /* golden trust / real-time tags — reads on dark */
+  --night: #1e0c05;        /* darkest sheet corner */
+  --cream: #fff5e6;        /* light-on-dark bone */
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: #33251f;
+  --card: #371a0c;
   --card-foreground: var(--ink);
-  --popover: #33251f;
+  --popover: #371a0c;
   --popover-foreground: var(--ink);
   --primary: var(--brick);
-  --primary-foreground: #1c120e;
-  --secondary: #3a2b26;
+  --primary-foreground: #2a1305;
+  --secondary: #47240f;
   --secondary-foreground: var(--ink);
-  --muted: #3a2b26;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
+  --muted: #3c1e0c;
+  --muted-foreground: #c9a98a;
+  --accent: #4b2a11;
   --accent-foreground: var(--ink);
-  --border: rgba(226, 232, 240, 0.14);
-  --input: rgba(226, 232, 240, 0.2);
-  --ring: #78b09b;
-  --shadow-editorial: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --border: rgba(246, 230, 207, 0.18);
+  --input: rgba(246, 230, 207, 0.24);
+  --ring: #7cc9a5;
+  --shadow-editorial: 0 12px 32px rgba(0, 0, 0, 0.7);
 }
-.dark .map-frame { filter: sepia(0.25) saturate(0.7) contrast(0.95) brightness(0.82); }
-.dark .grain::after { opacity: 0.35; }
+/* The warm night: a saffron-tinted contour field on a roasted sheet, so the
+   empty space itself glows like baking land, not a black fill. */
+.dark body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(246, 230, 207, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(246, 230, 207, 0.03) 1px, transparent 1px),
+    radial-gradient(150% 90% at 18% 10%, transparent 0 42%, rgba(247, 155, 46, 0.06) 43% 43.4%, transparent 44% 58%, rgba(247, 155, 46, 0.04) 59% 59.4%, transparent 60% 74%, rgba(247, 155, 46, 0.03) 75% 75.4%, transparent 76%);
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+  background-attachment: scroll;
+}
+.dark .map-frame { filter: sepia(0.16) saturate(0.9) contrast(0.92) brightness(0.86); }
+.dark .grain::after { opacity: 0.26; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--background); color-scheme: light; }
@@ -131,7 +155,11 @@ html.dark { color-scheme: dark; }
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    linear-gradient(var(--blueprint-grid, rgba(176, 74, 20, 0.05)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--blueprint-grid, rgba(176, 74, 20, 0.05)) 1px, transparent 1px);
+  background-size: 32px 32px;
   color: var(--foreground);
   font-family: var(--font-sans);
   font-size: 16px;
@@ -178,21 +206,35 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 /* ---------- Signature motifs ---------- */
 
-/* Kahn arch image frame */
-.arch-frame { border-radius: 999px 999px 0 0; overflow: hidden; }
-.arch-frame-sm { border-radius: 200px 200px 0 0; overflow: hidden; }
+/* Survey-window image frame — a chamfered sheet corner, like a plot bound for
+   the drawing board, replacing the old Kahn arch. Keep the overflow so the
+   grain/zoom live inside the window. */
+.arch-frame { clip-path: polygon(0 0, calc(100% - 44px) 0, 100% 44px, 100% 100%, 0 100%); overflow: hidden; }
+.arch-frame-sm { clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%); overflow: hidden; }
 
-/* Film-grain overlay */
+/* Drafting overlay (replaces the old film grain): a fine grid, a whisper of
+   noise, and — on the night sheet — concentric topographic contour rings, so
+   imagery reads as a plot on a survey sheet rather than a photograph.
+   mix-blend overlay keeps it from muddying the palette. Dark theme lowers the
+   opacity via the .dark .grain::after rule below. */
 .grain { position: relative; }
 .grain::after {
   content: "";
   position: absolute; inset: 0; pointer-events: none; z-index: 2;
-  opacity: 0.5; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.34; mix-blend-mode: overlay;
+  background-image:
+    linear-gradient(rgba(176, 74, 20, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(176, 74, 20, 0.14) 1px, transparent 1px),
+    radial-gradient(160% 130% at 24% 14%, transparent 0 38%, rgba(176, 74, 20, 0.10) 39% 39.5%, transparent 40% 54%, rgba(176, 74, 20, 0.075) 55% 55.5%, transparent 56% 70%, rgba(176, 74, 20, 0.05) 71% 71.5%, transparent 72%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+  background-size: 32px 32px, 32px 32px, 100% 100%, 220px 220px;
 }
 
-/* Kicker with brick rule */
-.kicker { display: inline-flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 500; }
+/* Kicker: a short drafting rule and a serif-free contour tick. The tick is a
+   small solid lozenge that sits ON the rule's ends — never a free-floating "+"
+   after the label, which read as a stray glyph. (That was the bug in the
+   earlier crosshair attempt.) */
+.kicker { display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 500; }
 .kicker::before { content: ""; width: 44px; height: 2px; background: currentColor; }
 
 /* Mono data stamp */
@@ -228,18 +270,212 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 @keyframes fade-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
 .fade-rise { opacity: 0; animation: fade-rise 900ms cubic-bezier(0.19, 1, 0.22, 1) forwards; animation-delay: var(--d, 0ms); }
 
+/* Contour trace: the kicker rule draws itself in from left, and the short
+   saffron tick arrives after — the "land was surveyed" beat. Reduced-motion
+   sees the finished rule directly. */
+@keyframes rule-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.kicker::before { transform-origin: left; }
+@media (prefers-reduced-motion: no-preference) {
+  .kicker::before { animation: rule-draw 720ms cubic-bezier(0.19, 1, 0.22, 1) both; animation-delay: var(--d, 0ms); }
+}
+
+/* Ambient drift for survey images — a very slow, subtle zoom-and-settle, so the
+   figure feels surveyed from a drone rather than planted. Layered on top of
+   .hero-zoom (single transform channel, element-level animation wins). */
+@keyframes survey-drift { from { transform: scale(1.08) translateY(-1.5%); } to { transform: scale(1) translateY(0); } }
+@media (prefers-reduced-motion: no-preference) {
+  .survey-drift { animation: survey-drift 5200ms cubic-bezier(0.19, 1, 0.22, 1) both; }
+}
+
+/* Emergent contour reveal on the display heading: the em accent draws in after
+   the word settles, like a highlighted contour line picking out the place. */
+@media (prefers-reduced-motion: no-preference) {
+  .display em { background: linear-gradient(90deg, var(--brick), var(--brick)) 0 100% / 0 0.1em no-repeat; animation: em-reveal 720ms cubic-bezier(0.19, 1, 0.22, 1) 640ms both; }
+}
+@keyframes em-reveal { from { background-size: 0 0.1em; } to { background-size: 100% 0.1em; } }
+
+/* Gentle floating on the survey-corner tick, so the registration mark reads as
+   alive without shouting. Reduced-motion disables it below. */
+@keyframes tick-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .survey-corner::after { animation: tick-float 5s ease-in-out infinite; }
+}
+
+/* ---- Golden-hour glow (warm saffron-forward motion) ----
+   The hero is a night sheet at dusk: a soft saffron bloom breathes behind the
+   content, and a slow diagonal light sweeps across the figure like the sun
+   clearing a ridge. These read as warmth, not decoration, so they stay under
+   no-preference and are disabled entirely under reduce. */
+@keyframes ember-bloom { 0%, 100% { opacity: 0.42; transform: scale(1); } 50% { opacity: 0.72; transform: scale(1.12); } }
+.ember-bloom {
+  position: absolute; border-radius: 999px; pointer-events: none;
+  background: radial-gradient(circle, var(--brick) 0%, var(--ember) 38%, transparent 70%);
+  filter: blur(42px);
+  mix-blend-mode: screen;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ember-bloom { animation: ember-bloom 7s ease-in-out infinite; }
+}
+
+@keyframes glow-sweep {
+  0% { transform: translateX(-160%) skewX(-14deg); opacity: 0; }
+  12% { opacity: 0.55; }
+  38% { opacity: 0.16; }
+  60% { transform: translateX(300%) skewX(-14deg); opacity: 0; }
+  100% { transform: translateX(300%) skewX(-14deg); opacity: 0; }
+}
+.glow-sweep {
+  position: absolute; top: -16%; bottom: -16%; width: 40%; pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ember) 30%, transparent) 50%, transparent);
+  mix-blend-mode: screen; filter: blur(2px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .glow-sweep { animation: glow-sweep 11s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+}
+
+/* ---- Hero load state ----
+   The hero image arrives desaturated and warms into full golden hour over 800ms;
+   the search pill scales 0.95 -> 1.0 with a gentle spring. Both are opt-in. */
+@keyframes golden-hour-in {
+  from { filter: saturate(0.35) brightness(0.92) sepia(0.18); }
+  to { filter: saturate(1) brightness(1) sepia(0); }
+}
+.hero-golden-hour { filter: saturate(0.35) brightness(0.92) sepia(0.18); }
+@media (prefers-reduced-motion: no-preference) {
+  .hero-golden-hour { animation: golden-hour-in 800ms var(--ease-out-expo) both; }
+}
+
+@keyframes search-spring-in {
+  0% { opacity: 0; transform: scale(0.95); }
+  55% { opacity: 1; transform: scale(1.012); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.search-spring-in { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .search-spring-in { animation: search-spring-in 620ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+}
+
+/* ---- Hero segmented control ----
+   The active tab carries a glowing saffron underline + soft halo, so the state
+   reads as "lit", not as a filled chip. The halo is a radial saffron glow. */
+.segment-glow { position: relative; }
+.segment-glow::after {
+  content: "";
+  position: absolute; left: 0.6rem; right: 0.6rem; bottom: 2px; height: 3px;
+  border-radius: 999px; background: var(--brick);
+  box-shadow: 0 0 10px 1px color-mix(in srgb, var(--brick) 65%, transparent);
+  transform: scaleX(0); transform-origin: center;
+  transition: transform var(--dur-2) var(--ease-spring);
+}
+.segment-glow[aria-selected="true"]::after { transform: scaleX(1); }
+
+/* ---- Warm amber shadow on card hover (replaces the cool default hover shadow
+   so a hovered card reads as catching golden-hour light) ---- */
+.card-warm-hover { transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) ease; }
+.card-warm-hover:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 22px 44px -14px color-mix(in srgb, var(--brick) 40%, transparent),
+    0 10px 22px -10px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- Map pin pulse: a saffron radial glow that swells around the live pin,
+   drawing the eye to the property's coordinates ---- */
+@keyframes pin-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brick) 55%, transparent); }
+  70% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--brick) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brick) 0%, transparent); }
+}
+.arch-map-marker.is-selected,
+.arch-map-marker:hover {
+  animation: pin-pulse 1.6s var(--ease-out-expo) infinite;
+}
+
+/* A warm rise for the hero's leading edge — the kicker and rule share the same
+   saffron. */
 @keyframes arch-page-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 .page-transition { animation: arch-page-in 560ms cubic-bezier(0.23, 1, 0.32, 1) both; }
 
 @keyframes slow-zoom { from { transform: scale(1.06); } to { transform: scale(1); } }
 .hero-zoom { animation: slow-zoom 2400ms cubic-bezier(0.19, 1, 0.22, 1) both; transform-origin: 68% 46%; }
 .hero-art { object-position: 68% 50%; }
-.hero-dossier-stamp { position: absolute; right: clamp(20px, 4vw, 48px); top: clamp(104px, 16vh, 160px); writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: rgb(255 248 238 / .68); }
+.hero-dossier-stamp { position: absolute; right: clamp(20px, 4vw, 48px); top: clamp(104px, 16vh, 160px); writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: rgb(255 243 228 / .68); }
 .hero-dossier-stamp::before { content: ""; display: block; width: 1px; height: 68px; margin-bottom: 12px; background: var(--ember); }
-.hero-coordinate { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: rgb(255 248 238 / .58); }
+.hero-coordinate { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: rgb(255 243 228 / .58); }
 .ledger-stamp { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: color-mix(in srgb, var(--ink) 54%, transparent); }
 .field-rule { position: relative; }
-.field-rule::before { content: ""; position: absolute; left: 0; top: -12px; width: 32px; height: 2px; background: var(--brick); }
+/* Drafting dimension lead: a dashed line with a solid lozenge tick at its head
+   (the minus-plus crosshair floated off the line and read as "------+").
+   NOTE: removed from the hero/results composers — the user flagged the "-----.-"
+   mark as unwanted. The rule stays defined here so no live markup depends on a
+   half-removed selector, but nothing applies it anymore. */
+.field-rule::before { content: ""; position: absolute; left: 0; top: -12px; width: 40px; height: 0; border-top: 2px dashed var(--brick); }
+.field-rule::after { content: ""; position: absolute; left: 30px; top: -15px; width: 6px; height: 6px; background: var(--brick); border-radius: 999px; }
+
+/* Hero cream labels sit over the brightest band of the golden-hour photo. The
+   glass stays TRANSPARENT (the user wanted that blur-through-the-image look), so
+   contrast is guaranteed with a soft dark text-shadow instead of a more opaque
+   fill — theme-agnostic, and it never muddies the glass. */
+.hero-read { text-shadow: 0 1px 2px rgba(24, 11, 5, 0.55), 0 2px 6px rgba(24, 11, 5, 0.35); }
+
+/* ---------- Floating glass search (hero) ----------
+   The hero is ALWAYS a dark golden-hour panel (it is hard-coded `bg-night
+   text-cream` in both themes), so the main search/tab glass uses a fixed dark
+   tint that does NOT flip with `--night`. That keeps the big controls readable.
+   The SMALL quick chips sit over the brightest band of the photo, where dark-on-
+   dark (or cream-on-bright) both fail, so they use the opposite reading: a light
+   warm-cream frosted pill with espresso text — the highest-contrast, and still
+   genuinely translucent glass (the image shows through the blur). */
+.search-glass, .glass-tabs {
+  background: color-mix(in srgb, #2a170e 66%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cream) 26%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 18px 44px rgba(24, 11, 5, 0.40);
+}
+/* A LIGHT cream frosted chip for the hero's quick-start labels (cities, budgets).
+   Espresso-on-cream reads on the sunlit band where dark-on-dark fails; blur keeps
+   it glass. Shared by the "Begin with" lead-in so the row reads as one unit. */
+.glass-chip {
+  background: color-mix(in srgb, var(--cream) 88%, #fff);
+  border: 1px solid rgba(255, 255, 255, 0.60);
+  color: #3a241a;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 10px 24px rgba(24, 11, 5, 0.16);
+  transition: border-color 200ms ease, background 200ms ease, color 200ms ease, transform 200ms ease;
+}
+.glass-chip:hover { border-color: color-mix(in srgb, var(--ember) 70%, transparent); background: color-mix(in srgb, var(--cream) 96%, #fff); color: var(--brick); }
+/* The active segment of the Buy / Rent / New-projects control. Deep saffron in
+   BOTH themes so the cream label keeps its AA contrast (the dark theme's --brick
+   is a light saffron that would leave cream text at ~3:1), with a soft saffron
+   halo so the lit tab reads as "glowing" rather than a flat filled chip. */
+/* The active segment is a BRIGHT saffron pill so it visibly "lights up" against
+   the dark glass tabs row (the old --brick-deep sank into the glass and the tab
+   read as unselected). The glow is strong enough to read as lit in both themes.
+   Label contrast is handled in markup: cream on the deep-saffron light theme
+   (#c2410c), dark espresso on the bright-saffron dark theme (#f79b2e). */
+.seg-active {
+  background: var(--brick);
+  color: var(--seg-label, var(--cream));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brick) 70%, transparent), 0 0 22px color-mix(in srgb, var(--brick) 60%, transparent), 0 8px 26px color-mix(in srgb, var(--brick) 50%, transparent);
+}
+.dark .seg-active {
+  background: var(--brick);
+  color: var(--seg-label, #2a1305);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brick) 65%, transparent), 0 0 26px color-mix(in srgb, var(--brick) 55%, transparent), 0 8px 28px color-mix(in srgb, var(--brick) 45%, transparent);
+}
+
+/* ---------- Primary action pill ----------
+   A solid saffron CTA with a soft warm glow and a pressed-clay feel. Radius and
+   glow only — never a background change — so it cannot fight `.dark .clay-fill`
+   (which owns the label contrast on a solid saffron surface). */
+.btn-primary { box-shadow: 0 6px 18px color-mix(in srgb, var(--brick) 28%, transparent); transition: box-shadow 200ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
+/* The pill shape must survive `.shimmer-btn` / `.btn-sweep` (which set a rounded-xl
+   at the same specificity but later in the file). Element+class outranks both. */
+button.btn-primary, a.btn-primary { border-radius: 9999px; }
+.btn-primary:hover { box-shadow: 0 9px 24px color-mix(in srgb, var(--brick) 44%, transparent); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
 @media (max-width: 768px) {
   .hero-art { object-position: 72% 48%; }
   .hero-dossier-stamp { right: 16px; top: 104px; font-size: 9px; }
@@ -275,8 +511,8 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 /* 3D tilt cards */
 .tilt-card { transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1); will-change: transform; transform-style: preserve-3d; }
 
-/* OSM map frame treatment */
-.map-frame { filter: sepia(0.32) saturate(0.82) contrast(0.96); }
+/* OSM map frame treatment — cool, desaturated cartography under the sea tint */
+.map-frame { filter: sepia(0.18) saturate(0.9) contrast(0.96) brightness(1.02); }
 
 /* Skip-to-content link (visible on keyboard focus only) */
 .skip-link { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--brick); color: var(--cream); padding: 14px 22px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -284,7 +520,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 /* Skeleton loading — shape-matched shimmer */
 @keyframes skeleton-wave { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
-.skeleton { background: linear-gradient(90deg, var(--sand) 30%, #f2ead9 45%, var(--sand) 60%); background-size: 200% 100%; animation: skeleton-wave 1.4s ease infinite; }
+.skeleton { background: linear-gradient(90deg, var(--sand) 30%, #ece0cc 45%, var(--sand) 60%); background-size: 200% 100%; animation: skeleton-wave 1.4s ease infinite; }
 
 /* Minimum touch target helper (WCAG 2.5.8) */
 .touch-44 { min-height: 44px; min-width: 44px; }
@@ -482,18 +718,63 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .btn-solid[aria-disabled="true"]::after { display: none; }
 
 /* logo mark: offset architectural planes forming an A with a clay doorway notch */
-.arch-mark { position: relative; overflow: hidden; background: var(--ink); box-shadow: inset 0 0 0 1px rgb(255 243 222 / 0.12); }
-.arch-mark::before { content: ""; position: absolute; inset: 8%; border: 1px solid rgb(255 243 222 / 0.22); transform: translate(3px, -3px); }
-.dark .arch-mark { background: #39241c; }
-.arch-mark-arch { position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%); width: 70%; height: 78%; background: var(--brick); clip-path: polygon(0 100%, 0 29%, 50% 0, 100% 29%, 100% 100%, 73% 100%, 73% 52%, 50% 31%, 27% 52%, 27% 100%); transition: background 250ms ease, transform 250ms cubic-bezier(0.23, 1, 0.32, 1); }
+.arch-mark { position: relative; overflow: hidden; background: var(--night); box-shadow: inset 0 0 0 1px rgb(255 245 230 / 0.14); }
+.arch-mark::before { content: ""; position: absolute; inset: 8%; border: 1px solid rgb(255 245 230 / 0.22); transform: translate(3px, -3px); }
+.dark .arch-mark { background: #140b06; }
+/* Survey monogram: a triangulated "A" — the plumb line and the notch are the
+   architect's transit sighting, not a doorway. */
+.arch-mark-arch { position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%); width: 68%; height: 76%; background: var(--brick); clip-path: polygon(50% 6%, 96% 92%, 72% 92%, 50% 44%, 28% 92%, 4% 92%); transition: background 250ms ease, transform 250ms cubic-bezier(0.23, 1, 0.32, 1); }
 .group:hover .arch-mark-arch { background: var(--ember); transform: translateX(-50%) translateY(-2px); }
 
-/* atlas surface: a branded cartographic layer rather than an empty map panel */
+/* atlas surface: a branded cartographic contour field rather than an empty map panel */
 .atlas-map { background: var(--sand); }
-.atlas-map::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(22deg, transparent 48%, rgb(105 82 55 / 0.12) 49%, transparent 50%), linear-gradient(90deg, rgb(105 82 55 / 0.09) 1px, transparent 1px), linear-gradient(0deg, rgb(105 82 55 / 0.09) 1px, transparent 1px); background-size: 180px 140px, 42px 42px, 42px 42px; mix-blend-mode: multiply; opacity: 0.7; z-index: 1; }
-.atlas-map::after { content: "INDIA  /  LOCALITY ATLAS"; position: absolute; left: 1.25rem; top: 1.25rem; z-index: 2; pointer-events: none; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; opacity: 0.62; }
+.atlas-map::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image:
+  /* a survey crosshair at the sheet origin */
+  linear-gradient(rgb(176 74 20 / 0.32) 1px, transparent 1px),
+  linear-gradient(90deg, rgb(176 74 20 / 0.32) 1px, transparent 1px),
+  radial-gradient(160% 120% at 22% 12%, transparent 0 30%, rgb(176 74 20 / 0.10) 31% 32%, transparent 33% 47%, rgb(176 74 20 / 0.08) 48% 49%, transparent 50% 66%, rgb(176 74 20 / 0.06) 67% 68%, transparent 69%),
+  linear-gradient(90deg, rgb(176 74 20 / 0.08) 1px, transparent 1px),
+  linear-gradient(0deg, rgb(176 74 20 / 0.08) 1px, transparent 1px);
+  background-size: 48px 48px, 48px 48px, 100% 100%, 42px 42px, 42px 42px;
+  background-position: 16px 12px, 16px 12px, 0 0, 0 0, 0 0;
+  mix-blend-mode: multiply; opacity: 0.75; z-index: 1; }
+.atlas-map::after { content: "INDIA  /  NIGHT ATLAS  ·  SHEET 01"; position: absolute; left: 1.25rem; top: 1.25rem; z-index: 2; pointer-events: none; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; opacity: 0.62; }
 .atlas-map > div:first-child { z-index: 0; }
-.atlas-map .maplibregl-canvas { filter: sepia(0.2) saturate(0.7) contrast(0.92); }
+.atlas-map .maplibregl-canvas { filter: sepia(0.22) saturate(0.86) contrast(0.94); }
+
+/* ---------- Contour / registration linework ----------
+   Reusable topographic field: concentric contour rings radiating from a sheet
+   origin, drawn in the ink/brick ramp. Drop this on a section (.contour-field)
+   or on a card (via a pseudo-element) to give it a sense of place without a
+   photograph. The rings are the "land" under the data.
+   IMPORTANT: this is linework, not a glyph — no free-floating plus marks. */
+.contour-field {
+  position: relative;
+  background-image:
+    radial-gradient(140% 110% at 14% 10%, transparent 0 30%, var(--line-soft, rgba(176, 74, 20, 0.08)) 31% 31.4%, transparent 32% 46%, var(--line-soft, rgba(176, 74, 20, 0.06)) 47% 47.4%, transparent 48% 62%, var(--line-soft, rgba(176, 74, 20, 0.045)) 63% 63.4%, transparent 64% 78%, var(--line-soft, rgba(176, 74, 20, 0.03)) 79% 79.4%, transparent 80%),
+    linear-gradient(var(--line-grid, rgba(176, 74, 20, 0.05)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-grid, rgba(176, 74, 20, 0.05)) 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
+}
+.dark .contour-field {
+  background-image:
+    radial-gradient(140% 110% at 14% 10%, transparent 0 30%, rgba(247, 155, 46, 0.08) 31% 31.4%, transparent 32% 46%, rgba(247, 155, 46, 0.06) 47% 47.4%, transparent 48% 62%, rgba(247, 155, 46, 0.045) 63% 63.4%, transparent 64% 78%, rgba(247, 155, 46, 0.03) 79% 79.4%, transparent 80%),
+    linear-gradient(rgba(246, 230, 207, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(246, 230, 207, 0.03) 1px, transparent 1px);
+}
+
+/* A "survey corner" — a corner-rule quadrant with the sheet-origin tick, used to
+   frame a figure or a stat block. Purely decorative and linework-based. */
+.survey-corner { position: relative; }
+.survey-corner::before {
+  content: ""; position: absolute; top: 0; left: 0; width: 42px; height: 42px; pointer-events: none;
+  border-top: 1.5px solid var(--brick); border-left: 1.5px solid var(--brick);
+  opacity: 0.55;
+}
+.survey-corner::after {
+  content: ""; position: absolute; top: -3px; left: -3px; width: 7px; height: 7px; pointer-events: none;
+  background: var(--ember); border-radius: 999px; opacity: 0.7;
+}
 
 
 .editorial-shadow { box-shadow: var(--shadow-editorial); }
@@ -507,6 +788,15 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .scroll-reveal { opacity: 1; transform: none; transition: none; }
   .motion-lift, .img-hover img, .btn-sweep::before, .link-rail::after, .arch-mark-arch { transition: none; }
   .skeleton { animation: none; }
+  .kicker::before { animation: none; transform: none; }
+  .survey-drift, .display em, .survey-corner::after { animation: none; }
+  .ember-bloom, .glow-sweep { animation: none; opacity: 0; }
+  .hero-golden-hour { animation: none; filter: none; }
+  .search-spring-in { animation: none; opacity: 1; }
+  .segment-glow::after { transition: none; transform: scaleX(1); }
+  .card-warm-hover, .section-rail-link::after, .link-rail::after, .motion-lift, .img-hover img { transition: none; }
+  .arch-map-marker.is-selected, .arch-map-marker:hover { animation: none; }
+  .display em { background-size: 0; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
 
@@ -516,7 +806,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   border-radius: 999px 999px 999px 0;
   background: var(--night);
   color: var(--cream);
-  box-shadow: 0 10px 24px rgb(27 22 18 / 0.28);
+  box-shadow: 0 10px 24px rgb(58 36 26 / 0.28);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 10px;
@@ -550,26 +840,26 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 /* ---------- Broker operating desk ---------- */
 /* The workspace is an architectural operating desk: layered plaster panels,
    stepped grouping, brick rules, and mono evidence stamps replace generic admin repetition. */
-.desk-page main { background-image: linear-gradient(90deg, transparent 0 92%, rgb(168 67 42 / 0.035) 92% 92.15%, transparent 92.15%); }
+.desk-page main { background-image: linear-gradient(90deg, transparent 0 92%, rgb(176 74 20 / 0.035) 92% 92.15%, transparent 92.15%); }
 .desk-header { position: relative; overflow: hidden; }
-.desk-header::after { content: "INDIA / REVIEW DESK / 2026"; position: absolute; right: clamp(20px, 4vw, 48px); bottom: 1rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .3; }
+.desk-header::after { content: "INDIA / SURVEY DESK / 2026"; position: absolute; right: clamp(20px, 4vw, 48px); bottom: 1rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .3; }
 .desk-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .desk-rule .kicker::before { width: 42px; }
 .desk-rule-detail { color: color-mix(in srgb, var(--ink) 48%, transparent); }
 .desk-rule-trust { color: var(--trust); }
 .desk-command-spread, .desk-catalogue { position: relative; }
-.desk-command-spread::before, .desk-catalogue::before { content: ""; position: absolute; top: 0; right: 0; width: 10rem; height: 10rem; border-top: 1px solid rgb(168 67 42 / .24); border-right: 1px solid rgb(168 67 42 / .24); pointer-events: none; }
+.desk-command-spread::before, .desk-catalogue::before { content: ""; position: absolute; top: 0; right: 0; width: 10rem; height: 10rem; border-top: 1px solid rgb(176 74 20 / .24); border-right: 1px solid rgb(176 74 20 / .24); pointer-events: none; }
 .desk-kpi { position: relative; min-height: 158px; overflow: hidden; transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) ease; }
-.desk-kpi::after { content: ""; position: absolute; right: -1.5rem; bottom: -2rem; width: 5rem; height: 5rem; border: 1px solid rgb(168 67 42 / .18); border-radius: 999px 999px 0 0; transform: rotate(-16deg); }
-.desk-kpi:hover { transform: translateY(-3px); box-shadow: 0 16px 30px rgb(50 30 16 / .08); }
+.desk-kpi::after { content: ""; position: absolute; right: -1.5rem; bottom: -2rem; width: 5rem; height: 5rem; border: 1px solid rgb(176 74 20 / .18); border-radius: 999px 999px 0 0; transform: rotate(-16deg); }
+.desk-kpi:hover { transform: translateY(-3px); box-shadow: 0 16px 30px rgb(58 36 26 / .08); }
 .desk-kpi-primary { min-height: 330px; background: linear-gradient(135deg, var(--card), color-mix(in srgb, var(--sand) 30%, var(--card))); }
 .desk-kpi-primary::before { content: "SIGNAL"; position: absolute; right: 1.5rem; top: 1.5rem; color: var(--brick); font-family: var(--font-mono); font-size: 9px; letter-spacing: .18em; opacity: .65; }
-.desk-stepwell { position: relative; padding-left: 1.25rem; border-left: 1px solid rgb(168 67 42 / .25); }
+.desk-stepwell { position: relative; padding-left: 1.25rem; border-left: 1px solid rgb(176 74 20 / .25); }
 .desk-stepwell::before { content: ""; position: absolute; left: -1px; top: 0; width: 1px; height: 3rem; background: var(--brick); }
 .desk-action { min-height: 66px; }
 .desk-action:nth-child(3n) { background: color-mix(in srgb, var(--sand) 28%, var(--card)); }
 .desk-trust-panel { position: relative; overflow: hidden; }
-.desk-trust-panel::after { content: "NIVASA / TRUST"; position: absolute; right: 1.5rem; bottom: 1.5rem; color: var(--ember); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .6; }
+.desk-trust-panel::after { content: "ATLAS / TRUST"; position: absolute; right: 1.5rem; bottom: 1.5rem; color: var(--ember); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .6; }
 .desk-empty { position: relative; }
 .desk-empty::before { content: "SOURCE GATE"; position: absolute; right: 1rem; top: 1rem; color: var(--brick); font-family: var(--font-mono); font-size: 9px; letter-spacing: .15em; opacity: .48; }
 .desk-filter { box-shadow: inset 5px 0 0 color-mix(in srgb, var(--brick) 24%, transparent); }
@@ -579,11 +869,11 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .desk-gate { box-shadow: inset 6px 0 0 color-mix(in srgb, var(--brick) 34%, transparent); }
 .desk-capability { position: relative; min-height: 210px; overflow: hidden; transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) ease; }
 .desk-capability::after { content: "AI / CONTRACT"; position: absolute; right: 1.5rem; bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; opacity: .35; }
-.desk-capability:hover { transform: translateY(-4px); box-shadow: 0 18px 34px rgb(50 30 16 / .1); }
-.desk-page-ai main { background-image: linear-gradient(135deg, transparent 0 88%, rgb(168 67 42 / .05) 88% 88.2%, transparent 88.2%); }
+.desk-capability:hover { transform: translateY(-4px); box-shadow: 0 18px 34px rgb(58 36 26 / .1); }
+.desk-page-ai main { background-image: linear-gradient(135deg, transparent 0 88%, rgb(176 74 20 / .05) 88% 88.2%, transparent 88.2%); }
 .desk-page-ai .desk-capability:first-of-type { min-height: 250px; background: linear-gradient(115deg, color-mix(in srgb, var(--sand) 38%, var(--card)), var(--card)); }
-.desk-page-leads main, .desk-page-inquiry main, .desk-page-contacted main { background-image: repeating-linear-gradient(0deg, transparent 0 45px, rgb(27 22 18 / .025) 45px 46px); }
-.desk-page-my-listings main, .desk-page-newspaper main, .desk-page-agent-listings main, .desk-page-owner-listings main { background-image: linear-gradient(90deg, transparent 0 78%, rgb(168 67 42 / .045) 78% 78.15%, transparent 78.15%); }
+.desk-page-leads main, .desk-page-inquiry main, .desk-page-contacted main { background-image: repeating-linear-gradient(0deg, transparent 0 45px, rgb(58 36 26 / .025) 45px 46px); }
+.desk-page-my-listings main, .desk-page-newspaper main, .desk-page-agent-listings main, .desk-page-owner-listings main { background-image: linear-gradient(90deg, transparent 0 78%, rgb(176 74 20 / .045) 78% 78.15%, transparent 78.15%); }
 
 @media (max-width: 767px) {
   .desk-header::after { display: none; }
@@ -610,7 +900,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
      (see eslint.config.js) and this rule keeps the marker off. */
   ul[role="list"] { list-style: none; margin: 0; padding: 0; }
 
-  .facet-group + .facet-group { border-top: 1px solid var(--rule-soft, rgb(17 24 39 / 0.1)); }
+  .facet-group + .facet-group { border-top: 1px solid var(--rule-soft, rgb(58 36 26 / 0.1)); }
   .facet-group { padding-block: 18px; }
   .facet-group:first-child { padding-top: 4px; }
   .facet-group-title { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
@@ -618,7 +908,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
     padding: 9px 12px; border-radius: 0.625rem; text-align: left;
     font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
-    border: 1px solid var(--rule, rgb(17 24 39 / 0.14)); background: transparent; color: var(--ink);
+    border: 1px solid var(--rule, rgb(58 36 26 / 0.14)); background: transparent; color: var(--ink);
     transition: background var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease;
   }
   .facet-option:hover:not([aria-disabled="true"]) { border-color: var(--brick); color: var(--brick); }
@@ -635,7 +925,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .facet-hint { font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
   .facet-field {
     width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 0.625rem;
-    border: 1px solid var(--input, rgb(17 24 39 / 0.16)); background: var(--card); color: var(--foreground);
+    border: 1px solid var(--input, rgb(58 36 26 / 0.16)); background: var(--card); color: var(--foreground);
     font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums;
   }
   .facet-field:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
@@ -690,31 +980,30 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 }
 
 :root {
-  --ink-2: #51453d;
-  --ink-3: #6e6058;
-  --rule: rgba(17, 24, 39, 0.14);
-  --rule-soft: rgba(17, 24, 39, 0.1);
-  --facet-link: var(--brick);
-  --facet-border: rgba(17, 24, 39, 0.18);
+  --ink-2: #5c4837;
+  --ink-3: #7a6450;
+  --rule: rgba(58, 36, 26, 0.16);
+  --rule-soft: rgba(58, 36, 26, 0.1);
+  --facet-link: color-mix(in srgb, var(--brick) 88%, #2a1305);
+  --facet-border: rgba(58, 36, 26, 0.2);
 }
 /* --brick alone is 4.16:1 on the dark card — fine for a 26px display price,
    short for a 12px mono label, and the theme cannot have two answers for one
    usage. The action colour is therefore split: `--facet-link` lightens to
    5.31:1 where the text is small, while large display numerals keep --brick. */
 .dark {
-  --ink-2: #c9b8ab;
-  --ink-3: #a9998d;
-  --rule: rgba(226, 232, 240, 0.16);
-  --rule-soft: rgba(226, 232, 240, 0.1);
+  --ink-2: #e0c298;
+  --ink-3: #c9a87a;
+  --rule: rgba(246, 230, 207, 0.2);
+  --rule-soft: rgba(246, 230, 207, 0.12);
   --facet-link: color-mix(in srgb, var(--brick) 82%, #fff);
-  --facet-border: rgba(226, 232, 240, 0.2);
+  --facet-border: rgba(246, 230, 207, 0.24);
 }
 
-/* Dark `--muted-foreground` was slate blue #94a3b8 — an unretouched shadcn
-   default on a warm brown palette. Warm it so disabled text matches its
-   neighbours instead of reading as a foreign grey. Contrast on the dark card
-   (#33251f): 7.12:1. */
-.dark { --muted-foreground: #b7a79b; }
+/* Dark `--muted-foreground` stays warm parchment so disabled text matches its
+   neighbours instead of reading as a foreign grey. Contrast on the warm night
+   card (#2f160b): ~7.7:1. */
+.dark { --muted-foreground: #c9a98a; }
 
 @media (prefers-reduced-motion: reduce) {
   .desk-kpi, .desk-capability { transition: none; }
@@ -722,14 +1011,14 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 
 /* Listing draft as a source-trail dossier: the form reads like a moderated evidence packet. */
-.listing-dossier { background-image: linear-gradient(90deg, transparent 0 82%, rgb(168 67 42 / .035) 82% 82.15%, transparent 82.15%); }
+.listing-dossier { background-image: linear-gradient(90deg, transparent 0 82%, rgb(176 74 20 / .035) 82% 82.15%, transparent 82.15%); }
 .listing-dossier-hero { position: relative; overflow: hidden; }
 .listing-dossier-hero::after { content: "SOURCE / RIGHTS / PLACE / PRICE"; position: absolute; right: clamp(20px, 4vw, 48px); bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .3; }
 .listing-dossier-body { position: relative; }
 .listing-dossier-body::before { content: "ARCHITECH / MODERATION PACKET"; position: absolute; left: clamp(20px, 4vw, 48px); top: 2rem; color: var(--brick); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; opacity: .45; writing-mode: vertical-rl; transform: rotate(180deg); }
 .listing-packet { box-shadow: 12px 12px 0 color-mix(in srgb, var(--sand) 42%, transparent); }
 .listing-dossier-aside { position: relative; box-shadow: inset 5px 0 0 color-mix(in srgb, var(--trust) 32%, transparent); }
-.listing-dossier-aside::after { content: "LOCATION / PACKET 01"; position: absolute; right: 1.5rem; bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; opacity: .4; }
+.listing-dossier-aside::after { content: "LOCATION / GRID 01"; position: absolute; right: 1.5rem; bottom: 1.25rem; color: var(--ink); font-family: var(--font-mono); font-size: 9px; letter-spacing: .13em; opacity: .4; }
 .listing-field-note { min-height: 40px; }
 @media (max-width: 767px) {
   .listing-dossier-hero::after, .listing-dossier-body::before { display: none; }
