@@ -44,5 +44,11 @@ describe("safe AI assistance contracts", () => {
     expect(compare.text).toContain("garden courtyard");
     const moderation = await (await moderationRoute(new Request("http://example.com/api/ai/moderation-assist", { method: "POST", body: JSON.stringify({ title: "Draft", description: "short", priceInr: 1, mediaRightsConfirmed: false }) }))).json();
     expect(moderation.autoApprovalAllowed).toBe(false);
+    /* A partial payload must be a 400 validation error, not an unhandled
+       TypeError 500 (the review reads `description.length`). */
+    const missingFields = await moderationRoute(new Request("http://example.com/api/ai/moderation-assist", { method: "POST", body: JSON.stringify({ draftId: "draft_x" }) }));
+    expect(missingFields.status).toBe(400);
+    const badBody = await moderationRoute(new Request("http://example.com/api/ai/moderation-assist", { method: "POST", body: JSON.stringify({ title: "Draft" }) }));
+    expect(badBody.status).toBe(400);
   });
 });
