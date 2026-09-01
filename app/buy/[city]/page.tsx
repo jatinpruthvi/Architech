@@ -7,6 +7,7 @@ import { cityUrl, homeUrl } from "@/lib/seo/urls";
 import { cityTrustSummary } from "@/lib/trust/locality";
 import { citySerpDescription, citySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export function generateStaticParams() {
   return getCityStaticParams();
@@ -62,7 +63,7 @@ export default async function CityHub({ params }: { params: Promise<{ city: stri
   };
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="bg-paper pt-[78px] text-ink">
       <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">

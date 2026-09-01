@@ -5,17 +5,17 @@
 import type { AvailabilityCode, PropertyTypeCode } from "./listing-vocabulary";
 import type { PropertyDetails } from "./listing-details";
 import { generatedListings } from "./property-generator";
+import { FIXTURE_AS_OF_ISO, FIXTURE_AS_OF_LABEL } from "./fixture-as-of";
 
-/** The single "as of" date for the illustrative fixture set.
-
-    Every fixture-derived date on the site (locality price facts, listing
-    freshness, sitemap `lastmod`) is expressed relative to this one constant so
-    the whole prototype tells a consistent story and, critically, so no
-    date-carrying surface ever reads the wall clock. Reading `new Date()` at
-    render time would make sitemap `lastmod` change on every build without the
-    underlying content changing. */
-export const FIXTURE_AS_OF_ISO = "2026-08-26";
-export const FIXTURE_AS_OF_LABEL = "26 Aug 2026";
+/* The single "as of" date for the illustrative fixture set (see
+   `fixture-as-of.ts` for why the constant lives in a leaf module). Every
+   fixture-derived date on the site (locality price facts, listing freshness,
+   sitemap `lastmod`) is expressed relative to this one constant so the whole
+   prototype tells a consistent story and, critically, so no date-carrying
+   surface ever reads the wall clock: reading `new Date()` at render time would
+   make sitemap `lastmod` change on every build without the underlying content
+   changing. */
+export { FIXTURE_AS_OF_ISO, FIXTURE_AS_OF_LABEL };
 
 export type Property = {
   id: string; title: string; locality: string; localitySlug: string; city: string; citySlug: string; price: string; priceNum: number; pricePerSqft: string;

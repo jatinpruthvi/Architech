@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getCities, getCitiesByState, getListingsByCity, getLocalities } from "@/lib/repositories";
 import { canonicalUrl, cityUrl, homeUrl } from "@/lib/seo/urls";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
   title: "Buy property in India — every city we cover",
@@ -44,7 +45,7 @@ export default function BuyIndiaHub() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="bg-paper pt-[78px] text-ink">
         <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
           <div className="container">

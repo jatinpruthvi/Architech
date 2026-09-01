@@ -9,6 +9,7 @@ import { localityTrustSummary } from "@/lib/trust/locality";
 import { localityIntel } from "@/lib/realestate/locality-intel";
 import { localitySerpDescription, localitySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export function generateStaticParams() {
   return getLocalityStaticParams();
@@ -117,7 +118,7 @@ export default async function Page({ params }: { params: Promise<{ city: string;
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <CityPage
         locality={locality}
         city={city}

@@ -11,7 +11,8 @@
    snapshots, sitemaps, and static params stay stable between builds. */
 import { findCity } from "./cities";
 import { localities, type Locality } from "./localities";
-import { FIXTURE_AS_OF_ISO, type Property } from "./properties";
+import { FIXTURE_AS_OF_ISO } from "./fixture-as-of";
+import type { Property } from "./properties";
 
 /** Small deterministic hash so per-listing variation is stable across builds. */
 function seedOf(value: string): number {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HtmlSitemapPage } from "@/pages/PublicParity";
 import { homeUrl, htmlSitemapUrl } from "@/lib/seo/urls";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
   title: "Sitemap — Architech India property discovery",
@@ -11,5 +12,5 @@ export const metadata: Metadata = {
 
 export default function Page() {
   const jsonLd = { "@context": "https://schema.org", "@type": "WebPage", name: "Architech HTML Sitemap", url: htmlSitemapUrl(), isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} /><HtmlSitemapPage /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} /><HtmlSitemapPage /></>;
 }

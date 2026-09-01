@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Guide from "@/pages/Guide";
 import { guideUrl } from "@/lib/seo/urls";
 import { guideHubJsonLd } from "@/lib/seo/guide-jsonld";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
   title: "Field notes — how we verify",
@@ -14,7 +15,7 @@ export default function Page() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <Guide />
     </>
   );

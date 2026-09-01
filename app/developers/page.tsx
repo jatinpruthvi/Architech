@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import DeveloperIndexPage from "@/pages/DeveloperIndexPage";
 import { getListings } from "@/lib/repositories/listings";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const dynamic = "force-dynamic";
 
@@ -14,5 +15,5 @@ export const metadata: Metadata = {
 
 export default function Page() {
   const jsonLd = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Builders and projects across India", description: "Evidence-led developer and project index for the cities Architech covers.", url: `${SITE_URL}/developers/`, isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} /><DeveloperIndexPage listingCount={getListings().length} /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} /><DeveloperIndexPage listingCount={getListings().length} /></>;
 }

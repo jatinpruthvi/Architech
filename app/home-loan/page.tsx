@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { HomeLoanPage } from "@/pages/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
   title: "Home loan EMI calculator — India | Architech",
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 
 export default function Page() {
   const jsonLd = { "@context": "https://schema.org", "@type": "FinancialProduct", name: "Architech educational home-loan EMI calculator", url: canonicalUrl("/home-loan/"), isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} /><HomeLoanPage /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} /><HomeLoanPage /></>;
 }
