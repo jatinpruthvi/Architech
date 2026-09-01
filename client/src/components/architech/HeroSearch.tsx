@@ -115,7 +115,7 @@ export default function HeroSearch({
   return (
     <div ref={wrapRef} className="fade-rise relative w-full max-w-[700px]" style={{ "--d": "560ms" } as React.CSSProperties}>
       <div className="flex justify-center">
-        <div className="glass-tabs inline-flex rounded-full p-1" role="tablist" aria-label="Buy, rent or new projects">
+        <div className="glass-tabs inline-flex rounded-full p-1" role="group" aria-label="Buy, rent or new projects">
           {([
             { id: "buy", label: t.hero.buy, on: () => { setNewProjects(false); setIntentAndFocus("buy"); }, active: intent === "buy" && !newProjects },
             { id: "rent", label: t.hero.rent, on: () => { setNewProjects(false); setIntentAndFocus("rent"); }, active: intent === "rent" },
@@ -125,8 +125,7 @@ export default function HeroSearch({
               key={v.id}
               type="button"
               onClick={v.on}
-              role="tab"
-              aria-selected={v.active}
+              aria-pressed={v.active}
               className={`relative rounded-full px-4 py-2.5 stamp !text-[13px] font-semibold transition-all duration-300 sm:px-5 ${v.active ? "seg-active text-cream dark:text-[#2a1305]" : "text-cream/70 hover:text-cream"}`}
             >
               <span className="relative z-10">{v.label}</span>
