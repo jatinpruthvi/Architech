@@ -1,390 +1,313 @@
-# Broker Suite — Requirements, Architecture & Tooling Decision
+# Broker / Business Suite — canonical v8 decision
 
-**Date:** 01 Sep 2026
-**Status:** ✅ Requirements confirmed; tooling recommendation finalized (not yet implemented).
-**Scope:** Everything decided across the CRM / channel / accounting / chat exploration, in one document. Supersedes the earlier scattered notes (`crm-tooling-decision.md`, `open-source-stack-integration.md`, `broker-suite-requirements.md`, `broker-suite-architecture-options.md`, `broker-suite-build-vs-adopt.md`).
+**Date:** 02 Sep 2026
+**Status:** Final v8 plan after end-to-end review; implementation not started
+**Supersedes:** v7 Chatwoot architecture and all earlier CRM/tooling proposals
 
-> **How to use this document (for an AI agent or engineer):** this file is the working brief for the "Broker Suite" — a set of broker/agent-facing capabilities to be added *around* the existing Architech application. Read §2 (context) to understand the existing system, §5 (requirements) for *what* to build, §6–8 for *why* the tooling/architecture was chosen, and §9–10 for *how* (proposed data model, sync contract, matching rules — these are sketches to validate, not final code). The next concrete artifact to produce is the detailed technical design described in §13.
+> **Current decision:** Chatwoot is removed. Customers use normal WhatsApp/phone. Employees use normal company-owned WhatsApp plus the installable Frappe CRM web app for lead assignment, calls, status and follow-up. ERPNext owns commercial/accounting/inventory records. Architech remains the real-estate public/vertical layer.
 
----
+## 1. Product requirements
 
-## 1. TL;DR
+Three named capabilities remain mandatory:
 
-1. Architech is a **multi-tenant platform serving many brokers**; each broker has its own login and a small team (≤ 20 employees).
-2. Three capabilities are required: **Lead Management CRM**, **Brokers Channel** (cross-broker buy/sell matching), and **simple Accounting** (no GST filing / e-invoicing for now).
-3. **Recommended approach: adopt Twenty CRM (self-hosted, TypeScript/PostgreSQL) for the broker CRM + channel + simple HR/accounting**, with a **one-way lead sync from Architech** (consent + phone-masking stay in Architech).
-4. **Adopt Frappe (ERPNext + Frappe HR + India Compliance) later**, only when real payroll (PF/ESI/TDS) or GST accounting is needed.
-5. Chat tools (Mattermost/Zulip) and project-management tools (Vikunja/Taiga/Huly/Focalboard) are **not part of the solution** for now.
+1. **CRM** — capture, assign, qualify and track leads/deals, employee progress and next actions.
+2. **Channel** — direct customer WhatsApp plus the Real Estate profile's privacy-preserving broker-to-broker demand/supply channel.
+3. **Accounting** — quotations, invoices, payments, income/expense and ledger; optional inventory and India compliance for local companies.
 
----
+Additional confirmed requirements:
 
-## 2. Context — what Architech already is
+- Multi-business product that can be sold beyond real estate.
+- One unrelated business must not access another business's data.
+- A specifically WhatsApp-consented lead triggers a near-immediate message from the selected company/broker-owned unofficial WhatsApp/Evolution account.
+- WhatsApp and voice-call permissions are channel-specific. A WhatsApp opt-in alone does not silently authorize repeated sales calls; `do not call`, `STOP`, withdrawal and purpose expiry are enforced centrally.
+- The initial message must not wait for an employee to open an app.
+- Multiple company-owned WhatsApp accounts can be routed by area/employee.
+- Personal employee WhatsApp accounts are not eligible.
+- No mandatory vendor payment beyond self-hosting and existing company telecom/SIM/data: no per-seat, per-message, SaaS, AI-credit or support/add-on fee.
+- Inventory, HR, manufacturing and India compliance are optional profiles.
 
-### 2.1 Product
+## 2. Current component selection
 
-Architech is a premium, India-wide **real-estate discovery platform** (Ahmedabad-first). Public users search/browse listings, RERA-verified projects, and localities; they submit **enquiries (leads)** and **buyer requirement briefs**. It is the **public listing website** and the **source of leads** for brokers. All listings/statistics/RERA in the prototype are **illustrative demo data** pending verified sources.
-
-### 2.2 Current tech stack (verified from repo)
-
-| Layer | Choice |
-|---|---|
-| Framework | **Next.js 16** App Router (SSR/SSG) |
-| Language | **TypeScript** (React 19) |
-| Database / ORM | **PostgreSQL** + **Prisma 7** (`@prisma/adapter-pg`) |
-| Auth | **better-auth** (users, roles, sessions; 2FA/passkeys planned) |
-| UI | **Tailwind CSS v4** + **shadcn/ui** (Radix primitives), Lucide icons |
-| Maps | MapLibre GL + OSM |
-| Misc | pino logging, Sentry, Playwright (a11y), Vitest (unit), pnpm workspace |
-
-### 2.3 Existing broker/lead assets (directly relevant to this brief)
-
-The repo **already contains** a broker side and lead pipeline — this is important: the Broker Suite *extends* this, it does not start from zero.
-
-**Prisma models (from `prisma/schema.prisma`):**
-
-| Model | Key fields (relevant here) | Meaning |
+| Responsibility | Selection | Authority |
 |---|---|---|
-| `BrokerOrganization` | `id`, `slug`, `name`, `cityId`, `verificationStatus`, `reraNumber` | One brokerage/agency = one tenant. |
-| `User` | `id`, `email`, `role` (`BUYER`, `BROKER_MEMBER`, `BROKER_ADMIN`, `MODERATOR`, `ADMIN`) | Global login account. |
-| `BrokerUser` | `userId`, `organizationId`, `role`, `active` | Membership linking a `User` to a `BrokerOrganization`. |
-| `Lead` | `listingId`, `userId`, `organizationId`, `mode` (`MASKED`/`DIRECT_CONSENTED`), `status` (`NEW`/`ACKNOWLEDGED`/`REPLIED`/`CLOSED`/`DELETED`), `name`, `phoneMasked`, `email`, `message`, `consentText`, `idempotencyKey`, `deletedAt` | An enquiry tied to a listing, masked by default. |
-| `Requirement` | `cityId`, `intent`, `category`, `subtype`, `role`, `name`, `phoneCiphertext` (encrypted), `phoneLast4`, `consentText`, `status`, `retentionUntil`, `deletedAt` | Buyer brief (wanted property), phone encrypted. |
-| `Listing` | `id`, `stableId`, `cityId`, `localityId`, `brokerOrgId`, `propertyType`, `priceInr`, `bhk`, `areaSqft`, `availability`, `lifecycle` | Supply record; already linked to `BrokerOrganization`. |
+| Public real-estate discovery and enquiry intake | Architech | Listings, locality registry, masked enquiry intake and public consent evidence |
+| Generic lead/deal management | Frappe CRM `v1.83.0` line | Lead, Deal, Contact, Organization, owner, stage, call/note/task and next action |
+| Accounting/selling/inventory | ERPNext v16 line | Customer, Item, Quotation, Order, Invoice, Payment, ledger, buying, stock and operations |
+| Customer WhatsApp conversation | Normal WhatsApp app on company-controlled employee phone | Human message interface only |
+| WhatsApp transport/control | Evolution API `2.3.7` / Baileys | Linked session, send/receive events and lifecycle only |
+| Mobile calling | Frappe CRM PWA + owned `Call from SIM` action | Native dialer plus employee-confirmed call result |
+| Integration | `business_suite_core` Frappe app + thin private gateway | Consent, routing, encrypted destination, outbox/inbox, idempotency, audit, suppression and reconciliation |
+| Cross-broker channel | Architech Real Estate profile | Sanitized demand/supply publishing, matching, negotiation state and commissions |
+| Tenant provisioning | Brand-neutral control plane | Site/release/provider mapping, feature profile, backup, restore, health and data export |
 
-**Location registry:** `client/src/lib/cities.ts`, `client/src/lib/localities.ts`, `client/src/lib/pincodes.ts` — authoritative **city → locality** list. This is the source of truth for "**area**" assignment (see §5.3: area = locality).
+**Not selected:** Chatwoot, Twenty, a second generic CRM, paid telephony, official Meta as a mandatory path, managed automation or custom native mobile app.
 
-**Broker lead inbox (already built):** `docs/leads/phase-1-lead-inbox.md`; code in `client/src/lib/leads/` and `app/api/broker/leads/`. Behavior: phone **masked by default**, `consentText` shown before actions, status workflow `NEW → ACKNOWLEDGED → REPLIED → CLOSED`, audit trail, idempotent creation.
+## 3. Why Frappe CRM is the long-term CRM
 
-**Lead scoring (already built):** `P1-LEAD-002` — deterministic **hot/warm/cold** score from structured signals (transparent heuristic, not ML).
+ERPNext v16 still contains Lead/Opportunity management, assignment, status, follow-up and funnel reports. However, ERPNext's official current documentation says that built-in CRM is scheduled for removal in version 17 and recommends Frappe CRM for new implementations.
 
-### 2.4 Governing design rules (from the architecture)
+Use this lifecycle boundary:
 
-- **Consent + masking are load-bearing.** Buyer phone is masked (`MASKED`) unless direct consent (`DIRECT_CONSENTED`); `Requirement.phoneCiphertext` is encrypted. Any new system that touches buyer data must respect this.
-- **Deterministic, transparent logic** over black-box ML (the project rejects "AI valuation" style claims; heuristics must be explainable).
-- **DPDP erasure:** buyer right-to-delete is implemented by purge scripts (`scripts/privacy/purge-expired-requirements.mjs`). Any new store of buyer data must support erasure.
-- **Multi-tenancy is NOT yet enforced** — the current repo is single-org demo data; `organizationId`/`brokerOrgId` columns exist but are not consistently scoped in queries. Enforcing org-scoping is required wherever private broker data is served.
-
----
-
-## 3. Glossary (shared vocabulary)
-
-| Term | Meaning |
-|---|---|
-| **Broker / agency** | The tenant — a real-estate business with its own employees. |
-| **Agent / employee** | A member of a broker's team (≤ 20). Assigned to localities. |
-| **Area** | A **locality** (e.g., Thaltej). Assignment/territory unit. |
-| **Lead** | An enquiry from the public site about a listing or a property need. |
-| **Cold caller** | Optional employee role that first-touches leads and hands off hot ones. |
-| **Hot / cold lead** | Qualification state: cold = not yet ready/verified; hot = qualified, ready for a salesperson. |
-| **Channel request** | A broker publishing demand (buyer requirement) or supply (seller listing) to the shared network. |
-| **Match** | A candidate pairing of a buyer request ↔ a seller listing across brokers. |
-| **Deal** | A matched request that closes; carries an agreed commission split. |
-| **Commission split** | The per-deal, broker-negotiated division of commission (not formulaic). |
-
----
-
-## 4. Actors
-
-| Actor | Description |
-|---|---|
-| **Broker** (agency owner) | Runs a small team (≤ 20 employees). Manages employees, enters salaries, sees dashboards, does simple accounting. |
-| **Agent / employee** | Works under a broker. Assigned to localities. Manages leads assigned to them. Can enter commission on their own deals. |
-| **Cold caller** *(optional role)* | Where a broker enables it, a designated employee does first-touch qualification before handoff. Not every broker uses this. |
-| **Buyer** | Wants to buy/rent (demand). |
-| **Seller** | Wants to sell/rent out (supply). |
-| **Other brokers** | Independent agencies cooperating through the shared channel. |
-
----
-
-## 5. Requirements (final, confirmed)
-
-### 5.1 Platform nature (confirmed)
-
-- **Multi-tenant platform serving many brokers.** Each broker sees only its own team, leads, areas, and accounting.
-- **≤ 20 employees per broker.** Total broker count undecided — design for many small tenants.
-- Monetization: **no platform fee on channel deals** (bundled into the broker's plan/combo).
-
-### 5.2 Pillar 1 — Lead Management CRM
-
-- **Area = locality level.** Architech's city → locality registry is the source of truth.
-- A locality maps to one **responsible employee**; one employee can own many localities.
-- **Lead routing — two modes (cold calling is OPTIONAL):**
-  - **Mode A (direct):** lead → assigned immediately to the locality's owning employee.
-  - **Mode B (cold caller):** lead → cold caller qualifies → a cold→hot lead is transferred to the locality's owner.
-  - This is **per-broker configuration**: `cold-calling enabled? yes/no` + which employee is the cold caller.
-- **Lead lifecycle:** New → Contacted → Qualified (Hot) → Negotiation → Closed (Won/Lost). Ownership + stage changes are auditable; the cold-caller handoff is a tracked transition.
-- **Broker dashboard:** per-employee progress (leads, stages, conversions, closed deals), per-locality and per-employee views.
-- **Employee management (nice-to-have):** leave tracking; salary records (salary entered by the broker).
-
-### 5.3 Pillar 2 — Brokers Channel
-
-- A network of independent brokers cooperating on deals.
-- Both sides publishable: **Demand** (buyer requirement) and **Supply** (seller listing).
-- **Matching:** surface candidate buyer ↔ seller matches across brokers. **Negotiation is between the two brokers, per deal.**
-- **Privacy (critical):** buyer and seller **phone numbers are NEVER shown** in the channel — details only. Brokers **contact each other** to negotiate; the end-customer number is never exposed by the platform.
-- **Membership & fees:** at launch the channel is **open + invite**; **no platform fee** on channel deals.
-- **Commission split:** negotiated per deal (no fixed formula); recorded at **deal close**.
-- **Closing a channel request:** a broker can **close its own request** unilaterally (a deal may close outside the channel). Optional **dual-close mode**: closing by one sends a notification to the other broker to also confirm.
-
-### 5.4 Pillar 3 — Accounting (simple)
-
-- Lightweight ledger per broker:
-  - **Income:** commission per deal — entered by employee or broker, recorded at **deal close**.
-  - **Expenses:** salaries (entered by broker) + other costs.
-- **Out of scope for now:** GST return filing, e-invoicing (IRN), e-way bills, GSTR-1/3B, full payroll engine.
-
-### 5.5 Explicit non-requirements (for now)
-
-- GST filing, e-invoicing, e-way bill.
-- Full HR/payroll engine.
-- Buyer-facing surface (listings, RERA, search) is unchanged — owned by Architech.
-- Agent-to-agent chat / messaging platform (deferred; revisit only if brokers explicitly ask).
-
----
-
-## 6. Tooling decision
-
-### 6.1 What was ruled out and why
-
-| Tool | Category | Verdict |
-|---|---|---|
-| Vikunja, Taiga, Huly, Focalboard | Project-management / task boards | ❌ Not CRMs — no lead/deal/pipeline model. (Focalboard effectively discontinued; Taiga's maintainer wound down.) |
-| Mattermost | Team chat | ❌ For the channel: chat cannot match requests, close deals, or record splits. Free tier has **no SSO** (paid Professional). Deferred. |
-| Zulip | Team chat | ❌ Same category limits as Mattermost (chat ≠ matching). Better than Mattermost on paper (Apache 2.0, free SSO, topic threading), but the channel is application data, not chat. Deferred. |
-| Frappe CRM (as the broker CRM) | CRM | ⚠️ Strong generic pipeline, but multi-tenancy ("many brokers, each with login + team") is **not built-in** (custom `Broker` doctype + User Permissions, or N sites). Leave/salary needs **Frappe HR + ERPNext**, a separate stack (Python/MariaDB) from Architech (TS/PostgreSQL). |
-| EspoCRM / SuiteCRM | CRM | ⚠️ PHP stacks; multi-tenancy is workaround-based. |
-
-### 6.2 What was chosen and why
-
-- **Adopt Twenty CRM** (`github.com/twentyhq/twenty`) for the broker suite — see §7.
-- **Adopt Frappe bench later** (ERPNext + Frappe HR + India Compliance) when payroll/GST is needed — see §8.
-- **Keep Architech** as the public listing site + lead capture + consent/masking authority.
-
-### 6.3 Key evidence (verified Sep 2026)
-
-- **Twenty** is TypeScript/React/NestJS/**PostgreSQL** (same stack family as Architech), has **native multi-workspace multi-tenancy** (`IS_MULTIWORKSPACE_ENABLED=true` → one isolated workspace per broker, own subdomain/users/team, zero code change), **custom objects at runtime** (no SQL migrations) with auto GraphQL/REST per object, free lead→deal pipeline + kanban + tasks + RBAC + webhooks. AGPL-3.0. No payroll engine; no mobile app.
-- **Frappe CRM** data model: `CRM Lead`, `CRM Deal`, `CRM Contact`, `CRM Organization`, `CRM Task`, `Communication` — lead→deal pipeline, kanban, email, call logging. Roles + record-level User Permissions + Sales Hierarchy (v1.72.0) cover "broker + ≤20 employees" *within one org*. Multi-tenancy = one site per tenant; single-DB multi-tenancy is open issue `frappe/frappe#28019`. Auto REST API + webhooks.
-- **Frappe HR** (leave, attendance, salary/payroll) is a **separate app requiring ERPNext**.
-- **India Compliance** (`resilient-tech/india-compliance`): GST, e-Invoice IRN (direct NIC, no GSP), e-Way bill, GSTR-1/3B, 2A/2B — installs onto ERPNext when needed.
-- **Shared database between Architech and Frappe is impossible**: Architech is PostgreSQL (Prisma); Frappe is MariaDB.
-
-### 6.4 Decision log (why the answer evolved — read top to bottom)
-
-1. **v1:** "Extend Architech's own lead inbox; only Frappe CRM is a real CRM on the list." *(grounded: PM tools aren't CRMs)*
-2. **v2:** "Integrated stack = Architech + Frappe CRM + ERPNext + India Compliance; Mattermost plugin for chat." *(superseded: chat ≠ matching; Mattermost SSO is paid)*
-3. **v3:** "Extend Architech (Option A), one app / three modules." *(superseded: user prioritizes adopt-don't-build and native per-broker isolation)*
-4. **v4 (current):** "Adopt **Twenty** for the broker suite (native multi-workspace isolation, same TS stack); **Frappe bench later** for payroll/GST." *(current)*
-
-The single gating input that can change v4: **team stack comfort** — if the team is decisively stronger in Python than TypeScript, build the broker suite as a **custom Frappe app** instead (framework, not the CRM product), and accept the multi-tenancy caveat.
-
----
-
-## 7. Recommended architecture — Twenty-based
-
-### 7.1 Component diagram
-
-```
-                    Architech (existing, public)          Twenty (new, broker suite)
-                    ┌───────────────────────────┐         ┌──────────────────────────────┐
-  Public users ───► │ Next.js 16 + Prisma       │         │ self-hosted, multi-workspace │
-                    │ PostgreSQL                │         │ TypeScript/React/PostgreSQL  │
-                    │ - listings, RERA, search  │         │ - per-broker workspace       │
-                    │ - lead capture            │         │ - lead pipeline (built-in)   │
-                    │ - consent + masking       │         │ - custom objects:            │
-                    │   (Lead, Requirement)     │         │   Request, Match, Deal,      │
-                    └─────────────┬─────────────┘         │   Employee, Leave, Salary    │
-                                  │ one-way lead sync     └───────────────▲──────────────┘
-                                  │ (webhook + outbox,                    │
-                                  │  idempotent, masking-                 │
-                                  │  aware)                               │ channel matching logic
-                                  ▼                                      │ (small service, TBD
-                              [sync worker] ──────────────────────────────┘  location)
+```text
+Frappe CRM
+Lead → assignment → contact/qualification → Deal → stage/next action
+                                                │
+                                                ▼ same-site integration
+ERPNext
+Customer → Quotation → Sales Order → Invoice → Payment/Ledger
 ```
 
-### 7.2 System-of-record map
+Frappe CRM owns pre-sale progress. ERPNext owns sellable items/pricing and commercial/finance records. A Deal creates/links the ERPNext Customer and Quotation through the tested same-site integration. Do not mirror active Lead/Opportunity status into the deprecated ERPNext CRM module.
 
-| Entity | System of record | Notes |
+## 4. Why Chatwoot is removed
+
+The customer never required Chatwoot; the customer uses WhatsApp. Chatwoot was only a shared employee inbox. It adds another deployment, database, login, data copy, mapping/reconciliation path and upgrade surface.
+
+The selected small-company model does not need that inbox:
+
+```text
+Area/locality → assigned employee → company-owned WhatsApp number
+```
+
+Evolution sends the immediate first message from that account. The employee continues in normal WhatsApp and records the outcome/next action in mobile Frappe CRM. A manager measures CRM progress, not chat-screen activity.
+
+There is no Chatwoot deployment, API inbox, callback, mobile app, account mapping, message mirror or Chatwoot retention path in v8.
+
+## 5. Mobile employee workflow
+
+Frappe CRM is installable from the site's `/crm` route through Android Chrome or iOS Safari. It remains an online PWA; offline behavior is not promised.
+
+The owned app provides **My Leads**:
+
+- assigned to me;
+- locality/area filters;
+- new and untouched leads;
+- follow-ups due/overdue;
+- customer, requirement, stage and next action;
+- in-app assignment badge and first-action SLA timer;
+- **Open WhatsApp**, **Call from SIM**, **Add Note**, **Set Follow-up**, **Change Status**.
+
+Frappe CRM's assignment notification and SLA records are the baseline. Optional Web Push may later send only a generic message such as “New lead assigned—open CRM”; it must contain no customer name, phone, requirement or message text and requires a separate browser/privacy test. It is not required for initial WhatsApp dispatch.
+
+### 5.1 Calling
+
+`Call from SIM` uses a normalized `tel:+91...` destination and opens the phone's native dialer. The employee confirms the call and chooses the company SIM when a dual-SIM phone prompts.
+
+After returning to CRM, a result sheet asks:
+
+- Connected — interested
+- Connected — follow-up required
+- Meeting/site visit scheduled
+- No answer
+- Busy/call later
+- Not interested
+- Wrong/invalid number
+
+A browser cannot reliably know whether a normal cellular call connected, its exact duration or recording. The employee confirms the result. Do not request restricted Android/iOS call-log permissions and do not invent call evidence.
+
+Only the assigned employee, configured backup and manager may reveal/call the operational number. Calls respect the business's configured hours, channel/purpose consent, do-not-call suppression and attempt limit; the platform never auto-dials.
+
+The inspected Frappe CRM `v1.83.0` PWA has a manual `CRM Call Log`; its upstream automated call UI supports Twilio/Exotel. Those paid integrations are disabled. Direct SIM calling is an owned extension.
+
+### 5.2 Progress model
+
+Keep call result separate from pipeline stage:
+
+```text
+Lead: New → Contacted → Qualified
+Deal: Qualification → Proposal/Quotation → Negotiation → Won / Lost
+```
+
+The Real Estate profile can show **Site Visit Scheduled** between Qualified and Proposal/Negotiation.
+
+Rules:
+
+| Outcome | Progress action | Required next action |
 |---|---|---|
-| Listing, RERA, media | Architech | public marketplace |
-| Buyer requirement + consent + phone masking | **Architech** | the only place consent/masking decisions are made |
-| Lead pipeline / deal / notes / team | **Twenty** | per-broker workspace |
-| Channel buy/sell requests + matches + deal close + split | **Twenty** (custom objects) | structured data + matching logic |
-| Employee leave / salary (simple) | **Twenty** (custom objects) | simple ledger, not payroll |
-| Invoices / GST / payroll | **Frappe bench (later)** | when complexity arrives |
+| No answer | Stage unchanged | Retry date/time |
+| Busy | Stage unchanged | Follow-up date/time |
+| Connected/interested | Contacted or Qualified | Note + next action |
+| Site visit/meeting | Qualified / Visit Scheduled | Appointment |
+| Not interested | Lost | Lost reason |
+| Invalid number | Invalid/Lost + suppression | Reason and stop automation |
 
-### 7.3 Data flows
+Managers see lead/deal Kanban, conversion, expected value, lost reasons, overdue follow-ups and employee/locality progress in Frappe CRM.
 
-1. **Lead capture:** buyer enquiry on Architech (listing/requirement form) → masked phone + consent stored in Architech.
-2. **Lead sync (one-way):** Architech → Twenty. `MASKED` leads sync phone-less; `DIRECT_CONSENTED` sync with number. Idempotent webhook + outbox; Architech remains authoritative for consent/masking.
-3. **Channel:** broker creates buy/sell request in Twenty → matching logic surfaces candidate matches → brokers negotiate broker-to-broker → close + record split in Twenty.
-4. **Accounting:** commission recorded at deal close (employee or broker enters it); salaries entered by broker.
-5. **Later (Frappe):** when payroll/GST needed → ERPNext + Frappe HR + India Compliance on one bench, fed from Twenty deals.
+## 6. Area, employee and account routing
 
-### 7.4 Lead sync contract *(PROPOSED — validate at implementation)*
+```text
+Bopal lead  → Employee A → Company Number A
+Naroda lead → Employee B → Company Number B
+```
 
-**Direction:** Architech → Twenty, **one-way only** (lifecycle changes that must reflect on the public site, e.g. "contacted", are handled by reading Twenty back or are not needed in Phase 1 — validate which).
+A locality mapping selects:
 
-**Event types (Architech outbox):**
+1. the Frappe CRM lead owner;
+2. the eligible company-controlled Evolution account for first contact; and
+3. optionally the cold caller before locality-owner handoff.
 
-| Event | Payload (key fields) | Twenty action |
-|---|---|---|
-| `lead.created` | `eventId`, `leadId`, `organizationId`, `mode`, `name`, `phone?` (only if `DIRECT_CONSENTED`), `email?`, `city`, `locality`, `intent`, `budget`, `listingRef`, `consentText` | upsert `Lead` in the broker's workspace |
-| `lead.consent.revoked` | `eventId`, `leadId` | null out contact fields in Twenty |
-| `lead.deleted` / `requirement.purged` | `eventId`, `entityId`, `entityType` | hard-delete the corresponding Twenty record (DPDP erasure) |
+Every lead has exactly one active owner. Direct mode does not safely support several employees replying concurrently from one native WhatsApp account because the WhatsApp app cannot enforce CRM assignment. A shared number may be used only with one designated active responder per conversation.
 
-**Rules:**
-- **Idempotency:** consumer dedupes on `eventId`; Architech outbox is durable (Postgres table) and retries with backoff.
-- **Masking:** Architech decides. `MASKED` ⇒ no phone/email in the payload. Twenty never stores a buyer phone that Architech didn't consent to share.
-- **Reconciliation:** each Twenty record stores `architechLeadId` / `architechRequirementId` as a custom field for lookup.
+Routing uses an explicit same-business fallback chain: primary area employee/account → configured backup employee/account → unassigned/admin queue. If no eligible connected account exists, hold and alert; never choose an arbitrary personal or cross-business number. If a backup sends the first message, it also becomes the active CRM owner unless an audited handoff follows.
 
-### 7.5 Proposed Twenty data model *(PROPOSED — names/types illustrative, define via Twenty's Data Model UI/SDK)*
+A company must own/control the SIM and WhatsApp account even if an employee carries the device. Employee exit, lost/stolen phone or role removal must support CRM-session revocation, lead reassignment, WhatsApp linked-device removal, credential/session rotation and SIM/account recovery.
 
-Per-broker workspace gets these **custom objects** (in addition to Twenty's built-in People/Companies/Opportunities, which hold the lead pipeline):
+Reassigning a CRM lead does not silently change WhatsApp identity in an active conversation. Continue from the original company account or perform an explicit, audited handoff.
 
-| Custom object | Fields (illustrative) | Purpose |
-|---|---|---|
-| `AreaAssignment` | `localitySlug`, `employeeRef`, `active` | locality → responsible employee (many localities per employee) |
-| `ColdCallerSetting` | `enabled`, `employeeRef` | per-broker cold-calling switch (Mode A/B) |
-| `ChannelRequest` | `type` (buy/sell), `localitySlug`, `intent`, `budgetMin/Max`, `bhk`, `propertyType`, `detailSummary`, `status` (open/matched/closed), `createdByBroker` | the published demand/supply |
-| `Match` | `buyRequestRef`, `sellRequestRef`, `score`, `status` (suggested/accepted/rejected) | a buyer↔seller pairing |
-| `Deal` | `matchRef`, `status`, `closeMode` (single/dual), `splitAgreement`, `commission` | a closed match with split |
-| `Employee` | `name`, `brokerRef`, `role` (agent/cold-caller), `salary` | team roster |
-| `Leave` | `employeeRef`, `from`, `to`, `type`, `status` | simple leave tracking |
-| `SalaryLedger` | `employeeRef`, `month`, `amount`, `status` | expense side: salary record |
-| `CommissionEntry` | `dealRef`, `employeeRef?`, `amount`, `recordedBy` (broker/employee), `date` | income side: commission per deal, recorded at close |
+## 7. Immediate WhatsApp flow
 
-> Mapping notes:
-> - Architech `Lead.mode/status` maps onto Twenty's Opportunity stages (`NEW→Contacted→Qualified→Negotiation→Closed Won/Lost`). Architech `Requirement` can seed a `ChannelRequest` (buy) **only if** the buyer consents to channel publication — validate this consent wording.
-> - **Sell-request source is TBD:** a channel "sell" request is either (a) a reference to an existing Architech `Listing` (`sourceListingRef`), or (b) a standalone seller record created in Twenty. This choice affects matching (§7.6) and the system of record (§7.2) — resolve in technical design.
+```text
+Architech/form/API
+       │ commit Lead/intake + consent + encrypted destination + outbox
+       ▼
+High-priority worker
+       │ resolve business + employee + eligible account
+       ▼
+Private gateway → Evolution /message/sendText → Customer WhatsApp
+                                                  │
+                                                  ▼ reply
+                                Employee's normal company WhatsApp app
+                                                  │
+                                                  ▼
+                                outcome/status/next action in Frappe CRM
+```
 
-### 7.6 Channel matching heuristics *(PROPOSED — deterministic, transparent)*
+Required rules:
 
-Matching is **rules-based** (consistent with the project's "no black-box" rule). A match candidate between a buy request `B` and sell listing `S` scores by:
+1. Lead and outbox command commit atomically; provider calls happen after commit.
+2. One lead/purpose/template gets at most one initial acknowledgement.
+3. The destination is decrypted only by the worker; no raw contact in logs/idempotency.
+4. Provider acceptance, delivery, read, failure and unknown remain separate.
+5. Evolution events write a minimal CRM activity marker—direction, timestamp, account, provider ID/status and lead mapping—without copying message body/media by default. The employee records the useful business summary and next action.
+6. Before launch, prove that API sends appear on the employee phone, customer replies appear there, employee native replies emit the expected provider event, and reconnect/replay does not duplicate CRM activity.
+7. Text is the required baseline; lists/buttons are capability-gated with fallback.
+8. Genuine Meta Flows remain outside the hosting-only baseline.
+9. `STOP`, withdrawal, invalid number and account pause suppress further automation.
+10. The linked-device path remains unofficial and can break or restrict the company number.
+11. Measured target remains worker-start P95 ≤250 ms and Evolution acceptance ≤1 second under normal load—not customer-device delivery.
 
-1. **Hard filters (must all pass):** same `localitySlug` (or same city if locality unspecified); `B.intent` = `S.availability/intent` (buy↔sell, rent↔rent); `B.bhk ≤ S.bhk` (or within tolerance); `S.priceInr ≤ B.budgetMax` (within tolerance %); category/property-type compatible.
-2. **Scoring (rank, not decide):** budget-fit closeness → BHK match → locality precision → recency of request.
-3. **Output:** ordered candidate list per request; brokers see **details only** (no phone). A human broker then contacts the other broker (broker-to-broker) — matching never auto-reveals end-customer identity.
+## 8. Architech real-estate boundary
 
-The matching service location is **TBD** (options: a small Architech-side service reading the shared registry + Twenty requests via API, or a Twenty-side workflow). Recommend keeping it next to the location registry (Architech) since matching depends on `cities.ts`/`localities.ts`.
+Architech remains authoritative for:
 
-### 7.7 API contract sketch *(PROPOSED)*
+- public listing/search/media and broker verification;
+- city/locality registry and public enquiry source;
+- masked requirement/listing intake and consent evidence;
+- privacy-preserving cross-broker demand/supply channel;
+- matching, negotiation state, deal close and commission split.
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/api/broker-suite/sync/leads` | POST | Architech→Twenty lead sync (receives outbox events) |
-| `/api/broker-suite/requests` | POST/GET | create/list channel requests |
-| `/api/broker-suite/requests/:id/matches` | GET | list ranked candidate matches for a request |
-| `/api/broker-suite/matches/:id/accept` | POST | broker accepts a match |
-| `/api/broker-suite/deals/:id/close` | POST | close a deal (single/dual mode) + record split |
-| `/api/broker-suite/ledger` | GET | per-broker commission/salary ledger |
+The broker channel must never publish customer phone, email, raw message, free-form identifying text or a reversible private source key. Brokers contact each other; customer identity is not exposed through channel records.
 
-> Auth: broker workspace-scoped; a broker sees only its own workspace (Twenty enforces). Buyer phone is **never** returned by any channel endpoint.
+For operational CRM, Architech emits a purpose-minimized, idempotent lead event to the business's Frappe site. Frappe CRM owns employee assignment/progress after creation. Architech does not become the generic CRM for non-real-estate companies.
 
-### 7.8 Why not extend Architech directly (this supersedes the earlier "extend this repo" recommendation)
+## 9. Existing Architech implementation gaps
 
-- Extending Architech is viable (the `organizationId` columns already exist and the lead inbox works), but the user's priorities are **adopt-don't-build** and **native per-broker isolation**.
-- Twenty provides multi-broker isolation **out of the box** and a free pipeline UI, on the **same TypeScript stack**, reducing custom build to: lead sync, channel matching, and simple HR/accounting custom objects.
-- Architech still hosts the **public site** and stays the **consent/masking authority** — no buyer PII moves to Twenty beyond what consent allows.
+Before automatic contact:
 
----
+- Current `Lead` stores only `phoneMasked`; add purpose-scoped encrypted post-commit contact storage or an equivalent protected intake record.
+- Replace raw-derived default idempotency material in `client/src/lib/leads/server.ts` with random/opaque or keyed material.
+- Reuse the existing AES-256-GCM pattern in `client/src/lib/requirements.server.ts` with key versioning and purpose separation.
+- Extend privacy purge/erasure across outbox, provider mappings, CRM projection and restore tombstones.
+- Enforce organization isolation consistently and add negative two-business tests.
 
-## 8. When Frappe wins (later phase)
+## 10. Tenant and deployment model
 
-Adopt **ERPNext + Frappe HR + India Compliance** (one bench, one site, one MariaDB) when:
-- real **payroll** is needed (salary structures, PF/ESI/TDS), and/or
-- **GST accounting / e-invoicing / e-way bill** is needed.
+- One Frappe site/database per unrelated business.
+- Install compatible pinned Frappe CRM, ERPNext and `business_suite_core` apps on the same business site.
+- Standard tier may share a versioned Bench/application pool; shard by load/risk.
+- Evolution instances map to the same business and company-owned number on private shards.
+- Hard-isolation tier uses separate application/data infrastructure, credentials, logs and backups.
+- No unrelated businesses as separate ERPNext `Company` records in one site.
+- No cross-business provider fallback or unscoped external IDs.
+- Operational phone access is limited to assigned employee/configured backup/manager; exports are separately permissioned and audited.
+- Database volumes, exports and backups containing CRM contacts are encrypted, retention-limited and restore-tested.
 
-This is a clean, deferred "adopt, don't build" — it doesn't block the current phase and slots in without re-architecting Twenty/Architech (deal data flows from Twenty into ERPNext when the time comes).
+Systems integrate through authenticated APIs/webhooks and durable idempotent processors—never cross-database writes.
 
----
+## 11. Product profiles
 
-## 9. Phased plan
+| Profile | Modules |
+|---|---|
+| **Business Core** | Frappe CRM + direct WhatsApp/Evolution + mobile calling + ERPNext Selling/Accounting |
+| **Trade & Distribution** | Business Core + Buying, Stock, warehouse, valuation and delivery |
+| **Service & AMC** | Business Core + Project, Issue, visit, timesheet, asset, recurring invoice |
+| **Retail** | Business Core + POS, barcode, inventory, pricing and loyalty |
+| **Light Manufacturing** | Trade + BOM, work order, subcontracting, quality and costing |
+| **Real Estate** | Business Core + Architech listing/locality/channel/matching/commission |
+| **India Compliance** | Applicable profile + India Compliance reports/validations; paid API filing opt-in only |
+| **HR** | Frappe HR only on customer demand |
 
-| Phase | Work | Custom code | Acceptance criteria |
-|---|---|---|---|
-| **P0 (now)** | Deploy Twenty (self-hosted, `IS_MULTIWORKSPACE_ENABLED=true`); one isolated workspace per broker | none | A broker logs in and sees an empty workspace only |
-| **P1** | Architech → Twenty lead sync (outbox + idempotent consumer; masking/consent rules enforced in Architech) | low | A public enquiry appears as a Twenty lead in the right broker's workspace; phone absent when `MASKED` |
-| **P2** | Channel: buy/sell request custom objects + matching + close/dual-close + split | medium | Two brokers can publish, get matches (details only), negotiate, close, and record a split |
-| **P3** | Simple accounting: commission ledger + salary/leave custom objects | low-medium | Broker sees income (commissions) and expenses (salaries) per month; no GST |
-| **P4 (later)** | Frappe bench (ERPNext + HR + India Compliance) when payroll/GST arrives | config + integration | Payroll + GST run on the Frappe bench, fed from Twenty deals |
+## 12. Hosting-only and resale contract
 
----
+Mandatory baseline has no vendor seat/message/API subscription:
 
-## 10. Risks & mitigations
+- self-host Frappe, Frappe CRM, ERPNext, MariaDB and Redis/Valkey;
+- self-host pinned Evolution, PostgreSQL and Redis;
+- use existing company SIM/voice/data;
+- no Chatwoot;
+- no Twilio, Exotel, Frappe Cloud, Evolution Cloud, Meta billing, paid GSP, paid AI/voice/SMS/email SaaS or managed automation;
+- self-host monitoring and encrypted backups.
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| **AGPL-3.0** (Twenty, Frappe) | License obligation if code is modified and offered as a service to third parties | Fine for internal self-hosting; legal review only if white-labeling to external brokerages |
-| **Twenty has no mobile app** | Brokers in the field use phones | Accept for now (web-responsive); revisit if field usage becomes critical |
-| **Twenty SSO/row-permissions are paid tiers** | Extra cost if needed | Basic workspace isolation is free; SSO not required for Phase 1 (each broker has own workspace login) |
-| **DPDP erasure across systems** | Legal exposure if buyer data lingers in Twenty after deletion request | `lead.deleted`/`requirement.purged` events → hard delete in Twenty (see §7.4) |
-| **Two stores of buyer data** (Architech + Twenty) | Privacy/consistency | One-way sync only; masking enforced at source; no phone leaves Architech without consent |
-| **Scope creep (chat, GST, payroll)** | Delays | Explicitly out of scope (§5.5); chat deferred, GST/payroll deferred to P4 |
+Compute, storage, egress, domains, backups, maintenance, support and telecom are real costs. Sell implementation/hosting/support, not a fictional promise of zero operating cost.
 
----
+License gates:
 
-## 11. Decisions already confirmed (no re-litigation)
+- Frappe Framework: MIT.
+- Frappe CRM: AGPL-3.0; network/source obligations and branding need legal review.
+- ERPNext/HR/India Compliance: GPL-3.0; distribution/source/trademark review required.
+- Evolution `2.3.7`: additional administrator notice/logo conditions and GitHub `NOASSERTION`; legal approval before sold deployment.
+- Pin immutable commit/image digests. Mutable tags and Evolution `2.4.x` real-number activation remain prohibited until exact-source license/security/behavior review.
+- If strict OSI-only licensing is mandatory, use an owned pinned Baileys gateway behind the same adapter.
 
-1. Multi-tenant platform; ≤ 20 employees/broker. ✅
-2. Area = locality; locality → one responsible employee; employee may own many localities. ✅
-3. Cold-calling is **optional** (per-broker switch); handoff is a tracked transition. ✅
-4. Lead lifecycle New → Contacted → Qualified → Negotiation → Closed (Won/Lost). ✅
-5. Channel shows **details only**, never buyer/seller phone; brokers contact each other. ✅
-6. Channel membership: open + invite; **no platform fee**. ✅
-7. Commission split: negotiated per deal, recorded at **deal close** (entered by employee or broker). ✅
-8. Channel close: broker can close own request; optional dual-close with notification to the other broker. ✅
-9. Accounting is simple income/expense; **no GST/e-invoicing now**. ✅
-10. Tooling: **Twenty now; Frappe bench later.** ✅ (pending the single stack-comfort confirmation in §12)
+## 13. Delivery phases
 
----
+1. Pin/test one same-site Frappe v16 + Frappe CRM main/v1 + ERPNext v16 + India Compliance candidate set; lock exact commits only after install, migration, CRM-to-ERP and rollback tests.
+2. Build `business_suite_core` tenancy, channel-specific consent, encrypted contact, single-owner/fallback account routing, outbox/inbox, idempotency, suppression and audit.
+3. Build My Leads PWA actions: assignment badge/SLA, Open WhatsApp, Call from SIM, post-call outcome, stage and mandatory next action.
+4. Prove immediate Evolution send, native-phone synchronization, provider activity markers, reconnect/replay and reply on company-owned test accounts behind feature flags.
+5. Prove Frappe CRM Deal → ERPNext Customer/Quotation → Invoice/Payment.
+6. Add Architech event adapter, broker locality routing and real-estate channel/deal boundary.
+7. Add provisioning, backup/restore, upgrade cohort, data export and two-business isolation tests.
+8. Pilot one local business and one brokerage before broader sale.
+9. Add inventory, manufacturing, HR and compliance only after profile-specific acceptance.
 
-## 12. Open questions / next steps
+## 14. Production gates
 
-### 12.1 Gating decisions
+- Two-business negative authorization tests pass.
+- Mobile call flow works on Android, iPhone and dual-SIM scenarios without false call evidence.
+- WhatsApp versus voice consent, do-not-call/`STOP`, attempt limits and working-hours rules pass negative tests.
+- Single active owner, unavailable-account fallback, explicit handoff and no-cross-business fallback tests pass.
+- Employee exit, lost phone, account recovery, session revocation and reassignment drill passes.
+- Lead stages/outcomes/mandatory-next-action, assignment notification/SLA and manager reports are accepted by sales users and managers.
+- Evolution API-send/native-phone/customer-reply/native-reply/reconnect event matrix passes without duplicate activity.
+- Real-number Evolution license, risk, consent, canary and pause gates pass.
+- No raw contact-derived idempotency/logging remains.
+- CRM-to-ERP Customer/Quotation mapping is idempotent and financially reconciled.
+- Accountant approves chart, taxes, opening balances and reports.
+- Backup/full restore and upgrade/rollback are timed and verified.
+- Optional paid Meta/GSP/telephony/AI services cannot activate silently.
 
-1. **Team stack comfort (gating):** TypeScript (Twenty, matches Architech) vs Python (Frappe). Recommendation is **Twenty**. *(If Python is strongly preferred, switch the broker-suite plan to a custom Frappe app.)*
-2. **Matching service location:** Architech-side (recommended, near the location registry) vs Twenty-side. TBD.
-3. **Channel publication consent:** does publishing a buyer requirement to the channel need an extra consent checkbox beyond the existing lead consent? TBD (legal wording).
-4. **Lifecycle read-back:** in Phase 1, does Architech need to read Twenty lead status back to the public site (e.g., for broker dashboard parity)? TBD.
+## 15. Final improvement review
 
-### 12.2 Unresolved edge cases (resolve in technical design)
+The final review added the improvements that increase value without adding another large system:
 
-| # | Gap | Why it matters | Suggested direction |
-|---|---|---|---|
-| 1 | **Fate of existing Architech broker surfaces** (`/broker/dashboard`, `/broker/leads`, listing submission) | Implementer must know whether to migrate, keep, or deprecate them vs Twenty | Deprecate the broker *lead* UI in favor of Twenty; keep **listing submission** + **consent/masking** in Architech (listing = Architech's system of record). Confirm. |
-| 2 | **Auth bridging** Architech ↔ Twenty | Earlier desire: "same broker logs into dashboards"; never reconciled | Phase 1: separate Twenty workspace login (simplest). Later: OIDC from better-auth to Twenty if single-login is required. |
-| 3 | **Broker onboarding / workspace provisioning** | New broker signup must create a Twenty workspace | On Architech broker activation → call Twenty admin API to create workspace + invite owner. Manual at first. |
-| 4 | **Sell-request source** (listing ref vs standalone seller) | Affects matching + system of record | Prefer (a) reference to Architech `Listing`; standalone seller records only if sellers aren't listings yet. |
-| 5 | **How "hot" is decided** in cold-caller mode | Manual vs automatic (P1-LEAD-002 score) ambiguity | Manual by cold caller, with P1-LEAD-002 score shown as a *suggested* input (transparent, not auto-decided). |
-| 6 | **Unassigned locality fallback** | Lead arrives for a locality no employee owns | Route to broker admin "unassigned" bucket + notification; broker assigns. |
-| 7 | **Lead reassignment on employee exit** | Orphaned leads/localities | Reassign localities → leads follow the locality owner; keep audit of the change. |
-| 8 | **Lead dedup** | Same buyer phone across listings | Match on masked-phone hash + email (where present); merge into one Twenty person. |
-| 9 | **Notification mechanism** (lead-assigned, handoff, dual-close) | Requirements reference notifications but no channel specified | In-app (Twenty) first; email via Resend (already scaffolded in Architech) later; SMS/WhatsApp deferred. |
-| 10 | **Dual-close timeout** | Other broker never confirms | `pending-other-close` state with a notification reminder; manual resolution by platform ops if stale. |
-| 11 | **Channel trust** | Who may publish requests | Only brokers with `VerificationStatus` = verified may publish; requests get an expiry (e.g., 30 days, TBD). |
-| 12 | **Platform-admin access & audit** | Who can see all tenants' data | Platform admins have cross-tenant read + audit trail; every status/ownership change logged (DPDP + anti-fraud). |
-| 13 | **Pricing "combo"** | Referenced ("bundled into plan/combo") but undefined | Out of scope for this doc; needs a separate pricing decision. |
-| 14 | **Migration/seed of existing data** | Existing demo `Lead`/`Requirement` rows | Seed script mapping to Twenty workspaces; masked by default. |
-| 15 | **Exit plan / portability** | If Twenty proves wrong | Twenty data is exportable via GraphQL/REST; keep Architech as the authoritative store of consent so buyer data is always recoverable. |
+1. **Channel-specific consent:** WhatsApp and voice calling are independently controlled.
+2. **Single active owner with safe fallback:** prevents two employees replying and prevents arbitrary-number routing.
+3. **Minimal WhatsApp activity markers in CRM:** managers see contact/reply timing without storing a second full chat history.
+4. **Mandatory next action + SLA:** every open lead has an owner, due action and escalation signal.
+5. **Mobile-first SIM calling:** free of telephony API charges while remaining honest about manual outcomes.
+6. **Company device/number lifecycle:** handles employee exit, lost phones and account recovery.
+7. **Exact compatibility lock and staged upgrades:** protects the same-site Frappe CRM/ERPNext composition.
+8. **One database per business and profile-based packaging:** makes the platform suitable for local-company sale.
 
-**Next artifact to produce:** detailed technical design —
-- Twenty workspace layout + exact custom-object field definitions,
-- Architech outbox schema + `lead.*` event payloads + idempotent consumer,
-- channel matching heuristics (final thresholds) + API contracts,
-- migration/seed plan for existing `Lead`/`Requirement` rows,
-- resolution of the edge cases in §12.2.
+Do **not** add offline editing, automatic call recording, shared-number multi-agent inbox, native mobile app, AI automation, paid telephony, official Meta/GSP billing or another analytics/helpdesk/CRM product before the core pilot proves a requirement. These are optional future decisions, not missing launch features.
 
----
+## 16. Current planning documents
 
-## 13. References
+- Horizontal selection: [`../business-suite/modular-platform-selection.md`](../business-suite/modular-platform-selection.md)
+- Mobile calling/status design: [`../business-suite/mobile-calling-lead-workflow.md`](../business-suite/mobile-calling-lead-workflow.md)
+- Local-company productization: [`../business-suite/local-company-product-blueprint.md`](../business-suite/local-company-product-blueprint.md)
+- Evolution source/risk evidence: [`evolution-api-adoption-assessment.md`](./evolution-api-adoption-assessment.md)
+- Broader ecosystem evidence: [`open-source-ecosystem-evaluation.md`](./open-source-ecosystem-evaluation.md)
 
-| Repo | URL | License | Role |
-|---|---|---|---|
-| Architech | (this repo) | MIT | public site + lead capture + consent/masking |
-| Twenty | https://github.com/twentyhq/twenty | AGPL-3.0 | broker CRM + channel + simple accounting (chosen) |
-| ERPNext | https://github.com/frappe/erpnext | GPL-3.0 | accounting (later) |
-| Frappe HR | https://github.com/frappe/hrms | GPL-3.0 | leave/payroll (later) |
-| India Compliance | https://github.com/resilient-tech/india-compliance | GPL-3.0 | GST/e-invoice (later) |
-| Frappe CRM | https://github.com/frappe/crm | AGPL-3.0 | considered, not chosen for broker CRM |
-| Zulip | https://github.com/zulip/zulip | Apache-2.0 | chat — deferred |
-| Mattermost | https://github.com/mattermost/mattermost | MIT/commercial | chat — deferred |
+The older evidence documents contain historical Chatwoot analysis. Those sections are not selected architecture after v8; they remain only as evaluation history until separately condensed.
