@@ -250,9 +250,12 @@ Per-broker workspace gets these **custom objects** (in addition to Twenty's buil
 | `Deal` | `matchRef`, `status`, `closeMode` (single/dual), `splitAgreement`, `commission` | a closed match with split |
 | `Employee` | `name`, `brokerRef`, `role` (agent/cold-caller), `salary` | team roster |
 | `Leave` | `employeeRef`, `from`, `to`, `type`, `status` | simple leave tracking |
-| `SalaryLedger` | `employeeRef`, `month`, `amount`, `status` | simple salary record |
+| `SalaryLedger` | `employeeRef`, `month`, `amount`, `status` | expense side: salary record |
+| `CommissionEntry` | `dealRef`, `employeeRef?`, `amount`, `recordedBy` (broker/employee), `date` | income side: commission per deal, recorded at close |
 
-> Mapping note: Architech `Lead.mode/status` maps onto Twenty's Opportunity stages (`NEW→Contacted→Qualified→Negotiation→Closed Won/Lost`). Architech `Requirement` can seed a `ChannelRequest` (buy) **only if** the buyer consents to channel publication — validate this consent wording.
+> Mapping notes:
+> - Architech `Lead.mode/status` maps onto Twenty's Opportunity stages (`NEW→Contacted→Qualified→Negotiation→Closed Won/Lost`). Architech `Requirement` can seed a `ChannelRequest` (buy) **only if** the buyer consents to channel publication — validate this consent wording.
+> - **Sell-request source is TBD:** a channel "sell" request is either (a) a reference to an existing Architech `Listing` (`sourceListingRef`), or (b) a standalone seller record created in Twenty. This choice affects matching (§7.6) and the system of record (§7.2) — resolve in technical design.
 
 ### 7.6 Channel matching heuristics *(PROPOSED — deterministic, transparent)*
 
@@ -337,16 +340,39 @@ This is a clean, deferred "adopt, don't build" — it doesn't block the current 
 
 ## 12. Open questions / next steps
 
+### 12.1 Gating decisions
+
 1. **Team stack comfort (gating):** TypeScript (Twenty, matches Architech) vs Python (Frappe). Recommendation is **Twenty**. *(If Python is strongly preferred, switch the broker-suite plan to a custom Frappe app.)*
 2. **Matching service location:** Architech-side (recommended, near the location registry) vs Twenty-side. TBD.
 3. **Channel publication consent:** does publishing a buyer requirement to the channel need an extra consent checkbox beyond the existing lead consent? TBD (legal wording).
 4. **Lifecycle read-back:** in Phase 1, does Architech need to read Twenty lead status back to the public site (e.g., for broker dashboard parity)? TBD.
 
+### 12.2 Unresolved edge cases (resolve in technical design)
+
+| # | Gap | Why it matters | Suggested direction |
+|---|---|---|---|
+| 1 | **Fate of existing Architech broker surfaces** (`/broker/dashboard`, `/broker/leads`, listing submission) | Implementer must know whether to migrate, keep, or deprecate them vs Twenty | Deprecate the broker *lead* UI in favor of Twenty; keep **listing submission** + **consent/masking** in Architech (listing = Architech's system of record). Confirm. |
+| 2 | **Auth bridging** Architech ↔ Twenty | Earlier desire: "same broker logs into dashboards"; never reconciled | Phase 1: separate Twenty workspace login (simplest). Later: OIDC from better-auth to Twenty if single-login is required. |
+| 3 | **Broker onboarding / workspace provisioning** | New broker signup must create a Twenty workspace | On Architech broker activation → call Twenty admin API to create workspace + invite owner. Manual at first. |
+| 4 | **Sell-request source** (listing ref vs standalone seller) | Affects matching + system of record | Prefer (a) reference to Architech `Listing`; standalone seller records only if sellers aren't listings yet. |
+| 5 | **How "hot" is decided** in cold-caller mode | Manual vs automatic (P1-LEAD-002 score) ambiguity | Manual by cold caller, with P1-LEAD-002 score shown as a *suggested* input (transparent, not auto-decided). |
+| 6 | **Unassigned locality fallback** | Lead arrives for a locality no employee owns | Route to broker admin "unassigned" bucket + notification; broker assigns. |
+| 7 | **Lead reassignment on employee exit** | Orphaned leads/localities | Reassign localities → leads follow the locality owner; keep audit of the change. |
+| 8 | **Lead dedup** | Same buyer phone across listings | Match on masked-phone hash + email (where present); merge into one Twenty person. |
+| 9 | **Notification mechanism** (lead-assigned, handoff, dual-close) | Requirements reference notifications but no channel specified | In-app (Twenty) first; email via Resend (already scaffolded in Architech) later; SMS/WhatsApp deferred. |
+| 10 | **Dual-close timeout** | Other broker never confirms | `pending-other-close` state with a notification reminder; manual resolution by platform ops if stale. |
+| 11 | **Channel trust** | Who may publish requests | Only brokers with `VerificationStatus` = verified may publish; requests get an expiry (e.g., 30 days, TBD). |
+| 12 | **Platform-admin access & audit** | Who can see all tenants' data | Platform admins have cross-tenant read + audit trail; every status/ownership change logged (DPDP + anti-fraud). |
+| 13 | **Pricing "combo"** | Referenced ("bundled into plan/combo") but undefined | Out of scope for this doc; needs a separate pricing decision. |
+| 14 | **Migration/seed of existing data** | Existing demo `Lead`/`Requirement` rows | Seed script mapping to Twenty workspaces; masked by default. |
+| 15 | **Exit plan / portability** | If Twenty proves wrong | Twenty data is exportable via GraphQL/REST; keep Architech as the authoritative store of consent so buyer data is always recoverable. |
+
 **Next artifact to produce:** detailed technical design —
 - Twenty workspace layout + exact custom-object field definitions,
 - Architech outbox schema + `lead.*` event payloads + idempotent consumer,
 - channel matching heuristics (final thresholds) + API contracts,
-- migration/seed plan for existing `Lead`/`Requirement` rows.
+- migration/seed plan for existing `Lead`/`Requirement` rows,
+- resolution of the edge cases in §12.2.
 
 ---
 
