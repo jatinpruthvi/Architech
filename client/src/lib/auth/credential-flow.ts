@@ -35,14 +35,25 @@ function failure(status: number, code: string, message: string, issues: Credenti
   return { ok: false, status, code, message, issues, retryAfterSeconds };
 }
 
-/** Forward a credential payload to Better Auth and collect cookies + session. */
+/** Forward a credential payload to Better Auth and collect cookies + session.
+ *
+ *  The caller's `Cookie` header is forwarded because some endpoints act on the
+ *  CURRENT session rather than on the body: `sign-out` in particular needs the
+ *  session token to know which session to revoke. Without it the handler
+ *  cheerfully returns cookie-clearing headers while leaving the session valid
+ *  server-side — the browser looks signed out, but a copy of the token still
+ *  authenticates. Sign-in/sign-up ignore the header, so forwarding it is safe
+ *  for every path. */
 async function callProvider(path: string, body: Record<string, unknown>, request: Request): Promise<{ status: number; cookies: string[]; payload: Record<string, unknown> }> {
   const auth = getAuthServer();
   const origin = new URL(request.url).origin;
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  const cookie = request.headers.get("cookie");
+  if (cookie) headers.cookie = cookie;
   const response = await auth.handler(
     new Request(`${origin}/api/auth/${path}`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     }),
   );
@@ -95,10 +106,10 @@ export async function signInWithCredentials(request: Request, input: Partial<{ e
   return { ok: true, session, cookies: provider.cookies };
 }
 
-export async function registerWithCredentials(request: Request, input: Partial<{ email: string; password: string; name: string }>): Promise<CredentialResult> {
+export async function registerWithCredentials(request: Request, input: Partial<{ email: string; password: string; name: string; listerType: string }>): Promise<CredentialResult> {
   const validated = validateSignUp(input);
   if (!validated.ok) return failure(400, "INVALID_CREDENTIALS_INPUT", "Check the highlighted fields.", validated.issues);
-  const { email, password, name } = validated.value;
+  const { email, password, name, listerType } = validated.value;
 
   if (getAuthSourceMode() === "demo") {
     /* Registration writes to a user store. Demo mode has none, so it refuses
@@ -108,8 +119,14 @@ export async function registerWithCredentials(request: Request, input: Partial<{
 
   /* Role is NOT accepted from the request. A self-service sign-up that could
      name its own role would let anyone mint a BROKER_ADMIN; elevation happens
-     through broker onboarding and an organization membership row. */
-  const provider = await callProvider("sign-up/email", { email, password, name, role: "BUYER" }, request);
+     through broker onboarding and an organization membership row.
+
+     `listerType` IS accepted, and the difference is the whole point: it records
+     what the person said they are so the listing form can default its
+     attribution checkbox, while `role` — the thing that actually authorises —
+     stays BUYER until onboarding grants a membership. Declaring "broker" here
+     buys exactly one pre-ticked checkbox, not a single permission. */
+  const provider = await callProvider("sign-up/email", { email, password, name, role: "BUYER", listerType }, request);
   if (provider.status !== 200 || provider.cookies.length === 0) {
     const message = typeof provider.payload.message === "string" ? provider.payload.message : "We could not create that account.";
     const alreadyExists = provider.status === 422 || /exist/i.test(message);

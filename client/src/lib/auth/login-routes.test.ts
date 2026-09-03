@@ -161,9 +161,55 @@ describe("session + logout round trip", () => {
 
 describe("register route", () => {
   it("refuses to fake account creation in demo mode", async () => {
-    const response = await register(post("/api/auth/register", { name: "New User", email: "new@example.com", password: "password123" }));
+    const response = await register(post("/api/auth/register/", { name: "New User", email: "new@example.com", password: "password123", listerType: "OWNER" }));
     expect(response.status).toBe(503);
     expect((await response.json()).error).toBe("REGISTRATION_UNAVAILABLE");
+  });
+
+  it("records the declared lister type WITHOUT granting any broker authority", async () => {
+    vi.stubEnv("ARCHITECH_AUTH_SOURCE", "better-auth");
+    vi.stubEnv("BETTER_AUTH_SECRET", "w".repeat(32));
+    vi.stubEnv("BETTER_AUTH_URL", ORIGIN);
+    vi.stubEnv("DATABASE_URL", "postgres://unused-by-memory-adapter");
+    resetAuthServerForTests();
+
+    /* The whole point of separating declaration from role: this person says
+       they are a broker AND asks for BROKER_ADMIN. They must get the
+       declaration (so the listing form pre-ticks "broker") and none of the
+       authority. */
+    const response = await register(post("/api/auth/register/", {
+      name: "Declared Broker",
+      email: "declared-broker@example.com",
+      password: "password123",
+      listerType: "BROKER",
+      role: "BROKER_ADMIN",
+    }));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(body.session.user.listerType).toBe("BROKER");
+    expect(body.session.user.role).toBe("BUYER");
+    expect(body.session.organization).toBeUndefined();
+    expect(body.canAccessBrokerDashboard).toBeFalsy();
+    /* No broker permission may leak in on the strength of a self-declaration. */
+    expect(body.session.permissions).not.toContain("lead.inbox.read");
+    expect(body.session.permissions).not.toContain("listing.draft.create");
+    expect(body.redirectTo).toBe("/saved/");
+  });
+
+  it("rejects a sign-up that omits or fakes the lister type", async () => {
+    vi.stubEnv("ARCHITECH_AUTH_SOURCE", "better-auth");
+    vi.stubEnv("BETTER_AUTH_SECRET", "w".repeat(32));
+    vi.stubEnv("BETTER_AUTH_URL", ORIGIN);
+    vi.stubEnv("DATABASE_URL", "postgres://unused-by-memory-adapter");
+    resetAuthServerForTests();
+
+    const missing = await register(post("/api/auth/register/", { name: "No Type", email: "notype@example.com", password: "password123" }));
+    expect(missing.status).toBe(400);
+    expect((await missing.json()).issues.some((issue: { field: string }) => issue.field === "listerType")).toBe(true);
+
+    const junk = await register(post("/api/auth/register/", { name: "Junk Type", email: "junk@example.com", password: "password123", listerType: "ADMIN" }));
+    expect(junk.status).toBe(400);
   });
 
   it("creates a live account, mints a session, and never honours a self-assigned role", async () => {
@@ -173,7 +219,7 @@ describe("register route", () => {
     vi.stubEnv("DATABASE_URL", "postgres://unused-by-memory-adapter");
     resetAuthServerForTests();
 
-    const response = await register(post("/api/auth/register", { name: "Ananya Sharma", email: "ananya@example.com", password: "password123", role: "ADMIN" }));
+    const response = await register(post("/api/auth/register/", { name: "Ananya Sharma", email: "ananya@example.com", password: "password123", listerType: "OWNER", role: "ADMIN" }));
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.ok).toBe(true);
@@ -190,7 +236,7 @@ describe("register route", () => {
     vi.stubEnv("DATABASE_URL", "postgres://unused-by-memory-adapter");
     resetAuthServerForTests();
 
-    await register(post("/api/auth/register", { name: "Live User", email: "live-login@example.com", password: "password123" }));
+    await register(post("/api/auth/register/", { name: "Live User", email: "live-login@example.com", password: "password123", listerType: "OWNER" }));
     clearLoginThrottleForTests();
 
     const good = await login(post("/api/auth/login", { email: "live-login@example.com", password: "password123" }));
@@ -203,6 +249,33 @@ describe("register route", () => {
     expect(bad.headers.getSetCookie()).toHaveLength(0);
   });
 
+  it("REVOKES the live session on sign-out, not just the browser cookie", async () => {
+    vi.stubEnv("ARCHITECH_AUTH_SOURCE", "better-auth");
+    vi.stubEnv("BETTER_AUTH_SECRET", "w".repeat(32));
+    vi.stubEnv("BETTER_AUTH_URL", ORIGIN);
+    vi.stubEnv("DATABASE_URL", "postgres://unused-by-memory-adapter");
+    resetAuthServerForTests();
+
+    const signedUp = await register(post("/api/auth/register/", { name: "Revoke Me", email: "revoke@example.com", password: "password123", listerType: "OWNER" }));
+    const cookie = cookiesOf(signedUp);
+    expect(cookie).toContain("better-auth.session_token=");
+
+    const before = await session(new Request(`${ORIGIN}/api/auth/session?source=better-auth`, { headers: { cookie } }));
+    expect((await before.json()).authenticated).toBe(true);
+
+    const out = await logout(post("/api/auth/logout/", {}, { cookie }));
+    expect(out.status).toBe(200);
+    /* The clearing cookies alone are NOT the assertion. Sign-out has to kill
+       the session server-side: replaying a copy of the original token (an
+       attacker who captured it, or a second device) must now fail. Before the
+       caller's Cookie header was forwarded to the provider, Better Auth had no
+       session to revoke and this replay still authenticated. */
+    const replay = await session(new Request(`${ORIGIN}/api/auth/session?source=better-auth`, { headers: { cookie } }));
+    const replayBody = await replay.json();
+    expect(replayBody.authenticated).toBe(false);
+    expect(replayBody.session).toBeNull();
+  });
+
   it("reports a duplicate account without leaking a different failure shape", async () => {
     vi.stubEnv("ARCHITECH_AUTH_SOURCE", "better-auth");
     vi.stubEnv("BETTER_AUTH_SECRET", "w".repeat(32));
@@ -210,8 +283,8 @@ describe("register route", () => {
     vi.stubEnv("DATABASE_URL", "postgres://unused-by-memory-adapter");
     resetAuthServerForTests();
 
-    await register(post("/api/auth/register", { name: "Dupe", email: "dupe@example.com", password: "password123" }));
-    const again = await register(post("/api/auth/register", { name: "Dupe", email: "dupe@example.com", password: "password123" }));
+    await register(post("/api/auth/register/", { name: "Dupe", email: "dupe@example.com", password: "password123", listerType: "OWNER" }));
+    const again = await register(post("/api/auth/register/", { name: "Dupe", email: "dupe@example.com", password: "password123", listerType: "OWNER" }));
     expect(again.status).toBe(409);
     expect((await again.json()).error).toBe("ACCOUNT_EXISTS");
   });

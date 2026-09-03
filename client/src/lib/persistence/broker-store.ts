@@ -6,6 +6,7 @@ import { getMediaUpload } from "@/lib/media/upload";
 import { isPublishable } from "@/lib/media/retention";
 import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
+import { normalizeListerType } from "@/lib/listing/lister-type";
 import { formatPrice } from "@/lib/property-generator";
 import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
 import { isPrismaPersistence } from "./source";
@@ -64,6 +65,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       areaSqft: draft.areaSqft,
       propertyType: draft.propertyType,
       availability: draft.availability,
+      listerType: draft.listerType ?? "OWNER",
       description: draft.description,
       sourceSummary: JSON.stringify(draft.details ?? {}),
       postalCode: draft.postalCode,
@@ -85,6 +87,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       bhk: draft.bhk,
       areaSqft: draft.areaSqft,
       availability: draft.availability,
+      listerType: draft.listerType ?? "OWNER",
       brokerOrgId: draft.organizationId,
       sourceSummary: JSON.stringify(draft.details ?? {}),
       postalCode: draft.postalCode,
@@ -499,6 +502,10 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     areaSqft: Number(row.areaSqft ?? 0),
     availability: normalizeAvailability(row.availability) ?? "READY_TO_MOVE",
     propertyType: isPropertyTypeCode(row.propertyType) ? row.propertyType as PropertyTypeCode : "APARTMENT",
+    /* Read back through the same normalizer the write path uses, so a legacy
+       row with no attribution reads as OWNER rather than `undefined` and the
+       broker's list does not show a blank column. */
+    listerType: normalizeListerType(row.listerType) ?? "OWNER",
     description: String(row.description ?? ""),
     mediaRightsConfirmed: true,
     /* Same contract as the public read path (repositories/mappers.ts). This

@@ -4,6 +4,11 @@
  * never read from the request, so a self-service sign-up cannot mint a broker
  * or moderator. Broker access is granted through onboarding and a BrokerUser
  * membership row, per docs/auth/phase-1-better-auth-organizations.md.
+ *
+ * It DOES record `listerType` ("I am an owner" / "I am a broker"). That is a
+ * self-declaration used to pre-tick the listing form's attribution checkbox,
+ * and it deliberately carries no authority — the two are kept apart so the
+ * form can be helpful without the sign-up becoming an escalation path.
  */
 import { NextResponse } from "next/server";
 import { registerWithCredentials } from "@/lib/auth/credential-flow";
@@ -28,6 +33,9 @@ export async function POST(request: Request) {
     name: typeof body.name === "string" ? body.name : "",
     email: typeof body.email === "string" ? body.email : "",
     password: typeof body.password === "string" ? body.password : "",
+    /* Declared owner/broker. Defaults the listing form only; `role` is still
+       forced to BUYER inside the flow. */
+    listerType: typeof body.listerType === "string" ? body.listerType : "",
   });
 
   if (!result.ok) {

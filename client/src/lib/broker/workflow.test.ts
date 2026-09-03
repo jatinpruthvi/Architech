@@ -3,6 +3,7 @@ import { POST as createDraftRoute } from "../../../../app/api/broker/listings/ro
 import { PATCH as updateDraftRoute, POST as lifecycleDraftRoute, DELETE as deleteDraftRoute } from "../../../../app/api/broker/listings/[draftId]/route";
 import { POST as submitDraftRoute } from "../../../../app/api/broker/listings/[draftId]/submit/route";
 import { POST as moderateDraftRoute } from "../../../../app/api/admin/moderation/listings/[draftId]/route";
+import { demoBrokerSession } from "@/lib/auth/roles";
 import { archiveListingDraft, createListingDraft, deleteListingDraft, getModerationQueue, moderateListing, resetBrokerWorkflowForTests, resumeListingDraft, submitListingForReview, updateListingDraft, validateBrokerProfile, validateListingDraft, type ListingDraftInput } from "./workflow";
 
 const validDraft: ListingDraftInput = {
@@ -31,6 +32,67 @@ describe("broker onboarding and listing moderation workflow", () => {
   it("validates listing draft requirements", () => {
     expect(validateListingDraft(validDraft)).toEqual([]);
     expect(validateListingDraft({ ...validDraft, mediaRightsConfirmed: false })).toContain("Media rights confirmation is required before review.");
+  });
+
+  describe("listing attribution (owner vs broker)", () => {
+    /* The account declaration seeds the checkbox; the listing value is what a
+       buyer is shown, so it must be independently settable and must survive
+       edits. */
+    const brokerAccount = { ...demoBrokerSession, user: { ...demoBrokerSession.user, listerType: "BROKER" as const } };
+    const ownerAccount = { ...demoBrokerSession, user: { ...demoBrokerSession.user, listerType: "OWNER" as const } };
+
+    it("defaults a new draft to the account's sign-up declaration", () => {
+      const asBroker = createListingDraft({ ...validDraft }, brokerAccount);
+      expect(asBroker.ok && asBroker.draft.listerType).toBe("BROKER");
+
+      resetBrokerWorkflowForTests();
+      const asOwner = createListingDraft({ ...validDraft }, ownerAccount);
+      expect(asOwner.ok && asOwner.draft.listerType).toBe("OWNER");
+    });
+
+    it("lets an explicit per-listing choice override the account default", () => {
+      /* A broker listing their own home — the case that makes a per-listing
+         field necessary rather than just reading the account. */
+      const created = createListingDraft({ ...validDraft, listerType: "OWNER" }, brokerAccount);
+      expect(created.ok && created.draft.listerType).toBe("OWNER");
+    });
+
+    it("falls back to OWNER when the account never declared one", () => {
+      const undeclared = { ...demoBrokerSession, user: { ...demoBrokerSession.user, listerType: undefined } };
+      const created = createListingDraft({ ...validDraft }, undeclared);
+      expect(created.ok && created.draft.listerType).toBe("OWNER");
+    });
+
+    it("rejects an unreviewed attribution instead of coercing it", () => {
+      expect(validateListingDraft({ ...validDraft, listerType: "LANDLORD" as never }))
+        .toContain("Choose whether this listing is by the owner or by a broker.");
+    });
+
+    it("normalizes a loose spelling on the way into storage", () => {
+      const created = createListingDraft({ ...validDraft, listerType: "agent" as never }, ownerAccount);
+      expect(created.ok && created.draft.listerType).toBe("BROKER");
+    });
+
+    it("keeps the listing's own attribution across an edit that omits it", () => {
+      const created = createListingDraft({ ...validDraft, listerType: "OWNER" }, brokerAccount);
+      if (!created.ok) throw new Error("draft failed");
+      /* An edit payload without `listerType` must not silently revert the
+         listing to the account default — that would change buyer-facing
+         attribution behind the broker's back. */
+      const withoutAttribution: ListingDraftInput = { ...validDraft };
+      delete withoutAttribution.listerType;
+      const updated = updateListingDraft(created.draft.id, withoutAttribution, brokerAccount);
+      expect(updated.ok && updated.draft.listerType).toBe("OWNER");
+    });
+
+    it("audits an attribution change explicitly", () => {
+      const created = createListingDraft({ ...validDraft, listerType: "OWNER" }, brokerAccount);
+      if (!created.ok) throw new Error("draft failed");
+      const updated = updateListingDraft(created.draft.id, { ...validDraft, listerType: "BROKER" }, brokerAccount);
+      if (!updated.ok) throw new Error("update failed");
+      const entry = updated.draft.auditTrail.find((item) => item.metadata?.listerTypeChangedTo);
+      expect(entry?.metadata).toMatchObject({ listerTypeChangedFrom: "OWNER", listerTypeChangedTo: "BROKER" });
+    });
   });
 
   it("creates, submits, and moderates a listing draft", () => {

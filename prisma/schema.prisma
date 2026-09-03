@@ -57,6 +57,18 @@ enum UserRole {
   ADMIN
 }
 
+/// Self-declared listing attribution: does this person list as the property
+/// owner, or as a broker acting for owners? Captured at sign-up (defaults the
+/// listing form) and again per listing (what a buyer is shown).
+///
+/// NOT a permission. Broker authority comes from `UserRole` plus an active
+/// `BrokerUser` membership; this field is an unverified claim and must never
+/// be read as authorisation.
+enum ListerType {
+  OWNER
+  BROKER
+}
+
 enum LeadMode {
   MASKED
   DIRECT_CONSENTED
@@ -504,6 +516,8 @@ model User {
   email         String    @unique
   name          String?
   role          UserRole  @default(BUYER)
+  /// Self-declared at sign-up; defaults the listing form only. See ListerType.
+  listerType    ListerType @default(OWNER)
   phoneMasked   String?
   emailVerified DateTime?
   lastLoginAt   DateTime?
@@ -577,6 +591,9 @@ model Listing {
   descriptionHi     String?
   note              String?
   lifecycle         ListingLifecycle   @default(DRAFT)
+  /// Attribution shown to buyers. Defaults from the lister's account
+  /// declaration but is overridable per listing.
+  listerType        ListerType         @default(OWNER)
   verification      VerificationStatus @default(DEMO)
   translationStatus TranslationStatus  @default(ENGLISH_ONLY)
   propertyType      PropertyType       @default(APARTMENT)
@@ -632,6 +649,7 @@ model Listing {
   @@index([cityId, lifecycle])
   @@index([cityId, localityId, lifecycle, meaningfulUpdatedAt])
   @@index([brokerOrgId, lifecycle, updatedAt])
+  @@index([listerType, lifecycle])
   @@index([localityId, lifecycle])
   @@index([verification])
   @@index([priceInr])

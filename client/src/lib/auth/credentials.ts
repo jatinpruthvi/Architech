@@ -11,6 +11,8 @@
  * confusing failure mode rather than a security gain.
  */
 
+import { normalizeListerType, type ListerType } from "@/lib/listing/lister-type";
+
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 128;
 export const EMAIL_MAX_LENGTH = 254;
@@ -23,12 +25,14 @@ export const NAME_MAX_LENGTH = 80;
    whitespace, and doubled dots — the mistakes people actually make. */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
-export type CredentialField = "email" | "password" | "name";
+export type CredentialField = "email" | "password" | "name" | "listerType";
 
 export type CredentialIssue = { field: CredentialField; message: string };
 
 export type SignInCredentials = { email: string; password: string };
-export type SignUpCredentials = SignInCredentials & { name: string };
+/* `listerType` is a self-declaration used to default the listing form. It is
+   deliberately NOT a role: see lib/listing/lister-type.ts. */
+export type SignUpCredentials = SignInCredentials & { name: string; listerType: ListerType };
 
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
@@ -69,14 +73,28 @@ export function validateSignIn(input: Partial<SignInCredentials>): { ok: true; v
   return { ok: true, value: { email: normalizeEmail(email), password } };
 }
 
-/** Validate a sign-up payload. Returns the normalized credentials or the issues. */
-export function validateSignUp(input: Partial<SignUpCredentials>): { ok: true; value: SignUpCredentials } | { ok: false; issues: CredentialIssue[] } {
+export function validateListerType(value: unknown): CredentialIssue | null {
+  /* Required, with no silent fallback. Defaulting an unrecognised value to
+     OWNER would record a declaration the person never made, and this field is
+     shown to buyers as listing attribution. */
+  return normalizeListerType(value) ? null : { field: "listerType", message: "Tell us whether you are an owner or a broker." };
+}
+
+/** Validate a sign-up payload. Returns the normalized credentials or the issues.
+
+    `listerType` is typed loosely because it arrives from a JSON request body:
+    accepting only the narrow union here would push the parsing job onto every
+    caller, which is exactly how an unvalidated string reaches storage. This
+    function is the one place that widens then narrows. */
+export function validateSignUp(input: Partial<Omit<SignUpCredentials, "listerType">> & { listerType?: unknown }): { ok: true; value: SignUpCredentials } | { ok: false; issues: CredentialIssue[] } {
   const name = typeof input.name === "string" ? input.name : "";
   const base = validateSignIn(input);
   const nameIssue = validateName(name);
-  if (!base.ok) return { ok: false, issues: nameIssue ? [nameIssue, ...base.issues] : base.issues };
-  if (nameIssue) return { ok: false, issues: [nameIssue] };
-  return { ok: true, value: { ...base.value, name: name.trim() } };
+  const listerIssue = validateListerType(input.listerType);
+  const extra = [nameIssue, listerIssue].filter((issue): issue is CredentialIssue => issue !== null);
+  if (!base.ok) return { ok: false, issues: [...extra, ...base.issues] };
+  if (extra.length > 0) return { ok: false, issues: extra };
+  return { ok: true, value: { ...base.value, name: name.trim(), listerType: normalizeListerType(input.listerType)! } };
 }
 
 /* Sign-in failure is reported as ONE message for both "unknown email" and

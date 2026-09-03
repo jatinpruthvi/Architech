@@ -32,13 +32,28 @@ describe("credential validation", () => {
   it("reports every failing field at once so the form is fixable in one pass", () => {
     const result = validateSignUp({ name: "", email: "bad", password: "short" });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.issues.map((issue) => issue.field).sort()).toEqual(["email", "name", "password"]);
+    if (!result.ok) expect(result.issues.map((issue) => issue.field).sort()).toEqual(["email", "listerType", "name", "password"]);
   });
 
   it("trims the registered name", () => {
-    const result = validateSignUp({ name: "  Ananya Sharma  ", email: "a@b.com", password: "password123" });
+    const result = validateSignUp({ name: "  Ananya Sharma  ", email: "a@b.com", password: "password123", listerType: "OWNER" });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.name).toBe("Ananya Sharma");
+  });
+
+  it("requires an explicit owner/broker declaration at sign-up", () => {
+    const missing = validateSignUp({ name: "Ananya Sharma", email: "a@b.com", password: "password123" });
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) expect(missing.issues.some((issue) => issue.field === "listerType")).toBe(true);
+
+    const junk = validateSignUp({ name: "Ananya Sharma", email: "a@b.com", password: "password123", listerType: "ADMIN" });
+    expect(junk.ok).toBe(false);
+  });
+
+  it("normalizes the declaration to a reviewed code", () => {
+    const result = validateSignUp({ name: "Ananya Sharma", email: "a@b.com", password: "password123", listerType: "agent" });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.listerType).toBe("BROKER");
   });
 
   it("keeps a single failure message so the form cannot enumerate accounts", () => {

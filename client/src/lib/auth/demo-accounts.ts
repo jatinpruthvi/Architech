@@ -21,6 +21,7 @@
  * never consulted (see `credential-flow.ts`).
  */
 import { demoBrokerSession, permissionsForRole, type AuthOrganization, type AuthRole, type AuthSession } from "./roles";
+import type { ListerType } from "@/lib/listing/lister-type";
 
 /** Cookie that records which demo account is signed in. */
 export const DEMO_SESSION_COOKIE = "architech.demo_session";
@@ -42,9 +43,9 @@ export type DemoAccount = {
   session: AuthSession;
 };
 
-function demoSession(id: string, name: string, email: string, role: AuthRole, organization?: AuthOrganization): AuthSession {
+function demoSession(id: string, name: string, email: string, role: AuthRole, organization?: AuthOrganization, listerType: ListerType = "OWNER"): AuthSession {
   return {
-    user: { id, name, email, role },
+    user: { id, name, email, role, listerType },
     organization,
     permissions: role === "BROKER_ADMIN" ? demoBrokerSession.permissions : permissionsForRole(role),
     source: "better-auth-contract-demo",
@@ -78,7 +79,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     label: "Broker member",
     email: "broker-member@example.com",
     password: "demo-member-1234",
-    session: demoSession("demo-user-broker-member", "Demo Broker Member", "broker-member@example.com", "BROKER_MEMBER", DEMO_ORGANIZATION),
+    session: demoSession("demo-user-broker-member", "Demo Broker Member", "broker-member@example.com", "BROKER_MEMBER", DEMO_ORGANIZATION, "BROKER"),
   },
 ];
 

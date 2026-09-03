@@ -1,4 +1,5 @@
 import { demoBrokerSession, type AuthOrganization, type AuthRole, type AuthSession } from "./roles";
+import type { ListerType } from "@/lib/listing/lister-type";
 import { getAuthSourceMode, validateBetterAuthEnvironment } from "./source";
 
 export type BetterAuthClaims = {
@@ -6,6 +7,8 @@ export type BetterAuthClaims = {
   name?: string | null;
   email: string;
   role?: AuthRole | null;
+  /** Self-declared owner/broker; defaults the listing form, grants nothing. */
+  listerType?: ListerType | null;
   organization?: AuthOrganization | null;
   permissions?: string[] | null;
 };
@@ -17,6 +20,7 @@ export function mapBetterAuthClaimsToSession(claims: BetterAuthClaims): AuthSess
       name: claims.name || claims.email,
       email: claims.email,
       role: claims.role ?? "BUYER",
+      listerType: claims.listerType ?? undefined,
     },
     organization: claims.organization ?? undefined,
     permissions: claims.permissions ?? [],

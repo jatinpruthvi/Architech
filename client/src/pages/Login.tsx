@@ -28,6 +28,7 @@ import useTitle from "@/hooks/useTitle";
 import { useSession } from "@/contexts/SessionContext";
 import { landingPathForSession, resolvePostLoginPath, safeNextPath } from "@/lib/auth/redirects";
 import { PASSWORD_MIN_LENGTH, validateSignIn, validateSignUp, type CredentialField, type CredentialIssue } from "@/lib/auth/credentials";
+import { DEFAULT_LISTER_TYPE, LISTER_TYPE_OPTIONS, type ListerType } from "@/lib/listing/lister-type";
 import type { AuthSession } from "@/lib/auth/roles";
 
 type Mode = "signin" | "register";
@@ -57,6 +58,7 @@ export default function Login() {
 
   const [mode, setMode] = useState<Mode>(requestedMode);
   const [name, setName] = useState("");
+  const [listerType, setListerType] = useState<ListerType>(DEFAULT_LISTER_TYPE);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -107,7 +109,7 @@ export default function Login() {
     event.preventDefault();
     setFormError(null);
 
-    const validated = mode === "register" ? validateSignUp({ name, email, password }) : validateSignIn({ email, password });
+    const validated = mode === "register" ? validateSignUp({ name, email, password, listerType }) : validateSignIn({ email, password });
     if (!validated.ok) {
       setIssues(validated.issues);
       focusFirstIssue(validated.issues);
@@ -217,6 +219,54 @@ export default function Login() {
                 />
                 {issueFor.has("name") && <p id="login-name-error" role="alert" className="mt-2 text-[12px] text-brick">{issueFor.get("name")}</p>}
               </div>
+            )}
+
+            {registering && (
+              /* Radio group, not a checkbox: owner and broker are mutually
+                 exclusive, and a single checkbox would make one of them the
+                 unlabelled "not the other" option. `fieldset`/`legend` is what
+                 tells a screen reader these two inputs are one question. */
+              <fieldset className="mb-5 border-0 p-0">
+                <legend className="stamp font-semibold ink-2">I am listing as</legend>
+                <p className="mt-1 text-[12px] ink-3">This pre-selects the attribution on your listings. You can change it on any individual listing.</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {LISTER_TYPE_OPTIONS.map((option) => {
+                    const active = listerType === option.value;
+                    return (
+                      <label
+                        key={option.value}
+                        className={`flex cursor-pointer items-start gap-3 border bg-card p-4 transition-colors ${active ? "border-brick" : "border-ink/15 hover:border-brick/50"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="listerType"
+                          value={option.value}
+                          checked={active}
+                          onChange={() => setListerType(option.value)}
+                          disabled={submitting}
+                          aria-label={`${option.label} — ${option.description}`}
+                          className="mt-0.5 h-4 w-4 accent-[var(--brick)]"
+                        />
+                        {/* `aria-label` on the input carries the accessible
+                            name: the visible text lives in nested spans, which
+                            the label-has-associated-control rule cannot see,
+                            and the description is a second line rather than
+                            part of the name. */}
+                        <span className="block">
+                          <span className="block text-[14px] font-semibold">{option.label}</span>
+                          <span className="mt-0.5 block text-[12px] leading-5 ink-3">{option.description}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {/* Truthfulness: choosing "broker" here must not read as though
+                    it grants partner access, because it does not. */}
+                <p className="mt-3 text-[12px] leading-5 ink-3">
+                  Broker tools and the partner workspace need a verified organisation — start at <Link href="/broker/onboarding/" className="underline underline-offset-4">partner onboarding</Link>.
+                </p>
+                {issueFor.has("listerType") && <p role="alert" className="mt-2 text-[12px] text-brick">{issueFor.get("listerType")}</p>}
+              </fieldset>
             )}
 
             <div className="mb-5">

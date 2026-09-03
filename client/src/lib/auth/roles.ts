@@ -1,3 +1,5 @@
+import type { ListerType } from "@/lib/listing/lister-type";
+
 export type AuthRole = "BUYER" | "BROKER_MEMBER" | "BROKER_ADMIN" | "MODERATOR" | "ADMIN";
 
 export type AuthOrganization = {
@@ -13,6 +15,12 @@ export type AuthSession = {
     name: string;
     email: string;
     role: AuthRole;
+    /* Self-declared at sign-up: does this person list as an owner or a broker?
+       It defaults the listing form's attribution checkbox and NOTHING else.
+       It is not a permission and must never be read as one — broker access
+       comes from `role` plus organization membership. See
+       lib/listing/lister-type.ts. */
+    listerType?: ListerType;
   };
   organization?: AuthOrganization;
   permissions: string[];
@@ -33,6 +41,7 @@ export const demoBrokerSession: AuthSession = {
     name: "Nivasa Demo Admin",
     email: "broker-admin@example.com",
     role: "BROKER_ADMIN",
+    listerType: "BROKER",
   },
   organization: {
     id: "demo-org-nivasa-partners",

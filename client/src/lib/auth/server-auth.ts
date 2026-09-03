@@ -21,6 +21,7 @@ import { memoryAdapter } from "better-auth/adapters/memory";
 import type { BetterAuthClaims } from "./live";
 import { BETTER_AUTH_SESSION_COOKIE } from "./live-session";
 import { permissionsForRole, type AuthOrganization } from "./roles";
+import { normalizeListerType } from "@/lib/listing/lister-type";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
@@ -37,6 +38,10 @@ function createAuthServer() {
     user: {
       additionalFields: {
         role: { type: "string", required: false, defaultValue: "BUYER" },
+        /* Self-declared owner/broker captured at sign-up. Stored on the user so
+           the listing form can default its attribution checkbox. Explicitly NOT
+           a permission — see lib/listing/lister-type.ts. */
+        listerType: { type: "string", required: false, defaultValue: "OWNER" },
       },
     },
   });
@@ -65,13 +70,14 @@ export async function resolveBetterAuthClaims(token: string): Promise<BetterAuth
     headers: { cookie: `${BETTER_AUTH_SESSION_COOKIE}=${encodeURIComponent(token)}` },
   });
   if (!session?.user) return null;
-  const user = session.user as { id: string; name?: string | null; email: string; role?: string | null };
+  const user = session.user as { id: string; name?: string | null; email: string; role?: string | null; listerType?: string | null };
   const role = isAuthRole(user.role) ? user.role : "BUYER";
   return {
     userId: user.id,
     name: user.name,
     email: user.email,
     role,
+    listerType: normalizeListerType(user.listerType),
     permissions: permissionsForRole(role),
     organization: await resolveOrganizationForUser(user.id, role),
   };
