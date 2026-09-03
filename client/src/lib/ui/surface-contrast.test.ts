@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -173,5 +174,19 @@ describe("solid action markup contracts", () => {
     }
     expect(faded).toEqual([]);
     expect(css).toContain(".btn-solid:disabled,");
+  });
+});
+
+/* The token-pair checks above test colours in isolation. This runs the repo-wide
+   auditor, which resolves every `bg-*` + `text-*` pairing that actually appears
+   in the markup — per interaction state, per theme, honouring the dark-mode
+   deepening rules — and computes the real WCAG ratio.
+   That distinction matters: the auth tab that shipped unreadable used tokens
+   which each looked fine on their own. See scripts/audit-surface-contrast.mjs. */
+describe("repo-wide fill/label contrast", () => {
+  it("has no pairing below its WCAG threshold in either theme", () => {
+    const result = spawnSync(process.execPath, ["scripts/audit-surface-contrast.mjs"], { encoding: "utf8" });
+    expect(result.stdout + result.stderr, "contrast audit reported failures").toContain("✓");
+    expect(result.status).toBe(0);
   });
 });

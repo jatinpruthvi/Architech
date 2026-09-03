@@ -558,7 +558,7 @@ export default function ResultsPage({
     {fetchFailed && (
       <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-brick/40 bg-sand/60 px-4 py-3">
         <p className="stamp text-brick">{t.search.loadFailed}</p>
-        <button type="button" onClick={() => setRetryNonce((value) => value + 1)} className="touch-44 rounded-lg border border-brick/50 px-4 py-2 stamp font-semibold text-brick hover:bg-sand">
+        <button type="button" onClick={() => setRetryNonce((value) => value + 1)} className="touch-44 rounded-lg border border-brick/50 px-4 py-2 stamp font-semibold text-brick hover:bg-sand hover:text-ink">
           {t.search.retrySearch}
         </button>
       </div>
@@ -622,7 +622,7 @@ export default function ResultsPage({
  <div className="relative mt-8 flex flex-wrap items-center gap-2 border-t border-ink/12 pt-6">
  <span className="stamp text-brick">{t.search.facet.relaxTitle}</span>
  {relaxations.map((relaxation) => (
- <button key={relaxation.groupId} type="button" onClick={() => applyRelaxation(relaxation.groupId)} className="touch-44 min-h-[44px] rounded-lg border border-brick/50 px-4 stamp font-semibold text-brick transition-colors hover:bg-sand">
+ <button key={relaxation.groupId} type="button" onClick={() => applyRelaxation(relaxation.groupId)} className="touch-44 min-h-[44px] rounded-lg border border-brick/50 px-4 stamp font-semibold text-brick transition-colors hover:bg-sand hover:text-ink">
  {t.search.facet.relaxAction(relaxation.groupLabel, relaxation.gain)}
  </button>
  ))}

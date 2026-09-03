@@ -22,6 +22,12 @@ jobs:
         run: pnpm check
       - name: Lint
         run: pnpm lint
+      # Resolves every bg-*/text-* pairing in the markup through the real token
+      # values, per interaction state and per theme, and computes the WCAG
+      # ratio. Catches "these two colours do not contrast", which the
+      # token-level tests cannot see.
+      - name: Surface contrast audit
+        run: pnpm audit:contrast
       - name: Unit tests
         run: pnpm test
       - name: Production build

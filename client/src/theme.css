@@ -42,6 +42,12 @@
   --color-paper: var(--paper);
   --color-sand: var(--sand);
   --color-brick: var(--brick);
+  /* `--brick-deep` existed as a surface token but was never registered with
+     Tailwind, so the `hover:bg-brick-deep` already used by the hero search and
+     the listing CTA compiled to NOTHING — those buttons had no hover state at
+     all. Registering it makes them work and lets a call site reach the pressed
+     saffron directly. */
+  --color-brick-deep: var(--brick-deep);
   --color-ember: var(--ember);
   --color-trust: var(--trust);
   --color-gold: var(--gold);
@@ -724,6 +730,30 @@ button.btn-primary, a.btn-primary { border-radius: 9999px; }
  * `@layer components` so a call site can still opt out with its own utility. */
 @layer components {
   .dark :where(.bg-brick.text-cream) { background-color: var(--brick-deep); }
+
+  /* Same defect, different hue. The dark theme lightens `--trust` to a mint
+     #7cc9a5 so it reads against night surfaces, which makes a cream label on it
+     1.81:1 — the success tick in RequirementCapture was effectively invisible.
+     Unlike saffron there is no `--trust-deep`, and inventing one would change
+     the verification colour everywhere; flipping the LABEL to night ink instead
+     gives 8.76:1 and leaves the emerald identity intact. Light theme is a
+     passing 4.84:1 and is deliberately untouched. */
+  .dark :where(.bg-trust.text-cream) { color: var(--night); }
+
+  /* A control that hovers TO a saffron fill but keeps its resting label colour.
+     The save toggles on the property cards do this: `bg-paper text-ink
+     hover:bg-brick` leaves dark ink on saffron at 2.80:1 light / 1.77:1 dark,
+     under the 3:1 WCAG 1.4.11 asks of a non-text control.
+     It cannot be fixed with `clay-fill` on the element (that also forces cream
+     in the RESTING state, putting a cream icon on light paper at 1.04:1), nor
+     with `hover:text-cream` (a utility the unlayered `-fill` colour would beat,
+     which the surface-contrast ratchet rightly rejects). Scoping the label to
+     :hover is the one place it belongs. */
+  :where(.hover\:bg-brick:hover) { color: var(--cream); }
+  /* …and in the dark theme the saffron itself must deepen, exactly as it does
+     for the static `.bg-brick.text-cream` case above: cream on the light
+     #f79b2e is only 2.01:1, while the pressed #a94f07 gives 5.11:1. */
+  .dark :where(.hover\:bg-brick:hover) { background-color: var(--brick-deep); }
 }
 .dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }
 .dark .clay-fill.btn-sweep::before { background: color-mix(in srgb, var(--brick-deep) 74%, #000); }

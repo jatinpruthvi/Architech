@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "check": "tsc --noEmit",
     "lint": "eslint app client/src --max-warnings 200",
+    "audit:contrast": "node scripts/audit-surface-contrast.mjs",
     "test": "vitest run",
     "format": "prettier --write .",
     "test:seo": "pnpm build:ci && node scripts/seo/raw-html-smoke.mjs",
