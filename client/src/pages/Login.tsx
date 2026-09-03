@@ -180,6 +180,15 @@ export default function Login() {
               role="tab"
               aria-selected={!registering}
               onClick={() => switchMode("signin")}
+              /* The selected tab is cream on a solid saffron fill. In the dark
+                 theme `--brick` is a LIGHT #f79b2e, so that pairing measures
+                 2.01:1 and the label was unreadable. It is NOT fixed here with
+                 `clay-fill`: a `-fill` class owns the label colour in every
+                 state, which would collide with the unselected branch's
+                 `hover:text-brick` (the surface-contrast ratchet rejects that,
+                 correctly). The fix lives in theme.css, where
+                 `.dark :where(.bg-brick.text-cream)` deepens the fill to
+                 #a94f07 (5.11:1) for this and every other bare solid saffron. */
               className={`flex-1 px-5 py-3.5 stamp font-semibold transition-colors ${!registering ? "bg-brick text-cream" : "bg-card ink-2 hover:text-brick"}`}
             >
               <span className="inline-flex items-center gap-2"><LogIn size={14} /> Sign in</span>

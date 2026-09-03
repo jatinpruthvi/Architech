@@ -72,6 +72,23 @@ describe("solid surface contrast budget (WCAG AA, 4.5:1 for the 11-12px bold sta
   it("clears AA for ink on plaster", () => {
     expect(contrast(lightPaper, lightInk)).toBeGreaterThanOrEqual(4.5);
   });
+
+  /* The dark theme's --brick is a LIGHT saffron (#f79b2e) chosen to glow on the
+     night surfaces, so cream on it is only ~2:1 — the selected auth tab was
+     genuinely unreadable. `.clay-fill` fixed this by deepening the fill, but it
+     has to be opted into and several call sites (avatar chip, intent chips,
+     sticky-bar buttons, save toggle) never were. */
+  const darkBrick = token(".dark {", "brick");
+
+  it("proves a bare dark-theme saffron fill CANNOT carry a cream label", () => {
+    expect(contrast(darkBrick, darkCream)).toBeLessThan(3);
+  });
+
+  it("deepens any solid saffron carrying cream in the dark theme", () => {
+    expect(css).toContain(".dark :where(.bg-brick.text-cream) { background-color: var(--brick-deep); }");
+    // …and the surface it is deepened TO must clear AA.
+    expect(contrast(darkBrickDeep, darkCream)).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 describe("a solid fill owns its label colour", () => {

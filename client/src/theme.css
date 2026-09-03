@@ -707,6 +707,24 @@ button.btn-primary, a.btn-primary { border-radius: 9999px; }
 .safe-bottom-lg { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
 
 .dark .clay-fill { background: var(--brick-deep); }
+
+/* Cream label on a SOLID saffron fill, in the dark theme, without `.clay-fill`.
+ *
+ * The dark theme's `--brick` is a LIGHT saffron (#f79b2e) chosen to glow
+ * against the night surfaces. Cream on it measures 2.01:1 — well under the 3:1
+ * that even large UI text needs, which is why the selected auth tab was
+ * unreadable. `.clay-fill` already solves this by swapping the fill to the
+ * deeper #a94f07 (5.11:1), but it has to be opted into, and the avatar chip,
+ * intent chips, sticky-bar icon buttons and save toggle never were — each is
+ * the same latent defect waiting to be noticed.
+ *
+ * Keying off `.bg-brick.text-cream` fixes the whole class of them at the source
+ * instead of patching call sites one at a time. Scoped to `.dark` so the light
+ * theme (cream on #c2410c, a passing 4.73:1) is untouched, and placed in
+ * `@layer components` so a call site can still opt out with its own utility. */
+@layer components {
+  .dark :where(.bg-brick.text-cream) { background-color: var(--brick-deep); }
+}
 .dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }
 .dark .clay-fill.btn-sweep::before { background: color-mix(in srgb, var(--brick-deep) 74%, #000); }
 
