@@ -66,8 +66,15 @@ export default function AccountMenu({ onDark = false }: { onDark?: boolean }) {
 
   const initials = session.user.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "A";
 
+  const signOutAndLeave = async () => {
+    setOpen(false);
+    await signOut();
+    router.replace("/login/");
+    router.refresh();
+  };
+
   return (
-    <div ref={containerRef} className="relative hidden md:block">
+    <div ref={containerRef} className="relative hidden items-center gap-2 md:flex">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -78,6 +85,20 @@ export default function AccountMenu({ onDark = false }: { onDark?: boolean }) {
         <span className="grid h-7 w-7 place-items-center rounded-full bg-brick text-[11px] font-bold text-cream" aria-hidden="true">{initials}</span>
         <span className="max-w-[110px] truncate">{session.user.name}</span>
         <ChevronDown size={13} aria-hidden="true" className={open ? "rotate-180 transition-transform" : "transition-transform"} />
+      </button>
+
+      {/* Sign out is also exposed DIRECTLY, not only inside the dropdown.
+          Signing out is the one action a signed-in person looks for by eye, and
+          burying it behind a click on your own name means the header appears to
+          offer no way out — the mirror of the signed-out header appearing to
+          offer no way in. The dropdown keeps the same action for continuity of
+          the account context (name, email, role, organisation). */}
+      <button
+        type="button"
+        onClick={() => { void signOutAndLeave(); }}
+        className={`inline-flex items-center gap-1.5 ${linkClass}`}
+      >
+        <LogOut size={14} strokeWidth={1.8} aria-hidden="true" /> Sign out
       </button>
 
       {open && (
@@ -101,7 +122,7 @@ export default function AccountMenu({ onDark = false }: { onDark?: boolean }) {
             <button
               role="menuitem"
               type="button"
-              onClick={async () => { setOpen(false); await signOut(); router.replace("/login/"); router.refresh(); }}
+              onClick={() => { void signOutAndLeave(); }}
               className="flex w-full items-center gap-2 px-1 py-2 text-left text-[13px] text-brick hover:underline"
             >
               <LogOut size={14} aria-hidden="true" /> Sign out

@@ -33,7 +33,15 @@ const PUBLIC_ROUTES = [
 ];
 
 async function run() {
-  const server = await startServer({ env: { ARCHITECH_AUTH_SOURCE: "demo" }, label: "public server" });
+  /* ARCHITECH_DEMO_START_SIGNED_OUT makes the no-cookie case anonymous, which
+     is what a real deployment does and what the header assertions below need.
+     It is set HERE rather than left to the caller's shell so the suite is
+     self-contained: a test that only passes when you remember to export
+     something is a test that will mislead someone later. */
+  const server = await startServer({
+    env: { ARCHITECH_AUTH_SOURCE: "demo", ARCHITECH_DEMO_START_SIGNED_OUT: "true" },
+    label: "public server",
+  });
   const { client, baseUrl } = server;
 
   try {
@@ -218,6 +226,48 @@ async function run() {
       await test("an unknown listing is a 404", async () => {
         const response = await client.get("/listing/definitely-not-a-listing/");
         assertEqual(response.status, 404, "an unknown listing must 404");
+      });
+    });
+
+    await group("header account controls", async () => {
+      /* The header's account control is client-rendered from /api/auth/session/,
+         so these assert on the SHIPPED COMPONENT SOURCE plus the session
+         contract that drives it. That is a deliberate compromise: without a
+         browser here (see tests/e2e/README.md) this is the strongest available
+         guard against the two failures that have actually happened — a
+         signed-out visitor with no visible way IN, and a signed-in visitor with
+         no visible way OUT. */
+      const accountMenu = await import("node:fs/promises").then((fs) =>
+        fs.readFile(new URL("../../client/src/components/architech/AccountMenu.tsx", import.meta.url), "utf8"));
+
+      await test("a signed-out visitor is offered a Sign in control", async () => {
+        const anonymous = await client.fork().get("/api/auth/session/");
+        assertEqual(anonymous.json.authenticated, false, "the preview must start signed out (ARCHITECH_DEMO_START_SIGNED_OUT)");
+        assertIncludes(accountMenu, "Sign in", "AccountMenu must render a Sign in control for a null session");
+      });
+
+      await test("Sign out is reachable WITHOUT opening the dropdown", async () => {
+        /* Sign out used to exist only inside the dropdown, so the header looked
+           like it offered no way out until you thought to click your own name. */
+        const beforeDropdown = accountMenu.split('role="menu"')[0];
+        assertIncludes(beforeDropdown, "Sign out", "Sign out must appear in the header itself, not only inside the dropdown");
+      });
+
+      await test("signing in yields a session the header can render", async () => {
+        const fresh = client.fork();
+        const response = await fresh.post("/api/auth/login/", { email: "buyer@example.com", password: "demo-buyer-1234" });
+        assertEqual(response.status, 200, "the demo buyer must sign in");
+        const session = await fresh.get("/api/auth/session/");
+        assertEqual(session.json.authenticated, true, "the header must see an authenticated session");
+        assert(session.json.session.user.name, "and a name to label the account control with");
+      });
+
+      await test("signing out returns the header to the signed-out state", async () => {
+        const fresh = client.fork();
+        await fresh.post("/api/auth/login/", { email: "buyer@example.com", password: "demo-buyer-1234" });
+        await fresh.post("/api/auth/logout/", {});
+        const session = await fresh.get("/api/auth/session/");
+        assertEqual(session.json.authenticated, false, "after sign-out the header must offer Sign in again");
       });
     });
 
