@@ -51,7 +51,7 @@ const DEMO_HINTS = [
 export default function Login() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { status, session, adopt } = useSession();
+  const { status, session, adopt, registrationAvailable } = useSession();
 
   const requestedMode = searchParams.get("mode") === "register" ? "register" : "signin";
   const next = safeNextPath(searchParams.get("next"));
@@ -130,7 +130,9 @@ export default function Login() {
       if (!response.ok || !payload.ok || !payload.session) {
         const returned = payload.issues ?? [];
         setIssues(returned);
-        setFormError(payload.message ?? "We could not sign you in. Please try again.");
+        setFormError(payload.message ?? (mode === "register"
+          ? "We could not create your account. Please try again."
+          : "We could not sign you in. Please try again."));
         if (returned.length > 0) focusFirstIssue(returned);
         return;
       }
@@ -152,6 +154,7 @@ export default function Login() {
     `mt-2 w-full border bg-card px-4 py-3.5 text-[15px] text-ink outline-none transition-colors placeholder:text-[color:var(--ink-3,#6e6058)] focus:border-brick ${issueFor.has(field) ? "border-brick" : "border-ink/15"}`;
 
   const registering = mode === "register";
+
 
   return (
     <div className="bg-paper pt-[78px] text-ink">
@@ -181,16 +184,30 @@ export default function Login() {
             >
               <span className="inline-flex items-center gap-2"><LogIn size={14} /> Sign in</span>
             </button>
+            {/* Demo deployments have no user store, so sign-up can only ever
+                answer 503. Offering a live-looking tab and failing after the
+                form is filled in is a dead end, so it is disabled with the
+                reason attached rather than hidden (hiding it would make the
+                feature look missing instead of unavailable here). */}
             <button
               type="button"
               role="tab"
               aria-selected={registering}
               onClick={() => switchMode("register")}
-              className={`flex-1 border-l border-ink/15 px-5 py-3.5 stamp font-semibold transition-colors ${registering ? "bg-brick text-cream" : "bg-card ink-2 hover:text-brick"}`}
+              disabled={!registrationAvailable}
+              title={registrationAvailable ? undefined : "Account creation is disabled in this preview. Use a demo sign-in below."}
+              className={`flex-1 border-l border-ink/15 px-5 py-3.5 stamp font-semibold transition-colors ${registering ? "bg-brick text-cream" : "bg-card ink-2 hover:text-brick"} ${registrationAvailable ? "" : "cursor-not-allowed opacity-55 hover:text-current"}`}
             >
               <span className="inline-flex items-center gap-2"><UserPlus size={14} /> Create account</span>
             </button>
           </div>
+
+          {registering && !registrationAvailable && (
+            <p role="status" className="mt-4 flex items-start gap-2 border border-ink/20 bg-card px-4 py-3 text-[13px] leading-6 ink-2">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-brick" aria-hidden="true" />
+              <span>Account creation is disabled in this preview, which has no user store. Use one of the demo sign-ins below, or run the app with <code className="text-[12px]">ARCHITECH_AUTH_SOURCE=better-auth</code> to create real accounts.</span>
+            </p>
+          )}
 
           <form onSubmit={onSubmit} noValidate className="mt-7 border border-ink/12 bg-card p-6 md:p-8">
             {formError && (

@@ -27,6 +27,10 @@ type SessionPayload = {
 
 type SessionContextValue = {
   status: SessionStatus;
+  /** True when this deployment can actually create accounts. Demo mode has no
+   *  user store, so the sign-up form would always fail; the login page uses
+   *  this to say so up front instead of after the form is filled in. */
+  registrationAvailable: boolean;
   session: AuthSession | null;
   canAccessBrokerDashboard: boolean;
   refresh: () => Promise<AuthSession | null>;
@@ -37,6 +41,7 @@ type SessionContextValue = {
 
 const SessionContext = createContext<SessionContextValue>({
   status: "loading",
+  registrationAvailable: false,
   session: null,
   canAccessBrokerDashboard: false,
   refresh: async () => null,
@@ -46,6 +51,7 @@ const SessionContext = createContext<SessionContextValue>({
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SessionStatus>("loading");
+  const [registrationAvailable, setRegistrationAvailable] = useState(false);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [canAccessBrokerDashboard, setCanAccess] = useState(false);
   /* Abort an in-flight fetch when a newer one starts (or the tree unmounts),
@@ -66,6 +72,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return null;
       }
       const payload = (await response.json()) as SessionPayload;
+      /* `authProvider` reports the CONFIGURED provider, which reads
+         "better-auth" even in demo mode; `source` reports what actually served
+         the request. Only the latter distinguishes a demo contract from a live
+         one, so registration availability keys off it. */
+      setRegistrationAvailable(payload.source !== "better-auth-contract-demo");
       setSession(payload.session ?? null);
       setCanAccess(Boolean(payload.canAccessBrokerDashboard));
       setStatus(payload.authenticated && payload.session ? "authenticated" : "unauthenticated");
@@ -104,8 +115,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ status, session, canAccessBrokerDashboard, refresh, signOut, adopt }),
-    [status, session, canAccessBrokerDashboard, refresh, signOut, adopt],
+    () => ({ status, registrationAvailable, session, canAccessBrokerDashboard, refresh, signOut, adopt }),
+    [status, registrationAvailable, session, canAccessBrokerDashboard, refresh, signOut, adopt],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -271,6 +271,39 @@ async function run() {
       });
     });
 
+    await group("sign-up is honest about what this deployment can do", async () => {
+      /* A user reported "We could not sign you in" when CREATING an account.
+         Two separate defects: the failure message named the wrong action, and
+         demo mode offered a live-looking Create account tab that can only ever
+         answer 503 — discovered after filling the form in. */
+      const loginPage = await import("node:fs/promises").then((fs) =>
+        fs.readFile(new URL("../../client/src/pages/Login.tsx", import.meta.url), "utf8"));
+
+      await test("the register endpoint refuses clearly, with a reason", async () => {
+        const response = await client.fork().post("/api/auth/register/", {
+          name: "Preview User", email: "preview-user@example.com", password: "password123", listerType: "OWNER",
+        });
+        assertEqual(response.status, 503, "demo sign-up must refuse rather than fake an account");
+        assertEqual(response.json.error, "REGISTRATION_UNAVAILABLE", "with a machine-readable reason");
+        assert((response.json.message ?? "").length > 0, "and a human-readable one the form can display");
+      });
+
+      await test("a failed sign-up does not claim it could not SIGN YOU IN", async () => {
+        assertIncludes(loginPage, "We could not create your account", "the register path needs its own failure message");
+      });
+
+      await test("the session contract exposes whether registration is possible", async () => {
+        /* `authProvider` reads "better-auth" even in demo mode, so keying off it
+           would silently offer a broken form. `source` is the honest signal. */
+        const response = await client.fork().get("/api/auth/session/");
+        assertEqual(response.json.source, "better-auth-contract-demo", "demo mode must identify itself in `source`");
+      });
+
+      await test("the Create account tab is disabled when sign-up cannot work", async () => {
+        assertIncludes(loginPage, "disabled={!registrationAvailable}", "the tab must be disabled, not a dead end");
+      });
+    });
+
     await group("localisation", async () => {
       await test("the Hindi toggle is present and the document declares a language", async () => {
         const response = await client.get("/");
