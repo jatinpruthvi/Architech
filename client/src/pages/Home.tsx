@@ -67,17 +67,23 @@ export default function Home({
   return (
     <div className="bg-paper text-ink">
 
-      {/* ================= HERO ================= */}
-      <section className="relative min-h-[540px] overflow-hidden bg-night text-cream md:min-h-[620px]">
-        <div className="grain !absolute inset-0">
-          <Pic name="hero-glow" alt="" className="hero-golden-hour survey-drift hero-zoom hero-art h-full w-full object-cover opacity-70" sizes="100vw" eager />
+      {/* ================= HERO =================
+           Warm saffron-brown gradient matching uploaded reference:
+           dark #1a0902 → burnt #5e2210 → saffron #b84d12 → amber #e8a84a.
+           No photo — pure gradient with ember bloom, grain, and glow sweep. */}
+      <section className="relative min-h-[560px] overflow-hidden bg-[#1a0902] text-cream md:min-h-[640px]">
+        <div className="absolute inset-0">
+          {/* Core gradient — dark left to warm saffron/amber right, like screenshot */}
+          <div className="absolute inset-0 bg-[radial-gradient(110%_140%_at_22%_20%,#2d1206_0%,#5e2210_18%,#8c2e0a_32%,#b84d12_52%,#d87a1e_72%,#e8a84a_90%)]" />
+          {/* Soft depth scrim to keep text safe on left, glow open on right */}
+          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(12,4,1,0.88)_0%,rgba(28,12,6,0.70)_28%,rgba(60,24,10,0.34)_55%,rgba(110,48,16,0.10)_78%,rgba(180,100,30,0.05)_100%)]" />
+          {/* Extra warm wash bottom-right to mimic uploaded orange haze */}
+          <div className="absolute inset-0 bg-[radial-gradient(70%_80%_at_85%_75%,rgba(232,168,74,0.38)_0%,rgba(216,122,30,0.18)_35%,transparent_70%)]" />
         </div>
-        {/* Warm dusk scrim: deep saffron-brown reads on the text side, breaking
-            into a soft ember glow on the figure side — the night sheet at golden hour. */}
-        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(24,11,5,0.97)_0%,rgba(48,22,8,0.82)_42%,rgba(66,30,10,0.55)_78%,rgba(94,44,12,0.30)_100%)]" />
-        {/* Golden-hour bloom + slow light sweep — the figure is lit, not just scrimmed. */}
-        <div className="ember-bloom -right-24 top-1/4 h-[420px] w-[420px] opacity-50 md:-right-10 md:h-[520px] md:w-[520px]" aria-hidden="true" />
-        <div className="glow-sweep right-0" aria-hidden="true" />
+        <div className="grain absolute inset-0 opacity-35" aria-hidden="true" />
+        {/* Ember bloom + glow sweep — keeps golden-hour lift from v2 */}
+        <div className="ember-bloom -right-24 top-1/4 h-[460px] w-[460px] opacity-60 md:-right-10 md:h-[580px] md:w-[580px]" aria-hidden="true" />
+        <div className="glow-sweep right-0 opacity-70" aria-hidden="true" />
         <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
             <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>
