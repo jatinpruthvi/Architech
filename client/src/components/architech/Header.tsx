@@ -10,7 +10,16 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLang } from "@/contexts/LangContext";
 import { useSession } from "@/contexts/SessionContext";
 import { loginUrlFor } from "@/lib/auth/redirects";
-import AccountMenu from "@/components/architech/AccountMenu";
+/* Code-split like RequirementCapture below. The account control is the only
+   thing pulling the session context, the role/permission tables and its own
+   icon set into the shared header chunk, and it is a secondary affordance on
+   every page. Loading it lazily keeps that weight out of first-load JS for
+   /search, the heaviest route, which this pushed over its budget. The
+   placeholder matches the signed-out link's footprint so nothing shifts. */
+const AccountMenu = dynamic(() => import("@/components/architech/AccountMenu"), {
+  ssr: false,
+  loading: () => <span className="hidden h-5 w-[72px] md:inline-block" aria-hidden="true" />,
+});
 
 const RequirementCapture = dynamic(() => import("@/components/architech/RequirementCapture"), {
   ssr: false,

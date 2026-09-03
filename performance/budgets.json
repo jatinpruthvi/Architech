@@ -1,20 +1,38 @@
 {
-  "description": "Phase 1 performance budgets for the Architech public prototype. Re-baselined 26 Aug 2026 after the locality-intelligence layer added a provenance-labeled evidence band (current price range, inventory by configuration & budget, commute/nearby, new projects) to the /buy/ahmedabad/:locality/ hub, replacing placeholder snapshot figures for a cross-route client component: first-load gzip cap raised to 240 KB and total static JS cap to 2.16 MiB (max measured /search first-load gzip 230.0 KiB, total static JS 2151.1 KiB), keeping headroom so genuine regressions are still caught. Per-route raw first-load and core-web-vital targets remain unchanged. Prior re-baselines: 25 Aug 2026 parity overlay (first-load gzip 235 KB, total 2.15 MiB).",
+  "description": "Phase 1 performance budgets for the Architech public prototype. Re-baselined 3 Sep 2026 for the authenticated header: the session context, role helpers and account control are shared-shell client code, so they land in every route's first load. The account control itself is code-split (see Header.tsx), which recovered 4.1 KiB of the 8.2 KiB added; the remainder is the session provider the header genuinely needs. Raw first-load cap raised 770000 -> 775000 bytes (max measured /search 754.7 KiB), keeping ~2% headroom so genuine regressions are still caught. Gzip cap unchanged at 240 KB (max measured 232.2 KiB) and core-web-vital targets unchanged. Prior re-baselines: 26 Aug 2026 locality-intelligence evidence band (first-load gzip 240 KB, total static JS 2.16 MiB); 25 Aug 2026 parity overlay (first-load gzip 235 KB, total 2.15 MiB).",
   "routes": {
     "default": {
-      "maxFirstLoadJsBytes": 770000,
+      "maxFirstLoadJsBytes": 775000,
       "maxFirstLoadJsGzipBytes": 240000
     }
   },
   "html": {
     "maxHtmlBytes": 128000,
     "routes": [
-      { "route": "/", "file": ".next/server/app/index.html" },
-      { "route": "/buy/ahmedabad/", "file": ".next/server/app/buy/ahmedabad.html" },
-      { "route": "/buy/ahmedabad/paldi/", "file": ".next/server/app/buy/ahmedabad/paldi.html" },
-      { "route": "/listing/garden-courtyard/", "file": ".next/server/app/listing/garden-courtyard.html" },
-      { "route": "/search/", "file": ".next/server/app/search.html" },
-      { "route": "/home-loan/", "file": ".next/server/app/home-loan.html" }
+      {
+        "route": "/",
+        "file": ".next/server/app/index.html"
+      },
+      {
+        "route": "/buy/ahmedabad/",
+        "file": ".next/server/app/buy/ahmedabad.html"
+      },
+      {
+        "route": "/buy/ahmedabad/paldi/",
+        "file": ".next/server/app/buy/ahmedabad/paldi.html"
+      },
+      {
+        "route": "/listing/garden-courtyard/",
+        "file": ".next/server/app/listing/garden-courtyard.html"
+      },
+      {
+        "route": "/search/",
+        "file": ".next/server/app/search.html"
+      },
+      {
+        "route": "/home-loan/",
+        "file": ".next/server/app/home-loan.html"
+      }
     ]
   },
   "staticAssets": {
