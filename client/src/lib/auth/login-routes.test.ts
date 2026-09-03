@@ -157,6 +157,31 @@ describe("session + logout round trip", () => {
     expect(body.authenticated).toBe(true);
     expect(body.session.user.role).toBe("BROKER_ADMIN");
   });
+
+  it("starts a visitor SIGNED OUT when the demo deployment opts in", async () => {
+    /* The implicit broker session means a first-time visitor is already signed
+       in, so the header renders an account menu and the "Sign in" control is
+       invisible — misleading on a preview whose point is the login flow. This
+       flag opts into the honest behaviour without disturbing the fixtures that
+       rely on the historical default. */
+    vi.stubEnv("ARCHITECH_DEMO_START_SIGNED_OUT", "true");
+    const response = await session(new Request(`${ORIGIN}/api/auth/session`));
+    const body = await response.json();
+    expect(body.authenticated).toBe(false);
+    expect(body.session).toBeNull();
+  });
+
+  it("still signs a demo account in normally when the opt-in flag is set", async () => {
+    /* The flag must only change the NO-COOKIE case; signing in must still work. */
+    vi.stubEnv("ARCHITECH_DEMO_START_SIGNED_OUT", "true");
+    const signIn = await login(post("/api/auth/login/", { email: "buyer@example.com", password: "demo-buyer-1234" }));
+    expect(signIn.status).toBe(200);
+    const cookie = signIn.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+    const after = await session(new Request(`${ORIGIN}/api/auth/session`, { headers: { cookie } }));
+    const body = await after.json();
+    expect(body.authenticated).toBe(true);
+    expect(body.session.user.email).toBe("buyer@example.com");
+  });
 });
 
 describe("register route", () => {

@@ -48,8 +48,23 @@ export async function getSessionContractForRequest(request: Request): Promise<{ 
     const { sessionForDemoCookie } = await import("./demo-accounts");
     const state = sessionForDemoCookie(request.headers.get("cookie") ?? "");
     if (state.kind === "signed-out") return { session: null, source: "better-auth-contract-demo", missing: [] };
-    const session = state.kind === "account" ? state.session : demoBrokerSession;
-    return { session, source: session.source, missing: [] };
+    if (state.kind === "account") return { session: state.session, source: state.session.source, missing: [] };
+
+    /* No cookie. The historical demo contract hands out the broker admin here,
+       which is what broker and moderation fixtures are built on — but it also
+       means a first-time visitor arrives already signed in, so the header shows
+       an account menu and the "Sign in" control is nowhere to be found. That is
+       actively misleading on a preview whose purpose is to demonstrate the
+       login flow.
+
+       `ARCHITECH_DEMO_START_SIGNED_OUT=true` opts a deployment into the honest
+       behaviour: a visitor with no cookie is anonymous, exactly as in live
+       mode. It is opt-in rather than the default so the existing fixtures and
+       their tests keep working unchanged. */
+    if (process.env.ARCHITECH_DEMO_START_SIGNED_OUT === "true") {
+      return { session: null, source: "better-auth-contract-demo", missing: [] };
+    }
+    return { session: demoBrokerSession, source: demoBrokerSession.source, missing: [] };
   }
 
   const readiness = getAuthReadiness("better-auth");
