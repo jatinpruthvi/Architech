@@ -3,6 +3,7 @@ import { getLiveCityBySlug, getLocalityBySlug } from "@/lib/repositories";
 import type { PropertyDetails } from "@/lib/listing-details";
 import { isAvailabilityCode, isPropertyTypeCode, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { isValidPincode, listingMatchesPincode } from "@/lib/pincodes";
+import { normalizeListerType, type ListerType } from "@/lib/listing/lister-type";
 
 export type BrokerProfileInput = {
   organizationName: string;
@@ -30,6 +31,13 @@ export type ListingDraftInput = {
   description: string;
   reraNumber?: string;
   mediaRightsConfirmed: boolean;
+  /* Who this specific listing is attributed to. Defaults from the account's
+     sign-up declaration but is overridable per listing, because the two really
+     do differ: a broker may list their own home, and an owner may appoint an
+     agent later. This value is what a buyer is shown, so the listing-level
+     answer is the one that must be right. Still a declaration, not a
+     verified fact — see lib/listing/lister-type.ts. */
+  listerType?: ListerType;
   details?: PropertyDetails;
 };
 
@@ -92,6 +100,10 @@ export function validateListingDraft(input: Partial<ListingDraftInput>, session:
   if (!isAvailabilityCode(input.availability)) errors.push("Choose a reviewed availability status.");
   if (!input.description || input.description.trim().length < 30) errors.push("Description must be at least 30 characters.");
   if (!input.mediaRightsConfirmed) errors.push("Media rights confirmation is required before review.");
+  /* Optional for backward compatibility with drafts created before this field
+     existed, but a PRESENT value must be a reviewed code — silently coercing
+     junk to OWNER would publish an attribution the broker never chose. */
+  if (input.listerType !== undefined && !normalizeListerType(input.listerType)) errors.push("Choose whether this listing is by the owner or by a broker.");
   return errors;
 }
 
@@ -117,13 +129,14 @@ export function createListingDraft(input: ListingDraftInput, session: AuthSessio
   }
   const draft: ListingDraft = {
     ...input,
+    listerType: normalizeListerType(input.listerType) ?? session!.user.listerType ?? "OWNER",
     id,
     stableId: stableId("listing", seed),
     organizationId: session!.organization!.id,
     status: "DRAFT",
     createdAt: now,
     updatedAt: now,
-    auditTrail: [audit("listing.draft.created", session!.user.email, { citySlug: input.citySlug, localitySlug: input.localitySlug, postalCode: input.postalCode, details: input.details ?? {} })],
+    auditTrail: [audit("listing.draft.created", session!.user.email, { citySlug: input.citySlug, localitySlug: input.localitySlug, postalCode: input.postalCode, listerType: normalizeListerType(input.listerType) ?? session!.user.listerType ?? "OWNER", details: input.details ?? {} })],
   };
   drafts.set(id, draft);
   return { ok: true as const, draft };
@@ -189,8 +202,22 @@ export function updateListingDraft(draftId: string, input: ListingDraftInput, se
   if (errors.length) return { ok: false as const, status: 400, errors };
   const previousStatus = owned.draft.status;
   const now = new Date().toISOString();
-  Object.assign(owned.draft, input, { status: "DRAFT" as const, updatedAt: now });
-  owned.draft.auditTrail.push(audit("listing.draft.updated", session!.user.email, { resumedFrom: previousStatus }));
+  /* Normalize on the way in: `input` is request-shaped, so assigning it raw
+     would let an alias like "agent" land in storage next to the reviewed
+     "BROKER" codes. An absent value keeps the draft's existing attribution
+     rather than silently reverting it to the account default. */
+  const previousListerType = owned.draft.listerType;
+  Object.assign(owned.draft, input, {
+    listerType: normalizeListerType(input.listerType) ?? previousListerType ?? session!.user.listerType ?? "OWNER",
+    status: "DRAFT" as const,
+    updatedAt: now,
+  });
+  owned.draft.auditTrail.push(audit("listing.draft.updated", session!.user.email, {
+    resumedFrom: previousStatus,
+    /* Attribution is buyer-facing, so a change to it is recorded explicitly
+       rather than being buried in a generic "updated" entry. */
+    ...(owned.draft.listerType !== previousListerType ? { listerTypeChangedFrom: previousListerType, listerTypeChangedTo: owned.draft.listerType } : {}),
+  }));
   return { ok: true as const, draft: owned.draft };
 }
 

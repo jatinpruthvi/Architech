@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AgentWorkspace, { type AgentSection } from "@/pages/AgentWorkspace";
+import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -32,5 +33,5 @@ export function generateStaticParams() {
 export default async function Page({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
   const safeSection = sections.includes(section as AgentSection) ? (section as AgentSection) : "dashboard";
-  return <AgentWorkspace section={safeSection} />;
+  return <RequireSession permission="broker.dashboard.read" requireOrganization><AgentWorkspace section={safeSection} /></RequireSession>;
 }

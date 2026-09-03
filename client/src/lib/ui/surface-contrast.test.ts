@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -71,6 +72,23 @@ describe("solid surface contrast budget (WCAG AA, 4.5:1 for the 11-12px bold sta
 
   it("clears AA for ink on plaster", () => {
     expect(contrast(lightPaper, lightInk)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  /* The dark theme's --brick is a LIGHT saffron (#f79b2e) chosen to glow on the
+     night surfaces, so cream on it is only ~2:1 — the selected auth tab was
+     genuinely unreadable. `.clay-fill` fixed this by deepening the fill, but it
+     has to be opted into and several call sites (avatar chip, intent chips,
+     sticky-bar buttons, save toggle) never were. */
+  const darkBrick = token(".dark {", "brick");
+
+  it("proves a bare dark-theme saffron fill CANNOT carry a cream label", () => {
+    expect(contrast(darkBrick, darkCream)).toBeLessThan(3);
+  });
+
+  it("deepens any solid saffron carrying cream in the dark theme", () => {
+    expect(css).toContain(".dark :where(.bg-brick.text-cream) { background-color: var(--brick-deep); }");
+    // …and the surface it is deepened TO must clear AA.
+    expect(contrast(darkBrickDeep, darkCream)).toBeGreaterThanOrEqual(4.5);
   });
 });
 
@@ -156,5 +174,19 @@ describe("solid action markup contracts", () => {
     }
     expect(faded).toEqual([]);
     expect(css).toContain(".btn-solid:disabled,");
+  });
+});
+
+/* The token-pair checks above test colours in isolation. This runs the repo-wide
+   auditor, which resolves every `bg-*` + `text-*` pairing that actually appears
+   in the markup — per interaction state, per theme, honouring the dark-mode
+   deepening rules — and computes the real WCAG ratio.
+   That distinction matters: the auth tab that shipped unreadable used tokens
+   which each looked fine on their own. See scripts/audit-surface-contrast.mjs. */
+describe("repo-wide fill/label contrast", () => {
+  it("has no pairing below its WCAG threshold in either theme", () => {
+    const result = spawnSync(process.execPath, ["scripts/audit-surface-contrast.mjs"], { encoding: "utf8" });
+    expect(result.stdout + result.stderr, "contrast audit reported failures").toContain("✓");
+    expect(result.status).toBe(0);
   });
 });

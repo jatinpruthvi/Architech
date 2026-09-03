@@ -600,3 +600,47 @@ describe("results-grid motion stays a reflow, not a show", () => {
     expect(results).not.toMatch(/key=\{[^}]*filter/i);
   });
 });
+
+/* An unlayered colour declaration outranks EVERY Tailwind utility, because any
+   unlayered rule beats a layered one regardless of specificity — `:where()`
+   zeroes specificity but says nothing about layers. When `.stamp` set its
+   default colour outside a layer it silently ate `text-cream` on the selected
+   auth tab, rendering muted brown on solid orange. The codebase had already
+   been bitten by exactly this with `a { color: inherit }`.
+
+   This pins the rule for every typography class that supplies a DEFAULT colour
+   a call site is expected to be able to override. */
+describe("default colours must not outrank Tailwind utilities", () => {
+  const colourDefaults = [":where(.stamp)", ":where(.ink-2)", ":where(.ink-3)"];
+
+  function layerRangesOf(source: string): Array<[number, number]> {
+    const ranges: Array<[number, number]> = [];
+    const pattern = /@layer\s+[\w\s,]+\{/g;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source))) {
+      let depth = 1;
+      let index = match.index + match[0].length;
+      while (index < source.length && depth > 0) {
+        if (source[index] === "{") depth += 1;
+        else if (source[index] === "}") depth -= 1;
+        index += 1;
+      }
+      ranges.push([match.index, index]);
+    }
+    return ranges;
+  }
+
+  const layers = layerRangesOf(css);
+
+  for (const selector of colourDefaults) {
+    it(`${selector} sets its colour inside a cascade layer`, () => {
+      const at = css.indexOf(selector);
+      expect(at, `theme.css must contain ${selector}`).toBeGreaterThan(-1);
+      const layered = layers.some(([start, end]) => at > start && at < end);
+      expect(
+        layered,
+        `${selector} declares a colour OUTSIDE any @layer, so it beats every text-* utility and cannot be overridden at a call site.`,
+      ).toBe(true);
+    });
+  }
+});

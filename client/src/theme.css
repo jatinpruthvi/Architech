@@ -42,6 +42,12 @@
   --color-paper: var(--paper);
   --color-sand: var(--sand);
   --color-brick: var(--brick);
+  /* `--brick-deep` existed as a surface token but was never registered with
+     Tailwind, so the `hover:bg-brick-deep` already used by the hero search and
+     the listing CTA compiled to NOTHING — those buttons had no hover state at
+     all. Registering it makes them work and lets a call site reach the pressed
+     saffron directly. */
+  --color-brick-deep: var(--brick-deep);
   --color-ember: var(--ember);
   --color-trust: var(--trust);
   --color-gold: var(--gold);
@@ -251,8 +257,18 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    `.stamp` with a real semantic colour (`text-trust` on a verification stamp,
    `text-brick` on a link). An unlayered rule beats a layered utility no matter
    how specific the utility is, so an unwrapped colour here silently mutes every
-   one of those. Size stays a hard rule; colour stays a suggestion. */
-:where(.stamp) { color: var(--muted-foreground); }
+   one of those. Size stays a hard rule; colour stays a suggestion.
+
+   `:where()` zeroes SPECIFICITY but does nothing about LAYERS, and that is the
+   part that bit: Tailwind utilities live in `@layer utilities`, and ANY
+   unlayered declaration outranks a layered one no matter how specific. So this
+   rule silently beat `text-cream` and every other `text-*` paired with
+   `.stamp` — the selected auth tab rendered muted brown on solid orange, all
+   but invisible. Exactly the trap already documented for `a { color: inherit }`
+   above, and the same remedy: move it into `@layer base` so utilities win. */
+@layer base {
+  :where(.stamp) { color: var(--muted-foreground); }
+}
 
 /* Big index numerals */
 .index-num { font-family: var(--font-display); font-variation-settings: "opsz" 144; font-weight: 300; line-height: 0.85; letter-spacing: -0.04em; }
@@ -697,6 +713,48 @@ button.btn-primary, a.btn-primary { border-radius: 9999px; }
 .safe-bottom-lg { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
 
 .dark .clay-fill { background: var(--brick-deep); }
+
+/* Cream label on a SOLID saffron fill, in the dark theme, without `.clay-fill`.
+ *
+ * The dark theme's `--brick` is a LIGHT saffron (#f79b2e) chosen to glow
+ * against the night surfaces. Cream on it measures 2.01:1 — well under the 3:1
+ * that even large UI text needs, which is why the selected auth tab was
+ * unreadable. `.clay-fill` already solves this by swapping the fill to the
+ * deeper #a94f07 (5.11:1), but it has to be opted into, and the avatar chip,
+ * intent chips, sticky-bar icon buttons and save toggle never were — each is
+ * the same latent defect waiting to be noticed.
+ *
+ * Keying off `.bg-brick.text-cream` fixes the whole class of them at the source
+ * instead of patching call sites one at a time. Scoped to `.dark` so the light
+ * theme (cream on #c2410c, a passing 4.73:1) is untouched, and placed in
+ * `@layer components` so a call site can still opt out with its own utility. */
+@layer components {
+  .dark :where(.bg-brick.text-cream) { background-color: var(--brick-deep); }
+
+  /* Same defect, different hue. The dark theme lightens `--trust` to a mint
+     #7cc9a5 so it reads against night surfaces, which makes a cream label on it
+     1.81:1 — the success tick in RequirementCapture was effectively invisible.
+     Unlike saffron there is no `--trust-deep`, and inventing one would change
+     the verification colour everywhere; flipping the LABEL to night ink instead
+     gives 8.76:1 and leaves the emerald identity intact. Light theme is a
+     passing 4.84:1 and is deliberately untouched. */
+  .dark :where(.bg-trust.text-cream) { color: var(--night); }
+
+  /* A control that hovers TO a saffron fill but keeps its resting label colour.
+     The save toggles on the property cards do this: `bg-paper text-ink
+     hover:bg-brick` leaves dark ink on saffron at 2.80:1 light / 1.77:1 dark,
+     under the 3:1 WCAG 1.4.11 asks of a non-text control.
+     It cannot be fixed with `clay-fill` on the element (that also forces cream
+     in the RESTING state, putting a cream icon on light paper at 1.04:1), nor
+     with `hover:text-cream` (a utility the unlayered `-fill` colour would beat,
+     which the surface-contrast ratchet rightly rejects). Scoping the label to
+     :hover is the one place it belongs. */
+  :where(.hover\:bg-brick:hover) { color: var(--cream); }
+  /* …and in the dark theme the saffron itself must deepen, exactly as it does
+     for the static `.bg-brick.text-cream` case above: cream on the light
+     #f79b2e is only 2.01:1, while the pressed #a94f07 gives 5.11:1. */
+  .dark :where(.hover\:bg-brick:hover) { background-color: var(--brick-deep); }
+}
 .dark .clay-fill:hover { background: color-mix(in srgb, var(--brick-deep) 84%, #000); }
 .dark .clay-fill.btn-sweep::before { background: color-mix(in srgb, var(--brick-deep) 74%, #000); }
 

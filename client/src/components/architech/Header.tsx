@@ -8,6 +8,9 @@ import { ArrowUpRight, Bookmark, Languages, Menu, Moon, Search, Sun, X } from "l
 import { useSaved } from "@/contexts/SavedContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLang } from "@/contexts/LangContext";
+import { useSession } from "@/contexts/SessionContext";
+import { loginUrlFor } from "@/lib/auth/redirects";
+import AccountMenu from "@/components/architech/AccountMenu";
 
 const RequirementCapture = dynamic(() => import("@/components/architech/RequirementCapture"), {
   ssr: false,
@@ -25,6 +28,7 @@ export default function Header() {
   const { saved } = useSaved();
   const { theme, toggle: toggleTheme } = useTheme();
   const { lang, setLang, t } = useLang();
+  const { session, signOut } = useSession();
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const onDark = pathname === "/" && !scrolled;
 
@@ -78,6 +82,7 @@ export default function Header() {
             <Bookmark size={14} strokeWidth={1.8} /> {t.nav.saved}
             {saved.length > 0 && <span className="clay-fill grid h-4.5 min-w-[18px] place-items-center rounded-full bg-brick px-1 text-[10px] font-bold text-cream">{saved.length}</span>}
           </Link>
+          <AccountMenu onDark={onDark} />
           <RequirementCapture compact />
           <Link href="/search/" className="clay-fill btn-sweep btn-primary motion-press hidden items-center gap-2 border border-white/15 bg-brick px-5 py-3 stamp !text-[12px] font-semibold text-cream md:inline-flex"><Search size={14} /> {t.nav.start}</Link>
           <button className={`grid h-11 w-11 place-items-center lg:hidden ${onDark ? "text-cream" : "text-ink"}`} onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
@@ -95,6 +100,13 @@ export default function Header() {
             ))}
             <Link href="/requirements/" className="mt-6 stamp font-semibold text-brick">Tell us what you need →</Link>
             <Link href="/saved/" className="mt-3 stamp font-semibold text-brick">{t.nav.saved} {saved.length > 0 ? `(${saved.length})` : ""} →</Link>
+            {session ? (
+              <button type="button" onClick={() => { void signOut(); setOpen(false); }} className="mt-3 text-left stamp font-semibold text-brick">
+                Sign out ({session.user.name}) →
+              </button>
+            ) : (
+              <Link href={loginUrlFor(pathname)} className="mt-3 stamp font-semibold text-brick">Sign in →</Link>
+            )}
           </nav>
         </div>
       )}

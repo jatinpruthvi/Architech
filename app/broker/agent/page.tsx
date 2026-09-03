@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AgentWorkspace from "@/pages/AgentWorkspace";
+import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <AgentWorkspace section="dashboard" />;
+  return <RequireSession permission="broker.dashboard.read" requireOrganization><AgentWorkspace section="dashboard" /></RequireSession>;
 }

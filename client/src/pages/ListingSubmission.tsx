@@ -15,6 +15,8 @@ import type { ListingDraftInput } from "@/lib/broker/workflow";
 import { AVAILABILITY_OPTIONS, PROPERTY_TYPE_OPTIONS } from "@/lib/listing-vocabulary";
 import type { SignedMediaUpload } from "@/lib/media/upload";
 import { AMENITY_OPTIONS, BATHROOM_OPTIONS, FACING_OPTIONS, FURNISHING_OPTIONS, PARKING_OPTIONS } from "@/lib/listing-details";
+import { DEFAULT_LISTER_TYPE, LISTER_TYPE_OPTIONS, labelForListerType, type ListerType } from "@/lib/listing/lister-type";
+import { useSession } from "@/contexts/SessionContext";
 
 const EMPTY: ListingDraftInput = {
   title: "",
@@ -29,13 +31,26 @@ const EMPTY: ListingDraftInput = {
   description: "",
   reraNumber: "",
   mediaRightsConfirmed: false,
+  listerType: DEFAULT_LISTER_TYPE,
   details: { bathrooms: 2, parkingSpaces: 1, furnishing: "UNFURNISHED", facing: "EAST", amenities: [] },
 };
 
 export default function ListingSubmission() {
   useTitle("New listing draft");
   const cities = getCities();
+  const { session, status } = useSession();
   const [draft, setDraft] = useState<ListingDraftInput>(EMPTY);
+  /* The account's sign-up declaration seeds the checkbox, but only until the
+     broker touches it. Without this flag a late-arriving session (the session
+     fetch is async) would overwrite a deliberate choice made in the meantime —
+     the classic "form resets while you are filling it in" bug. */
+  const [listerTypeTouched, setListerTypeTouched] = useState(false);
+
+  useEffect(() => {
+    if (listerTypeTouched || status !== "authenticated") return;
+    const declared = session?.user.listerType;
+    if (declared) setDraft((current) => ({ ...current, listerType: declared }));
+  }, [session, status, listerTypeTouched]);
   const localities = useMemo(() => getLocalities(draft.citySlug), [draft.citySlug]);
   const selectedLocality = useMemo(() => localities.find((locality) => locality.slug === draft.localitySlug), [localities, draft.localitySlug]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -62,6 +77,7 @@ export default function ListingSubmission() {
       { label: "Availability", complete: draft.availability.trim().length >= 3 },
       { label: "Description", complete: draft.description.trim().length >= 30 },
       { label: "Media rights", complete: draft.mediaRightsConfirmed },
+      { label: "Attribution", complete: Boolean(draft.listerType) },
       { label: "Property facts", complete: Boolean(draft.details?.bathrooms && draft.details?.furnishing && draft.details?.facing) },
     ];
     return { checks, complete: checks.filter((check) => check.complete).length, total: checks.length };
@@ -313,6 +329,35 @@ export default function ListingSubmission() {
             <Field label="Description / source context" required>
               <textarea value={draft.description} onChange={(e) => set("description", e.target.value)} rows={4} className={inputCls} placeholder="Old trees, kota stone floors, and a courtyard that carries the whole house." />
             </Field>
+            {/* Listing attribution. Pre-selected from the account's sign-up
+                declaration and overridable here, because a broker may list
+                their own home and an owner may appoint an agent. This is what a
+                buyer is shown, so the per-listing answer is the one that counts. */}
+            <fieldset className="border border-ink/12 bg-paper/45 p-4">
+              <legend className="kicker text-brick">Who is listing this property</legend>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {LISTER_TYPE_OPTIONS.map((option) => {
+                  const active = (draft.listerType ?? DEFAULT_LISTER_TYPE) === option.value;
+                  return (
+                    <label key={option.value} className={`flex min-h-11 cursor-pointer items-center gap-3 border px-3 py-2.5 text-sm transition-colors ${active ? "border-brick bg-brick/10 text-ink" : "border-ink/12 bg-paper/45 ink-2 hover:border-brick/45"}`}>
+                      <input
+                        type="radio"
+                        name="listing-lister-type"
+                        value={option.value}
+                        checked={active}
+                        onChange={() => { setListerTypeTouched(true); set("listerType", option.value as ListerType); }}
+                        className="h-4 w-4 accent-[var(--brick)]"
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-xs leading-5 ink-2">
+                Buyers see this as “{labelForListerType(draft.listerType ?? DEFAULT_LISTER_TYPE)}”. Architech shows it as a declaration, not a verified fact.
+                {session?.user.listerType && !listerTypeTouched ? ` Pre-selected from your account (${labelForListerType(session.user.listerType)}).` : ""}
+              </p>
+            </fieldset>
             <label className="flex items-start gap-3 border border-brick/20 bg-brick/5 p-3 text-xs leading-5 text-ink/65">
               <input type="checkbox" checked={draft.mediaRightsConfirmed} onChange={(e) => set("mediaRightsConfirmed", e.target.checked)} className="mt-1 accent-[var(--brick)]" />
               <span>I confirm media rights for the images/plans and grant Architech publication rights.</span>
