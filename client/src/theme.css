@@ -251,8 +251,18 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    `.stamp` with a real semantic colour (`text-trust` on a verification stamp,
    `text-brick` on a link). An unlayered rule beats a layered utility no matter
    how specific the utility is, so an unwrapped colour here silently mutes every
-   one of those. Size stays a hard rule; colour stays a suggestion. */
-:where(.stamp) { color: var(--muted-foreground); }
+   one of those. Size stays a hard rule; colour stays a suggestion.
+
+   `:where()` zeroes SPECIFICITY but does nothing about LAYERS, and that is the
+   part that bit: Tailwind utilities live in `@layer utilities`, and ANY
+   unlayered declaration outranks a layered one no matter how specific. So this
+   rule silently beat `text-cream` and every other `text-*` paired with
+   `.stamp` — the selected auth tab rendered muted brown on solid orange, all
+   but invisible. Exactly the trap already documented for `a { color: inherit }`
+   above, and the same remedy: move it into `@layer base` so utilities win. */
+@layer base {
+  :where(.stamp) { color: var(--muted-foreground); }
+}
 
 /* Big index numerals */
 .index-num { font-family: var(--font-display); font-variation-settings: "opsz" 144; font-weight: 300; line-height: 0.85; letter-spacing: -0.04em; }
