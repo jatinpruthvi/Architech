@@ -97,5 +97,39 @@ Prisma adapter is the remaining step; no code in this slice changes when it does
 ```bash
 pnpm check
 pnpm lint
-pnpm test   # includes credentials, redirects, login-throttle, login-routes
+pnpm test       # unit: credentials, redirects, login-throttle, login-routes
+pnpm test:e2e   # real HTTP against a production build, both auth modes
 ```
+
+## Production defects found by the end-to-end suite
+
+The E2E suite (`tests/e2e/`) was written after this feature and immediately
+found four defects that dev-mode testing had missed. All are fixed; each now has
+a check that fails without the fix.
+
+1. **Sign-out did not revoke the session.** The internal call to Better Auth was
+   rejected with `MISSING_OR_NULL_ORIGIN` (a server-built request carries no
+   Origin). The code only inspected the returned cookies, so it cleared the
+   browser cookie and reported success while the session stayed live — a
+   captured token kept working. `callProvider` now sends the configured origin,
+   and a non-200 sign-out is logged loudly instead of being swallowed.
+2. **Sign-up failed on any host other than `BETTER_AUTH_URL`.** Better Auth's
+   own origin check trusts only `baseURL` by default, so previews and unset-env
+   deployments got `INVALID_ORIGIN`, surfaced as "We could not create that
+   account". `trustedOrigins` now also includes `NEXT_PUBLIC_SITE_URL`.
+3. **A throttled sign-in was reported as a wrong password.** Better Auth
+   rate-limits before checking credentials; its 429 was folded into the generic
+   401. It now passes through as `TOO_MANY_ATTEMPTS`.
+4. **All users shared one rate-limit bucket.** The internal request dropped the
+   caller's IP headers, so Better Auth could not identify clients and fell back
+   to a single shared bucket — one noisy client could throttle everyone. The
+   trusted address headers are now forwarded, gated on `TRUST_PROXY_HEADERS`
+   exactly as in `request-safety.ts`.
+
+## Live mode is single-process until the Prisma adapter lands
+
+The in-memory adapter is not just non-durable across restarts: it is per
+process. If the runtime serves from multiple workers, each holds a different set
+of users, and identical credentials succeed or fail depending on which worker
+answers. Treat `ARCHITECH_AUTH_SOURCE=better-auth` as single-process-only for
+now; see `client/src/lib/auth/server-auth.ts`.

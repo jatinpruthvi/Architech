@@ -276,6 +276,12 @@ describe("register route", () => {
     expect(replayBody.session).toBeNull();
   });
 
+  /* NOTE: "a provider rate-limit surfaces as 429, not as a wrong password" is
+     covered in tests/e2e/auth-flows.mjs instead. Better Auth disables its own
+     rate limiter outside production, so a unit test here could only pass by
+     mocking the very thing under test. The E2E suite runs a production build,
+     where the limiter is real. */
+
   it("reports a duplicate account without leaking a different failure shape", async () => {
     vi.stubEnv("ARCHITECH_AUTH_SOURCE", "better-auth");
     vi.stubEnv("BETTER_AUTH_SECRET", "w".repeat(32));
