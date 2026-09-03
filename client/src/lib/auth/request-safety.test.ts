@@ -38,6 +38,19 @@ describe("mutation request safety", () => {
     expect(response?.status).toBe(403);
   });
 
+  it("still checks Origin when no site URL is configured", () => {
+    /* Regression: the whole Origin arm used to be gated on
+       NEXT_PUBLIC_SITE_URL, so the CSRF defence vanished in local dev and in
+       any deployment that had not set it — exactly the configurations where a
+       credential endpoint is most likely to be probed. Host equality alone is
+       a complete check and needs no configuration. */
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    const hostile = enforceMutationSafety(new Request("http://localhost:3000/api/auth/login/", { method: "POST", headers: { origin: "https://evil.example", host: "localhost:3000" } }));
+    expect(hostile?.status).toBe(403);
+    const friendly = enforceMutationSafety(new Request("http://localhost:3000/api/auth/login/", { method: "POST", headers: { origin: "http://localhost:3000", host: "localhost:3000" } }));
+    expect(friendly).toBeNull();
+  });
+
   it("caps repeated mutations from the same client key", () => {
     for (let index = 0; index < 60; index += 1) {
       expect(enforceMutationSafety(new Request("http://example.com/api/leads", { method: "POST", headers: { "x-forwarded-for": "192.0.2.10" } }))).toBeNull();

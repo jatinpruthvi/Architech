@@ -28,7 +28,7 @@ function error(status: number, code: string, message: string) {
    - With no usable identity we skip rate limiting rather than lumping every
      client into one shared bucket (fail-open; body/origin checks still run).
 */
-function clientKey(request: Request): string | null {
+export function clientKey(request: Request): string | null {
   const direct = request.headers.get("x-real-ip")?.trim() || request.headers.get("cf-connecting-ip")?.trim();
   if (direct) return direct;
 
@@ -61,33 +61,46 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
      exactly when it matters. */
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL;
   const origin = request.headers.get("origin");
+
+  /* The Origin check runs whether or not a site URL is configured. It used to
+     be wrapped in `if (configuredOrigin)`, which meant the CSRF defence
+     silently disappeared in every deployment that had not set
+     `NEXT_PUBLIC_SITE_URL` — including local dev and any preview using the
+     default env. Origin-vs-Host equality needs no configuration to be correct
+     (it is exactly what Django and Next.js Server Actions do), so the
+     configured origin is now an ADDITIONAL allowed value rather than the
+     switch that turns the check on. */
+  const allowedOrigins = new Set<string>();
   if (configuredOrigin) {
-    const allowedOrigins = new Set<string>();
     try {
       allowedOrigins.add(new URL(configuredOrigin).origin);
     } catch {
       /* An unparseable site URL must not disable the guard. */
     }
-    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-    const requestHost = forwardedHost || request.headers.get("host")?.trim();
-    const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-    if (requestHost) {
-      const proto = forwardedProto || (requestHost.startsWith("localhost") || requestHost.startsWith("127.0.0.1") ? "http" : "https");
-      allowedOrigins.add(`${proto}://${requestHost}`);
+  }
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const requestHost = forwardedHost || request.headers.get("host")?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  if (requestHost) {
+    const proto = forwardedProto || (requestHost.startsWith("localhost") || requestHost.startsWith("127.0.0.1") ? "http" : "https");
+    allowedOrigins.add(`${proto}://${requestHost}`);
+  }
+
+  if (origin) {
+    let originValue: string | null = null;
+    try {
+      originValue = new URL(origin).origin;
+    } catch {
+      originValue = null;
     }
-    if (origin) {
-      let originValue: string | null = null;
-      try {
-        originValue = new URL(origin).origin;
-      } catch {
-        originValue = null;
-      }
-      if (!originValue || !allowedOrigins.has(originValue)) {
-        return error(403, "ORIGIN_REJECTED", "Request origin is not allowed.");
-      }
-    } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_ORIGINLESS_MUTATIONS !== "true") {
-      return error(403, "ORIGIN_REQUIRED", "A matching Origin header is required for mutations in production.");
+    /* With no Host header AND no configured origin there is nothing to compare
+       against; that is a non-browser caller, handled by the originless branch
+       below rather than by rejecting every request. */
+    if (allowedOrigins.size > 0 && (!originValue || !allowedOrigins.has(originValue))) {
+      return error(403, "ORIGIN_REJECTED", "Request origin is not allowed.");
     }
+  } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_ORIGINLESS_MUTATIONS !== "true") {
+    return error(403, "ORIGIN_REQUIRED", "A matching Origin header is required for mutations in production.");
   }
 
   const ip = clientKey(request);

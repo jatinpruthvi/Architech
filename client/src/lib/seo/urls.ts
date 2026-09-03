@@ -171,6 +171,13 @@ export function savedUrl(base?: string) {
   return canonicalUrl(savedPath(), base);
 }
 
+/** Authentication surface. Kept out of the index for the same reason `/saved`
+    is: it is a personal utility page with no discovery value, and crawling it
+    spends budget that belongs to hubs and dossiers. */
+export function loginPath() {
+  return "/login/";
+}
+
 /** The sitemap *index*. `/sitemap.xml` is kept as the single URL advertised in
     `robots.txt` so existing Search Console history stays valid; it points at one
     child sitemap per content type. */

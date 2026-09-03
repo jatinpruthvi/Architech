@@ -35,7 +35,18 @@ export async function getSessionContractForRequest(request: Request): Promise<{ 
   if (url.searchParams.get("mode") === "none") return { session: null, source: "better-auth-contract-demo", missing: [] };
 
   const source = url.searchParams.get("source") === "better-auth" ? "better-auth" : getAuthSourceMode();
-  if (source === "demo") return { session: demoBrokerSession, source: demoBrokerSession.source, missing: [] };
+  if (source === "demo") {
+    /* Demo mode is no longer "everyone is the broker admin unconditionally":
+       the login page can sign a specific demo account in, and sign-out must
+       actually sign out. The cookie decides; with no cookie the historical
+       default (broker admin) is preserved so existing broker/moderation
+       fixtures and their tests keep passing. */
+    const { sessionForDemoCookie } = await import("./demo-accounts");
+    const state = sessionForDemoCookie(request.headers.get("cookie") ?? "");
+    if (state.kind === "signed-out") return { session: null, source: "better-auth-contract-demo", missing: [] };
+    const session = state.kind === "account" ? state.session : demoBrokerSession;
+    return { session, source: session.source, missing: [] };
+  }
 
   const readiness = getAuthReadiness("better-auth");
   if (!readiness.ready) return { session: null, source: "better-auth-not-configured", missing: readiness.missing };

@@ -4,6 +4,7 @@
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { SessionProvider } from "@/contexts/SessionContext";
 import { LangProvider } from "@/contexts/LangContext";
 import { SavedProvider } from "@/contexts/SavedContext";
 import { CompareProvider, useCompare } from "@/contexts/CompareContext";
@@ -22,6 +23,7 @@ function LazyCompareTray() {
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
+      <SessionProvider>
       <LangProvider>
         <SavedProvider>
           <CompareProvider>
@@ -35,6 +37,7 @@ export default function Providers({ children }: { children: ReactNode }) {
           </CompareProvider>
         </SavedProvider>
       </LangProvider>
+      </SessionProvider>
     </ThemeProvider>
   );
 }
