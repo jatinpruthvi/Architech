@@ -38,16 +38,12 @@ the client consumes and says so in a comment.
 
 ## CI
 
-Not yet wired into `.github/workflows/ci.yml` — the automation token in use
-cannot modify workflow files. **Add this step manually**, right after the
-"No-JavaScript SEO smoke tests" step, so it reuses the build already produced:
+Runs on every pull request as the **End-to-end flows** step in
+`.github/workflows/ci.yml`, immediately after the SEO smoke tests. It uses
+`test:e2e:only`, reusing the production build the workflow already made, so it
+costs seconds rather than a second build.
 
-```yaml
-      - name: End-to-end flows
-        run: pnpm test:e2e:only
-```
-
-Until then, run `pnpm test:e2e` locally before pushing auth or routing changes.
+Locally, `pnpm test:e2e` builds first; `pnpm test:e2e:only` reuses `.next`.
 
 ## Writing a new check
 

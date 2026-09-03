@@ -28,6 +28,11 @@ jobs:
         run: pnpm build
       - name: No-JavaScript SEO smoke tests
         run: pnpm test:seo
+      # Real-HTTP end-to-end suites against the production build: auth flows in
+      # both auth modes, public routes, URL grammar, SEO plumbing, security
+      # headers. Reuses the build above, so this adds seconds, not minutes.
+      - name: End-to-end flows
+        run: pnpm test:e2e:only
       - name: Search Console config audit
         run: pnpm seo:gsc:audit
       - name: Security and legal gates
