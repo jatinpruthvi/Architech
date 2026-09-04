@@ -6,6 +6,7 @@ Architech keeps the public indexability and live-provider boundary explicit. A l
 |---|---|---|
 | `PUBLIC_INDEXING_ENABLED` | `true` only after approval | Allows public HTML, sitemap, and robots to advertise indexable pages. |
 | `ARCHITECH_AUTH_SOURCE` | `better-auth` | Selects live session resolution. Demo auth is rejected by private route guards when `NODE_ENV=production`. |
+| `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION` | **never set in real production** | Preview/E2E escape hatch only: lets `better-auth-contract-demo` sessions call permission-gated APIs on a production build (e.g. the public concept preview, `tests/e2e/marketplace-flows.mjs`). Default-off keeps demo writes refused with 503. |
 | `ARCHITECH_DATA_SOURCE` | `prisma` | Enables durable listing and organization persistence. |
 | `ARCHITECH_RERA_SOURCE` | `gujarat` | Enables the approved Gujarat RERA adapter. |
 | `ARCHITECH_LEAD_STORAGE` | `prisma` | Enables durable lead storage and retention workflow. |

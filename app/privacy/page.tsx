@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { privacyUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
   title: "Privacy notice",
   description: "Architech Phase 1 privacy notice covering leads, saved searches, broker operations, observability, and data rights.",
+  alternates: { canonical: privacyUrl() },
   robots: { index: false, follow: true },
 };
 

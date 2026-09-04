@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CityPage from "@/pages/CityPage";
-import { getListingsByCity, getListingsByLocality, getLiveCityBySlug, getLocalities, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
+import { getLiveCityBySlug, getLocalities, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
+import { getListingsByLocalityForServer, getListingsForServer } from "@/lib/repositories/server/prisma";
 import { isIndexable } from "@/lib/seo/lifecycle";
 import { cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { socialImage } from "@/lib/seo/social";
@@ -54,8 +55,11 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   const intel = localityIntel(slug, city.slug);
   // Only publicly indexable (ACTIVE) listings belong in the page's ItemList:
   // schema must describe what the page actually publishes.
-  const localHomes = getListingsByLocality(locality.slug, city.slug);
-  const cityHomes = getListingsByCity(city.slug);
+  /* Server-mode reads: with ARCHITECH_DATA_SOURCE=prisma these come from the
+     database, so a locality page can never name a listing dossier that 404s.
+     In fixture mode the adapter returns the same fixtures the static path did. */
+  const localHomes = await getListingsByLocalityForServer(locality.slug, city.slug);
+  const cityHomes = await getListingsForServer({ citySlug: city.slug });
   const listings = localHomes.filter((listing) => isIndexable(listing.lifecycle ?? "ACTIVE"));
   const jsonLd = {
     "@context": "https://schema.org",

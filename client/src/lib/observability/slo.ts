@@ -20,6 +20,29 @@ export type SloResult = {
   status: SloStatus;
 };
 
+/**
+ * Where an SLO input value came from:
+ * - `observed`        — computed from real samples recorded by this process
+ * - `assumed-target`  — no samples exist yet; the configured target is used as
+ *                       the assumed value so dashboards stay contract-stable,
+ *                       and consumers can see it is NOT a measurement.
+ */
+export type SloValueBasis = "observed" | "assumed-target";
+
+export type SloInput = {
+  value: number;
+  basis: SloValueBasis;
+  /** Number of real samples behind the value; 0 when basis is assumed-target. */
+  sampleSize: number;
+};
+
+export type SloResultDetailed = SloResult & {
+  id: string;
+  value: number;
+  basis: SloValueBasis;
+  sampleSize: number;
+};
+
 export const SLO_METRICS: SloMetric[] = [
   { id: "availability_30d", label: "30-day availability", target: 99.9, thresholdWarning: 99.5, thresholdCritical: 99.0, unit: "%", direction: "higher-is-better" },
   { id: "api_p95_latency", label: "Search API p95 latency", target: 300, thresholdWarning: 400, thresholdCritical: 600, unit: "ms", direction: "lower-is-better" },
@@ -44,6 +67,20 @@ export function evaluateAllSlos(values: Record<string, number>): Array<SloResult
     const value = values[metric.id];
     if (value === undefined) return { id: metric.id, status: "warning" as SloStatus, value: Number.NaN };
     return { id: metric.id, status: evaluateSlo(metric, value), value };
+  });
+}
+
+/**
+ * Detailed variant: evaluates SLOs from inputs that carry provenance, so the
+ * response can distinguish a measured value from a configured assumption.
+ */
+export function evaluateSloInputs(inputs: Record<string, SloInput>): SloResultDetailed[] {
+  return SLO_METRICS.map((metric) => {
+    const input = inputs[metric.id];
+    if (!input || !Number.isFinite(input.value)) {
+      return { id: metric.id, status: "warning" as SloStatus, value: Number.NaN, basis: "assumed-target" as const, sampleSize: 0 };
+    }
+    return { id: metric.id, status: evaluateSlo(metric, input.value), value: input.value, basis: input.basis, sampleSize: input.sampleSize };
   });
 }
 

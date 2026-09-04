@@ -98,6 +98,14 @@ export async function getListingsForServer(scope: ListingScope = {}) {
   return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
 }
 
+/** Featured-first selection, same contract as the fixture getFeaturedListings:
+    featured homes lead, the rest fill to the limit. */
+export async function getFeaturedListingsForServer(limit = 8, citySlug?: string) {
+  const pool = await getListingsForServer({ citySlug });
+  const featured = pool.filter((property) => property.featured);
+  return [...featured, ...pool.filter((property) => !property.featured)].slice(0, limit);
+}
+
 export async function getListingByIdForServer(id?: string) {
   if (!isPrismaDataSource()) return getListingById(id);
   if (!id) return undefined;

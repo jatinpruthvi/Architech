@@ -212,9 +212,20 @@ CREATE TABLE "LocationImportRun" (
 CREATE TABLE "Requirement" (
     "id" TEXT NOT NULL,
     "cityId" TEXT NOT NULL,
+    -- Nullable: a brief may come from the public drawer before any brokerage
+    -- picks it up; SetNull on delete keeps the consent evidence intact.
+    "organizationId" TEXT,
     "intent" TEXT NOT NULL,
     "category" TEXT NOT NULL,
     "subtype" TEXT NOT NULL,
+    -- Structured criteria so a brief is matchable, not just free text.
+    "propertyType" TEXT,
+    "bhkMin" INTEGER,
+    "bhkMax" INTEGER,
+    "areaMinSqft" INTEGER,
+    "areaMaxSqft" INTEGER,
+    "budgetMinInr" BIGINT,
+    "budgetMaxInr" BIGINT,
     "role" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "phoneCiphertext" BYTEA NOT NULL,
@@ -412,5 +423,6 @@ ALTER TABLE "LocationImportRun" ADD CONSTRAINT "LocationImportRun_sourceId_fkey"
 ALTER TABLE "Locality" ADD CONSTRAINT "Locality_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "LocationSource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "Listing" ADD CONSTRAINT "Listing_postalCode_fkey" FOREIGN KEY ("postalCode") REFERENCES "PostalCode"("code") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "Requirement" ADD CONSTRAINT "Requirement_cityId_fkey" FOREIGN KEY ("cityId") REFERENCES "City"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Requirement" ADD CONSTRAINT "Requirement_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "BrokerOrganization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "RequirementLocality" ADD CONSTRAINT "RequirementLocality_requirementId_fkey" FOREIGN KEY ("requirementId") REFERENCES "Requirement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "RequirementLocality" ADD CONSTRAINT "RequirementLocality_localityId_fkey" FOREIGN KEY ("localityId") REFERENCES "Locality"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

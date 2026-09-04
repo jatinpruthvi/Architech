@@ -119,3 +119,7 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# Regenerable local data exports (pnpm seed:export:data); see data/exports/README.md
+data/exports/*.bson
+data/exports/*.jsonl

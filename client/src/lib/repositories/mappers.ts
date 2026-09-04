@@ -163,6 +163,10 @@ export function dbListingToProperty(row: DbListingRow): Property {
     gallery: galleryFromMedia(row.media),
     badge: badgeFromVerification(row.verification),
     status: freshnessLabel(row.meaningfulUpdatedAt),
+    /* The absolute freshness stamp the dossier renders. Prisma hands us a
+       Date (or a driver string); the fixture shape is an ISO date — normalize
+       here so "Updated on <date>" renders identically in both data modes. */
+    meaningfulUpdatedAt: row.meaningfulUpdatedAt ? new Date(row.meaningfulUpdatedAt).toISOString().slice(0, 10) : undefined,
     note: row.description,
     propertyType,
     availability,

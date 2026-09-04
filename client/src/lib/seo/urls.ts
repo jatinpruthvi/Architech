@@ -171,6 +171,42 @@ export function savedUrl(base?: string) {
   return canonicalUrl(savedPath(), base);
 }
 
+/** Legal/utility standing pages. They are noindex, but a noindex page still
+    must not canonicalise to the homepage: the canonical is a statement about
+    identity ("this IS that page"), and privacy is not the homepage. Self-
+    referencing keeps the statement honest if the page is ever indexable. */
+export function privacyPath() {
+  return "/privacy/";
+}
+
+export function privacyUrl(base?: string) {
+  return canonicalUrl(privacyPath(), base);
+}
+
+export function termsPath() {
+  return "/terms/";
+}
+
+export function termsUrl(base?: string) {
+  return canonicalUrl(termsPath(), base);
+}
+
+export function savedSearchesPath() {
+  return "/saved-searches/";
+}
+
+export function savedSearchesUrl(base?: string) {
+  return canonicalUrl(savedSearchesPath(), base);
+}
+
+export function brokerListingNewPath() {
+  return "/broker/listings/new/";
+}
+
+export function brokerListingNewUrl(base?: string) {
+  return canonicalUrl(brokerListingNewPath(), base);
+}
+
 /** Authentication surface. Kept out of the index for the same reason `/saved`
     is: it is a personal utility page with no discovery value, and crawling it
     spends budget that belongs to hubs and dossiers. */

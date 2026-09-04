@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { getCities, getCitiesByState, getListingsByCity, getLocalities } from "@/lib/repositories";
+import { getCities, getCitiesByState, getLocalities } from "@/lib/repositories";
+import { getListingsForServer } from "@/lib/repositories/server/prisma";
 import { canonicalUrl, cityUrl, homeUrl } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
@@ -14,7 +15,14 @@ export const metadata: Metadata = {
 
 /* National hub: Home → /buy/ → city → locality. This is the crawl entry point
    that distributes authority to every city hub (architecture: internal links). */
-export default function BuyIndiaHub() {
+export default async function BuyIndiaHub() {
+  /* Server-mode listing counts: prisma reads the live table, fixture mode
+     returns the same fixtures the static counts did. One batched read per
+     city keeps the national hub from issuing N request-time queries. */
+  const listingCountByCity = new Map<string, number>();
+  for (const city of getCities()) {
+    listingCountByCity.set(city.slug, (await getListingsForServer({ citySlug: city.slug })).length);
+  }
   const cities = getCities();
   const groups = getCitiesByState();
   const totalLocalities = getLocalities().length;
@@ -68,7 +76,7 @@ export default function BuyIndiaHub() {
               <div className="mt-4 border-t border-ink/15">
                 {group.cities.map((city) => {
                   const localityCount = getLocalities(city.slug).length;
-                  const listingCount = getListingsByCity(city.slug).length;
+                  const listingCount = listingCountByCity.get(city.slug) ?? 0;
                   return (
                     <Link
                       key={city.slug}

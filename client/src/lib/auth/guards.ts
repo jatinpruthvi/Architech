@@ -31,9 +31,20 @@ export async function authorizeRequest(request: Request, options: AccessOptions)
     return { response: jsonError(401, "AUTH_REQUIRED", "A signed-in session is required.") };
   }
 
-  if (process.env.NODE_ENV === "production" && contract.session.source === "better-auth-contract-demo") {
+  if (
+    process.env.NODE_ENV === "production" &&
+    contract.session.source === "better-auth-contract-demo" &&
+    process.env.ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION !== "true"
+  ) {
     return { response: jsonError(503, "DEMO_AUTH_DISABLED", "Demo authentication is disabled in production.") };
   }
+  /* `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION` is the documented PREVIEW/E2E
+     escape hatch: a public concept-preview deployment (or the e2e suites)
+     must be able to walk saved-search and broker journeys end-to-end with
+     demo accounts. It is opt-in, loud by name, listed in
+     docs/runtime-activation-gates.md, and must never be set on a real
+     production deployment. Default-off keeps the unsigned demo cookie safe
+     to ship: without the flag every demo write is refused with 503. */
 
   if (!requirePermission(contract.session, options.permission)) {
     return { response: jsonError(403, "FORBIDDEN", "The current session does not have the required permission.") };
