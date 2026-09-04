@@ -97,6 +97,41 @@ describe("Phase 1 Prisma schema contract", () => {
     });
   });
 
+  /* Tenant isolation is a production gate for the broker channel. Asserted
+     here so the migration cannot be quietly weakened; the policies themselves
+     are executed against a real PostgreSQL by scripts/security/rls-audit.mjs. */
+  describe("row-level security", () => {
+    const rls = readFileSync("prisma/migrations/202609030004_row_level_security/migration.sql", "utf8");
+
+    it("protects every tenant-owned table with RLS", () => {
+      for (const table of ["Lead", "BrokerUser", "InteropOutbox", "InteropInboundEvent", "AuditEvent"]) {
+        expect(rls).toContain(`ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY`);
+        // FORCE matters: without it the table owner bypasses every policy, and
+        // in small deployments the app role IS the owner.
+        expect(rls).toContain(`ALTER TABLE "${table}" FORCE ROW LEVEL SECURITY`);
+      }
+    });
+
+    it("reads the tenant GUC in a way that denies when unset", () => {
+      expect(rls).toContain("current_setting('app.current_org_id', true)");
+      expect(rls).toContain("NULLIF");
+    });
+
+    it("keeps the audit trail append-only for tenants", () => {
+      expect(rls).toMatch(/CREATE POLICY "AuditEvent_tenant_read"[\s\S]*?FOR SELECT/);
+      expect(rls).toMatch(/CREATE POLICY "AuditEvent_tenant_append"[\s\S]*?FOR INSERT/);
+      expect(rls).not.toMatch(/ON "AuditEvent"[\s\S]*?FOR UPDATE/);
+      expect(rls).not.toMatch(/ON "AuditEvent"[\s\S]*?FOR DELETE/);
+    });
+
+    it("leaves public property tables unrestricted", () => {
+      // Anonymous visitors have no tenant; RLS here would break the public site.
+      for (const table of ["City", "Locality", "Listing", "PostalCode"]) {
+        expect(rls).not.toContain(`ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY`);
+      }
+    });
+  });
+
   it("ships PostgreSQL FTS and trigram search indexes", () => {
     expect(searchMigration).toContain("CREATE EXTENSION IF NOT EXISTS pg_trgm");
     expect(searchMigration).toContain('"Listing_searchVector_idx"');
