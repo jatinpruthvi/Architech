@@ -1,8 +1,9 @@
 "use client";
 
 /* Shared saved-homes state, persisted to localStorage. */
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { loadSaved, persistSaved, toggleSaved } from "@/lib/saved";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { adoptLegacySaved, loadSaved, mergeGuestSaved, persistSaved, toggleSaved } from "@/lib/saved";
+import { useSession } from "@/contexts/SessionContext";
 
 type SavedCtx = { saved: string[]; isSaved: (id: string) => boolean; toggle: (id: string) => boolean };
 
@@ -15,14 +16,33 @@ export function SavedProvider({ children }: { children: ReactNode }) {
      hydration with "Hydration failed because the server rendered HTML didn't
      match the client". */
   const [saved, setSaved] = useState<string[]>([]);
-  useEffect(() => { setSaved(loadSaved(window.localStorage)); }, []);
+  const { session, status } = useSession();
+  /* The shortlist is per account, so the identity it is stored under has to
+     be a ref as well as a dependency: `toggle` writes on the next tick and
+     must not persist to the key of whoever was signed in when it was built. */
+  const userId = session?.user.id ?? null;
+  const userIdRef = useRef<string | null>(userId);
+  userIdRef.current = userId;
+
+  useEffect(() => {
+    /* Wait for the session to resolve. Loading during "loading" would read
+       the guest list for a signed-in person and then overwrite their account
+       list with it on the first toggle. */
+    if (status === "loading") return;
+    try {
+      adoptLegacySaved(window.localStorage);
+      setSaved(userId ? mergeGuestSaved(window.localStorage, userId) : loadSaved(window.localStorage, null));
+    } catch {
+      setSaved([]);
+    }
+  }, [status, userId]);
 
   const toggle = useCallback((id: string) => {
     const wasSaved = saved.includes(id);
     setSaved((prev) => {
       const next = toggleSaved(prev, id);
       try {
-        if (typeof window !== "undefined") persistSaved(window.localStorage, next);
+        if (typeof window !== "undefined") persistSaved(window.localStorage, next, userIdRef.current);
       } catch {
         // Private browsing and storage quotas should not block the shortlist UI.
       }

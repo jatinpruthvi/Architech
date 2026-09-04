@@ -12,6 +12,11 @@ export type LeadStatusEvent = {
 
 export type LeadInput = {
   listingId: string;
+  /* The organization that owns the listing being enquired about, resolved
+     SERVER-SIDE from the listing. Never taken from the request body: a lead
+     is routed to an inbox by this value, so a caller who could set it could
+     inject leads into a competitor's inbox -- or read their own out of it. */
+  organizationId?: string | null;
   name: string;
   phone: string;
   email?: string;
@@ -25,6 +30,8 @@ export type LeadRecord = {
   id: string;
   listingId: string;
   listingTitle: string;
+  /** Owning organization's id. This is what scopes the lead inbox. */
+  organizationId: string | null;
   /** Resolved from the listing's own organization/broker — never a literal. */
   organizationName: string;
   name: string;
@@ -93,6 +100,7 @@ export function createLead(input: LeadInput): LeadResult {
     id: stableId("lead", key),
     listingId: input.listingId,
     listingTitle: listing.title,
+    organizationId: input.organizationId ?? null,
     organizationName: listing.developer,
     name: input.name.trim(),
     phoneMasked: maskPhone(input.phone),
@@ -154,8 +162,24 @@ export function revokeLeadConsent(id: string): { ok: true; lead: LeadRecord } | 
 }
 
 /** Leads visible to a broker: excludes soft-deleted records. */
-export function listActiveLeads(): LeadRecord[] {
-  return listLeads().filter((record) => record.status !== "DELETED");
+/* The leads belonging to ONE organization.
+ *
+ * `organizationId` is required rather than optional: this function used to
+ * take no argument at all, so every broker organization saw every other
+ * organization's enquiries -- buyer names, masked phones, messages and the
+ * listing each referred to. Making the parameter mandatory means an
+ * unscoped call is a compile error rather than a silent leak. */
+export function listActiveLeads(organizationId: string): LeadRecord[] {
+  if (!organizationId) return [];
+  return listLeads().filter((record) => record.status !== "DELETED" && record.organizationId === organizationId);
+}
+
+/** A single lead, only if it belongs to the given organization. Returns null
+    for a foreign lead so callers cannot distinguish it from a missing one. */
+export function findLeadForOrganization(id: string, organizationId: string): LeadRecord | null {
+  if (!organizationId) return null;
+  const lead = listLeads().find((record) => record.id === id);
+  return lead && lead.organizationId === organizationId ? lead : null;
 }
 
 export function resetLeadStoreForTests() {

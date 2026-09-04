@@ -4,6 +4,8 @@
 
 export type SavedSearchState = {
   id: string;
+  /** Owning account. Null only for rows created before ownership existed. */
+  userId?: string | null;
   query: string;
   filters: string[];
   sort: string | null;
@@ -13,6 +15,10 @@ export type SavedSearchState = {
 };
 
 export type SavedSearchInput = {
+  /* Server-assigned ONLY. The route overwrites whatever arrives in the body
+     with the id from the verified session, so a caller cannot save a search
+     onto someone else's account or read one back by claiming their id. */
+  userId?: string | null;
   query: string;
   filters?: string[];
   sort?: string | null;
@@ -34,10 +40,16 @@ function stableId(prefix: string, key: string): string {
 /** Canonical identity of a saved search: normalized query + sorted filters +
     sort. Shared by the memory and Prisma paths so duplicate detection means the
     same thing in both. */
-export function dedupeKeyForSavedSearch(input: Pick<SavedSearchInput, "query" | "filters" | "sort">): string {
+export function dedupeKeyForSavedSearch(input: Pick<SavedSearchInput, "query" | "filters" | "sort" | "userId">): string {
   const query = input.query?.trim() ?? "";
   const filters = (input.filters ?? []).map((f) => f.trim()).filter(Boolean).sort();
-  return `${query}::${filters.join(",")}::${input.sort ?? ""}`;
+  /* The key is scoped to the OWNER. `dedupeKey` is globally unique in the
+     database, so a key that ignored the account meant the first person to
+     save "3BHK Powai" owned that search forever: everyone else's identical
+     save returned the first person's row as a duplicate and was silently
+     never stored -- and, before scoping, handed them that row to read. */
+  const owner = input.userId ? `u:${input.userId}` : "anon";
+  return `${owner}::${query}::${filters.join(",")}::${input.sort ?? ""}`;
 }
 
 export function validateSavedSearchInput(input: Partial<SavedSearchInput>): string[] {
@@ -60,22 +72,36 @@ export function createSavedSearch(input: SavedSearchInput): SavedSearchResult {
   const sort = input.sort ?? null;
   const notify = input.notify ?? false;
 
-  const key = dedupeKeyForSavedSearch({ query, filters, sort });
+  const key = dedupeKeyForSavedSearch({ query, filters, sort, userId: input.userId });
   const id = stableId("saved_search", key);
   const existing = store.get(id);
   if (existing) return { ok: true, savedSearch: existing, duplicate: true };
 
   const now = new Date().toISOString();
-  const savedSearch: SavedSearchState = { id, query, filters, sort, notify, createdAt: now, updatedAt: now };
+  const savedSearch: SavedSearchState = { id, userId: input.userId ?? null, query, filters, sort, notify, createdAt: now, updatedAt: now };
   store.set(id, savedSearch);
   return { ok: true, savedSearch, duplicate: false };
 }
 
-export function listSavedSearches(): SavedSearchState[] {
-  return [...store.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+/* One account's saved searches.
+ *
+ * `userId` is REQUIRED, not optional-with-a-global-fallback: an accidental
+ * `listSavedSearches()` must not compile into "return everything", which is
+ * exactly the shape this function used to have. */
+export function listSavedSearches(userId: string): SavedSearchState[] {
+  if (!userId) return [];
+  return [...store.values()]
+    .filter((record) => record.userId === userId)
+    /* Tie-break on id: identical timestamps otherwise reshuffle between renders. */
+    .sort((a, b) => (b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id)));
 }
 
-export function deleteSavedSearch(id: string): boolean {
+/** Delete one of the CALLER's saved searches. Returns false for a row that
+    exists but belongs to somebody else -- indistinguishable, from the
+    caller's side, from a row that does not exist. */
+export function deleteSavedSearch(id: string, userId: string): boolean {
+  const existing = store.get(id);
+  if (!existing || existing.userId !== userId) return false;
   return store.delete(id);
 }
 

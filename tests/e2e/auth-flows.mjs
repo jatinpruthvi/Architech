@@ -100,14 +100,23 @@ async function demoModeFlows() {
       });
 
       await test("each role lands somewhere it can actually open", async () => {
+        /* Buyers and brokers share the one role-aware /dashboard/, which
+           composes a different panel set per persona. Moderators still land on
+           the moderation queue. Landing is asserted by actually opening the
+           page with the session cookie: a redirectTo pointing at a 404 or a
+           bounce back to /login/ would satisfy a string compare but not a
+           user. */
         for (const [account, expected] of [
-          [DEMO.brokerAdmin, "/broker/dashboard/"],
-          [DEMO.buyer, "/saved/"],
+          [DEMO.brokerAdmin, "/dashboard/"],
+          [DEMO.buyer, "/dashboard/"],
           [DEMO.moderator, "/admin/moderation/listings/"],
         ]) {
           const fresh = client.fork();
           const response = await fresh.post("/api/auth/login/", account);
           assertEqual(response.json.redirectTo, expected, `${account.email} must land on ${expected}`);
+
+          const landing = await fresh.get(expected);
+          assertEqual(landing.status, 200, `${account.email} must be able to OPEN ${expected}, got ${landing.status}`);
         }
       });
 
@@ -376,7 +385,7 @@ async function liveModeFlows() {
         assertEqual(response.json.session.organization ?? null, null, "no organization may be attached");
         assertEqual(response.json.session.permissions.includes("lead.inbox.read"), false, "no broker permission may leak in");
         assertEqual(response.json.session.permissions.includes("listing.draft.create"), false, "including listing creation");
-        assertEqual(response.json.redirectTo, "/saved/", "and they land as a buyer");
+        assertEqual(response.json.redirectTo, "/dashboard/", "and they land on the buyer dashboard, not a broker surface");
       });
 
       await test("a declared broker still cannot touch broker APIs", async () => {
@@ -452,7 +461,7 @@ async function liveModeFlows() {
         const hostile = await client.fork().post("/api/auth/login/", {
           email: "redirect@example.com", password: "password123", next: "https://evil.example.com/",
         });
-        assertEqual(hostile.json.redirectTo, "/saved/", "an off-site destination must be discarded (open redirect)");
+        assertEqual(hostile.json.redirectTo, "/dashboard/", "an off-site destination must be discarded (open redirect)");
 
         const safe = await client.fork().post("/api/auth/login/", {
           email: "redirect@example.com", password: "password123", next: "/search/?city=pune",

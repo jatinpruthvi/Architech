@@ -32,6 +32,49 @@ describe("mutation request safety", () => {
     expect(enforceMutationSafety(new Request("https://architech.example.com/api/leads", { method: "POST", headers: { origin: "https://pr-12.preview.example", "x-forwarded-host": "pr-12.preview.example", "x-forwarded-proto": "https" } }))).toBeNull();
   });
 
+  it("accepts a sandbox preview origin outside production", () => {
+    /* The e2b/manus proxies rewrite Host to localhost:3000 but leave Origin as
+       the public preview hostname and send no x-forwarded-host, so host
+       equality cannot hold and every mutation 403d. */
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://architech.example.com");
+    const request = new Request("http://localhost:3000/api/requirements/", {
+      method: "POST",
+      headers: { origin: "https://3000-abc123.e2b.app", host: "localhost:3000" },
+    });
+    expect(enforceMutationSafety(request)).toBeNull();
+  });
+
+  it("still rejects that same preview origin in production", () => {
+    // The exception is a dev affordance, not a hole in the deployed site.
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://architech.example.com");
+    const request = new Request("https://architech.example.com/api/requirements/", {
+      method: "POST",
+      headers: { origin: "https://3000-abc123.e2b.app", host: "architech.example.com" },
+    });
+    expect(enforceMutationSafety(request)?.status).toBe(403);
+  });
+
+  it("matches the preview host as a suffix, not a substring", () => {
+    /* `https://evil.example/?x=.e2b.app` and `https://note2b.app.evil.example`
+       both contain the wildcard text; only a real subdomain may pass. */
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://architech.example.com");
+    for (const origin of [
+      "https://evil.example/?x=.e2b.app",
+      "https://note2b.app.evil.example",
+      "https://e2b.app.evil.example",
+      "http://3000-abc.e2b.app",
+    ]) {
+      const request = new Request("http://localhost:3000/api/requirements/", {
+        method: "POST",
+        headers: { origin, host: "localhost:3000" },
+      });
+      expect(enforceMutationSafety(request)?.status, origin).toBe(403);
+    }
+  });
+
   it("rejects a malformed Origin header rather than failing open", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://architech.example.com");
     const response = enforceMutationSafety(new Request("https://architech.example.com/api/leads", { method: "POST", headers: { origin: "not a url" } }));

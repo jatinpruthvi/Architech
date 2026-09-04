@@ -1,7 +1,8 @@
 import "server-only";
-import { createLead, listActiveLeads, maskPhone, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
+import { createLead, findLeadForOrganization, listActiveLeads, maskPhone, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import { demoBrokerSession } from "@/lib/auth/roles";
 
 type PrismaLeadClient = ReturnType<typeof getPrismaClient> & {
   listing: { findFirst(args: unknown): Promise<{ id: string; title: string; brokerOrgId?: string | null; brokerOrg?: { name: string } | null } | null> };
@@ -46,7 +47,13 @@ function stableId(prefix: string, key: string): string {
 }
 
 export async function createLeadForServer(input: LeadInput): Promise<LeadResult> {
-  if (!isPrismaLeadStorage()) return createLead(input);
+  /* Fixture listings carry no broker organization, so a fixture lead is
+     attributed to the demo organization -- the same inbox the demo broker
+     session reads. Crucially the value is still derived here and never taken
+     from the request body. */
+  if (!isPrismaLeadStorage()) {
+    return createLead({ ...input, organizationId: demoBrokerSession.organization?.id ?? null });
+  }
 
   const errors = baseErrors(input);
   if (errors.length) return { ok: false, status: 400, errors };
@@ -60,10 +67,14 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
 
   const key = input.idempotencyKey?.trim() || `${input.listingId}:${input.phone.replace(/\D/g, "")}:${input.message.trim().toLowerCase()}`;
   const organizationName = listing.brokerOrg?.name ?? "Verified partner";
+  /* The owning organization is read off the LISTING. Anything the caller sent
+     in `organizationId` is discarded -- that field decides which inbox the
+     lead lands in. */
+  const owning = { ...input, organizationId: listing.brokerOrgId ?? null };
   const existing = await prisma.lead.findUnique({ where: { idempotencyKey: key } });
   if (existing && typeof existing === "object") {
     // Avoid exposing raw DB rows; return deterministic contract shape.
-    const lead = dbLeadContract(input, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);
+    const lead = dbLeadContract(owning, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);
     return { ok: true, lead, duplicate: true };
   }
 
@@ -106,13 +117,13 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
       const row = winner ? await refetchLeadOrNotFound(prisma, winner.id) : null;
       const lead = row
         ? dbLeadRowToContract(row)
-        : dbLeadContract(input, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);
+        : dbLeadContract(owning, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);
       return { ok: true, lead, duplicate: true };
     }
     throw error;
   }
 
-  const lead = dbLeadContract(input, listing.title, result.dbLead.id, result.audit.id, false, result.dbLead.createdAt.toISOString(), "api.leads.prisma", organizationName);
+  const lead = dbLeadContract(owning, listing.title, result.dbLead.id, result.audit.id, false, result.dbLead.createdAt.toISOString(), "api.leads.prisma", organizationName);
   return { ok: true, lead, duplicate: false };
 }
 
@@ -121,6 +132,7 @@ function dbLeadContract(input: LeadInput, listingTitle: string, id: string, audi
     id,
     listingId: input.listingId,
     listingTitle,
+    organizationId: input.organizationId ?? null,
     organizationName,
     name: input.name.trim(),
     phoneMasked: maskPhone(input.phone),
@@ -145,6 +157,7 @@ function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "V
     id,
     listingId: String(row.listingId ?? ""),
     listingTitle: listing.title ?? "Unknown listing",
+    organizationId: typeof row.organizationId === "string" ? row.organizationId : null,
     organizationName: listing.brokerOrg?.name ?? organizationName,
     name: String(row.name ?? ""),
     phoneMasked: String(row.phoneMasked ?? ""),
@@ -167,15 +180,39 @@ function refetchLeadOrNotFound(prisma: PrismaLeadClient, id: string): Promise<Re
 }
 
 /** All leads for the broker inbox, newest-first. */
-export async function listLeadsForServer(): Promise<LeadRecord[]> {
-  if (!isPrismaLeadStorage()) return listActiveLeads();
+/* One organization's lead inbox.
+ *
+ * `organizationId` is mandatory. This function previously took no argument
+ * and returned every non-deleted lead in the table, so each broker saw every
+ * other broker's enquiries. The filter is in the QUERY so a foreign lead is
+ * never loaded into memory. */
+export async function listLeadsForServer(organizationId: string): Promise<LeadRecord[]> {
+  if (!organizationId) return [];
+  if (!isPrismaLeadStorage()) return listActiveLeads(organizationId);
   const prisma = getPrismaClient() as unknown as PrismaLeadClient;
   const rows = await prisma.lead.findMany({
-    where: { deletedAt: null },
-    orderBy: { createdAt: "desc" },
+    where: { deletedAt: null, organizationId },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: LEAD_LISTING_INCLUDE,
   });
   return rows.map((row) => dbLeadRowToContract(row));
+}
+
+/* Ownership check shared by every lead mutation.
+ *
+ * Returns 404 (not 403) for a lead owned by another organization: a 403 would
+ * confirm the id exists, letting a caller enumerate a competitor's inbox by
+ * probing ids. Absent and forbidden are made indistinguishable. */
+export async function assertLeadBelongsToOrg(id: string, organizationId: string): Promise<{ ok: true } | { ok: false; status: number; errors: string[] }> {
+  const notFound = { ok: false as const, status: 404, errors: ["Lead not found."] };
+  if (!organizationId) return notFound;
+  if (!isPrismaLeadStorage()) {
+    return findLeadForOrganization(id, organizationId) ? { ok: true } : notFound;
+  }
+  const prisma = getPrismaClient() as unknown as PrismaLeadClient;
+  const row = (await prisma.lead.findUnique({ where: { id } })) as { organizationId?: string | null } | null;
+  if (!row || row.organizationId !== organizationId) return notFound;
+  return { ok: true };
 }
 
 /** Soft-delete a lead (retention-privacy) and record the audit trail. */

@@ -3,9 +3,9 @@
  *
  * WHY: the dossier runs ~3000px with no way to orient yourself in it. The
  * sticky aside answers "how do I contact someone", nothing answers "where am
- * I, and where is the price history". Every Indian portal (MB, 99acres, Housing)
- * solves this with an anchor bar; ours had `aria-labelledby` headings but no
- * `id`s to link to, so there was nothing to build on.
+ * I, and where is the price history". The established pattern for a long
+ * dossier is an anchor bar; ours had `aria-labelledby` headings but no `id`s
+ * to link to, so there was nothing to build on.
  *
  * HOW the active state is decided — deliberately NOT IntersectionObserver.
  * IO tells you what is on screen, which is ambiguous exactly when two sections

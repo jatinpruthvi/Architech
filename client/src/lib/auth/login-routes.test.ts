@@ -57,12 +57,18 @@ describe("login route", () => {
   });
 
   it("routes each role to a landing page that role can open", async () => {
+    /* Both roles now land on the shared `/dashboard/`, which any signed-in
+       session can open; it selects a persona rather than gating on one. The
+       property under test is unchanged and is the one that actually matters:
+       nobody is sent to a surface that will bounce them straight back out. */
     const brokerBody = await (await login(post("/api/auth/login", { email: broker.email, password: broker.password }))).json();
-    expect(brokerBody.redirectTo).toBe("/broker/dashboard/");
+    expect(brokerBody.redirectTo).toBe("/dashboard/");
 
     clearLoginThrottleForTests();
     const buyerBody = await (await login(post("/api/auth/login", { email: buyer.email, password: buyer.password }))).json();
-    expect(buyerBody.redirectTo).toBe("/saved/");
+    expect(buyerBody.redirectTo).toBe("/dashboard/");
+    /* A buyer must never be handed the organization-gated partner desk. */
+    expect(buyerBody.redirectTo).not.toBe("/broker/dashboard/");
   });
 
   it("honours a safe ?next= destination but refuses an off-site one", async () => {
@@ -71,7 +77,7 @@ describe("login route", () => {
 
     clearLoginThrottleForTests();
     const hostile = await (await login(post("/api/auth/login", { email: buyer.email, password: buyer.password, next: "https://evil.example.com/" }))).json();
-    expect(hostile.redirectTo).toBe("/saved/");
+    expect(hostile.redirectTo).toBe("/dashboard/");
   });
 
   it("returns one indistinguishable message for a bad password and an unknown email", async () => {
@@ -219,7 +225,11 @@ describe("register route", () => {
     /* No broker permission may leak in on the strength of a self-declaration. */
     expect(body.session.permissions).not.toContain("lead.inbox.read");
     expect(body.session.permissions).not.toContain("listing.draft.create");
-    expect(body.redirectTo).toBe("/saved/");
+    /* The shared dashboard, NOT the organization-gated partner desk: a
+       self-declared "broker" who has not been onboarded gets a buyer-shaped
+       dashboard and no broker persona. */
+    expect(body.redirectTo).toBe("/dashboard/");
+    expect(body.redirectTo).not.toBe("/broker/dashboard/");
   });
 
   it("rejects a sign-up that omits or fakes the lister type", async () => {
@@ -250,7 +260,7 @@ describe("register route", () => {
     expect(body.ok).toBe(true);
     /* Privilege escalation guard: the request asked for ADMIN. */
     expect(body.session.user.role).toBe("BUYER");
-    expect(body.redirectTo).toBe("/saved/");
+    expect(body.redirectTo).toBe("/dashboard/");
     expect(response.headers.getSetCookie().join(" ")).toContain("better-auth.session_token");
   });
 

@@ -37,8 +37,9 @@
     "privacy:requirements:test": "node --test scripts/privacy/*.test.mjs",
     "seo:gsc:audit": "node scripts/seo/search-console-audit.mjs",
     "security:headers": "node scripts/security/header-audit.mjs",
+    "security:rls": "node scripts/security/rls-audit.mjs",
     "legal:gates": "node scripts/security/legal-gate-audit.mjs",
-    "security:audit": "pnpm security:headers && pnpm legal:gates",
+    "security:audit": "pnpm security:headers && pnpm security:rls && pnpm legal:gates",
     "ops:audit": "node scripts/operations/readiness-audit.mjs",
     "release:audit": "node scripts/release/phase-1-release-audit.mjs",
     "quality": "pnpm check && pnpm lint && pnpm test && pnpm db:validate",
@@ -101,5 +102,13 @@
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
   "prisma": {
     "seed": "node prisma/seed.mjs"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "@tailwindcss/oxide",
+      "esbuild",
+      "prisma"
+    ]
   }
 }
