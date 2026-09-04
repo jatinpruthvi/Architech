@@ -42,32 +42,14 @@ import {
   type DashboardPersona,
 } from "@/lib/dashboard/persona";
 import { PANEL_LOCK_REASON, PANEL_META, lockedPanels, visiblePanels, type DashboardPanel } from "@/lib/dashboard/panels";
+import { buildNextSteps } from "@/lib/dashboard/next-steps";
+import { itemsOf, loadPanel, mayClaimEmpty, type PanelOutcome } from "@/lib/dashboard/load-panel";
 import { intentLabel, type RequirementRecord } from "@/lib/requirements";
 import type { SavedSearchState } from "@/lib/saved-search/saved-search";
 import type { ListingDraft } from "@/lib/broker/workflow";
 
 type LeadSummary = { id: string; status?: string; createdAt?: string };
 
-/* One fetch helper for every panel. A panel whose API returns 401/403 must
-   render as "not available to you" rather than as an error: a buyer opening
-   the owner persona has not done anything wrong. */
-async function loadJson<T>(url: string, pick: (payload: Record<string, unknown>) => T, fallback: T): Promise<T> {
-  try {
-    const response = await fetch(url, { cache: "no-store", credentials: "same-origin" });
-    if (!response.ok) return fallback;
-    const payload = (await response.json()) as Record<string, unknown>;
-    if (payload.ok === false) return fallback;
-    return pick(payload);
-  } catch {
-    return fallback;
-  }
-}
-
-/* The two tab states are built as SEPARATE strings rather than as a ternary
-   inside one template literal. A solid `clay-fill` control must not also
-   carry a `hover:text-*` state it cannot win, and when both branches live in
-   one className string they read as a single set of classes — which is both
-   what the contrast guard flags and, in dark mode, a real bug. */
 function personaTabClass(active: boolean): string {
   const base = "touch-44 inline-flex items-center gap-2 border px-4 py-2 stamp font-semibold transition";
   if (active) return `${base} clay-fill border-brick bg-brick text-cream`;
@@ -116,6 +98,22 @@ function PanelLocked({ panel }: { panel: DashboardPanel }) {
         </div>
       </div>
     </section>
+  );
+}
+
+/* Shown when a panel's request failed. Deliberately NOT the empty state: we
+   do not know that there is nothing, only that we could not look. */
+function PanelUnavailable({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="border border-dashed border-ink/20 bg-sand/40 p-6">
+      <h3 className="font-display text-lg">We could not load this just now</h3>
+      <p className="mt-2 max-w-xl text-sm leading-6 ink-2">
+        This is a connection problem on our side, not a sign that you have nothing here.
+      </p>
+      <button type="button" onClick={onRetry} className="touch-44 mt-4 inline-flex items-center gap-2 border border-ink/15 px-4 py-2 stamp font-semibold text-brick hover:border-brick">
+        Try again
+      </button>
+    </div>
   );
 }
 
@@ -180,10 +178,13 @@ export default function RoleDashboard() {
      organization-scoped. Drives the header CTA so it never points at a wall. */
   const canList = (session?.permissions ?? []).includes("listing.draft.create");
 
-  const [requirements, setRequirements] = useState<RequirementRecord[]>([]);
-  const [savedSearches, setSavedSearches] = useState<SavedSearchState[]>([]);
-  const [drafts, setDrafts] = useState<ListingDraft[]>([]);
-  const [leads, setLeads] = useState<LeadSummary[]>([]);
+  /* Outcomes, not bare arrays: a panel must be able to tell "you have none"
+     apart from "we could not look". Collapsing the two is how the owner
+     dashboard came to announce "No properties listed yet" on a 403. */
+  const [requirements, setRequirements] = useState<PanelOutcome<RequirementRecord>>({ state: "ok", items: [] });
+  const [savedSearches, setSavedSearches] = useState<PanelOutcome<SavedSearchState>>({ state: "ok", items: [] });
+  const [drafts, setDrafts] = useState<PanelOutcome<ListingDraft>>({ state: "ok", items: [] });
+  const [leads, setLeads] = useState<PanelOutcome<LeadSummary>>({ state: "ok", items: [] });
   const [loading, setLoading] = useState(true);
 
   /* Only fetch what the visible panels actually need. An owner dashboard must
@@ -195,24 +196,16 @@ export default function RoleDashboard() {
     setLoading(true);
     const jobs: Array<Promise<unknown>> = [];
     if (needs.has("requirements")) {
-      jobs.push(
-        loadJson("/api/requirements/", (p) => (Array.isArray(p.requirements) ? (p.requirements as RequirementRecord[]) : []), []).then(setRequirements),
-      );
+      jobs.push(loadPanel<RequirementRecord>("/api/requirements/", "requirements").then(setRequirements));
     }
     if (needs.has("saved-searches")) {
-      jobs.push(
-        loadJson("/api/saved-searches/", (p) => (Array.isArray(p.savedSearches) ? (p.savedSearches as SavedSearchState[]) : []), []).then(setSavedSearches),
-      );
+      jobs.push(loadPanel<SavedSearchState>("/api/saved-searches/", "savedSearches").then(setSavedSearches));
     }
     if (needs.has("my-listings")) {
-      jobs.push(
-        loadJson("/api/broker/listings/", (p) => (Array.isArray(p.drafts) ? (p.drafts as ListingDraft[]) : []), []).then(setDrafts),
-      );
+      jobs.push(loadPanel<ListingDraft>("/api/broker/listings/", "drafts").then(setDrafts));
     }
     if (needs.has("enquiries")) {
-      jobs.push(
-        loadJson("/api/broker/leads/", (p) => (Array.isArray(p.leads) ? (p.leads as LeadSummary[]) : []), []).then(setLeads),
-      );
+      jobs.push(loadPanel<LeadSummary>("/api/broker/leads/", "leads").then(setLeads));
     }
     await Promise.all(jobs);
     setLoading(false);
@@ -230,36 +223,21 @@ export default function RoleDashboard() {
 
   /* "Next steps" is the only panel that reasons across the others. It is what
      makes the dashboard a dashboard rather than four lists side by side. */
-  const nextSteps = useMemo(() => {
-    const steps: Array<{ label: string; href: string }> = [];
-    if (needs.has("requirements") && requirements.length === 0) {
-      steps.push({ label: "Tell us what you are looking for", href: "/requirements/" });
-    }
-    if (needs.has("my-listings") && drafts.length === 0) {
-      steps.push({ label: "List your first property", href: "/broker/listings/new/" });
-    }
-    /* ACTIVE is the only publicly visible state. ARCHIVED, REJECTED and
-       DUPLICATE are terminal — nagging about those would be noise — so the
-       prompt covers only the ones the person can actually move forward. */
-    const actionable = drafts.filter((draft) => draft.status === "DRAFT" || draft.status === "CHANGES_REQUESTED").length;
-    if (actionable > 0) {
-      steps.push({ label: `${actionable} ${actionable === 1 ? "listing needs" : "listings need"} your attention before going live`, href: "/broker/agent/my-listings/" });
-    }
-    const inReview = drafts.filter((draft) => draft.status === "IN_REVIEW").length;
-    if (inReview > 0) {
-      steps.push({ label: `${inReview} ${inReview === 1 ? "listing is" : "listings are"} in review`, href: "/broker/agent/my-listings/" });
-    }
-    if (needs.has("saved-properties") && saved.length === 0) {
-      steps.push({ label: "Shortlist a property to compare later", href: "/search/" });
-    }
-    if (needs.has("enquiries") && leads.length > 0) {
-      steps.push({ label: `${leads.length} ${leads.length === 1 ? "enquiry" : "enquiries"} waiting for a reply`, href: "/broker/leads/" });
-    }
-    if (personaMeta.side !== "demand" && session?.organization?.verificationStatus === "DEMO") {
-      steps.push({ label: "Get verified so your listings carry a trust badge", href: "/broker/onboarding/" });
-    }
-    return steps;
-  }, [needs, requirements, drafts, saved, leads, personaMeta, session]);
+  /* Cross-panel prompts. The logic lives in lib/dashboard/next-steps so it can
+     be tested against every role and data shape without a DOM; this component
+     renders what it returns and adds nothing. */
+  const nextSteps = useMemo(
+    () => buildNextSteps({
+      persona,
+      panels,
+      requirementCount: itemsOf(requirements).length,
+      drafts: itemsOf(drafts),
+      savedCount: saved.length,
+      leadCount: itemsOf(leads).length,
+      verificationStatus: session?.organization?.verificationStatus ?? null,
+    }),
+    [persona, panels, requirements, drafts, saved, leads, session],
+  );
 
   if (status === "loading") {
     return (
@@ -362,10 +340,11 @@ export default function RoleDashboard() {
 
           if (panel === "requirements") {
             return (
-              <PanelShell key={panel} panel={panel} count={requirements.length}>
-                {requirements.length === 0 ? <PanelEmpty panel={panel} /> : (
+              <PanelShell key={panel} panel={panel} count={itemsOf(requirements).length}>
+                {requirements.state !== "ok" ? <PanelUnavailable onRetry={() => void load()} />
+                  : mayClaimEmpty(requirements) ? <PanelEmpty panel={panel} /> : (
                   <ul role="list">
-                    {requirements.slice(0, 6).map((item) => (
+                    {itemsOf(requirements).slice(0, 6).map((item) => (
                       <Row
                         key={item.id}
                         title={`${intentLabel(item.intent)} · ${item.subtype}`}
@@ -398,10 +377,11 @@ export default function RoleDashboard() {
 
           if (panel === "saved-searches") {
             return (
-              <PanelShell key={panel} panel={panel} count={savedSearches.length}>
-                {savedSearches.length === 0 ? <PanelEmpty panel={panel} /> : (
+              <PanelShell key={panel} panel={panel} count={itemsOf(savedSearches).length}>
+                {savedSearches.state !== "ok" ? <PanelUnavailable onRetry={() => void load()} />
+                  : mayClaimEmpty(savedSearches) ? <PanelEmpty panel={panel} /> : (
                   <ul role="list">
-                    {savedSearches.slice(0, 6).map((item) => (
+                    {itemsOf(savedSearches).slice(0, 6).map((item) => (
                       <Row
                         key={item.id}
                         title={item.query || "All properties"}
@@ -417,10 +397,11 @@ export default function RoleDashboard() {
 
           if (panel === "my-listings") {
             return (
-              <PanelShell key={panel} panel={panel} count={drafts.length}>
-                {drafts.length === 0 ? <PanelEmpty panel={panel} /> : (
+              <PanelShell key={panel} panel={panel} count={itemsOf(drafts).length}>
+                {drafts.state !== "ok" ? <PanelUnavailable onRetry={() => void load()} />
+                  : mayClaimEmpty(drafts) ? <PanelEmpty panel={panel} /> : (
                   <ul role="list">
-                    {drafts.slice(0, 6).map((draft) => (
+                    {itemsOf(drafts).slice(0, 6).map((draft) => (
                       <Row key={draft.id} title={draft.title} meta={String(draft.status).replaceAll("_", " ")} />
                     ))}
                   </ul>
@@ -431,12 +412,13 @@ export default function RoleDashboard() {
 
           if (panel === "enquiries") {
             return (
-              <PanelShell key={panel} panel={panel} count={leads.length}>
-                {leads.length === 0 ? <PanelEmpty panel={panel} /> : (
+              <PanelShell key={panel} panel={panel} count={itemsOf(leads).length}>
+                {leads.state !== "ok" ? <PanelUnavailable onRetry={() => void load()} />
+                  : mayClaimEmpty(leads) ? <PanelEmpty panel={panel} /> : (
                   <div className="border border-ink/12 bg-sand/40 p-5">
                     <p className="flex items-center gap-2 text-sm ink-2">
                       <Inbox size={16} className="text-brick" aria-hidden="true" />
-                      {leads.length} {leads.length === 1 ? "enquiry" : "enquiries"}. Contact details stay masked until consent is recorded.
+                      {itemsOf(leads).length} {itemsOf(leads).length === 1 ? "enquiry" : "enquiries"}. Contact details stay masked until consent is recorded.
                     </p>
                     <Link href="/broker/leads/" className="mt-3 inline-flex items-center gap-2 stamp font-semibold text-brick">
                       Open lead inbox <ArrowUpRight size={12} />
