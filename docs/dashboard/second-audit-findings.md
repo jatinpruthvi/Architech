@@ -98,3 +98,54 @@ The general principle, now enforced by a test that partitions each persona's
 composition into exactly visible + locked: a dashboard may tell you something
 is unavailable, but it must never tell you that you have nothing when it simply
 could not look.
+
+---
+
+# Third pass — interactive state and shared devices
+
+The second pass traced server-side data paths. This pass covered what it did
+not: **client-persisted state**, and the panels previously waved through as
+"OK" without a two-account test.
+
+## Finding 5 — the shortlist was shared across accounts on one device
+
+The Shortlist panel was recorded as "OK — localStorage, per-device" in the
+second audit. That description was accurate and the conclusion was wrong.
+
+`SavedContext` read and wrote one global key, `architech.saved`. It was never
+scoped to an account and never cleared on sign-out. So on any shared device —
+a family laptop, an office machine, a broker's desk — the next person to sign
+in inherited the previous person's shortlist, and the dashboard counted it as
+theirs and offered it in "Next steps".
+
+A shortlist reveals budget and intent, so this is the same class of privacy
+problem as the saved-search leak, just on the client where the second pass was
+not looking. "Per-device" is only an acceptable scope when a device has one
+user, which is not true of the Indian market this product targets.
+
+Fixed by keying storage per account (`architech.saved.u.<id>`, plus
+`architech.saved.guest` for signed-out visitors), with two behaviours that
+matter as much as the fix:
+
+- **`mergeGuestSaved`** folds a guest shortlist into the account on sign-in.
+  Someone who shortlists three flats and *then* registers must not lose them —
+  that is precisely the moment they are most likely to sign up.
+- **`adoptLegacySaved`** migrates the pre-scoping global list into the guest
+  list on first read, once. Without it, shipping this change would have
+  silently emptied the shortlist of every existing user. It cannot resurrect a
+  list the person has since deliberately cleared.
+
+## Verified end to end, per role
+
+All five roles were driven against the live server: each files a requirement
+with a role-appropriate intent (`buyer→buy`, `owner→list_sale`, `tenant→rent`,
+`agent→buy`, `builder→list_rent`), all return 201, and all five read back on
+the dashboard with the phone masked and the correct owner attached.
+
+## Known, deliberately out of scope
+
+`CompareContext` (`architech.compare.v1`) and `CollectionsContext` share the
+same unscoped-localStorage pattern. Neither is a dashboard panel, so they were
+left alone rather than widening this change; they should be scoped the same way
+before launch. Recording them here so the pattern is not rediscovered a fourth
+time.
