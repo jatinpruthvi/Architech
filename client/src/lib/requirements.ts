@@ -33,6 +33,12 @@ export type RequirementInput = {
   phone: string;
   consentText: string;
   idempotencyKey?: string;
+  /* Owning account, when a signed-in person submitted the brief.
+
+     Server-assigned ONLY. The API overwrites whatever arrives in the body
+     with the id from the verified session, so a caller cannot file a
+     requirement against somebody else's dashboard by posting their user id. */
+  userId?: string | null;
 };
 
 export type RequirementRecord = Omit<RequirementInput, "phone"> & {
@@ -166,10 +172,40 @@ export function validateRequirementInput(input: Partial<RequirementInput>, locat
   return errors;
 }
 
+/* FNV-1a over the identity tuple.
+ *
+ * The key is stored in the database and echoed back in the API response, so
+ * it must not BE the identity — it must only prove it. The previous format
+ * interpolated the raw phone number, which put a plaintext number in a column
+ * next to the AES-256-GCM ciphertext that exists precisely to keep it out of
+ * the clear, and shipped it to the browser on every submit. Hashing keeps
+ * duplicate detection exact while making the key non-identifying. */
+function fingerprint(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  /* A second pass over the reversed input widens the output to 64 bits, so
+     collisions between two real briefs are not a practical concern. */
+  let tail = 0x811c9dc5;
+  for (let index = value.length - 1; index >= 0; index -= 1) {
+    tail ^= value.charCodeAt(index);
+    tail = Math.imul(tail, 0x01000193) >>> 0;
+  }
+  return `${hash.toString(36)}${tail.toString(36)}`;
+}
+
 export function requirementIdempotencyKey(input: RequirementInput): string {
   const localitySlugs = normalizedLocalitySlugs(input);
-  return input.idempotencyKey?.trim()
-    || `${input.intent}:${input.citySlug}:${input.category}:${input.phone.replace(/\D/g, "")}:${localitySlugs.join(",")}`;
+  if (input.idempotencyKey?.trim()) return input.idempotencyKey.trim();
+  /* The account is part of the identity of a brief, not incidental to it.
+     Without this, a couple sharing one mobile number would collide: the
+     second person's brief would be swallowed as a "duplicate" of the first
+     and silently appear on the wrong dashboard. Anonymous briefs keep the
+     original phone-keyed behaviour, which is the best identity available. */
+  const owner = input.userId ? `u:${input.userId}` : "anon";
+  return `rq_${fingerprint(`${owner}:${input.intent}:${input.citySlug}:${input.category}:${input.phone.replace(/\D/g, "")}:${localitySlugs.join(",")}`)}`;
 }
 
 export function createRequirement(input: RequirementInput): RequirementResult {
@@ -191,11 +227,28 @@ export function createRequirement(input: RequirementInput): RequirementResult {
     phoneMasked: maskPhone(input.phone),
     consentText: input.consentText.trim(),
     idempotencyKey,
+    userId: input.userId ?? null,
     status: "NEW",
     createdAt: new Date().toISOString(),
   };
   requirementsByKey.set(idempotencyKey, record);
   return { ok: true, requirement: record, duplicate: false };
+}
+
+/* One person's briefs, newest first.
+ *
+ * Scoped by `userId` and never by phone number: two different people share a
+ * handset more often than product design likes to admit, and a brief is only
+ * shown to the account that is provably attached to it. An anonymous brief
+ * (`userId === null`) therefore belongs to nobody and is returned to nobody.
+ */
+export function listRequirementsForUser(userId: string): RequirementRecord[] {
+  if (!userId) return [];
+  return [...requirementsByKey.values()]
+    .filter((record) => record.userId === userId)
+    /* Tie-break on id: several briefs can share a createdAt millisecond, and
+       an unstable order makes the dashboard reshuffle between renders. */
+    .sort((a, b) => (b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id)));
 }
 
 export function resetRequirementStoreForTests() {

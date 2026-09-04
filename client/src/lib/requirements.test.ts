@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createRequirement, intentLabel, intentsForRole, isSupplyIntent, resetRequirementStoreForTests, validateRequirementInput } from "./requirements";
+import { createRequirement, intentLabel, requirementIdempotencyKey, intentsForRole, isSupplyIntent, resetRequirementStoreForTests, validateRequirementInput } from "./requirements";
 import { searchListings } from "./search/search";
 
 const validInput = {
@@ -150,5 +150,45 @@ describe("localities are a preference when buying and a fact when listing", () =
     const many = ["paldi", "thaltej", "bopal", "satellite", "navrangpura", "prahlad-nagar"];
     expect(validateRequirementInput({ ...validInput, localitySlugs: [...many, ...many, ...many] }).join(" "))
       .toMatch(/no more than 8 preferred localities/);
+  });
+});
+
+describe("the idempotency key does not leak the phone number", () => {
+  const brief = {
+    intent: "buy" as const,
+    citySlug: "mumbai",
+    category: "residential" as const,
+    subtype: "Flat/Apartment",
+    localitySlugs: ["andheri-west"],
+    role: "buyer" as const,
+    name: "Test Person",
+    phone: "9876543210",
+    consentText: "I agree to be contacted about this requirement.",
+  };
+
+  it("never embeds the digits of the phone number", () => {
+    /* The key is persisted and echoed back to the browser. Putting a
+       plaintext number in it defeats the encrypted phone column entirely. */
+    const key = requirementIdempotencyKey(brief);
+    expect(key).not.toContain("9876543210");
+    expect(key).not.toMatch(/\d{6,}/);
+  });
+
+  it("is stable for the same brief and different for a different one", () => {
+    expect(requirementIdempotencyKey(brief)).toBe(requirementIdempotencyKey({ ...brief }));
+    expect(requirementIdempotencyKey(brief)).not.toBe(requirementIdempotencyKey({ ...brief, phone: "9876543211" }));
+    expect(requirementIdempotencyKey(brief)).not.toBe(requirementIdempotencyKey({ ...brief, citySlug: "pune" }));
+  });
+
+  it("separates two accounts that share one phone number", () => {
+    const parent = requirementIdempotencyKey({ ...brief, userId: "user-parent" });
+    const child = requirementIdempotencyKey({ ...brief, userId: "user-child" });
+    expect(parent).not.toBe(child);
+    /* ...and neither collides with the anonymous form of the same brief. */
+    expect(parent).not.toBe(requirementIdempotencyKey(brief));
+  });
+
+  it("still honours an explicitly supplied key", () => {
+    expect(requirementIdempotencyKey({ ...brief, idempotencyKey: "caller-supplied" })).toBe("caller-supplied");
   });
 });

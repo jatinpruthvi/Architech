@@ -143,7 +143,12 @@ export default function RequirementCapture({ compact = false }: Props) {
       const response = await fetch("/api/requirements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, idempotencyKey: `${form.phone}:${form.intent}:${form.category}:${form.citySlug}:${form.localitySlugs.join(",")}` }),
+        /* No client-built idempotency key. The old one interpolated the raw
+           phone number, which then travelled to the server, was persisted, and
+           came back in the response body. The server derives the key itself
+           (hashed, and scoped to the signed-in account when there is one),
+           which is both more private and more correct. */
+        body: JSON.stringify(form),
       });
       const payload = await response.json() as { ok?: boolean; errors?: string[] };
       if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") || "We could not save that requirement.");

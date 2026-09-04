@@ -1,16 +1,35 @@
 import "server-only";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
-import { createRequirement, requirementIdempotencyKey, validateRequirementInput, type RequirementInput, type RequirementLocationValidator } from "@/lib/requirements";
+import { createRequirement, listRequirementsForUser, requirementIdempotencyKey, validateRequirementInput, type RequirementInput, type RequirementLocationValidator, type RequirementRecord } from "@/lib/requirements";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 
-type RequirementRow = { id: string; createdAt: Date; idempotencyKey: string | null };
+type RequirementRow = { id: string; createdAt: Date; idempotencyKey: string | null; userId?: string | null };
+
+/* Shape returned by the dashboard read query. Phone stays as `phoneLast4`
+   only -- the ciphertext column is never selected, so the read path cannot
+   leak a number even if a caller asked it to. */
+type RequirementListRow = {
+  id: string;
+  createdAt: Date;
+  intent: string;
+  category: string;
+  subtype: string;
+  role: string;
+  name: string;
+  phoneLast4: string;
+  consentText: string;
+  status: string;
+  resolvedCity: { slug: string } | null;
+  localities: Array<{ locality: { slug: string } | null }>;
+};
 type RequirementPrisma = ReturnType<typeof getPrismaClient> & {
   city: { findUnique(args: unknown): Promise<{ id: string; slug: string } | null> };
   locality: { findMany(args: unknown): Promise<Array<{ id: string; slug: string; cityId: string }>> };
   requirement: {
     create(args: unknown): Promise<RequirementRow>;
     findUnique(args: unknown): Promise<RequirementRow | null>;
+    findMany(args: unknown): Promise<RequirementListRow[]>;
   };
 };
 
@@ -62,6 +81,7 @@ function publicRecord(input: RequirementInput, row: RequirementRow) {
     phoneMasked: maskedPhone(input.phone),
     consentText: input.consentText.trim(),
     idempotencyKey: row.idempotencyKey ?? undefined,
+    userId: row.userId ?? input.userId ?? null,
     status: "NEW" as const,
     createdAt: row.createdAt.toISOString(),
   };
@@ -109,6 +129,7 @@ export async function createRequirementForServer(input: RequirementInput) {
         phoneCiphertext: encryptPhone(input.phone),
         phoneLast4: input.phone.replace(/\D/g, "").slice(-4),
         consentText: input.consentText.trim(),
+        userId: input.userId ?? null,
         idempotencyKey,
         retentionUntil,
         localities: { create: requestedSlugs.map((slug, priority) => ({ localityId: localityBySlug.get(slug)!.id, priority })) },
@@ -127,4 +148,42 @@ export async function createRequirementForServer(input: RequirementInput) {
     console.error("requirement persistence failed", { incident, error });
     return { ok: false as const, status: 503, errors: [`Requirement storage is temporarily unavailable (reference ${incident}).`] };
   }
+}
+
+/* Dashboard read path: the briefs belonging to ONE account, newest first.
+ *
+ * Scoped by `userId` at the query level rather than filtered after the fact,
+ * so there is no code path on which another person's brief is ever loaded
+ * into memory. The phone ciphertext column is deliberately not selected.
+ */
+export async function listRequirementsForUserServer(userId: string): Promise<RequirementRecord[]> {
+  if (!userId) return [];
+  if (!isPrismaPersistence()) return listRequirementsForUser(userId);
+  const prisma = getPrismaClient() as RequirementPrisma;
+  const rows = await prisma.requirement.findMany({
+    where: { userId, deletedAt: null },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 100,
+    select: {
+      id: true, createdAt: true, intent: true, category: true, subtype: true,
+      role: true, name: true, phoneLast4: true, consentText: true, status: true,
+      resolvedCity: { select: { slug: true } },
+      localities: { orderBy: { priority: "asc" }, select: { locality: { select: { slug: true } } } },
+    },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    intent: row.intent as RequirementRecord["intent"],
+    citySlug: row.resolvedCity?.slug ?? "",
+    category: row.category as RequirementRecord["category"],
+    subtype: row.subtype,
+    localitySlugs: row.localities.map((entry) => entry.locality?.slug ?? "").filter(Boolean),
+    role: row.role as RequirementRecord["role"],
+    name: row.name,
+    phoneMasked: `•••• ••• ${row.phoneLast4}`,
+    consentText: row.consentText,
+    userId,
+    status: row.status as RequirementRecord["status"],
+    createdAt: row.createdAt.toISOString(),
+  }));
 }

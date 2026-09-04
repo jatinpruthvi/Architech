@@ -572,6 +572,7 @@ model User {
 
   brokerMemberships BrokerUser[]
   leads             Lead[]
+  requirements      Requirement[]
   savedSearches     SavedSearch[]
   audits            AuditEvent[]
 
@@ -782,6 +783,14 @@ model Lead {
 model Requirement {
   id              String    @id @default(cuid())
   cityId          String
+  /// Owning account, when the brief was submitted by a signed-in person.
+  /// Nullable because the public requirement drawer is deliberately open to
+  /// anonymous visitors -- demanding a sign-up before someone can say what
+  /// they are looking for would lose the requirement. An anonymous row simply
+  /// never appears on a dashboard; it is still a lead for the desk.
+  /// SetNull on delete: erasing an account must not destroy the consent
+  /// record or the retention clock attached to the brief.
+  userId          String?
   intent          String
   category        String
   subtype         String
@@ -797,6 +806,7 @@ model Requirement {
   deletedAt       DateTime?
 
   resolvedCity City                  @relation("ResolvedRequirementCity", fields: [cityId], references: [id], onDelete: Restrict)
+  user         User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   localities   RequirementLocality[]
 
   createdAt DateTime @default(now())
@@ -804,6 +814,8 @@ model Requirement {
 
   @@index([cityId, status, createdAt])
   @@index([retentionUntil])
+  /// The dashboard read path: one person's briefs, newest first.
+  @@index([userId, createdAt])
 }
 
 model RequirementLocality {
