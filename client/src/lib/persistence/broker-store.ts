@@ -8,6 +8,7 @@ import { demoBrokerSession, type AuthSession } from "@/lib/auth/roles";
 import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { normalizeListerType } from "@/lib/listing/lister-type";
 import { formatPrice } from "@/lib/property-generator";
+import { inrToBigInt, inrToNumber } from "@/lib/money";
 import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
@@ -52,13 +53,16 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
      Rate/sqft is derived like the generator's, and stays unset when no area
      was provided (the mapper then shows "Rate on request"). */
   const priceLabel = formatPrice(draft.priceInr);
+  /* Widened once here for both the update and create arms below: the column is
+     BIGINT, so Prisma requires a bigint on write. */
+  const priceInrValue = inrToBigInt(draft.priceInr, "Listing.priceInr");
   const pricePerSqft = draft.areaSqft > 0 ? `₹${Math.round(draft.priceInr / draft.areaSqft).toLocaleString("en-IN")} / sq ft` : null;
   await db.listing.upsert({
     where: { stableId: draft.stableId },
     update: {
       title: draft.title,
       lifecycle: draft.status as string,
-      priceInr: draft.priceInr,
+      priceInr: priceInrValue,
       priceLabel,
       pricePerSqft,
       bhk: draft.bhk,
@@ -81,7 +85,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       verification: "DEMO",
       translationStatus: "ENGLISH_ONLY",
       propertyType: draft.propertyType,
-      priceInr: draft.priceInr,
+      priceInr: priceInrValue,
       priceLabel,
       pricePerSqft,
       bhk: draft.bhk,
@@ -497,7 +501,9 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     citySlug: String(city.slug ?? ""),
     localitySlug: String(locality.slug ?? row.localitySlug ?? ""),
     postalCode: String(row.postalCode ?? ""),
-    priceInr: Number(row.priceInr ?? 0),
+    /* Not Number(): a bigint above 2^53 narrows silently and wrongly here.
+       inrToNumber surfaces that instead of writing a corrupt price. */
+    priceInr: inrToNumber(row.priceInr as bigint | number | null, "Listing.priceInr"),
     bhk: Number(row.bhk ?? 0),
     areaSqft: Number(row.areaSqft ?? 0),
     availability: normalizeAvailability(row.availability) ?? "READY_TO_MOVE",

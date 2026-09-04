@@ -23,9 +23,10 @@ jobs:
       PUBLIC_INDEXING_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
+      # No `version:` here on purpose. package.json's `packageManager` field
+      # already pins pnpm (with an integrity hash); specifying both makes
+      # pnpm/action-setup fail with a version conflict before install runs.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10.4.1
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -50,11 +50,22 @@ describe("post-login redirect safety", () => {
     expect(landingPathForSession(null)).toBe(LOGIN_PATH);
   });
 
-  it("does not send a broker-roled session without an organization to the broker dashboard", () => {
-    /* The server gate requires role AND membership; a landing page that ignored
-       membership would bounce the user straight back out. */
+  it("never lands anyone on a surface their session cannot open", () => {
+    /* The shared `/dashboard/` is reachable by any signed-in session, so the
+       old assertion (broker-without-org must not get BROKER_LANDING) can no
+       longer be expressed as a path comparison. What still matters is the
+       invariant behind it: a landing path must never be the ORGANIZATION-gated
+       partner desk, which would bounce the user straight back out. */
     const orphan = { ...demoBrokerSession, organization: undefined };
-    expect(landingPathForSession(orphan)).not.toBe(BROKER_LANDING);
+    expect(landingPathForSession(orphan)).not.toBe("/broker/dashboard/");
+    expect(landingPathForSession(orphan)).toBe("/dashboard/");
+  });
+
+  it("keeps the shared dashboard as the landing path for buyers and brokers alike", () => {
+    /* One bookmark for a person who is both a broker and, at home, a buyer.
+       The dashboard picks the persona; it does not gate on it. */
+    expect(BROKER_LANDING).toBe(DEFAULT_BUYER_LANDING);
+    expect(landingPathForSession(demoBrokerSession)).toBe("/dashboard/");
   });
 
   it("prefers a safe requested destination over the role default", () => {

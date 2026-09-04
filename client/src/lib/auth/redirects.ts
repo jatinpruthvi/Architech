@@ -15,8 +15,15 @@
  */
 import { canAccessBrokerDashboard, hasRoleAtLeast, type AuthSession } from "./roles";
 
-export const DEFAULT_BUYER_LANDING = "/saved/";
-export const BROKER_LANDING = "/broker/dashboard/";
+/* Signed-in people land on their dashboard, not on a bare shortlist.
+   `/saved/` is a list of properties; it shows nothing about the requirements
+   someone filed, the searches they saved, or what is waiting on them. */
+export const DEFAULT_BUYER_LANDING = "/dashboard/";
+/* Brokers land on the same dashboard: it defaults to the broker persona and
+   links through to the deeper partner desk at `/broker/dashboard/`. Keeping
+   one landing path means a broker who is also buying a home for themselves
+   does not need two bookmarks. */
+export const BROKER_LANDING = "/dashboard/";
 export const MODERATOR_LANDING = "/admin/moderation/listings/";
 export const LOGIN_PATH = "/login/";
 
