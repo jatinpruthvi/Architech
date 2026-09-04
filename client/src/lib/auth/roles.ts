@@ -21,6 +21,14 @@ export type AuthSession = {
        comes from `role` plus organization membership. See
        lib/listing/lister-type.ts. */
     listerType?: ListerType;
+    /* Verified mobile number in E.164, once sign-up captures one.
+
+       Phone-verified sign-up is not built yet, so this is absent today and
+       every consumer must treat it as optional. It exists now because the
+       requirement form should PREFILL the number the person already verified
+       rather than asking them to retype it -- when the field starts being
+       populated, that behaviour turns on with no further change here. */
+    phoneE164?: string;
   };
   organization?: AuthOrganization;
   permissions: string[];

@@ -38,6 +38,35 @@ export function clientKey(request: Request): string | null {
   return (trustedProxy ? forwarded[forwarded.length - 1] : forwarded[0]) || null;
 }
 
+/* Sandbox preview proxies (e2b, manus) terminate TLS and forward to
+   localhost:3000 WITHOUT an x-forwarded-host header, so the browser sends
+   `Origin: https://3000-xxx.e2b.app` while Host is `localhost:3000`. Host
+   equality cannot hold, and every mutation 403s -- the requirement form is
+   unusable in the one environment where it gets demoed.
+
+   Trusting these two wildcard families OUTSIDE production leaves the guard
+   fully intact where it matters: a production build returns false here before
+   looking at the origin at all, so the deployed site's CSRF posture is
+   unchanged. The same wildcards are already trusted by `frameAncestors` and
+   `allowedDevOrigins` in next.config.ts.
+
+   Matched on the parsed hostname, never on a substring: `https://evil.com/?x=.e2b.app`
+   and `https://note2b.app.evil.com` both parse to a hostname that fails the
+   suffix test, whereas a bare `includes(".e2b.app")` would accept both. */
+const PREVIEW_HOST_SUFFIXES = [".e2b.app", ".manus.computer"];
+
+function isTrustedPreviewOrigin(origin: string | null): boolean {
+  if (!origin || process.env.NODE_ENV === "production") return false;
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  return PREVIEW_HOST_SUFFIXES.some((suffix) => url.hostname.endsWith(suffix));
+}
+
 export function enforceMutationSafety(request: Request): NextResponse | null {
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) return null;
 
@@ -96,7 +125,8 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
     /* With no Host header AND no configured origin there is nothing to compare
        against; that is a non-browser caller, handled by the originless branch
        below rather than by rejecting every request. */
-    if (allowedOrigins.size > 0 && (!originValue || !allowedOrigins.has(originValue))) {
+    const known = originValue !== null && allowedOrigins.has(originValue);
+    if (allowedOrigins.size > 0 && !known && !isTrustedPreviewOrigin(originValue)) {
       return error(403, "ORIGIN_REJECTED", "Request origin is not allowed.");
     }
   } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_ORIGINLESS_MUTATIONS !== "true") {
