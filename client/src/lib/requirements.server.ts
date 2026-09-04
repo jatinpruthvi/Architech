@@ -1,35 +1,53 @@
 import "server-only";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
-import { createRequirement, listRequirementsForUser, requirementIdempotencyKey, validateRequirementInput, type RequirementInput, type RequirementLocationValidator, type RequirementRecord } from "@/lib/requirements";
+import {
+  createRequirement,
+  listRequirementsForOrganization,
+  listRequirementsForUser,
+  propertyTypeFromRequirement,
+  requirementIdempotencyKey,
+  validateRequirementInput,
+  type RequirementInput,
+  type RequirementLocationValidator,
+  type RequirementRecord,
+} from "@/lib/requirements";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import type { AuthSession } from "@/lib/auth/roles";
 
-type RequirementRow = { id: string; createdAt: Date; idempotencyKey: string | null; userId?: string | null };
-
-/* Shape returned by the dashboard read query. Phone stays as `phoneLast4`
-   only -- the ciphertext column is never selected, so the read path cannot
-   leak a number even if a caller asked it to. */
-type RequirementListRow = {
+type RequirementRow = {
   id: string;
   createdAt: Date;
-  intent: string;
-  category: string;
-  subtype: string;
-  role: string;
-  name: string;
-  phoneLast4: string;
-  consentText: string;
-  status: string;
-  resolvedCity: { slug: string } | null;
-  localities: Array<{ locality: { slug: string } | null }>;
+  idempotencyKey: string | null;
+  intent?: string | null;
+  category?: string | null;
+  subtype?: string | null;
+  role?: string | null;
+  name?: string | null;
+  phoneLast4?: string | null;
+  consentText?: string | null;
+  userId?: string | null;
+  organizationId?: string | null;
+  propertyType?: string | null;
+  bhkMin?: number | null;
+  bhkMax?: number | null;
+  areaMinSqft?: number | null;
+  areaMaxSqft?: number | null;
+  budgetMinInr?: bigint | number | null;
+  budgetMaxInr?: bigint | number | null;
+  status?: string | null;
+  city?: { slug: string } | null;
+  resolvedCity?: { slug: string } | null;
+  localities?: Array<{ locality?: { slug: string } | null; priority?: number }>;
 };
+
 type RequirementPrisma = ReturnType<typeof getPrismaClient> & {
   city: { findUnique(args: unknown): Promise<{ id: string; slug: string } | null> };
   locality: { findMany(args: unknown): Promise<Array<{ id: string; slug: string; cityId: string }>> };
   requirement: {
     create(args: unknown): Promise<RequirementRow>;
     findUnique(args: unknown): Promise<RequirementRow | null>;
-    findMany(args: unknown): Promise<RequirementListRow[]>;
+    findMany(args: unknown): Promise<RequirementRow[]>;
   };
 };
 
@@ -68,13 +86,35 @@ function requirementRetentionDays(value = process.env.ARCHITECH_REQUIREMENT_RETE
   return days;
 }
 
-function publicRecord(input: RequirementInput, row: RequirementRow) {
+function numberOrNull(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const number = typeof value === "bigint" ? Number(value) : Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function requirementCitySlug(row: RequirementRow, fallback = "") {
+  return row.city?.slug ?? row.resolvedCity?.slug ?? fallback;
+}
+
+function requirementLocalitySlugs(row: RequirementRow) {
+  return (row.localities ?? []).map((item) => item.locality?.slug).filter(Boolean) as string[];
+}
+
+function publicRecord(input: RequirementInput, row: RequirementRow): RequirementRecord {
   return {
     id: row.id,
     intent: input.intent,
     citySlug: input.citySlug,
     category: input.category,
     subtype: input.subtype.trim(),
+    propertyType: propertyTypeFromRequirement(input),
+    bhkMin: input.bhkMin ?? null,
+    bhkMax: input.bhkMax ?? null,
+    areaMinSqft: input.areaMinSqft ?? null,
+    areaMaxSqft: input.areaMaxSqft ?? null,
+    budgetMinInr: input.budgetMinInr ?? null,
+    budgetMaxInr: input.budgetMaxInr ?? null,
+    organizationId: input.organizationId ?? null,
     localitySlugs: input.localitySlugs,
     role: input.role,
     name: input.name.trim(),
@@ -82,7 +122,7 @@ function publicRecord(input: RequirementInput, row: RequirementRow) {
     consentText: input.consentText.trim(),
     idempotencyKey: row.idempotencyKey ?? undefined,
     userId: row.userId ?? input.userId ?? null,
-    status: "NEW" as const,
+    status: "NEW",
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -90,17 +130,18 @@ function publicRecord(input: RequirementInput, row: RequirementRow) {
 /** Database write boundary: resolve public slugs to immutable ids, enforce the
  * city/locality relationship again against the database, and never persist a
  * plaintext phone number. */
-export async function createRequirementForServer(input: RequirementInput) {
-  if (!isPrismaPersistence()) return createRequirement(input);
+export async function createRequirementForServer(input: RequirementInput, session?: AuthSession | null) {
+  const scopedInput: RequirementInput = session?.organization ? { ...input, organizationId: session.organization.id, userId: input.userId ?? session.user.id } : input;
+  if (!isPrismaPersistence()) return createRequirement(scopedInput);
   const prisma = getPrismaClient() as RequirementPrisma;
 
-  const city = input.citySlug ? await prisma.city.findUnique({ where: { slug: input.citySlug } }) : null;
-  const normalizedSlugs = (input.localitySlugs ?? []).map((slug) => slug.trim()).filter(Boolean);
+  const city = scopedInput.citySlug ? await prisma.city.findUnique({ where: { slug: scopedInput.citySlug } }) : null;
+  const normalizedSlugs = (scopedInput.localitySlugs ?? []).map((slug) => slug.trim()).filter(Boolean);
   const requestedSlugs = [...new Set(normalizedSlugs)];
-  const normalizedInput: RequirementInput = { ...input, localitySlugs: normalizedSlugs };
-  const localities: Array<{ id: string; slug: string; cityId: string }> = city && requestedSlugs.length
-    ? await prisma.locality.findMany({ where: { cityId: city.id, slug: { in: requestedSlugs }, retiredAt: null }, select: { id: true, slug: true, cityId: true } }) as Array<{ id: string; slug: string; cityId: string }>
-    : [];
+  const normalizedInput: RequirementInput = { ...scopedInput, propertyType: propertyTypeFromRequirement(scopedInput), localitySlugs: normalizedSlugs };
+  const localities = (city && requestedSlugs.length
+    ? await prisma.locality.findMany({ where: { cityId: city.id, slug: { in: requestedSlugs }, retiredAt: null }, select: { id: true, slug: true, cityId: true } })
+    : []) as Array<{ id: string; slug: string; cityId: string }>;
   const localityBySlug = new Map<string, { id: string; slug: string; cityId: string }>(
     localities.map((locality) => [locality.slug, locality]),
   );
@@ -121,15 +162,23 @@ export async function createRequirementForServer(input: RequirementInput) {
     const row = await prisma.requirement.create({
       data: {
         cityId: city!.id,
-        intent: input.intent,
-        category: input.category,
-        subtype: input.subtype.trim(),
-        role: input.role,
-        name: input.name.trim(),
-        phoneCiphertext: encryptPhone(input.phone),
-        phoneLast4: input.phone.replace(/\D/g, "").slice(-4),
-        consentText: input.consentText.trim(),
-        userId: input.userId ?? null,
+        intent: normalizedInput.intent,
+        category: normalizedInput.category,
+        subtype: normalizedInput.subtype.trim(),
+        propertyType: propertyTypeFromRequirement(normalizedInput),
+        bhkMin: normalizedInput.bhkMin ?? null,
+        bhkMax: normalizedInput.bhkMax ?? null,
+        areaMinSqft: normalizedInput.areaMinSqft ?? null,
+        areaMaxSqft: normalizedInput.areaMaxSqft ?? null,
+        budgetMinInr: normalizedInput.budgetMinInr != null ? BigInt(Math.round(Number(normalizedInput.budgetMinInr))) : null,
+        budgetMaxInr: normalizedInput.budgetMaxInr != null ? BigInt(Math.round(Number(normalizedInput.budgetMaxInr))) : null,
+        organizationId: normalizedInput.organizationId ?? null,
+        role: normalizedInput.role,
+        name: normalizedInput.name.trim(),
+        phoneCiphertext: encryptPhone(normalizedInput.phone),
+        phoneLast4: normalizedInput.phone.replace(/\D/g, "").slice(-4),
+        consentText: normalizedInput.consentText.trim(),
+        userId: normalizedInput.userId ?? null,
         idempotencyKey,
         retentionUntil,
         localities: { create: requestedSlugs.map((slug, priority) => ({ localityId: localityBySlug.get(slug)!.id, priority })) },
@@ -167,23 +216,75 @@ export async function listRequirementsForUserServer(userId: string): Promise<Req
     select: {
       id: true, createdAt: true, intent: true, category: true, subtype: true,
       role: true, name: true, phoneLast4: true, consentText: true, status: true,
+      propertyType: true, bhkMin: true, bhkMax: true, areaMinSqft: true, areaMaxSqft: true, budgetMinInr: true, budgetMaxInr: true, organizationId: true, idempotencyKey: true, userId: true,
       resolvedCity: { select: { slug: true } },
+      city: { select: { slug: true } },
       localities: { orderBy: { priority: "asc" }, select: { locality: { select: { slug: true } } } },
     },
   });
   return rows.map((row) => ({
     id: row.id,
     intent: row.intent as RequirementRecord["intent"],
-    citySlug: row.resolvedCity?.slug ?? "",
+    citySlug: requirementCitySlug(row),
     category: row.category as RequirementRecord["category"],
-    subtype: row.subtype,
-    localitySlugs: row.localities.map((entry) => entry.locality?.slug ?? "").filter(Boolean),
+    subtype: row.subtype ?? "Flat/Apartment",
+    propertyType: row.propertyType ?? propertyTypeFromRequirement({ subtype: row.subtype ?? "" }),
+    bhkMin: numberOrNull(row.bhkMin),
+    bhkMax: numberOrNull(row.bhkMax),
+    areaMinSqft: numberOrNull(row.areaMinSqft),
+    areaMaxSqft: numberOrNull(row.areaMaxSqft),
+    budgetMinInr: numberOrNull(row.budgetMinInr),
+    budgetMaxInr: numberOrNull(row.budgetMaxInr),
+    organizationId: row.organizationId ?? null,
+    localitySlugs: requirementLocalitySlugs(row),
     role: row.role as RequirementRecord["role"],
-    name: row.name,
-    phoneMasked: `•••• ••• ${row.phoneLast4}`,
-    consentText: row.consentText,
+    name: row.name ?? "Private buyer",
+    phoneMasked: `•••• ••• ${row.phoneLast4 ?? ""}`,
+    consentText: row.consentText ?? "Stored privately",
+    idempotencyKey: row.idempotencyKey ?? undefined,
     userId,
-    status: row.status as RequirementRecord["status"],
+    status: (row.status as RequirementRecord["status"]) ?? "NEW",
     createdAt: row.createdAt.toISOString(),
   }));
+}
+
+export async function listBrokerRequirementsForServer(session: AuthSession): Promise<{ ok: true; requirements: RequirementRecord[] } | { ok: false; status: number; errors: string[] }> {
+  if (!session.organization) return { ok: false, status: 403, errors: ["Broker organization is required."] };
+  if (!isPrismaPersistence()) {
+    return { ok: true, requirements: listRequirementsForOrganization(session.organization.id) };
+  }
+  const prisma = getPrismaClient() as RequirementPrisma;
+  const rows = await prisma.requirement.findMany({
+    where: { organizationId: session.organization.id, deletedAt: null, status: "NEW" },
+    include: { city: { select: { slug: true } }, resolvedCity: { select: { slug: true } }, localities: { include: { locality: { select: { slug: true } } }, orderBy: { priority: "asc" } } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+  return {
+    ok: true,
+    requirements: rows.map((row) => ({
+      id: row.id,
+      intent: row.intent === "rent" ? "rent" : "buy",
+      citySlug: requirementCitySlug(row),
+      category: (row.category as RequirementRecord["category"]) ?? "residential",
+      subtype: row.subtype ?? "Flat/Apartment",
+      propertyType: row.propertyType ?? propertyTypeFromRequirement({ subtype: row.subtype ?? "" }),
+      bhkMin: numberOrNull(row.bhkMin),
+      bhkMax: numberOrNull(row.bhkMax),
+      areaMinSqft: numberOrNull(row.areaMinSqft),
+      areaMaxSqft: numberOrNull(row.areaMaxSqft),
+      budgetMinInr: numberOrNull(row.budgetMinInr),
+      budgetMaxInr: numberOrNull(row.budgetMaxInr),
+      organizationId: row.organizationId ?? session.organization!.id,
+      localitySlugs: requirementLocalitySlugs(row),
+      role: (row.role as RequirementRecord["role"]) ?? "buyer",
+      name: "Private buyer",
+      phoneMasked: "••••",
+      consentText: "Stored privately",
+      idempotencyKey: row.idempotencyKey ?? undefined,
+      userId: row.userId ?? null,
+      status: "NEW",
+      createdAt: row.createdAt.toISOString(),
+    })),
+  };
 }

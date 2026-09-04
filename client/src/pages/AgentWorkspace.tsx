@@ -42,6 +42,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useState } from "react";
 import type { ListingDraft } from "@/lib/broker/workflow";
 import { demoBrokerSession } from "@/lib/auth/roles";
+import { BrokerChannelPanel } from "@/components/broker/BrokerChannelPanel";
 import useTitle from "@/hooks/useTitle";
 
 export type AgentSection =
@@ -49,6 +50,7 @@ export type AgentSection =
   | "inquiry"
   | "subscriptions"
   | "leads"
+  | "channel"
   | "my-listings"
   | "newspaper"
   | "agent-listings"
@@ -69,6 +71,7 @@ const nav: NavItem[] = [
   { section: "inquiry", label: "My inquiry", icon: Inbox },
   { section: "subscriptions", label: "Entitlements", icon: WalletCards },
   { section: "leads", label: "Lead inbox", icon: ContactRound },
+  { section: "channel", label: "Broker channel", icon: UsersRound },
   { section: "my-listings", label: "My listings", icon: BriefcaseBusiness },
   { section: "newspaper", label: "Newspaper source", icon: Newspaper },
   { section: "agent-listings", label: "Agent inventory", icon: BriefcaseBusiness },
@@ -85,7 +88,8 @@ const deskMeta: Record<AgentSection, DeskMeta> = {
   inquiry: { label: "My inquiry", role: "Inquiry ledger", intro: "A reviewable ledger for buyer briefs, status changes, consent, and the next accountable action.", index: "02" },
   subscriptions: { label: "Entitlements", role: "Access register", intro: "Every capability is named, scoped, and gated before a provider or payment flow is introduced.", index: "03" },
   leads: { label: "Lead inbox", role: "Lead ledger", intro: "A source-aware lead desk where contact access follows consent, provenance, and organization scope.", index: "04" },
-  "my-listings": { label: "My listings", role: "Submission register", intro: "Manage private drafts and moderated submissions without confusing a draft with public inventory.", index: "05" },
+  channel: { label: "Broker channel", role: "Cross-broker exchange", intro: "Publish sanitized demand and supply, match with verified counterparties, and close commission-split deals without exposing customer contact data.", index: "05" },
+  "my-listings": { label: "My listings", role: "Submission register", intro: "Manage private drafts and moderated submissions without confusing a draft with public inventory.", index: "06" },
   newspaper: { label: "Newspaper source", role: "Source rail", intro: "A provenance-aware view for properties sourced from newspaper campaigns.", index: "06" },
   "agent-listings": { label: "Agent inventory", role: "Partner rail", intro: "Search the city-scoped partner network while keeping source and contact rights visible.", index: "07" },
   "owner-listings": { label: "Owner inventory", role: "Direct rail", intro: "Direct-owner opportunities with a clear distinction between owner-provided and partner-provided evidence.", index: "08" },
@@ -158,6 +162,7 @@ function MyListings({ drafts }: { drafts: ListingDraft[] }) {
   return <><LedgerIntro label="Your source records" detail="REGISTER / 05" body="Manage your own source records from draft to review to publish. Public visibility only follows moderation and evidence checks." /><div className="mt-7 flex items-center justify-between gap-4"><p className="max-w-xl text-sm leading-6 text-ink/60">The listing dossier keeps media rights, RERA context, locality, price, and description attached to the same reviewable submission.</p><Link href="/broker/listings/new" className="btn-sweep inline-flex min-h-11 items-center gap-2 px-4 stamp !text-[10px] font-semibold text-cream"><Plus size={14} /> Post property</Link></div><div className="mt-6"><FilterStrip searchLabel="Project name" fields={["Listing type", "Property type", "Locality", "Budget", "Area", "Bedrooms", "Status", "Posted date"]} /></div><div className="mt-5"><TableFrame columns={["Action", "Property ID", "Type", "Property type", "Locality", "Price", "Area", "BHK", "Project", "Status", "Posted"]}>{drafts.length ? drafts.map((draft) => <tr key={draft.id} className="border-t border-ink/10"><td className="px-4 py-4"><Link className="stamp !text-[10px] font-semibold text-brick" href="/admin/moderation/listings">Review</Link></td><td className="px-4 py-4 font-mono text-xs">{draft.id}</td><td className="px-4 py-4">Sell</td><td className="px-4 py-4">Residential</td><td className="px-4 py-4">{draft.localitySlug}</td><td className="px-4 py-4">₹{draft.priceInr.toLocaleString("en-IN")}</td><td className="px-4 py-4">—</td><td className="px-4 py-4">{draft.bhk}</td><td className="px-4 py-4">{draft.title}</td><td className="px-4 py-4"><span className="stamp bg-sand px-2 py-1 !text-[9px]">{draft.status.toLowerCase()}</span></td><td className="px-4 py-4">—</td></tr>) : <tr><td colSpan={11} className="px-4 py-12 text-center"><EmptyState title="No properties yet" body="Start with the five-step listing wizard. Drafts remain private until your evidence and moderation checks are complete." action="Create property draft" href="/broker/listings/new" /></td></tr>}</TableFrame></div></>;
 }
 
+
 function AiSuite() {
   const cards = [{ icon: PhoneCall, title: "AI voice qualification", body: "Qualify consented leads, capture buyer preferences, and schedule callbacks." }, { icon: Video, title: "Property video studio", body: "Build a structured media brief from approved listing images and narration." }, { icon: MessageSquareText, title: "Bulk messages", body: "Segmented SMS or WhatsApp campaigns with opt-out and delivery audit." }, { icon: Bot, title: "Listing chatbot", body: "Answer questions from verified listing facts and hand off qualified demand." }];
   return <div className="desk-catalogue"><div className="desk-stepwell desk-gate border border-ember/30 bg-ember/10 p-5"><div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"><div><DeskRule label="Provider gate" detail="CATALOGUE / 09" /><p className="mt-3 max-w-3xl text-sm leading-6 text-ink/75">AI calls, video generation, messaging, and chatbot delivery remain disabled until an approved provider, consent policy, retention policy, and usage budget are configured.</p></div><span className="stamp border border-brick/20 bg-paper/40 px-3 py-2 text-brick">4 contracts open</span></div></div><div className="mt-6 grid gap-4 md:grid-cols-2">{cards.map(({ icon: Icon, title, body }, index) => <article key={title} className={`desk-capability border border-ink/12 bg-card p-6 ${index === 0 ? "md:col-span-2" : ""}`}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><span className="stamp text-brick/70">0{index + 1}</span><Icon size={22} className="text-brick" /></div><span className="stamp bg-sand px-2 py-1 !text-[9px] font-semibold">gated</span></div><h2 className="mt-8 font-display text-2xl font-medium">{title}</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-ink/60">{body}</p><div className="mt-7 border-t border-ink/10 pt-3 stamp text-ink/45">Provider · consent · retention · budget</div></article>)}</div></div>;
@@ -185,6 +190,7 @@ export default function AgentWorkspace({ section = "dashboard" }: { section?: Ag
     if (section === "inquiry") return <Inquiry />;
     if (section === "subscriptions") return <Subscriptions />;
     if (section === "leads") return <Leads />;
+    if (section === "channel") return <BrokerChannelPanel drafts={drafts} />;
     if (section === "my-listings") return <MyListings drafts={drafts} />;
     if (section === "newspaper" || section === "agent-listings" || section === "owner-listings") return <ListingsSource section={section} />;
     if (section === "ai") return <AiSuite />;

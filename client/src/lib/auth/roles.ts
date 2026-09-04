@@ -7,6 +7,9 @@ export type AuthOrganization = {
   slug: string;
   name: string;
   verificationStatus: "DEMO" | "SOURCE_REVIEWED" | "VERIFIED_PARTNER" | "RERA_VERIFIED" | "DISPUTED" | "STALE";
+  /** Broker business contact only; never an end-customer phone. */
+  businessPhoneE164?: string;
+  businessPhoneMasked?: string;
 };
 
 export type AuthSession = {
@@ -56,11 +59,14 @@ export const demoBrokerSession: AuthSession = {
     slug: "nivasa-partners",
     name: "Nivasa Partners",
     verificationStatus: "VERIFIED_PARTNER",
+    businessPhoneMasked: "+91-79••••••••",
   },
   permissions: [
     "broker.dashboard.read",
     "listing.draft.create",
     "lead.inbox.read",
+    "broker.channel.read",
+    "broker.channel.write",
     "organization.profile.read",
     "authority.registry.read",
     "authority.registry.write",
@@ -85,6 +91,8 @@ const ROLE_PERMISSIONS_SOURCE: string[] = [
   "broker.dashboard.read",
   "listing.draft.create",
   "lead.inbox.read",
+  "broker.channel.read",
+  "broker.channel.write",
   "organization.profile.read",
   "authority.registry.read",
   "authority.registry.write",
@@ -106,6 +114,8 @@ const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
     "broker.dashboard.read",
     "listing.draft.create",
     "lead.inbox.read",
+    "broker.channel.read",
+    "broker.channel.write",
     "organization.profile.read",
     "authority.registry.read",
     "media.upload.write",

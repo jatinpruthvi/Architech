@@ -140,6 +140,7 @@ const DEMO_BROKER_ORGANIZATION: AuthOrganization = {
   slug: "nivasa-partners",
   name: "Nivasa Partners",
   verificationStatus: "VERIFIED_PARTNER",
+  businessPhoneMasked: "+91-79••••••••",
 };
 
 type MembershipClient = ReturnType<typeof getPrismaClient> & {
@@ -157,9 +158,9 @@ async function resolveOrganizationForUser(userId: string, role: NonNullable<Bett
     const membership = (await db.brokerUser.findFirst({
       where: { userId, active: true },
       include: {
-        organization: { select: { id: true, slug: true, name: true, verificationStatus: true } },
+        organization: { select: { id: true, slug: true, name: true, verificationStatus: true, businessPhoneE164: true, businessPhoneMasked: true } },
       },
-    })) as { organization?: { id: string; slug: string; name: string; verificationStatus: string } } | null;
+    })) as { organization?: { id: string; slug: string; name: string; verificationStatus: string; businessPhoneE164?: string | null; businessPhoneMasked?: string | null } } | null;
     if (!membership?.organization) return null;
     const org = membership.organization;
     return {
@@ -167,6 +168,8 @@ async function resolveOrganizationForUser(userId: string, role: NonNullable<Bett
       slug: org.slug,
       name: org.name,
       verificationStatus: org.verificationStatus as AuthOrganization["verificationStatus"],
+      businessPhoneE164: org.businessPhoneE164 ?? undefined,
+      businessPhoneMasked: org.businessPhoneMasked ?? undefined,
     };
   }
 

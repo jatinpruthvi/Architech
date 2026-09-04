@@ -5,5 +5,7 @@ overrides:
   tailwindcss>nanoid: 3.3.7
 
 onlyBuiltDependencies:
+  - "@prisma/engines"
   - "@tailwindcss/oxide"
   - "esbuild"
+  - "prisma"

@@ -39,6 +39,13 @@ const initialForm: FormState = {
   citySlug: "",
   category: "residential",
   subtype: "Flat/Apartment",
+  propertyType: "APARTMENT",
+  bhkMin: 2,
+  bhkMax: 3,
+  areaMinSqft: 800,
+  areaMaxSqft: 1400,
+  budgetMinInr: 5_000_000,
+  budgetMaxInr: 12_000_000,
   localitySlugs: [],
   role: "buyer",
   name: "",
@@ -201,7 +208,7 @@ export default function RequirementCapture({ compact = false }: Props) {
                   its components here (rather than aria-labelledby at a distance)
                   is what makes `aria-modal` a statement of fact. */}
               <DialogTitle className="display mt-3 text-[clamp(30px,5vw,52px)]">Tell us the place you are <em className="text-brick">looking for.</em></DialogTitle>
-              <DialogDescription id="requirement-desc" className="mt-3 max-w-xl text-sm leading-6 text-ink/65">Share the shape of your search once. Our partner network can reply without exposing your number by default.</DialogDescription>
+              <DialogDescription id="requirement-desc" className="mt-3 max-w-xl text-sm leading-6 ink-2">Share the shape of your search once. Our partner network can reply without exposing your number by default.</DialogDescription>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="grid h-11 w-11 shrink-0 place-items-center border border-ink/15 text-ink/70 hover:border-brick hover:text-brick" aria-label="Close requirement form"><X size={18} /></button>
           </div>
@@ -209,7 +216,7 @@ export default function RequirementCapture({ compact = false }: Props) {
               <div className="p-8 md:p-12">
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-trust text-cream"><Check size={23} /></div>
                 <h3 className="display mt-6 text-4xl">Brief received.</h3>
-                <p className="mt-3 max-w-lg text-sm leading-7 text-ink/65">We have recorded your requirement with masked contact details. A verified Architech partner can follow up after review.</p>
+                <p className="mt-3 max-w-lg text-sm leading-7 ink-2">We have recorded your requirement with masked contact details. A verified Architech partner can follow up after review.</p>
                 <button type="button" onClick={() => setOpen(false)} className="night-fill mt-7 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Close</button>
               </div>
             ) : (
@@ -222,38 +229,49 @@ export default function RequirementCapture({ compact = false }: Props) {
                   <div className="mt-2 flex flex-wrap gap-2">{roles.map((role) => <button key={role.value} type="button" onClick={() => changeRole(role.value)} aria-pressed={form.role === role.value} className={`border px-3 py-2 stamp !text-[10px] font-semibold transition-colors ${form.role === role.value ? "border-brick bg-brick text-cream" : "border-ink/15 hover:border-brick hover:text-brick"}`}>{role.label}</button>)}</div>
                 </fieldset>
                 <fieldset className="md:col-span-2">
-                  <legend className="stamp !text-[10px] font-semibold text-ink/60">I want to</legend>
+                  <legend className="stamp !text-[10px] font-semibold ink-2">I want to</legend>
                   <div className={`mt-2 grid gap-2 ${availableIntents.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                     {availableIntents.map((intent) => (
                       <button key={intent} type="button" onClick={() => changeIntent(intent)} aria-pressed={form.intent === intent} className={`border px-4 py-3 text-left stamp !text-[11px] font-semibold transition-colors ${form.intent === intent ? "border-brick bg-brick text-cream" : "border-ink/15 hover:border-brick hover:text-brick"}`}>{intentLabel(intent)}</button>
                     ))}
                   </div>
                 </fieldset>
-                <label className="stamp !text-[10px] font-semibold text-ink/60">City
+                <label className="stamp !text-[10px] font-semibold ink-2">City
                   <select required value={form.citySlug} onChange={(event) => changeCity(event.target.value)} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none">
                     <option value="" disabled>Select a city</option>
                     {cities.map((city) => <option key={city.slug} value={city.slug}>{city.name}, {city.state}</option>)}
                   </select>
                 </label>
-                <label className="stamp !text-[10px] font-semibold text-ink/60">Property category
+                <label className="stamp !text-[10px] font-semibold ink-2">Property category
                   <select value={form.category} onChange={(event) => { const category = event.target.value as RequirementCategory; update("category", category); update("subtype", categories.find((item) => item.value === category)?.subtypes[0] ?? "Flat/Apartment"); }} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none">{categories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}</select>
                 </label>
-                <label className="stamp !text-[10px] font-semibold text-ink/60">Subtype
-                  <select value={form.subtype} onChange={(event) => update("subtype", event.target.value)} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none">{selectedCategory.subtypes.map((subtype) => <option key={subtype}>{subtype}</option>)}</select>
+                <label className="stamp !text-[10px] font-semibold ink-2">Subtype
+                  <select value={form.subtype} onChange={(event) => { const subtype = event.target.value; update("subtype", subtype); update("propertyType", subtype.toLowerCase().includes("villa") ? "VILLA" : subtype.toLowerCase().includes("plot") ? "PLOT" : subtype.toLowerCase().includes("shop") ? "SHOP" : subtype.toLowerCase().includes("office") ? "OFFICE" : "APARTMENT"); }} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none">{selectedCategory.subtypes.map((subtype) => <option key={subtype}>{subtype}</option>)}</select>
                 </label>
+                <fieldset className="md:col-span-2 grid gap-3 md:grid-cols-3">
+                  <legend className="stamp font-semibold ink-2 md:col-span-3">Matching range</legend>
+                  <label className="text-xs font-semibold ink-2">BHK min<input value={form.bhkMin ?? ""} onChange={(event) => update("bhkMin", Number(event.target.value) || null)} inputMode="numeric" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none" /></label>
+                  <label className="text-xs font-semibold ink-2">BHK max<input value={form.bhkMax ?? ""} onChange={(event) => update("bhkMax", Number(event.target.value) || null)} inputMode="numeric" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none" /></label>
+                  <label className="text-xs font-semibold ink-2">Property code<input value={form.propertyType ?? "APARTMENT"} onChange={(event) => update("propertyType", event.target.value)} className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none" /></label>
+                  <label className="text-xs font-semibold ink-2">Area min<input value={form.areaMinSqft ?? ""} onChange={(event) => update("areaMinSqft", Number(event.target.value) || null)} inputMode="numeric" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none" /></label>
+                  <label className="text-xs font-semibold ink-2">Area max<input value={form.areaMaxSqft ?? ""} onChange={(event) => update("areaMaxSqft", Number(event.target.value) || null)} inputMode="numeric" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none" /></label>
+                  <span />
+                  <label className="text-xs font-semibold ink-2">Budget min<input value={form.budgetMinInr ?? ""} onChange={(event) => update("budgetMinInr", Number(event.target.value) || null)} inputMode="numeric" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none" /></label>
+                  <label className="text-xs font-semibold ink-2">Budget max<input value={form.budgetMaxInr ?? ""} onChange={(event) => update("budgetMaxInr", Number(event.target.value) || null)} inputMode="numeric" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink focus:border-brick focus:outline-none" /></label>
+                </fieldset>
                 {/* A buyer may prefer several areas; a property sits in exactly
                     one, so listing switches to a single choice rather than
                     inviting an address that does not exist. */}
                 <fieldset>
-                  <legend className="stamp !text-[10px] font-semibold text-ink/60">{listingOwnProperty ? "Locality of your property" : "Preferred localities"}</legend>
-                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">{availableLocalities.map((locality) => <label key={`${locality.citySlug}:${locality.slug}`} className="flex min-h-9 items-center gap-2 text-sm text-ink/75"><input type={listingOwnProperty ? "radio" : "checkbox"} name={listingOwnProperty ? "requirement-locality" : undefined} checked={form.localitySlugs.includes(locality.slug)} onChange={(event) => toggleLocality(locality.slug, event.target.checked)} className="h-4 w-4 accent-[#b8472e]" />{locality.name}</label>)}</div>
+                  <legend className="stamp !text-[10px] font-semibold ink-2">{listingOwnProperty ? "Locality of your property" : "Preferred localities"}</legend>
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">{availableLocalities.map((locality) => <label key={`${locality.citySlug}:${locality.slug}`} className="flex min-h-9 items-center gap-2 text-sm ink-2"><input type={listingOwnProperty ? "radio" : "checkbox"} name={listingOwnProperty ? "requirement-locality" : undefined} checked={form.localitySlugs.includes(locality.slug)} onChange={(event) => toggleLocality(locality.slug, event.target.checked)} className="h-4 w-4 accent-[#b8472e]" />{locality.name}</label>)}</div>
                   <p className="mt-2 text-xs leading-5 ink-3">{listingOwnProperty ? "Not listed? Choose the nearest one — you can give the exact address later." : "Pick every area you would consider. Leave one out and we will not send it to you."}</p>
                 </fieldset>
-                <label className="stamp !text-[10px] font-semibold text-ink/60">Name<input id="requirement-name" value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Your name" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" /></label>
-                <label className="stamp !text-[10px] font-semibold text-ink/60">Mobile number<input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="+91 00000 00000" inputMode="tel" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" />{sessionPhone && form.phone === sessionPhone ? <span className="mt-1 block text-xs font-normal normal-case tracking-normal ink-3">Your verified number. Edit it if this requirement needs a different one.</span> : null}</label>
-                <label className="flex gap-3 text-xs leading-5 text-ink/60 md:col-span-2"><input type="checkbox" required className="mt-1 h-4 w-4 accent-[#b8472e]" defaultChecked />I agree that Architech may contact me about this requirement. Contact is masked by default and can be revoked.</label>
+                <label className="stamp !text-[10px] font-semibold ink-2">Name<input id="requirement-name" value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Your name" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" /></label>
+                <label className="stamp !text-[10px] font-semibold ink-2">Mobile number<input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="+91 00000 00000" inputMode="tel" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" />{sessionPhone && form.phone === sessionPhone ? <span className="mt-1 block text-xs font-normal normal-case tracking-normal ink-3">Your verified number. Edit it if this requirement needs a different one.</span> : null}</label>
+                <label className="flex gap-3 text-xs leading-5 ink-2 md:col-span-2"><input type="checkbox" required className="mt-1 h-4 w-4 accent-[#b8472e]" defaultChecked />I agree that Architech may contact me about this requirement. Contact is masked by default and can be revoked.</label>
                 {errors.length > 0 && <p role="alert" className="border border-brick/30 bg-brick/5 p-3 text-sm text-brick md:col-span-2">{errors.join(" ")}</p>}
-                <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"><p className="stamp !text-[9px] text-ink/50">No payment. No public phone number. Demo routing until production partners are connected.</p><button type="submit" disabled={status === "submitting"} className="clay-fill btn-solid btn-primary border border-white/15 bg-brick px-6 py-3 stamp !text-[11px] font-semibold text-cream">{status === "submitting" ? "Saving…" : "Send my requirement"}</button></div>
+                <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"><p className="stamp !text-[9px] ink-3">No payment. No public phone number. Demo routing until production partners are connected.</p><button type="submit" disabled={status === "submitting"} className="clay-fill btn-solid btn-primary border border-white/15 bg-brick px-6 py-3 stamp !text-[11px] font-semibold text-cream">{status === "submitting" ? "Saving…" : "Send my requirement"}</button></div>
               </form>
             )}
         </DialogContent>

@@ -82,6 +82,53 @@ enum LeadStatus {
   DELETED
 }
 
+
+enum ChannelRequestType {
+  DEMAND
+  SUPPLY
+}
+
+enum ChannelRequestStatus {
+  DRAFT
+  OPEN
+  MATCHED
+  CLOSED
+  CANCELLED
+  EXPIRED
+}
+
+enum ChannelMatchStatus {
+  SUGGESTED
+  ACCEPTED
+  REJECTED
+  DEAL_CREATED
+}
+
+enum ChannelDealStatus {
+  OPEN
+  PENDING_OTHER_CLOSE
+  CLOSED
+  CANCELLED
+}
+
+enum ChannelDealCloseMode {
+  SINGLE
+  DUAL
+}
+
+enum ErpnextSyncStatus {
+  PENDING
+  IN_FLIGHT
+  SUCCESS
+  FAILED
+  RECONCILED
+}
+
+enum CommissionEntryType {
+  COMMISSION_INCOME
+  COMMISSION_EXPENSE
+}
+
 enum LocationSourceStatus {
   STAGING
   ACTIVE
@@ -182,8 +229,8 @@ model City {
 
   localities          Locality[]
   listings            Listing[]
-  channelRequests     ChannelRequest[]
   organizations       BrokerOrganization[]
+  channelRequests     ChannelRequest[]
   savedSearches       SavedSearch[]
   administrativeAreas CityAdministrativeArea[]
   requirements        Requirement[]            @relation("ResolvedRequirementCity")
@@ -224,7 +271,6 @@ model Locality {
   city                City                         @relation(fields: [cityId], references: [id], onDelete: Cascade)
   source              LocationSource?              @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   listings            Listing[]
-  channelRequests     ChannelRequest[]
   savedSearches       SavedSearch[]
   aliasRecords        LocalityAlias[]
   postalCodes         LocalityPostalCode[]
@@ -500,6 +546,9 @@ model BrokerOrganization {
   website            String?
   phoneMasked        String?
   email              String?
+  /// Broker/business contact revealed to verified counterparty brokers only.
+  /// This is never customer contact data.
+  businessPhoneMasked String?
 
   /// Agency switchboard number in E.164 (+919876543210), NOT an end customer's.
   ///
@@ -545,11 +594,18 @@ model BrokerOrganization {
   city     City?        @relation(fields: [cityId], references: [id], onDelete: SetNull)
   users    BrokerUser[]
   listings Listing[]
-  leads    Lead[]
-  audits   AuditEvent[]
-  outbox   InteropOutbox[]
+  leads                Lead[]
+  requirements         Requirement[]
   channelRequests      ChannelRequest[]
+  channelRequestSources ChannelRequestSource[]
+  demandChannelDeals   ChannelDeal[]       @relation("DemandBrokerChannelDeals")
+  supplyChannelDeals   ChannelDeal[]       @relation("SupplyBrokerChannelDeals")
+  commissionEntries    CommissionEntry[]
+  erpnextCloseWrites   ErpnextCloseWrite[]
+  inboundProviderEvents InboundProviderEvent[]
   channelNotifications ChannelNotification[]
+  audits               AuditEvent[]
+  outbox               InteropOutbox[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -691,10 +747,10 @@ model Listing {
   postalCodeRecord PostalCode?         @relation(fields: [postalCode], references: [code], onDelete: SetNull, onUpdate: Cascade)
   brokerOrg        BrokerOrganization? @relation(fields: [brokerOrgId], references: [id], onDelete: SetNull)
   reraRecord       ReraRecord?         @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
-  media            PropertyMedia[]
-  leads            Lead[]
-  audits           AuditEvent[]
-  channelRequests  ChannelRequest[]
+  media                 PropertyMedia[]
+  leads                 Lead[]
+  audits                AuditEvent[]
+  channelRequestSources ChannelRequestSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -783,6 +839,7 @@ model Lead {
 model Requirement {
   id              String    @id @default(cuid())
   cityId          String
+  organizationId  String?
   /// Owning account, when the brief was submitted by a signed-in person.
   /// Nullable because the public requirement drawer is deliberately open to
   /// anonymous visitors -- demanding a sign-up before someone can say what
@@ -794,6 +851,13 @@ model Requirement {
   intent          String
   category        String
   subtype         String
+  propertyType    String?
+  bhkMin          Int?
+  bhkMax          Int?
+  areaMinSqft     Int?
+  areaMaxSqft     Int?
+  budgetMinInr    BigInt?
+  budgetMaxInr    BigInt?
   role            String
   name            String
   phoneCiphertext Bytes
@@ -806,13 +870,16 @@ model Requirement {
   deletedAt       DateTime?
 
   resolvedCity City                  @relation("ResolvedRequirementCity", fields: [cityId], references: [id], onDelete: Restrict)
+  organization BrokerOrganization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   user         User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   localities   RequirementLocality[]
+  channelRequestSources ChannelRequestSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([cityId, status, createdAt])
+  @@index([organizationId, status, createdAt])
   @@index([retentionUntil])
   /// The dashboard read path: one person's briefs, newest first.
   @@index([userId, createdAt])
@@ -828,6 +895,199 @@ model RequirementLocality {
 
   @@id([requirementId, localityId])
   @@index([localityId])
+}
+
+
+model ChannelRequest {
+  id                  String               @id @default(cuid())
+  organizationId      String
+  createdById         String
+  type                ChannelRequestType
+  cityId              String
+  localitySlug        String?
+  intent              String
+  propertyType        String
+  bhkMin              Int?
+  bhkMax              Int?
+  areaMinSqft         Int?
+  areaMaxSqft         Int?
+  budgetMinInr        BigInt?
+  budgetMaxInr        BigInt?
+  priceInr            BigInt?
+  detailSummary       String
+  brokerNote          String?              @db.VarChar(500)
+  status              ChannelRequestStatus @default(DRAFT)
+  expiresAt           DateTime
+  publishedAt         DateTime?
+  closedAt            DateTime?
+  revision            Int                  @default(1)
+
+  organization  BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  city          City               @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  source        ChannelRequestSource?
+  demandMatches ChannelMatch[]     @relation("DemandChannelMatches")
+  supplyMatches ChannelMatch[]     @relation("SupplyChannelMatches")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([cityId, localitySlug, type, intent, propertyType, status])
+  @@index([type, status, cityId, intent, propertyType, priceInr])
+  @@index([type, status, cityId, intent, propertyType, budgetMaxInr])
+  @@index([type, status, cityId, intent, propertyType, bhkMin, bhkMax])
+  @@index([expiresAt])
+}
+
+model ChannelRequestSource {
+  id                  String @id @default(cuid())
+  channelRequestId    String @unique
+  organizationId      String
+  sourceListingId     String? @unique
+  sourceRequirementId String? @unique
+
+  channelRequest ChannelRequest      @relation(fields: [channelRequestId], references: [id], onDelete: Cascade)
+  organization   BrokerOrganization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceListing  Listing?            @relation(fields: [sourceListingId], references: [id], onDelete: Restrict)
+  sourceRequirement Requirement?      @relation(fields: [sourceRequirementId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([sourceListingId])
+  @@index([sourceRequirementId])
+}
+
+model ChannelMatch {
+  id              String             @id @default(cuid())
+  demandRequestId String
+  supplyRequestId String
+  score           Int
+  reasons         Json
+  status          ChannelMatchStatus @default(SUGGESTED)
+  createdBy       String?
+
+  demandRequest ChannelRequest @relation("DemandChannelMatches", fields: [demandRequestId], references: [id], onDelete: Cascade)
+  supplyRequest ChannelRequest @relation("SupplyChannelMatches", fields: [supplyRequestId], references: [id], onDelete: Cascade)
+  deal          ChannelDeal?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([demandRequestId, supplyRequestId])
+  @@index([status, score])
+  @@index([demandRequestId, status])
+  @@index([supplyRequestId, status])
+}
+
+model ChannelDeal {
+  id                   String               @id @default(cuid())
+  matchId              String               @unique
+  demandOrganizationId String
+  supplyOrganizationId String
+  demandContactUserId  String?
+  supplyContactUserId  String?
+  status               ChannelDealStatus    @default(OPEN)
+  closeMode            ChannelDealCloseMode @default(DUAL)
+  splitAgreement       Json?
+  totalCommissionInr   BigInt?
+  demandBrokerShareInr BigInt?
+  supplyBrokerShareInr BigInt?
+  demandBrokerConfirmAt DateTime?
+  supplyBrokerConfirmAt DateTime?
+  closedAt             DateTime?
+  closeVersion         Int                  @default(1)
+  erpnextSyncStatus    ErpnextSyncStatus    @default(PENDING)
+
+  match              ChannelMatch       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  demandOrganization BrokerOrganization @relation("DemandBrokerChannelDeals", fields: [demandOrganizationId], references: [id], onDelete: Restrict)
+  supplyOrganization BrokerOrganization @relation("SupplyBrokerChannelDeals", fields: [supplyOrganizationId], references: [id], onDelete: Restrict)
+  commissionEntries  CommissionEntry[]
+  erpnextCloseWrites ErpnextCloseWrite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([demandOrganizationId, status])
+  @@index([supplyOrganizationId, status])
+}
+
+model CommissionEntry {
+  id             String              @id @default(cuid())
+  organizationId String
+  dealId         String
+  entryType      CommissionEntryType
+  amountInr      BigInt
+  employeeId     String?
+  description    String
+  entryDate      DateTime
+  recordedById   String
+  erpnextDocId   String?
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deal         ChannelDeal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([organizationId, dealId, entryType])
+  @@index([organizationId, entryDate])
+  @@index([dealId])
+}
+
+model ErpnextCloseWrite {
+  id                String            @id @default(cuid())
+  channelDealId     String
+  organizationId    String
+  idempotencyKey    String            @unique
+  payloadHash       String
+  status            ErpnextSyncStatus @default(PENDING)
+  attemptCount      Int               @default(0)
+  lastError         String?
+  nextRetryAt       DateTime?
+  erpnextDocId      String?
+  processedAt       DateTime?
+
+  channelDeal  ChannelDeal        @relation(fields: [channelDealId], references: [id], onDelete: Cascade)
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([channelDealId])
+}
+
+model InboundProviderEvent {
+  id             String   @id @default(cuid())
+  provider       String
+  externalId     String
+  organizationId String
+  processedAt    DateTime @default(now())
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([organizationId, processedAt])
+}
+
+model ChannelNotification {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String?
+  eventType      String
+  title          String
+  body           String
+  entityType     String
+  entityId       String
+  readAt         DateTime?
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, readAt, createdAt])
+  @@index([entityType, entityId])
 }
 
 model SavedSearch {
@@ -1024,180 +1284,4 @@ model InteropInboundEvent {
 
   @@unique([provider, externalId])
   @@index([organizationId, processedAt])
-}
-
-// ---------------------------------------------------------------------------
-// Broker channel
-//
-// A privacy-preserving B2B layer where verified brokerages exchange demand and
-// supply. One agency holds a buyer looking in Thaltej; another holds the
-// matching flat. The channel lets them find each other, then talk directly.
-//
-// ANCHORED ON LISTINGS, BY DESIGN.
-//
-// A SUPPLY request must reference a real, ACTIVE Listing rather than restating
-// price/BHK/area as loose fields. That decision does a lot of work:
-//
-//   - Matching scores against verified inventory instead of self-reported
-//     numbers, so a score means something.
-//   - The counterparty sees the actual listing: photos, RERA, locality, the
-//     full dossier. No parallel description to keep in sync, and no way for the
-//     two to drift apart.
-//   - Publishing to the channel requires first publishing to the site, so the
-//     public catalogue grows as a side effect of brokers using the channel.
-//   - Contact flows through the listing's own broker organization, which is
-//     already verified and already has a business number.
-//
-// DEMAND is deliberately NOT listing-anchored: a buyer requirement has no
-// listing yet. It carries structured criteria instead.
-//
-// PRIVACY BOUNDARY: channel records carry no end-customer identity. A demand
-// request describes what a buyer wants, never who they are. The only contact
-// revealed is the counterparty BROKERAGE's business number.
-// ---------------------------------------------------------------------------
-
-enum ChannelRequestType {
-  /// A buyer requirement. Structured criteria; no listing exists yet.
-  DEMAND
-  /// Inventory offered. Must reference an ACTIVE Listing.
-  SUPPLY
-}
-
-enum ChannelRequestStatus {
-  DRAFT
-  OPEN
-  MATCHED
-  CLOSED
-  CANCELLED
-  EXPIRED
-}
-
-enum ChannelMatchStatus {
-  /// Created by the matcher; neither side has acted.
-  SUGGESTED
-  /// One side accepted, waiting on the other.
-  ACCEPTED
-  REJECTED
-  /// Both accepted; contact details are now mutually visible.
-  CONNECTED
-}
-
-enum ChannelIntent {
-  BUY
-  RENT
-}
-
-/// A published demand or supply request.
-model ChannelRequest {
-  id             String             @id @default(cuid())
-  /// Owning brokerage. RLS tenant key.
-  organizationId String
-  createdByUserId String?
-  type           ChannelRequestType
-  intent         ChannelIntent
-  status         ChannelRequestStatus @default(DRAFT)
-
-  /// SUPPLY: the listing being offered. Required for SUPPLY, null for DEMAND.
-  /// Enforced by a CHECK constraint in the migration, not just convention --
-  /// a SUPPLY row without a listing would silently score against nothing.
-  listingId String?
-
-  /// Search scope. For SUPPLY these are denormalised from the listing at
-  /// publish time so the matcher can filter without a join, and refreshed on
-  /// re-publish. For DEMAND they are the buyer's stated criteria.
-  cityId       String
-  localityId   String?
-  propertyType PropertyType
-
-  /// DEMAND only: budget range and desired shape. Null on SUPPLY, where the
-  /// listing is authoritative for price and size.
-  budgetMinInr BigInt?
-  budgetMaxInr BigInt?
-  bhkMin       Int?
-  bhkMax       Int?
-  areaMinSqft  Int?
-  areaMaxSqft  Int?
-
-  /// Structured, broker-facing note. Sanitised on write: no phone, email or
-  /// customer name may appear here. Never describes WHO the buyer is.
-  brokerNote String? @db.VarChar(500)
-
-  /// Requests expire so the channel does not fill with stale demand.
-  expiresAt   DateTime
-  publishedAt DateTime?
-  closedAt    DateTime?
-
-  organization  BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  listing       Listing?           @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  city          City               @relation(fields: [cityId], references: [id], onDelete: Restrict)
-  locality      Locality?          @relation(fields: [localityId], references: [id], onDelete: SetNull)
-  demandMatches ChannelMatch[]     @relation("DemandRequest")
-  supplyMatches ChannelMatch[]     @relation("SupplyRequest")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId, status])
-  /// The matcher's candidate query.
-  @@index([status, type, intent, cityId, propertyType])
-  @@index([localityId, status])
-  @@index([expiresAt])
-  @@index([listingId])
-}
-
-/// A scored pairing between one demand and one supply request.
-model ChannelMatch {
-  id              String             @id @default(cuid())
-  demandRequestId String
-  supplyRequestId String
-
-  /// Denormalised owners. Both sides query "my matches" constantly, and
-  /// reaching them through two request joins is the hot path.
-  demandOrganizationId String
-  supplyOrganizationId String
-
-  /// 0-100, deterministic.
-  score   Int
-  /// Per-factor breakdown, so a broker sees WHY rather than a bare number.
-  reasons Json
-
-  status ChannelMatchStatus @default(SUGGESTED)
-
-  /// Independent accept flags. Contact is revealed only when both are set,
-  /// which is what makes the reveal mutual rather than unilateral.
-  demandAcceptedAt DateTime?
-  supplyAcceptedAt DateTime?
-  rejectedAt       DateTime?
-  rejectedByOrgId  String?
-  connectedAt      DateTime?
-
-  demandRequest ChannelRequest @relation("DemandRequest", fields: [demandRequestId], references: [id], onDelete: Cascade)
-  supplyRequest ChannelRequest @relation("SupplyRequest", fields: [supplyRequestId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  /// One pairing per request couple: re-running the matcher must not duplicate.
-  @@unique([demandRequestId, supplyRequestId])
-  @@index([demandOrganizationId, status, score])
-  @@index([supplyOrganizationId, status, score])
-  @@index([status, score])
-}
-
-/// In-app notification. The v8 decision fixes the channel notification surface
-/// as Architech only -- no WhatsApp, email or SMS path for channel events.
-model ChannelNotification {
-  id             String  @id @default(cuid())
-  organizationId String
-  matchId        String?
-  kind           String  @db.VarChar(48)
-  title          String  @db.VarChar(160)
-  body           String  @db.VarChar(400)
-  readAt         DateTime?
-
-  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([organizationId, readAt, createdAt])
 }

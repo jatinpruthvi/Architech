@@ -26,6 +26,16 @@ export type RequirementInput = {
   citySlug: string;
   category: RequirementCategory;
   subtype: string;
+  /** Matching-grade property code used by broker-channel demand generation. */
+  propertyType?: string;
+  bhkMin?: number | null;
+  bhkMax?: number | null;
+  areaMinSqft?: number | null;
+  areaMaxSqft?: number | null;
+  budgetMinInr?: number | null;
+  budgetMaxInr?: number | null;
+  /** Optional owner org when the requirement is captured inside broker workspace. */
+  organizationId?: string | null;
   /** Stable locality slugs; every value must belong to `citySlug`. */
   localitySlugs: string[];
   role: RequirementRole;
@@ -118,6 +128,24 @@ function normalizedLocalitySlugs(input: Partial<RequirementInput>): string[] {
   return (input.localitySlugs ?? []).map((slug) => slug.trim()).filter(Boolean);
 }
 
+function toPositiveInteger(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.round(number) : null;
+}
+
+export function propertyTypeFromRequirement(input: Partial<RequirementInput>): string {
+  const explicit = String(input.propertyType ?? "").trim().toUpperCase().replace(/[^A-Z_]/g, "_");
+  if (explicit) return explicit;
+  const subtype = String(input.subtype ?? "").toLowerCase();
+  if (subtype.includes("villa")) return "VILLA";
+  if (subtype.includes("plot")) return "PLOT";
+  if (subtype.includes("land")) return "LAND";
+  if (subtype.includes("shop")) return "SHOP";
+  if (subtype.includes("office")) return "OFFICE";
+  return "APARTMENT";
+}
+
 export type RequirementLocationValidator = {
   cityExists(citySlug: string): boolean;
   localityBelongs(citySlug: string, localitySlug: string): boolean;
@@ -135,6 +163,19 @@ export function validateRequirementInput(input: Partial<RequirementInput>, locat
   if (!cityIsValid) errors.push("Choose a supported city.");
   if (!categories.has(input.category as RequirementCategory)) errors.push("Choose a property category.");
   if (!input.subtype?.trim()) errors.push("Choose a property subtype.");
+  if (!propertyTypeFromRequirement(input)) errors.push("Choose a reviewed property type.");
+
+  const bhkMin = toPositiveInteger(input.bhkMin);
+  const bhkMax = toPositiveInteger(input.bhkMax);
+  const areaMin = toPositiveInteger(input.areaMinSqft);
+  const areaMax = toPositiveInteger(input.areaMaxSqft);
+  const budgetMin = toPositiveInteger(input.budgetMinInr);
+  const budgetMax = toPositiveInteger(input.budgetMaxInr);
+  if (bhkMin !== null && bhkMax !== null && bhkMin > bhkMax) errors.push("BHK minimum cannot exceed BHK maximum.");
+  if ((areaMin === null) !== (areaMax === null)) errors.push("Enter both area minimum and maximum for matching.");
+  if (areaMin !== null && areaMax !== null && areaMin > areaMax) errors.push("Area minimum cannot exceed area maximum.");
+  if ((budgetMin === null) !== (budgetMax === null)) errors.push("Enter both budget minimum and maximum for matching.");
+  if (budgetMin !== null && budgetMax !== null && budgetMin > budgetMax) errors.push("Budget minimum cannot exceed budget maximum.");
 
   const supplySide = isSupplyIntent(input.intent as RequirementIntent);
   const localitySlugs = normalizedLocalitySlugs(input);
@@ -200,12 +241,10 @@ export function requirementIdempotencyKey(input: RequirementInput): string {
   const localitySlugs = normalizedLocalitySlugs(input);
   if (input.idempotencyKey?.trim()) return input.idempotencyKey.trim();
   /* The account is part of the identity of a brief, not incidental to it.
-     Without this, a couple sharing one mobile number would collide: the
-     second person's brief would be swallowed as a "duplicate" of the first
-     and silently appear on the wrong dashboard. Anonymous briefs keep the
-     original phone-keyed behaviour, which is the best identity available. */
-  const owner = input.userId ? `u:${input.userId}` : "anon";
-  return `rq_${fingerprint(`${owner}:${input.intent}:${input.citySlug}:${input.category}:${input.phone.replace(/\D/g, "")}:${localitySlugs.join(",")}`)}`;
+     Matching-grade fields are included so two distinct demand profiles from
+     the same account and phone do not collapse into one broker-channel source. */
+  const owner = input.userId ? `u:${input.userId}` : input.organizationId ? `o:${input.organizationId}` : "anon";
+  return `rq_${fingerprint(`${owner}:${input.intent}:${input.citySlug}:${input.category}:${propertyTypeFromRequirement(input)}:${input.phone.replace(/\D/g, "")}:${localitySlugs.join(",")}:${input.bhkMin ?? ""}:${input.bhkMax ?? ""}:${input.areaMinSqft ?? ""}:${input.areaMaxSqft ?? ""}:${input.budgetMinInr ?? ""}:${input.budgetMaxInr ?? ""}`)}`;
 }
 
 export function createRequirement(input: RequirementInput): RequirementResult {
@@ -221,6 +260,14 @@ export function createRequirement(input: RequirementInput): RequirementResult {
     citySlug: input.citySlug,
     category: input.category,
     subtype: input.subtype.trim(),
+    propertyType: propertyTypeFromRequirement(input),
+    bhkMin: toPositiveInteger(input.bhkMin),
+    bhkMax: toPositiveInteger(input.bhkMax),
+    areaMinSqft: toPositiveInteger(input.areaMinSqft),
+    areaMaxSqft: toPositiveInteger(input.areaMaxSqft),
+    budgetMinInr: toPositiveInteger(input.budgetMinInr),
+    budgetMaxInr: toPositiveInteger(input.budgetMaxInr),
+    organizationId: input.organizationId ?? null,
     localitySlugs,
     role: input.role,
     name: input.name.trim(),
@@ -253,4 +300,14 @@ export function listRequirementsForUser(userId: string): RequirementRecord[] {
 
 export function resetRequirementStoreForTests() {
   requirementsByKey.clear();
+}
+
+export function listRequirementsForOrganization(organizationId: string): RequirementRecord[] {
+  return [...requirementsByKey.values()]
+    .filter((requirement) => requirement.organizationId === organizationId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function getRequirementForOrganization(requirementId: string, organizationId: string): RequirementRecord | null {
+  return listRequirementsForOrganization(organizationId).find((requirement) => requirement.id === requirementId) ?? null;
 }
