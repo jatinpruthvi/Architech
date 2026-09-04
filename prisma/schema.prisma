@@ -526,6 +526,20 @@ model BrokerOrganization {
   erpnextCustomerId  String?            @db.VarChar(140)
   frappeCrmOrgId     String?            @db.VarChar(140)
 
+  /// GSTIN, 15 chars, format enforced by India Compliance
+  /// (gst_india/constants: GSTIN_FORMAT). Its first two digits are the GST
+  /// state code, which India Compliance cross-checks against the address state
+  /// and rejects on mismatch (gst_india/overrides/address.py:97).
+  ///
+  /// NOT the LGD state code we store elsewhere. The two vocabularies disagree
+  /// for twelve states -- LGD 37 is Ladakh while GST 37 is Andhra Pradesh --
+  /// so always translate through lib/interop/india-state-mapping.ts.
+  gstin              String?            @db.VarChar(15)
+  /// LGD state name, the key into that mapping. Kept alongside the city
+  /// relation because a brokerage can invoice from a state it does not have a
+  /// city record for.
+  registeredStateLgd String?
+
   city     City?        @relation(fields: [cityId], references: [id], onDelete: SetNull)
   users    BrokerUser[]
   listings Listing[]

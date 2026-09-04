@@ -8,6 +8,9 @@
 | `frappe/frappe` | `v16.33.0` | `33bf510` | ✅ matches pin |
 | `frappe/crm` | `v1.83.0` | `52c500d` | ✅ matches pin |
 | `frappe/erpnext` | `v16.34.1` | `0b50853` | ✅ matches pin |
+| `evolution-foundation/evolution-api` | `2.3.7` | `cd800f2` | ✅ matches pin |
+| `frappe/hrms` | `v16.17.1` | `e1481b5` | ✅ matches pin |
+| `resilient-tech/india-compliance` | `v16.9.0` | `071b544` | ✅ matches pin |
 
 Clones are scratch (`/tmp/refclones`) and intentionally not committed. This document is
 the persistent record — see `upstream-repo-checkout-guide.md` §Issue 2.
@@ -293,6 +296,76 @@ shape is worth copying rather than inventing:
 
 Upstream lets the **database** reject duplicates rather than checking first, which
 is the only race-free option. Our unique constraints do the same.
+
+## 4b. Three phone formats, not one
+
+Reading Evolution API 2.3.7 (`src/utils/createJid.ts`) shows it does not store a
+phone number at all. `Contact` and `Message` are keyed by `remoteJid`, unique per
+`(remoteJid, instanceId)`, built as:
+
+```ts
+number = number.replace(/\+/g, '') ... .replace(/\D/g, '');
+return `${number}@s.whatsapp.net`;
+```
+
+So three distinct formats coexist across the stack:
+
+| System | Format | Example |
+|---|---|---|
+| Architech (canonical) | E.164 | `+919876543210` |
+| ERPNext `Contact Phone.phone` | free-form `Data`, exact-matched | `+919876543210` |
+| Evolution `remoteJid` | digits + suffix, no `+` | `919876543210@s.whatsapp.net` |
+
+`lib/interop/phone.ts` converts between them. They must not be conflated: a JID
+in an ERPNext phone field never matches a lookup, and an E.164 string used as a
+JID carries a `+` that Evolution strips only on its own input path.
+
+Evolution applies country-specific digit fixups for Mexico (52), Argentina (54)
+and Brazil (55). India has no such rule, so our numbers map straight through --
+but `toWhatsAppJid` is India-only for that reason.
+
+## 4c. LGD state codes are NOT GST state codes
+
+The sharpest finding, from `india-compliance` v16.9.0.
+
+`gst_india/overrides/address.py:88` rejects any unrecognised state name with
+`frappe.throw` — a hard write failure, not a warning:
+
+```python
+if doc.state not in STATE_NUMBERS:
+    frappe.throw(_("Please select a valid State from available options"))
+```
+
+**Spelling.** Four of our 36 LGD records fail exact match:
+
+| Our LGD name | India Compliance requires |
+|---|---|
+| `Andaman And Nicobar Islands` | `Andaman and Nicobar Islands` |
+| `Jammu And Kashmir` | `Jammu and Kashmir` |
+| `Lakshadweep` | `Lakshadweep Islands` |
+| `The Dadra And Nagar Haveli And Daman And Diu` | `Dadra and Nagar Haveli and Daman and Diu` |
+
+**Numbering — the dangerous one.** Twelve LGD codes differ from GST codes, and
+three collide in a way that fails *silently*:
+
+| State | LGD | GST |
+|---|---|---|
+| Andhra Pradesh | 28 | **37** |
+| Ladakh | **37** | 38 |
+| Dadra & Nagar Haveli and Daman & Diu | 38 | **26** |
+
+LGD 37 is Ladakh, but GST 37 is Andhra Pradesh. Passing an LGD code where a GST
+code is expected does not error — it files against the wrong state. On a tax
+document that is a compliance incident, not a bug report. Nine more differ only
+by a leading zero (`"4"` vs `"04"`), which string comparison also gets wrong.
+
+`gst_india/overrides/address.py:97` additionally rejects a GSTIN whose first two
+digits disagree with the address state.
+
+`lib/interop/india-state-mapping.ts` holds an explicit entry for all 36 states.
+Nothing derives a GST code by arithmetic or zero-padding, and the test suite
+asserts the three colliding cases by name and checks exhaustiveness against the
+LGD snapshot itself.
 
 ## 5. Residual risk
 

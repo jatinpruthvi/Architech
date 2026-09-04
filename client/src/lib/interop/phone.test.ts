@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { maskE164, normalizeIndianPhone, telLink, toE164OrThrow, waMeLink } from "./phone";
+import { fromWhatsAppJid, maskE164, normalizeIndianPhone, telLink, toE164OrThrow, toWhatsAppJid, waMeLink } from "./phone";
 
 const e164 = (raw: string) => {
   const result = normalizeIndianPhone(raw);
@@ -73,5 +73,36 @@ describe("Indian phone normalisation for cross-system identity", () => {
     const masked = maskE164("+919876543210");
     expect(masked).toContain("3210");
     expect(masked).not.toContain("98765");
+  });
+});
+
+describe("WhatsApp JID for Evolution API", () => {
+  it("builds the digits-only JID Evolution's createJid produces", () => {
+    expect(toWhatsAppJid("+919876543210")).toBe("919876543210@s.whatsapp.net");
+  });
+
+  it("never leaves a '+' in the JID", () => {
+    // Evolution strips '+' on its own input path; ours must match byte for byte
+    // or the (remoteJid, instanceId) unique key will not line up.
+    expect(toWhatsAppJid("+919876543210")).not.toContain("+");
+  });
+
+  it("round-trips back to E.164", () => {
+    const back = fromWhatsAppJid("919876543210@s.whatsapp.net");
+    expect(back.ok && back.e164).toBe("+919876543210");
+  });
+
+  it("strips the Baileys device suffix on inbound events", () => {
+    const back = fromWhatsAppJid("919876543210:12@s.whatsapp.net");
+    expect(back.ok && back.e164).toBe("+919876543210");
+  });
+
+  it("rejects an empty number rather than emitting a bare suffix", () => {
+    expect(() => toWhatsAppJid("")).toThrow();
+  });
+
+  it("keeps JID and E.164 as distinct formats", () => {
+    const e164 = "+919876543210";
+    expect(toWhatsAppJid(e164)).not.toBe(e164);
   });
 });

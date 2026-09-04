@@ -111,3 +111,38 @@ export function maskE164(e164: string): string {
   if (digits.length < 4) return "••••";
   return `+${INDIA_COUNTRY_CODE} ••••• ${digits.slice(-5)}`;
 }
+
+/* WhatsApp JID for Evolution API.
+
+   Evolution does not store a phone number. It stores a `remoteJid` on Contact
+   and Message, unique per (remoteJid, instanceId), and builds it in
+   src/utils/createJid.ts at 2.3.7:
+
+       number = number.replace(/\+/g, '') ... .replace(/\D/g, '');
+       return `${number}@s.whatsapp.net`;
+
+   So the wire identity is digits with NO leading '+', suffixed with
+   '@s.whatsapp.net'. That is a THIRD format alongside our E.164 and ERPNext's
+   free-form Data column, and the three must not be conflated: a JID stored in
+   an ERPNext phone field would never match a lookup, and an E.164 string passed
+   as a JID carries a '+' that Evolution strips only on its own input path.
+
+   Evolution applies country-specific fixups for Mexico (52), Argentina (54) and
+   Brazil (55) -- inserting or removing a subscriber digit. India (91) has no
+   such rule, so a normalised Indian number maps straight through. This function
+   is India-only for that reason; it must not be reused for other markets
+   without re-reading createJid.ts. */
+export const WHATSAPP_JID_SUFFIX = "@s.whatsapp.net";
+
+export function toWhatsAppJid(e164: string): string {
+  const digits = e164.replace(/[^\d]/g, "");
+  if (!digits) throw new Error("Cannot build a WhatsApp JID from an empty number.");
+  return `${digits}${WHATSAPP_JID_SUFFIX}`;
+}
+
+/** Recover E.164 from a JID on an inbound Evolution event. */
+export function fromWhatsAppJid(jid: string): PhoneNormalizationResult {
+  const [user] = jid.split("@");
+  // Strip a Baileys device suffix such as ":12" before normalising.
+  return normalizeIndianPhone(user.split(":")[0]);
+}

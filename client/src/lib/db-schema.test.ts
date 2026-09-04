@@ -132,6 +132,24 @@ describe("Phase 1 Prisma schema contract", () => {
     });
   });
 
+  describe("India Compliance / GST identity", () => {
+    const gst = readFileSync("prisma/migrations/202609030005_gst_identity/migration.sql", "utf8");
+
+    it("stores a GSTIN at the exact upstream width", () => {
+      expect(schema).toMatch(/gstin\s+String\?\s+@db\.VarChar\(15\)/);
+      expect(gst).toContain("VARCHAR(15)");
+    });
+
+    it("keeps the LGD state name, which is the mapping key", () => {
+      expect(schema).toContain("registeredStateLgd");
+    });
+
+    it("makes the GSTIN unique only where present", () => {
+      // Partial index: most brokerages have no GSTIN and must not collide.
+      expect(gst).toContain('WHERE "gstin" IS NOT NULL');
+    });
+  });
+
   it("ships PostgreSQL FTS and trigram search indexes", () => {
     expect(searchMigration).toContain("CREATE EXTENSION IF NOT EXISTS pg_trgm");
     expect(searchMigration).toContain('"Listing_searchVector_idx"');
