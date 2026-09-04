@@ -241,6 +241,59 @@ stands as written.
 
 ---
 
+## 4a. Identity resolution — the finding that most shapes the schema
+
+Reading `erpnext/crm/frappe_crm_api.py:115` (v16.34.1) shows how ERPNext decides
+whether a contact already exists:
+
+```python
+def contact_exists(email, mobile_no):
+    email_exist = frappe.db.exists("Contact Email", {"email_id": email})
+    mobile_exist = frappe.db.exists("Contact Phone", {"phone": mobile_no})
+```
+
+That is an **exact string match on an unnormalised `Data` column**. There is no
+canonicalisation on the receiving side. So `+91 98765 43210`, `9876543210` and
+`+919876543210` are three different contacts to ERPNext, and one brokerage
+becomes three `Customer` records that invoices are then issued against.
+
+**Therefore the canonical format must be decided on our side, before the value
+crosses.** `lib/interop/phone.ts` normalises to E.164 and is the only sanctioned
+way to populate `businessPhoneE164`. The column is `varchar(20)` so free text
+cannot be stored in it.
+
+### Linkage convention
+
+Frappe CRM's own ERPNext integration links the two systems with plain `Data`
+custom fields carrying the foreign key — `crm_deal` on Quotation and Customer,
+`erpnext_item_code` on CRM Product (`erpnext_crm_settings.py:100-145`). There are
+no real foreign keys across the boundary, because the systems are separate
+databases.
+
+We mirror that convention exactly: `erpnextCustomerId`, `frappeCrmOrgId`,
+`frappeCrmLeadId`, `remoteDocId`, all `varchar(140)`, all holding values a remote
+site handed us. We never construct a Frappe key.
+
+Crucially these are scoped, **not globally unique**. Two brokerages run separate
+sites that will both mint `CRM-LEAD-2026-00001`. `Lead.frappeCrmLeadId` is
+therefore unique per `(organizationId, frappeCrmLeadId)`; a global index would
+reject the second brokerage's perfectly valid lead.
+
+### Upstream's ingestion pattern, adopted
+
+`crm/lead_syncing/` is Frappe CRM's own external-ingestion framework, and its
+shape is worth copying rather than inventing:
+
+| Upstream mechanism | Our equivalent |
+|---|---|
+| `facebook_lead_id` as `unique` `Data` | `frappeCrmLeadId`, scoped unique |
+| `last_synced_at` watermark | `frappeSyncedAt`, `InteropOutbox.processedAt` |
+| `Failed Lead Sync Log` (type, payload, traceback) | `InteropOutbox.status` + `lastError` + `payload` |
+| `DuplicateLeadError` on unique violation | `InteropInboundEvent` unique `(provider, externalId)` |
+
+Upstream lets the **database** reject duplicates rather than checking first, which
+is the only race-free option. Our unique constraints do the same.
+
 ## 5. Residual risk
 
 The `decimal(21,9)` finding is verified from source, but the **commission posting
@@ -251,3 +304,13 @@ written defensively to cover all of them.
 
 Recommend resolving the posting shape with an accountant **before** step 8, not
 before step 1 — it does not block the channel build.
+
+Two further gaps remain open and are **not** closed by the interop migration:
+
+1. **No RLS anywhere yet.** The channel design assumes
+   `current_setting('app.current_org_id')` row-level security, and no migration
+   in the repo establishes it. `InteropOutbox` carries `organizationId` and is
+   ready for RLS, but the policy itself is still to be written.
+2. **`Lead` still stores only `phoneMasked`.** Automatic first contact needs
+   purpose-scoped encrypted storage, reusing the AES-256-GCM pattern already in
+   `requirements.server.ts`. Unchanged by this work.

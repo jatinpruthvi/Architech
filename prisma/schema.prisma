@@ -499,16 +499,46 @@ model BrokerOrganization {
   phoneMasked        String?
   email              String?
 
+  /// Agency switchboard number in E.164 (+919876543210), NOT an end customer's.
+  ///
+  /// This is the number revealed to a counterparty brokerage on an accepted
+  /// broker-channel match so the two firms can call or WhatsApp each other
+  /// directly. E.164 is mandatory rather than stylistic: ERPNext resolves
+  /// contacts by exact string match on the phone column
+  /// (erpnext/crm/frappe_crm_api.py:115), so an unnormalised value duplicates
+  /// the same firm across Customer/Contact records. Always write through
+  /// lib/interop/phone.ts.
+  ///
+  /// Still personal data. Revealing it requires an accepted match and is
+  /// audited; it is not public directory information.
+  businessPhoneE164  String?            @db.VarChar(20)
+  /// Set when a human has confirmed the number reaches the agency. Reveal is
+  /// gated on this, so an unverified number cannot strand a counterparty.
+  businessPhoneVerifiedAt DateTime?
+
+  /// Foreign key into this brokerage's own Frappe/ERPNext site. Opaque to us.
+  ///
+  /// Frappe primary keys are varchar(140) (frappe/database/database.py:91), so
+  /// the width is theirs, not ours. We only ever store a value a Frappe site
+  /// returned to us and echo it back on later calls; we never construct one and
+  /// never reuse it across sites, because two businesses' sites are separate
+  /// databases whose keys collide freely.
+  erpnextCustomerId  String?            @db.VarChar(140)
+  frappeCrmOrgId     String?            @db.VarChar(140)
+
   city     City?        @relation(fields: [cityId], references: [id], onDelete: SetNull)
   users    BrokerUser[]
   listings Listing[]
   leads    Lead[]
   audits   AuditEvent[]
+  outbox   InteropOutbox[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([verificationStatus])
+  /// Reverse lookup when a Frappe webhook arrives carrying only its own key.
+  @@index([erpnextCustomerId])
 }
 
 model User {
@@ -700,6 +730,21 @@ model Lead {
   idempotencyKey String?    @unique
   deletedAt      DateTime?
 
+  /// Key of the `CRM Lead` this became on the brokerage's Frappe site.
+  ///
+  /// Mirrors upstream's own pattern for external-system identifiers: Frappe CRM
+  /// stores `facebook_lead_id` as a unique `Data` column and lets the database
+  /// reject re-imports. Same idea inverted -- we hold their key so a retried
+  /// projection updates rather than duplicates.
+  ///
+  /// varchar(140) because that is Frappe's universal Data/Link width. Not
+  /// globally unique: two brokerages run separate sites whose keys collide, so
+  /// uniqueness is only meaningful per organization.
+  frappeCrmLeadId String?   @db.VarChar(140)
+  /// Set once the projection is acknowledged, so a sweeper can find leads that
+  /// were created but never reached the CRM.
+  frappeSyncedAt  DateTime?
+
   listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
   user         User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
@@ -711,6 +756,8 @@ model Lead {
   @@index([listingId, status])
   @@index([organizationId, status])
   @@index([createdAt])
+  /// A Frappe key is only unique within one brokerage's site.
+  @@unique([organizationId, frappeCrmLeadId])
 }
 
 model Requirement {
@@ -851,4 +898,99 @@ model AuditEvent {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@index([actorUserId])
+}
+
+/// Delivery state for one outbound projection to an external Frappe/ERPNext
+/// site. Shared by every integration rather than one enum per target, because
+/// the retry/reconcile machinery is identical for all of them.
+enum InteropSyncStatus {
+  PENDING
+  IN_FLIGHT
+  SUCCESS
+  FAILED
+  /// The document existed and was then CANCELLED upstream (Frappe docstatus 2).
+  ///
+  /// This state exists because of a real failure mode. ERPNext's Journal Entry
+  /// and Sales Invoice are submittable ("is_submittable": 1), and a cancelled
+  /// document still exists and still holds its unique field values. A naive
+  /// "key exists -> duplicate, report success" check therefore reports SUCCESS
+  /// for a commission that has been reversed out of the books. The write must
+  /// be re-driven or escalated, never silently treated as delivered.
+  CANCELLED_UPSTREAM
+  /// Retries exhausted; a human has reconciled the discrepancy.
+  RECONCILED
+}
+
+/// Durable outbox for anything Architech pushes into a business's Frappe or
+/// ERPNext site.
+///
+/// WHY AN OUTBOX AND NOT A DIRECT CALL: the two systems are separate databases
+/// reached over HTTP. A commission must not be lost because a site was
+/// restarting, and must not be posted twice because we retried. Rows are
+/// written in the same transaction as the business fact, then drained by a
+/// worker. This is the "durable idempotent processor" the v8 decision requires
+/// in place of cross-database writes.
+model InteropOutbox {
+  id             String            @id @default(cuid())
+  /// Owning tenant. Every row is scoped; there is no cross-business fallback.
+  organizationId String
+
+  /// What is being projected, e.g. "lead.created", "channel.deal.closed".
+  eventType      String            @db.VarChar(64)
+  /// Our own entity, so a failed row can be traced back without opening JSON.
+  entityType     String            @db.VarChar(64)
+  entityId       String
+
+  /// Bounded to 128 chars, comfortably inside Frappe's varchar(140) Data limit.
+  /// A longer key would truncate on the receiving side and two different deals
+  /// could collide onto one document, so the constraint is enforced here where
+  /// it fails loudly rather than there where it fails silently.
+  idempotencyKey String            @unique @db.VarChar(128)
+  /// Hash of the payload actually sent. Lets reconciliation distinguish "this
+  /// was already delivered" from "the facts changed and need a new version".
+  payloadHash    String            @db.VarChar(64)
+  payload        Json
+
+  status         InteropSyncStatus @default(PENDING)
+  attemptCount   Int               @default(0)
+  lastError      String?
+  nextRetryAt    DateTime?
+
+  /// Whatever key the remote site returned. Opaque; never parsed.
+  remoteDocId    String?           @db.VarChar(140)
+  /// Frappe docstatus of the remote document: 0 draft, 1 submitted,
+  /// 2 cancelled. Stored so reconciliation can detect an upstream cancellation
+  /// without a second round trip.
+  remoteDocstatus Int?
+  processedAt    DateTime?
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The worker's claim query: due work, oldest first.
+  @@index([status, nextRetryAt])
+  @@index([organizationId, eventType, status])
+  @@index([entityType, entityId])
+}
+
+/// Inbound de-duplication for webhooks and callbacks from external systems.
+///
+/// Providers retry, and Frappe hooks can fire more than once. A processed
+/// (provider, externalId) pair is recorded here so replay is a no-op instead of
+/// a second state transition.
+model InteropInboundEvent {
+  id             String   @id @default(cuid())
+  /// e.g. "frappe-crm", "erpnext", "evolution".
+  provider       String   @db.VarChar(32)
+  /// The remote system's own event/document identifier.
+  externalId     String   @db.VarChar(140)
+  organizationId String?
+
+  eventType   String?  @db.VarChar(64)
+  processedAt DateTime @default(now())
+
+  @@unique([provider, externalId])
+  @@index([organizationId, processedAt])
 }

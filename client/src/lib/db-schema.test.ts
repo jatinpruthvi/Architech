@@ -51,6 +51,52 @@ describe("Phase 1 Prisma schema contract", () => {
     expect(widening).toContain("BIGINT");
   });
 
+  /* Interop contract. These widths and scopes are dictated by pinned upstream
+     source, not by taste, so they are asserted rather than left to review.
+     See docs/broker-suite/erpnext-consumability-schema-constraints.md. */
+  describe("Frappe/ERPNext interop contract", () => {
+    const interop = readFileSync("prisma/migrations/202609030003_interop_foundation/migration.sql", "utf8");
+
+    it("declares the outbox and inbound de-duplication models", () => {
+      expect(schema).toContain("model InteropOutbox {");
+      expect(schema).toContain("model InteropInboundEvent {");
+      expect(schema).toContain("enum InteropSyncStatus {");
+    });
+
+    it("carries CANCELLED_UPSTREAM, because submittable docs can be cancelled", () => {
+      // ERPNext Journal Entry / Sales Invoice are is_submittable; a cancelled
+      // doc still exists, so "key found" must not be reported as success.
+      expect(schema).toContain("CANCELLED_UPSTREAM");
+      expect(schema).toMatch(/remoteDocstatus\s+Int\?/);
+    });
+
+    it("bounds the idempotency key below Frappe's varchar(140)", () => {
+      expect(schema).toMatch(/idempotencyKey\s+String\s+@unique\s+@db\.VarChar\(128\)/);
+      expect(interop).toContain("VARCHAR(128)");
+    });
+
+    it("sizes every external Frappe key at varchar(140)", () => {
+      for (const field of ["erpnextCustomerId", "frappeCrmOrgId", "frappeCrmLeadId", "remoteDocId"]) {
+        expect(schema).toMatch(new RegExp(`${field}\\s+String\\?\\s+@db\\.VarChar\\(140\\)`));
+      }
+    });
+
+    it("scopes the CRM lead key per organization rather than globally", () => {
+      /* Two brokerages run separate Frappe sites whose primary keys collide;
+         a global unique index would reject the second one's valid lead. */
+      expect(schema).toContain("@@unique([organizationId, frappeCrmLeadId])");
+      expect(interop).toContain('ON "Lead" ("organizationId", "frappeCrmLeadId")');
+    });
+
+    it("stores the broker business phone in a width that only fits E.164", () => {
+      expect(schema).toMatch(/businessPhoneE164\s+String\?\s+@db\.VarChar\(20\)/);
+    });
+
+    it("de-duplicates inbound webhooks on (provider, externalId)", () => {
+      expect(schema).toContain("@@unique([provider, externalId])");
+    });
+  });
+
   it("ships PostgreSQL FTS and trigram search indexes", () => {
     expect(searchMigration).toContain("CREATE EXTENSION IF NOT EXISTS pg_trgm");
     expect(searchMigration).toContain('"Listing_searchVector_idx"');
