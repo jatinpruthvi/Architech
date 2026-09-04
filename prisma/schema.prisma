@@ -182,6 +182,7 @@ model City {
 
   localities          Locality[]
   listings            Listing[]
+  channelRequests     ChannelRequest[]
   organizations       BrokerOrganization[]
   savedSearches       SavedSearch[]
   administrativeAreas CityAdministrativeArea[]
@@ -223,6 +224,7 @@ model Locality {
   city                City                         @relation(fields: [cityId], references: [id], onDelete: Cascade)
   source              LocationSource?              @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   listings            Listing[]
+  channelRequests     ChannelRequest[]
   savedSearches       SavedSearch[]
   aliasRecords        LocalityAlias[]
   postalCodes         LocalityPostalCode[]
@@ -546,6 +548,8 @@ model BrokerOrganization {
   leads    Lead[]
   audits   AuditEvent[]
   outbox   InteropOutbox[]
+  channelRequests      ChannelRequest[]
+  channelNotifications ChannelNotification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -689,6 +693,7 @@ model Listing {
   media            PropertyMedia[]
   leads            Lead[]
   audits           AuditEvent[]
+  channelRequests  ChannelRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1007,4 +1012,180 @@ model InteropInboundEvent {
 
   @@unique([provider, externalId])
   @@index([organizationId, processedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Broker channel
+//
+// A privacy-preserving B2B layer where verified brokerages exchange demand and
+// supply. One agency holds a buyer looking in Thaltej; another holds the
+// matching flat. The channel lets them find each other, then talk directly.
+//
+// ANCHORED ON LISTINGS, BY DESIGN.
+//
+// A SUPPLY request must reference a real, ACTIVE Listing rather than restating
+// price/BHK/area as loose fields. That decision does a lot of work:
+//
+//   - Matching scores against verified inventory instead of self-reported
+//     numbers, so a score means something.
+//   - The counterparty sees the actual listing: photos, RERA, locality, the
+//     full dossier. No parallel description to keep in sync, and no way for the
+//     two to drift apart.
+//   - Publishing to the channel requires first publishing to the site, so the
+//     public catalogue grows as a side effect of brokers using the channel.
+//   - Contact flows through the listing's own broker organization, which is
+//     already verified and already has a business number.
+//
+// DEMAND is deliberately NOT listing-anchored: a buyer requirement has no
+// listing yet. It carries structured criteria instead.
+//
+// PRIVACY BOUNDARY: channel records carry no end-customer identity. A demand
+// request describes what a buyer wants, never who they are. The only contact
+// revealed is the counterparty BROKERAGE's business number.
+// ---------------------------------------------------------------------------
+
+enum ChannelRequestType {
+  /// A buyer requirement. Structured criteria; no listing exists yet.
+  DEMAND
+  /// Inventory offered. Must reference an ACTIVE Listing.
+  SUPPLY
+}
+
+enum ChannelRequestStatus {
+  DRAFT
+  OPEN
+  MATCHED
+  CLOSED
+  CANCELLED
+  EXPIRED
+}
+
+enum ChannelMatchStatus {
+  /// Created by the matcher; neither side has acted.
+  SUGGESTED
+  /// One side accepted, waiting on the other.
+  ACCEPTED
+  REJECTED
+  /// Both accepted; contact details are now mutually visible.
+  CONNECTED
+}
+
+enum ChannelIntent {
+  BUY
+  RENT
+}
+
+/// A published demand or supply request.
+model ChannelRequest {
+  id             String             @id @default(cuid())
+  /// Owning brokerage. RLS tenant key.
+  organizationId String
+  createdByUserId String?
+  type           ChannelRequestType
+  intent         ChannelIntent
+  status         ChannelRequestStatus @default(DRAFT)
+
+  /// SUPPLY: the listing being offered. Required for SUPPLY, null for DEMAND.
+  /// Enforced by a CHECK constraint in the migration, not just convention --
+  /// a SUPPLY row without a listing would silently score against nothing.
+  listingId String?
+
+  /// Search scope. For SUPPLY these are denormalised from the listing at
+  /// publish time so the matcher can filter without a join, and refreshed on
+  /// re-publish. For DEMAND they are the buyer's stated criteria.
+  cityId       String
+  localityId   String?
+  propertyType PropertyType
+
+  /// DEMAND only: budget range and desired shape. Null on SUPPLY, where the
+  /// listing is authoritative for price and size.
+  budgetMinInr BigInt?
+  budgetMaxInr BigInt?
+  bhkMin       Int?
+  bhkMax       Int?
+  areaMinSqft  Int?
+  areaMaxSqft  Int?
+
+  /// Structured, broker-facing note. Sanitised on write: no phone, email or
+  /// customer name may appear here. Never describes WHO the buyer is.
+  brokerNote String? @db.VarChar(500)
+
+  /// Requests expire so the channel does not fill with stale demand.
+  expiresAt   DateTime
+  publishedAt DateTime?
+  closedAt    DateTime?
+
+  organization  BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  listing       Listing?           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  city          City               @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  locality      Locality?          @relation(fields: [localityId], references: [id], onDelete: SetNull)
+  demandMatches ChannelMatch[]     @relation("DemandRequest")
+  supplyMatches ChannelMatch[]     @relation("SupplyRequest")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  /// The matcher's candidate query.
+  @@index([status, type, intent, cityId, propertyType])
+  @@index([localityId, status])
+  @@index([expiresAt])
+  @@index([listingId])
+}
+
+/// A scored pairing between one demand and one supply request.
+model ChannelMatch {
+  id              String             @id @default(cuid())
+  demandRequestId String
+  supplyRequestId String
+
+  /// Denormalised owners. Both sides query "my matches" constantly, and
+  /// reaching them through two request joins is the hot path.
+  demandOrganizationId String
+  supplyOrganizationId String
+
+  /// 0-100, deterministic.
+  score   Int
+  /// Per-factor breakdown, so a broker sees WHY rather than a bare number.
+  reasons Json
+
+  status ChannelMatchStatus @default(SUGGESTED)
+
+  /// Independent accept flags. Contact is revealed only when both are set,
+  /// which is what makes the reveal mutual rather than unilateral.
+  demandAcceptedAt DateTime?
+  supplyAcceptedAt DateTime?
+  rejectedAt       DateTime?
+  rejectedByOrgId  String?
+  connectedAt      DateTime?
+
+  demandRequest ChannelRequest @relation("DemandRequest", fields: [demandRequestId], references: [id], onDelete: Cascade)
+  supplyRequest ChannelRequest @relation("SupplyRequest", fields: [supplyRequestId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One pairing per request couple: re-running the matcher must not duplicate.
+  @@unique([demandRequestId, supplyRequestId])
+  @@index([demandOrganizationId, status, score])
+  @@index([supplyOrganizationId, status, score])
+  @@index([status, score])
+}
+
+/// In-app notification. The v8 decision fixes the channel notification surface
+/// as Architech only -- no WhatsApp, email or SMS path for channel events.
+model ChannelNotification {
+  id             String  @id @default(cuid())
+  organizationId String
+  matchId        String?
+  kind           String  @db.VarChar(48)
+  title          String  @db.VarChar(160)
+  body           String  @db.VarChar(400)
+  readAt         DateTime?
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, readAt, createdAt])
 }

@@ -150,6 +150,65 @@ describe("Phase 1 Prisma schema contract", () => {
     });
   });
 
+  describe("Broker channel", () => {
+    const channel = readFileSync("prisma/migrations/202609030006_broker_channel/migration.sql", "utf8");
+
+    it("declares the channel models", () => {
+      for (const model of ["ChannelRequest", "ChannelMatch", "ChannelNotification"]) {
+        expect(schema).toContain(`model ${model} {`);
+      }
+    });
+
+    it("anchors every SUPPLY request to a real listing", () => {
+      /* This is the whole point of the design: matches score against verified
+         inventory, and the counterparty opens the actual listing with photos. */
+      expect(channel).toContain("supply_requires_listing");
+      expect(channel).toContain(`("type" = 'SUPPLY' AND "listingId" IS NOT NULL)`);
+    });
+
+    it("keeps DEMAND listing-free, since no listing exists yet", () => {
+      expect(channel).toContain(`("type" = 'DEMAND' AND "listingId" IS NULL)`);
+    });
+
+    it("allows only one live offer per listing", () => {
+      // Stops one broker flooding the channel by republishing the same flat.
+      expect(channel).toContain("ChannelRequest_one_open_supply_per_listing");
+      expect(channel).toContain(`WHERE "listingId" IS NOT NULL AND "status" IN ('OPEN', 'MATCHED')`);
+    });
+
+    it("refuses a self-match", () => {
+      expect(channel).toContain("distinct_organizations");
+    });
+
+    it("bounds the score to 0-100", () => {
+      expect(channel).toContain(`CHECK ("score" >= 0 AND "score" <= 100)`);
+    });
+
+    it("re-running the matcher updates rather than duplicates a pairing", () => {
+      expect(channel).toContain('CREATE UNIQUE INDEX "ChannelMatch_pair_key" ON "ChannelMatch" ("demandRequestId", "supplyRequestId")');
+    });
+
+    it("lets brokers discover each other's open requests but not edit them", () => {
+      /* Discovery needs cross-org SELECT: a channel request carries no customer
+         identity, and a SUPPLY row points at an already-public listing. */
+      expect(channel).toContain('ALTER TABLE "ChannelRequest" ENABLE ROW LEVEL SECURITY');
+      expect(channel).toContain('CREATE POLICY "ChannelRequest_discovery_read"');
+      for (const write of ["owner_insert", "owner_update", "owner_delete"]) {
+        expect(channel).toContain(`CREATE POLICY "ChannelRequest_${write}"`);
+      }
+    });
+
+    it("keeps match creation out of tenant hands", () => {
+      // The matcher runs privileged; FORCE plus no INSERT policy denies tenants.
+      expect(channel).toContain('ALTER TABLE "ChannelMatch" FORCE ROW LEVEL SECURITY');
+      expect(channel).not.toMatch(/CREATE POLICY[^;]*ON "ChannelMatch"[\s\S]{0,200}FOR INSERT/);
+    });
+
+    it("caps the broker note, which is free text a human wrote", () => {
+      expect(schema).toMatch(/brokerNote\s+String\?\s+@db\.VarChar\(500\)/);
+    });
+  });
+
   it("ships PostgreSQL FTS and trigram search indexes", () => {
     expect(searchMigration).toContain("CREATE EXTENSION IF NOT EXISTS pg_trgm");
     expect(searchMigration).toContain('"Listing_searchVector_idx"');
