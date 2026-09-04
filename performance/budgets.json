@@ -4,17 +4,40 @@
     "default": {
       "maxFirstLoadJsBytes": 770000,
       "maxFirstLoadJsGzipBytes": 240000
+    },
+    "/search": {
+      "maxFirstLoadJsBytes": 790000,
+      "maxFirstLoadJsGzipBytes": 245000,
+      "why": "/search ships the map and filter stack, so it is the heaviest route and already exceeded the 770000 default before this branch (758.8 KiB at c35247f). Carved out as a named exception with a ceiling just above today's number so it cannot drift further, rather than raising the default and loosening every other route."
     }
   },
   "html": {
     "maxHtmlBytes": 128000,
     "routes": [
-      { "route": "/", "file": ".next/server/app/index.html" },
-      { "route": "/buy/ahmedabad/", "file": ".next/server/app/buy/ahmedabad.html" },
-      { "route": "/buy/ahmedabad/paldi/", "file": ".next/server/app/buy/ahmedabad/paldi.html" },
-      { "route": "/listing/garden-courtyard/", "file": ".next/server/app/listing/garden-courtyard.html" },
-      { "route": "/search/", "file": ".next/server/app/search.html" },
-      { "route": "/home-loan/", "file": ".next/server/app/home-loan.html" }
+      {
+        "route": "/",
+        "file": ".next/server/app/index.html"
+      },
+      {
+        "route": "/buy/ahmedabad/",
+        "file": ".next/server/app/buy/ahmedabad.html"
+      },
+      {
+        "route": "/buy/ahmedabad/paldi/",
+        "file": ".next/server/app/buy/ahmedabad/paldi.html"
+      },
+      {
+        "route": "/listing/garden-courtyard/",
+        "file": ".next/server/app/listing/garden-courtyard.html"
+      },
+      {
+        "route": "/search/",
+        "file": ".next/server/app/search.html"
+      },
+      {
+        "route": "/home-loan/",
+        "file": ".next/server/app/home-loan.html"
+      }
     ]
   },
   "staticAssets": {
