@@ -1,0 +1,75 @@
+# Second dashboard audit — per-panel data-path trace
+
+The first pass built the dashboard surface and fixed the requirements panel.
+This pass traced **each panel's data path** for **each role**, rather than
+checking that the page rendered. That found leaks the first pass missed: a
+panel can render perfectly and still be showing the wrong person's data.
+
+## Method
+
+For every panel, follow: UI → `fetch` → route handler → server adapter →
+store/Prisma query, and ask one question at each hop — *what restricts this to
+the signed-in person?*
+
+## Panel-by-panel result
+
+| Panel | Route | Scoped by | Verdict |
+|---|---|---|---|
+| Requirements | `GET /api/requirements` | `userId` from session | **OK** (fixed in first pass) |
+| Shortlist | client-side `SavedContext` | localStorage, per-device | OK |
+| Your properties | `GET /api/broker/listings` | `brokerOrgId` from session org | OK |
+| Saved searches | `GET /api/saved-searches` | **nothing** | **LEAK** |
+| Enquiries | `GET /api/broker/leads` | **nothing** | **LEAK** |
+| Verification | session object | session | OK |
+| Channel | `/api/broker/channel/*` | `organizationId` | OK |
+
+## Finding 1 — saved searches were global (cross-user leak)
+
+`listSavedSearchesForServer()` took no argument and ran
+`db.savedSearch.findMany({ orderBy: { updatedAt: "desc" } })` — no `where`.
+The memory path was the same: `[...store.values()]`.
+
+`SavedSearch.userId` exists in the schema, is indexed as `@@index([userId,
+notify])`, and was **never written and never read**. Every signed-in user saw
+every other user's saved searches.
+
+Proved against the running server: saved `"ALICE PRIVATE SEARCH 3BHK Powai"`,
+then a plain `GET /api/saved-searches/` returned it.
+
+This is worse than untidy. A saved search is a statement of intent and budget
+("3BHK Powai under 2.4Cr") and leaking it across accounts is a privacy breach
+and, between competing brokers, commercially harmful.
+
+Also `dedupeKey` was `@unique` **globally**, so once one user saved a search,
+a second user saving the identical search got the *first user's row* returned
+as a "duplicate" — their search was silently never saved.
+
+## Finding 2 — the lead inbox was global (cross-organization leak)
+
+`listLeadsForServer()` also took no argument: `findMany({ where: { deletedAt:
+null } })`. Every broker organization saw every other organization's leads —
+buyer names, masked phones, messages and which listing they enquired about.
+
+`Lead.organizationId` exists in the schema and is indexed
+(`@@index([organizationId, status])`) but was not filtered on. The in-memory
+`LeadRecord` had no organization id at all — only `organizationName`, a
+display string taken from `listing.developer`.
+
+## Finding 3 — IDOR on lead mutations
+
+`DELETE /api/broker/leads/[id]` and `POST /api/broker/leads/[id]/reply` checked
+the `lead.inbox.read` permission but never checked that the lead **belongs to
+the caller's organization**. Any broker could delete, close, or revoke consent
+on any other organization's lead by guessing or observing an id — and ids are
+returned by the (leaking) list endpoint.
+
+Note the permission on the reply/delete routes is `lead.inbox.read`, a *read*
+permission gating *writes*. Left as-is to keep this change scoped, but flagged.
+
+## Why the first pass missed these
+
+The first pass asserted the dashboard *rendered* for each role and that
+requirements were isolated. It did not assert isolation for panels it had not
+written. Rendering proves the wiring exists; it says nothing about the `where`
+clause behind it. Multi-tenant scoping has to be tested with **two** accounts —
+a single-account test passes just as happily against a global store.
