@@ -54,19 +54,19 @@ Architech may emit purpose-minimized, idempotent lead/deal events to a business'
 ## 4. Two request types
 
 ### Demand request (from a buyer requirement)
-- city / locality / intent (buy or rent) / property type
-- BHK min–max, area min–max
-- budget min–max in INR
-- optional source requirement ref
+- must be generated from an existing saved buyer requirement; brokers capture the requirement first
+- city / locality / intent (buy or rent) / property type are read from the requirement
+- BHK min–max, area min–max, and budget min–max in INR are required matching-grade fields
+- private source requirement ref is stored owner-only and never exposed cross-organization
 - expiry, status
 
 ### Supply request (from a seller listing)
-- city / locality / intent / property type
-- price in INR
-- BHK, area, listing ref (prefer source listing reference)
+- must be generated from an existing broker-owned Architech listing; brokers create/save the listing first
+- city / locality / property type / price / BHK / area are read from that listing instead of re-entered in the channel form
+- private source listing ref is stored owner-only and never exposed cross-organization
 - expiry, status
 
-Both are **structured** fields only. Free-form identifying text or contact-like content must be rejected.
+The channel may keep a derived matching snapshot for deterministic matching, but the listing/requirement remains the source of truth and the snapshot is refreshed from its source record before publishing. Both request types are **structured** fields only. Free-form identifying text or contact-like content must be rejected.
 
 ---
 

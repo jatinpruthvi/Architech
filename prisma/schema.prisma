@@ -82,6 +82,53 @@ enum LeadStatus {
   DELETED
 }
 
+
+enum ChannelRequestType {
+  DEMAND
+  SUPPLY
+}
+
+enum ChannelRequestStatus {
+  DRAFT
+  OPEN
+  MATCHED
+  CLOSED
+  CANCELLED
+  EXPIRED
+}
+
+enum ChannelMatchStatus {
+  SUGGESTED
+  ACCEPTED
+  REJECTED
+  DEAL_CREATED
+}
+
+enum ChannelDealStatus {
+  OPEN
+  PENDING_OTHER_CLOSE
+  CLOSED
+  CANCELLED
+}
+
+enum ChannelDealCloseMode {
+  SINGLE
+  DUAL
+}
+
+enum ErpnextSyncStatus {
+  PENDING
+  IN_FLIGHT
+  SUCCESS
+  FAILED
+  RECONCILED
+}
+
+enum CommissionEntryType {
+  COMMISSION_INCOME
+  COMMISSION_EXPENSE
+}
+
 enum LocationSourceStatus {
   STAGING
   ACTIVE
@@ -183,6 +230,7 @@ model City {
   localities          Locality[]
   listings            Listing[]
   organizations       BrokerOrganization[]
+  channelRequests     ChannelRequest[]
   savedSearches       SavedSearch[]
   administrativeAreas CityAdministrativeArea[]
   requirements        Requirement[]            @relation("ResolvedRequirementCity")
@@ -498,12 +546,25 @@ model BrokerOrganization {
   website            String?
   phoneMasked        String?
   email              String?
+  /// Broker/business contact revealed to verified counterparty brokers only.
+  /// This is never customer contact data.
+  businessPhoneE164   String?
+  businessPhoneMasked String?
 
   city     City?        @relation(fields: [cityId], references: [id], onDelete: SetNull)
   users    BrokerUser[]
   listings Listing[]
-  leads    Lead[]
-  audits   AuditEvent[]
+  leads                Lead[]
+  requirements         Requirement[]
+  channelRequests      ChannelRequest[]
+  channelRequestSources ChannelRequestSource[]
+  demandChannelDeals   ChannelDeal[]       @relation("DemandBrokerChannelDeals")
+  supplyChannelDeals   ChannelDeal[]       @relation("SupplyBrokerChannelDeals")
+  commissionEntries    CommissionEntry[]
+  erpnextCloseWrites   ErpnextCloseWrite[]
+  inboundProviderEvents InboundProviderEvent[]
+  channelNotifications ChannelNotification[]
+  audits               AuditEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -639,9 +700,10 @@ model Listing {
   postalCodeRecord PostalCode?         @relation(fields: [postalCode], references: [code], onDelete: SetNull, onUpdate: Cascade)
   brokerOrg        BrokerOrganization? @relation(fields: [brokerOrgId], references: [id], onDelete: SetNull)
   reraRecord       ReraRecord?         @relation(fields: [reraRecordId], references: [id], onDelete: SetNull)
-  media            PropertyMedia[]
-  leads            Lead[]
-  audits           AuditEvent[]
+  media                 PropertyMedia[]
+  leads                 Lead[]
+  audits                AuditEvent[]
+  channelRequestSources ChannelRequestSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -713,9 +775,17 @@ model Lead {
 model Requirement {
   id              String    @id @default(cuid())
   cityId          String
+  organizationId  String?
   intent          String
   category        String
   subtype         String
+  propertyType    String?
+  bhkMin          Int?
+  bhkMax          Int?
+  areaMinSqft     Int?
+  areaMaxSqft     Int?
+  budgetMinInr    BigInt?
+  budgetMaxInr    BigInt?
   role            String
   name            String
   phoneCiphertext Bytes
@@ -728,12 +798,15 @@ model Requirement {
   deletedAt       DateTime?
 
   resolvedCity City                  @relation("ResolvedRequirementCity", fields: [cityId], references: [id], onDelete: Restrict)
+  organization BrokerOrganization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   localities   RequirementLocality[]
+  channelRequestSources ChannelRequestSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([cityId, status, createdAt])
+  @@index([organizationId, status, createdAt])
   @@index([retentionUntil])
 }
 
@@ -747,6 +820,198 @@ model RequirementLocality {
 
   @@id([requirementId, localityId])
   @@index([localityId])
+}
+
+
+model ChannelRequest {
+  id                  String               @id @default(cuid())
+  organizationId      String
+  createdById         String
+  type                ChannelRequestType
+  cityId              String
+  localitySlug        String?
+  intent              String
+  propertyType        String
+  bhkMin              Int?
+  bhkMax              Int?
+  areaMinSqft         Int?
+  areaMaxSqft         Int?
+  budgetMinInr        BigInt?
+  budgetMaxInr        BigInt?
+  priceInr            BigInt?
+  detailSummary       String
+  status              ChannelRequestStatus @default(DRAFT)
+  expiresAt           DateTime
+  publishedAt         DateTime?
+  closedAt            DateTime?
+  revision            Int                  @default(1)
+
+  organization  BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  city          City               @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  source        ChannelRequestSource?
+  demandMatches ChannelMatch[]     @relation("DemandChannelMatches")
+  supplyMatches ChannelMatch[]     @relation("SupplyChannelMatches")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([cityId, localitySlug, type, intent, propertyType, status])
+  @@index([type, status, cityId, intent, propertyType, priceInr])
+  @@index([type, status, cityId, intent, propertyType, budgetMaxInr])
+  @@index([type, status, cityId, intent, propertyType, bhkMin, bhkMax])
+  @@index([expiresAt])
+}
+
+model ChannelRequestSource {
+  id                  String @id @default(cuid())
+  channelRequestId    String @unique
+  organizationId      String
+  sourceListingId     String? @unique
+  sourceRequirementId String? @unique
+
+  channelRequest ChannelRequest      @relation(fields: [channelRequestId], references: [id], onDelete: Cascade)
+  organization   BrokerOrganization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceListing  Listing?            @relation(fields: [sourceListingId], references: [id], onDelete: Restrict)
+  sourceRequirement Requirement?      @relation(fields: [sourceRequirementId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([sourceListingId])
+  @@index([sourceRequirementId])
+}
+
+model ChannelMatch {
+  id              String             @id @default(cuid())
+  demandRequestId String
+  supplyRequestId String
+  score           Int
+  reasons         Json
+  status          ChannelMatchStatus @default(SUGGESTED)
+  createdBy       String?
+
+  demandRequest ChannelRequest @relation("DemandChannelMatches", fields: [demandRequestId], references: [id], onDelete: Cascade)
+  supplyRequest ChannelRequest @relation("SupplyChannelMatches", fields: [supplyRequestId], references: [id], onDelete: Cascade)
+  deal          ChannelDeal?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([demandRequestId, supplyRequestId])
+  @@index([status, score])
+  @@index([demandRequestId, status])
+  @@index([supplyRequestId, status])
+}
+
+model ChannelDeal {
+  id                   String               @id @default(cuid())
+  matchId              String               @unique
+  demandOrganizationId String
+  supplyOrganizationId String
+  demandContactUserId  String?
+  supplyContactUserId  String?
+  status               ChannelDealStatus    @default(OPEN)
+  closeMode            ChannelDealCloseMode @default(DUAL)
+  splitAgreement       Json?
+  totalCommissionInr   BigInt?
+  demandBrokerShareInr BigInt?
+  supplyBrokerShareInr BigInt?
+  demandBrokerConfirmAt DateTime?
+  supplyBrokerConfirmAt DateTime?
+  closedAt             DateTime?
+  closeVersion         Int                  @default(1)
+  erpnextSyncStatus    ErpnextSyncStatus    @default(PENDING)
+
+  match              ChannelMatch       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  demandOrganization BrokerOrganization @relation("DemandBrokerChannelDeals", fields: [demandOrganizationId], references: [id], onDelete: Restrict)
+  supplyOrganization BrokerOrganization @relation("SupplyBrokerChannelDeals", fields: [supplyOrganizationId], references: [id], onDelete: Restrict)
+  commissionEntries  CommissionEntry[]
+  erpnextCloseWrites ErpnextCloseWrite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([demandOrganizationId, status])
+  @@index([supplyOrganizationId, status])
+}
+
+model CommissionEntry {
+  id             String              @id @default(cuid())
+  organizationId String
+  dealId         String
+  entryType      CommissionEntryType
+  amountInr      BigInt
+  employeeId     String?
+  description    String
+  entryDate      DateTime
+  recordedById   String
+  erpnextDocId   String?
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deal         ChannelDeal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([organizationId, dealId, entryType])
+  @@index([organizationId, entryDate])
+  @@index([dealId])
+}
+
+model ErpnextCloseWrite {
+  id                String            @id @default(cuid())
+  channelDealId     String
+  organizationId    String
+  idempotencyKey    String            @unique
+  payloadHash       String
+  status            ErpnextSyncStatus @default(PENDING)
+  attemptCount      Int               @default(0)
+  lastError         String?
+  nextRetryAt       DateTime?
+  erpnextDocId      String?
+  processedAt       DateTime?
+
+  channelDeal  ChannelDeal        @relation(fields: [channelDealId], references: [id], onDelete: Cascade)
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([channelDealId])
+}
+
+model InboundProviderEvent {
+  id             String   @id @default(cuid())
+  provider       String
+  externalId     String
+  organizationId String
+  processedAt    DateTime @default(now())
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([organizationId, processedAt])
+}
+
+model ChannelNotification {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String?
+  eventType      String
+  title          String
+  body           String
+  entityType     String
+  entityId       String
+  readAt         DateTime?
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, readAt, createdAt])
+  @@index([entityType, entityId])
 }
 
 model SavedSearch {
