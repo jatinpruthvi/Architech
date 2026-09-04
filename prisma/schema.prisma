@@ -598,7 +598,10 @@ model Listing {
   translationStatus TranslationStatus  @default(ENGLISH_ONLY)
   propertyType      PropertyType       @default(APARTMENT)
 
-  priceInr             Int
+  // BigInt, not Int: a 32-bit column caps at ₹2,147,483,647 (~₹214 crore),
+  // which is reachable for commercial property and land. Read through
+  // lib/money.ts at the boundary; the domain layer works in `number`.
+  priceInr             BigInt
   priceLabel           String
   pricePerSqft         String?
   bhk                  Int?

@@ -36,6 +36,21 @@ describe("Phase 1 Prisma schema contract", () => {
     expect(migration).toContain('CREATE TYPE "ListingLifecycle"');
   });
 
+  /* Money width is a correctness constraint, not a style preference: an Int32
+     column caps at ~Rs 214 crore, and the broker channel's BigInt price/budget
+     columns are populated from this one. Asserted here so a future schema edit
+     cannot quietly narrow it back. */
+  it("stores listing price as BigInt so large transactions cannot overflow", () => {
+    expect(schema).toMatch(/priceInr\s+BigInt/);
+    expect(schema).not.toMatch(/priceInr\s+Int\b/);
+  });
+
+  it("ships the widening migration for the listing price column", () => {
+    const widening = readFileSync("prisma/migrations/202609030002_listing_price_bigint/migration.sql", "utf8");
+    expect(widening).toContain('ALTER TABLE "Listing"');
+    expect(widening).toContain("BIGINT");
+  });
+
   it("ships PostgreSQL FTS and trigram search indexes", () => {
     expect(searchMigration).toContain("CREATE EXTENSION IF NOT EXISTS pg_trgm");
     expect(searchMigration).toContain('"Listing_searchVector_idx"');

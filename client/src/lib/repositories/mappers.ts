@@ -4,6 +4,7 @@ import type { PropertyDetails } from "@/lib/listing-details";
 import { isPropertyTypeCode, labelForAvailability, normalizeAvailability, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { listingDetailsFromSourceSummary, normalizeListingDetails, hasAnyListingDetail } from "@/lib/listing-details-contract";
 import { normalizeAmenityRows } from "@/lib/realestate/amenities";
+import { inrToNumber } from "@/lib/money";
 
 type DecimalLike = { toString(): string } | string | number | null | undefined;
 
@@ -29,7 +30,9 @@ export type DbListingRow = {
   title: string;
   description: string;
   priceLabel: string;
-  priceInr: number;
+  /* bigint from Prisma; number when the row came from a fixture or a raw query
+     that already narrowed it. inrToNumber accepts both. */
+  priceInr: bigint | number;
   pricePerSqft?: string | null;
   bhk?: number | null;
   areaSqft?: number | null;
@@ -150,7 +153,7 @@ export function dbListingToProperty(row: DbListingRow): Property {
     city: row.city.name,
     citySlug: row.city.slug,
     price: row.priceLabel,
-    priceNum: row.priceInr,
+    priceNum: inrToNumber(row.priceInr, "Listing.priceInr"),
     pricePerSqft: row.pricePerSqft ?? "Rate on request",
     meta: `${bhk} BHK · ${labelForAvailability(availability)}`,
     bhk,
