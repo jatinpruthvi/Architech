@@ -64,6 +64,8 @@ export const demoBrokerSession: AuthSession = {
     "media.upload.write",
     "saved-search.read",
     "saved-search.write",
+    "channel.read",
+    "channel.write",
   ],
   source: "better-auth-contract-demo",
 };
@@ -86,6 +88,8 @@ const ROLE_PERMISSIONS_SOURCE: string[] = [
   "rera.corrections.write",
   "saved-search.read",
   "saved-search.write",
+  "channel.read",
+  "channel.write",
 ];
 
 const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
@@ -99,6 +103,10 @@ const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
     "media.upload.write",
     "saved-search.read",
     "saved-search.write",
+    /* Members trade on the channel; publishing is gated on the ORGANIZATION's
+       verification, not on the individual's seniority. */
+    "channel.read",
+    "channel.write",
   ],
   BROKER_ADMIN: [...ROLE_PERMISSIONS_SOURCE],
   MODERATOR: [

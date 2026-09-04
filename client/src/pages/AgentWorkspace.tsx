@@ -16,6 +16,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   ContactRound,
+  Handshake,
   FileCheck2,
   FileSearch,
   Gavel,
@@ -121,7 +122,7 @@ function TableFrame({ columns, children, tone = "default" }: { columns: string[]
 
 function Header({ section }: { section: AgentSection }) {
   const meta = deskMeta[section];
-  return <div className="desk-header border-b border-ink/12 bg-sand/65"><div className="container flex flex-col gap-5 py-8 md:flex-row md:items-end md:justify-between"><div><div className="flex flex-wrap items-center gap-x-4 gap-y-2"><p className="kicker text-brick">Partner desk · India coverage</p><span className="stamp text-ink/45">{meta.role} / {meta.index}</span></div><h1 className="display mt-3 text-[clamp(36px,5vw,68px)]">{meta.label}</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-ink/60">{meta.intro}</p></div><div className="flex flex-wrap gap-2"><Link href="/broker/listings/new" className="btn-sweep inline-flex min-h-11 items-center gap-2 px-4 stamp !text-[10px] font-semibold text-cream"><Plus size={14} /> Post property</Link><Link href="/requirements" className="inline-flex min-h-11 items-center gap-2 border border-ink/15 px-4 stamp !text-[10px] font-semibold text-brick"><ClipboardList size={14} /> New requirement</Link></div></div></div>;
+  return <div className="desk-header border-b border-ink/12 bg-sand/65"><div className="container flex flex-col gap-5 py-8 md:flex-row md:items-end md:justify-between"><div><div className="flex flex-wrap items-center gap-x-4 gap-y-2"><p className="kicker text-brick">Partner desk · India coverage</p><span className="stamp text-ink/45">{meta.role} / {meta.index}</span></div><h1 className="display mt-3 text-[clamp(36px,5vw,68px)]">{meta.label}</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-ink/60">{meta.intro}</p></div><div className="flex flex-wrap gap-2"><Link href="/broker/listings/new" className="btn-sweep inline-flex min-h-11 items-center gap-2 px-4 stamp !text-[10px] font-semibold text-cream"><Plus size={14} /> Post property</Link><Link href="/requirements" className="inline-flex min-h-11 items-center gap-2 border border-ink/15 px-4 stamp !text-[10px] font-semibold text-brick"><ClipboardList size={14} /> New requirement</Link><Link href="/broker/channel" className="inline-flex min-h-11 items-center gap-2 border border-ink/15 px-4 stamp-sm font-semibold text-brick"><Handshake size={14} /> Broker channel</Link></div></div></div>;
 }
 
 function Sidebar({ section }: { section: AgentSection }) {
