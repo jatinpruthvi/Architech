@@ -28,6 +28,7 @@ import {
   Handshake,
   Inbox,
   Loader2,
+  LockKeyhole,
   Plus,
   ShieldCheck,
 } from "lucide-react";
@@ -40,7 +41,7 @@ import {
   resolvePersona,
   type DashboardPersona,
 } from "@/lib/dashboard/persona";
-import { PANEL_META, visiblePanels, type DashboardPanel } from "@/lib/dashboard/panels";
+import { PANEL_LOCK_REASON, PANEL_META, lockedPanels, visiblePanels, type DashboardPanel } from "@/lib/dashboard/panels";
 import { intentLabel, type RequirementRecord } from "@/lib/requirements";
 import type { SavedSearchState } from "@/lib/saved-search/saved-search";
 import type { ListingDraft } from "@/lib/broker/workflow";
@@ -96,6 +97,28 @@ function PanelShell({
   );
 }
 
+function PanelLocked({ panel }: { panel: DashboardPanel }) {
+  const meta = PANEL_META[panel];
+  const reason = meta.permission ? PANEL_LOCK_REASON[meta.permission] : undefined;
+  return (
+    <section className="border border-ink/12 bg-card p-6 md:p-7" aria-labelledby={`panel-${panel}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-ink/10 pb-4">
+        <h2 id={`panel-${panel}`} className="font-display text-2xl tracking-[-0.02em]">{meta.title}</h2>
+        <span className="stamp ink-3">Not set up yet</span>
+      </div>
+      <div className="mt-5 flex items-start gap-3 border border-dashed border-ink/20 bg-sand/40 p-5">
+        <LockKeyhole size={18} className="mt-0.5 shrink-0 text-brick" aria-hidden="true" />
+        <div>
+          <p className="text-sm leading-6 ink-2">{reason?.body ?? "This part of your dashboard is not available on your account yet."}</p>
+          <Link href={reason?.href ?? "/broker/onboarding/"} className="mt-3 inline-flex items-center gap-2 stamp font-semibold text-brick">
+            {reason?.actionLabel ?? "Find out how"} <ArrowUpRight size={12} />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PanelEmpty({ panel }: { panel: DashboardPanel }) {
   const meta = PANEL_META[panel];
   return (
@@ -147,6 +170,15 @@ export default function RoleDashboard() {
     () => visiblePanels(persona, session?.permissions ?? []),
     [persona, session],
   );
+  /* Panels this persona has but this session cannot load. Shown as locked
+     with the reason, never silently dropped or rendered misleadingly empty. */
+  const locked = useMemo(
+    () => lockedPanels(persona, session?.permissions ?? []),
+    [persona, session],
+  );
+  /* Whether this account can actually reach the listing form, which is
+     organization-scoped. Drives the header CTA so it never points at a wall. */
+  const canList = (session?.permissions ?? []).includes("listing.draft.create");
 
   const [requirements, setRequirements] = useState<RequirementRecord[]>([]);
   const [savedSearches, setSavedSearches] = useState<SavedSearchState[]>([]);
@@ -275,8 +307,12 @@ export default function RoleDashboard() {
               <ClipboardList size={14} /> New requirement
             </Link>
             {personaMeta.side !== "demand" ? (
-              <Link href="/broker/listings/new/" className="clay-fill btn-sweep inline-flex min-h-11 items-center gap-2 bg-brick px-4 stamp font-semibold text-cream">
-                <Plus size={14} /> List a property
+              /* Point at onboarding, not the submission form, when the account
+                 cannot actually reach it. The form is gated on an
+                 organization, so an un-onboarded owner clicking "List a
+                 property" previously hit a wall with no explanation. */
+              <Link href={canList ? "/broker/listings/new/" : "/broker/onboarding/"} className="clay-fill btn-sweep inline-flex min-h-11 items-center gap-2 bg-brick px-4 stamp font-semibold text-cream">
+                <Plus size={14} /> {canList ? "List a property" : "Get set up to list"}
               </Link>
             ) : (
               <Link href="/search/" className="clay-fill btn-sweep inline-flex min-h-11 items-center gap-2 bg-brick px-4 stamp font-semibold text-cream">
@@ -294,6 +330,8 @@ export default function RoleDashboard() {
             <span className="text-sm ink-2">Loading your dashboard…</span>
           </div>
         ) : null}
+
+        {!loading && locked.map((panel) => <PanelLocked key={panel} panel={panel} />)}
 
         {!loading && panels.map((panel) => {
           if (panel === "next-steps") {

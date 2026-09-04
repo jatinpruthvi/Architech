@@ -85,7 +85,17 @@ export const PANEL_META: Record<DashboardPanel, PanelMeta> = {
     emptyBody: "List a property to start receiving enquiries. Drafts stay private until they pass review.",
     href: "/broker/listings/new/",
     actionLabel: "List a property",
-    permission: null,
+    /* Listing creation is organization-scoped: both `GET /api/broker/listings`
+       and the submission form require `broker.dashboard.read` /
+       `listing.draft.create` plus a partner organization. An owner or builder
+       who has not been onboarded holds neither.
+
+       Declaring the requirement here rather than `null` is the difference
+       between a dashboard that tells the truth and one that lies: with `null`
+       the panel rendered, fired a request that 403'd, swallowed the error and
+       displayed "No properties listed yet" -- indistinguishable from actually
+       having none. The renderer now shows an onboarding prompt instead. */
+    permission: "broker.dashboard.read",
   },
   enquiries: {
     panel: "enquiries",
@@ -148,3 +158,46 @@ export function visiblePanels(persona: DashboardPersona, permissions: string[]):
     return required === null || granted.has(required);
   });
 }
+
+/* Panels this persona is COMPOSED of but this session cannot load.
+ *
+ * These are not hidden. Silently dropping "Your properties" from an owner's
+ * dashboard leaves them wondering where their properties went; silently
+ * rendering it empty tells them they have none, which is worse. Both are
+ * failures of honesty. The renderer shows these as locked, with the reason
+ * and the route that unlocks them.
+ *
+ * Only meaningful for supply personas today: an owner or builder who has not
+ * completed partner onboarding cannot hold `broker.dashboard.read`, because
+ * listings are organization-scoped. */
+export function lockedPanels(persona: DashboardPersona, permissions: string[]): DashboardPanel[] {
+  const granted = new Set(permissions);
+  return panelsForPersona(persona).filter((panel) => {
+    const required = PANEL_META[panel].permission;
+    return required !== null && !granted.has(required);
+  });
+}
+
+/** Why a panel is locked, and where the person goes to unlock it. */
+export const PANEL_LOCK_REASON: Record<string, { body: string; href: string; actionLabel: string }> = {
+  "broker.dashboard.read": {
+    body: "Listing a property on Architech requires a verified partner account, because every listing carries a source trail we have to be able to stand behind.",
+    href: "/broker/onboarding/",
+    actionLabel: "Get set up to list",
+  },
+  "lead.inbox.read": {
+    body: "Enquiries arrive once you have a verified partner account and a live listing.",
+    href: "/broker/onboarding/",
+    actionLabel: "Get set up to list",
+  },
+  "channel.read": {
+    body: "The partner channel is open to verified partner organizations.",
+    href: "/broker/onboarding/",
+    actionLabel: "Get verified",
+  },
+  "saved-search.read": {
+    body: "Saved searches are available once you are signed in.",
+    href: "/login/",
+    actionLabel: "Sign in",
+  },
+};

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DASHBOARD_PANELS, PANEL_META, panelsForPersona, visiblePanels } from "./panels";
+import { DASHBOARD_PANELS, PANEL_LOCK_REASON, PANEL_META, lockedPanels, panelsForPersona, visiblePanels } from "./panels";
 import { DASHBOARD_PERSONAS } from "./persona";
 import { permissionsForRole } from "@/lib/auth/roles";
 
@@ -74,12 +74,44 @@ describe("dashboard panels", () => {
       expect(visiblePanels("broker", permissionsForRole("BROKER_MEMBER"))).toContain("channel");
     });
 
-    it("hides enquiries from an owner with no lead.inbox.read grant", () => {
-      /* An owner persona on a BUYER role sees the panel set for owners, but
-         the enquiry data belongs to a guarded API, so the panel is withheld
-         rather than rendered empty and broken. */
-      expect(visiblePanels("owner", permissionsForRole("BUYER"))).not.toContain("enquiries");
-      expect(visiblePanels("owner", permissionsForRole("BUYER"))).toContain("my-listings");
+    it("withholds guarded supply panels from an un-onboarded owner, but reports them as locked", () => {
+      /* Listings and enquiries are organization-scoped, and a BUYER-role
+         owner holds neither grant. The panels must not render as loadable...
+         */
+      const visible = visiblePanels("owner", permissionsForRole("BUYER"));
+      expect(visible).not.toContain("enquiries");
+      expect(visible).not.toContain("my-listings");
+
+      /* ...but they must not vanish either. Silently dropping "Your
+         properties" leaves an owner wondering where it went; rendering it
+         empty tells them they have none. Both lie. */
+      const locked = lockedPanels("owner", permissionsForRole("BUYER"));
+      expect(locked).toContain("my-listings");
+      expect(locked).toContain("enquiries");
+    });
+
+    it("locks nothing for a fully-granted broker", () => {
+      expect(lockedPanels("broker", permissionsForRole("BROKER_ADMIN"))).toEqual([]);
+    });
+
+    it("partitions every persona's composition into exactly visible + locked", () => {
+      for (const persona of DASHBOARD_PERSONAS) {
+        const permissions = permissionsForRole("BUYER");
+        const visible = visiblePanels(persona, permissions);
+        const locked = lockedPanels(persona, permissions);
+        expect([...visible, ...locked].sort()).toEqual([...panelsForPersona(persona)].sort());
+        /* No panel may be both. */
+        expect(visible.filter((p) => locked.includes(p))).toEqual([]);
+      }
+    });
+
+    it("explains every permission it can lock a panel on", () => {
+      /* A locked panel with no reason renders a generic shrug. Every
+         permission actually used by a panel must have copy. */
+      for (const panel of DASHBOARD_PANELS) {
+        const required = PANEL_META[panel].permission;
+        if (required) expect(PANEL_LOCK_REASON[required], `${required} needs lock copy`).toBeDefined();
+      }
     });
 
     it("keeps unguarded panels for every persona and every role", () => {

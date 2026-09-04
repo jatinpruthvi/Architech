@@ -73,3 +73,28 @@ requirements were isolated. It did not assert isolation for panels it had not
 written. Rendering proves the wiring exists; it says nothing about the `where`
 clause behind it. Multi-tenant scoping has to be tested with **two** accounts —
 a single-account test passes just as happily against a global store.
+
+## Finding 4 — the Owner and Builder "Your properties" panel dead-ended
+
+`my-listings` was declared `permission: null`, meaning "any signed-in session
+may load this". Its API is not: `GET /api/broker/listings` requires
+`broker.dashboard.read`, and the submission form at `/broker/listings/new/`
+requires `listing.draft.create` **plus an organization**. A `BUYER` role — which
+is what every owner, tenant and builder actually is — holds neither.
+
+So the owner and builder dashboards fired a request that returned 403, the
+client's `loadJson` helper swallowed it and returned `[]`, and the panel
+rendered **"No properties listed yet"**. That is indistinguishable from
+genuinely having no properties. The header's "List a property" button then led
+to a gate the account could never pass, with no explanation.
+
+Fixed by making the requirement explicit (`permission: "broker.dashboard.read"`)
+and adding `lockedPanels()` alongside `visiblePanels()`. A panel the persona
+has but the session cannot load is now rendered **locked**, with the reason and
+the route that unlocks it, rather than hidden or rendered misleadingly empty.
+The header CTA points at onboarding instead of the wall.
+
+The general principle, now enforced by a test that partitions each persona's
+composition into exactly visible + locked: a dashboard may tell you something
+is unavailable, but it must never tell you that you have nothing when it simply
+could not look.

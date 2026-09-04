@@ -20,7 +20,7 @@ import {
   requirementRoleForPersona,
   type DashboardPersona,
 } from "./persona";
-import { panelsForPersona, visiblePanels, PANEL_META } from "./panels";
+import { lockedPanels, panelsForPersona, visiblePanels, PANEL_META } from "./panels";
 import { permissionsForRole, type AuthSession } from "@/lib/auth/roles";
 
 /* The requirement API reads the session through `getSessionContractForRequest`.
@@ -222,9 +222,15 @@ describe("what each role is shown", () => {
     const owner = asUser("u", { role: "BUYER", listerType: "OWNER" });
     expect(defaultPersonaForSession(owner)).toBe("owner");
     const visible = visiblePanels("owner", owner.permissions);
-    expect(visible).toContain("my-listings");
+    /* What they CAN use straight away. */
     expect(visible).toContain("requirements");
     expect(visible).toContain("verification");
+    /* Listings and enquiries are organization-scoped, so they are locked with
+       an explanation rather than rendered as empty lists that would tell the
+       owner they have no properties. */
+    const locked = lockedPanels("owner", owner.permissions);
+    expect(locked).toContain("my-listings");
+    expect(locked).toContain("enquiries");
     expect(visible).not.toContain("enquiries");
   });
 
