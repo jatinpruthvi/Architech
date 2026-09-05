@@ -5,7 +5,7 @@ vi.mock("@/lib/observability/logger", () => ({ logger: { info: vi.fn(), error: v
 
 import { buildLeadNotification, leadNotificationGate, leadNotifyTargets } from "./notifications";
 import { dispatchLeadEventNotifications } from "./notifications-runtime";
-import { emitLeadEvent, onLeadEvent, resetLeadEventListenersForTests } from "./events";
+import { onLeadEvent, resetLeadEventListenersForTests } from "./events";
 import { createLeadForServer } from "./server";
 
 describe("leadNotificationGate", () => {

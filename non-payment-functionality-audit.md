@@ -26,7 +26,7 @@ The largest remaining gaps are not generic real-estate features imported from th
 | Saved searches | Implemented with API and managed page | Delivery alerts are not connected to live email/SMS/push |
 | Recent searches | Not identified as a durable user-facing feature | Medium-value gap; implement locally first |
 | Buyer accounts | Session/auth contracts and saved-search routes exist, but live Better Auth activation is pending | Activation gate plus profile completion |
-| Agent profiles | Broker organization and agent workspace contracts exist; a complete public agent directory/profile surface is not evident | **High-value gap** |
+| Agent profiles | Verified-partner directory at `/agents/` plus per-organization profiles at `/agent/[slug]/` exist (verification tiers, source-labelled reviews, indexability policy) — the row was stale. Re-verified 2026-09-05: profile 200, unknown slug 404, both routes prerendered |
 | Contact agent/inquiry | Implemented with consent, masked phone, idempotency, broker inbox, replies, deletion, and audit trail | Strong; **notification pipeline now lands** (lead event spine + Resend-gated dispatch, PII-free copy, per-recipient idempotency) — actual sending stays provider-gated per the providers section |
 | Direct agent chat | Not implemented; current model is structured lead inquiry and reply | Phase 2; keep structured inbox first for safety and auditability |
 | Tour scheduling/open-house calendar | Not implemented as a real calendar workflow | Phase 2; start with request-a-tour lead intent, not calendar integration |
@@ -82,4 +82,4 @@ The third slice should be **Buyer Organization and Alerts**: saved collections, 
 
 ## Decision
 
-Architech does not need every item in the supplied checklists to be competitive. It already covers the discovery and trust foundation better than the generic MVP lists imply. The genuine missing functionality is concentrated in **listing operations, rich Ahmedabad-specific property facts, broker discovery, media presentation, buyer organization, notification delivery, and measurable broker analytics**. Payment features should remain excluded exactly as requested.
+Architech does not need every item in the supplied checklists to be competitive. It already covers the discovery and trust foundation better than the generic MVP lists imply. The genuine missing functionality is concentrated in **rich Ahmedabad-specific property facts, media presentation depth, and Phase-2 workflows**. Payment features should remain excluded exactly as requested. *(Update 2026-09-05: edit/resume/delete listing operations, buyer organization of saved homes per account, saved-search + lead notification pipelines, public agent profiles, and measurable desk analytics (funnel / first response / demand / portfolio) have all landed since the rows above were written.)*
