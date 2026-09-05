@@ -27,7 +27,7 @@ The largest remaining gaps are not generic real-estate features imported from th
 | Recent searches | Not identified as a durable user-facing feature | Medium-value gap; implement locally first |
 | Buyer accounts | Session/auth contracts and saved-search routes exist, but live Better Auth activation is pending | Activation gate plus profile completion |
 | Agent profiles | Broker organization and agent workspace contracts exist; a complete public agent directory/profile surface is not evident | **High-value gap** |
-| Contact agent/inquiry | Implemented with consent, masked phone, idempotency, broker inbox, replies, deletion, and audit trail | Strong; notification delivery remains a gate |
+| Contact agent/inquiry | Implemented with consent, masked phone, idempotency, broker inbox, replies, deletion, and audit trail | Strong; **notification pipeline now lands** (lead event spine + Resend-gated dispatch, PII-free copy, per-recipient idempotency) — actual sending stays provider-gated per the providers section |
 | Direct agent chat | Not implemented; current model is structured lead inquiry and reply | Phase 2; keep structured inbox first for safety and auditability |
 | Tour scheduling/open-house calendar | Not implemented as a real calendar workflow | Phase 2; start with request-a-tour lead intent, not calendar integration |
 | Offers/applications/contracts/e-signature | Not implemented | Phase 3 and legal/provider gated; not required for discovery launch |
@@ -40,7 +40,7 @@ The largest remaining gaps are not generic real-estate features imported from th
 | Listing analytics | Operational observability exists, but broker-facing views/saves/inquiry analytics are limited | **High-value broker gap** |
 | CMS/content | Guides, blogs compatibility route, locality/city/RERA guide surfaces, and sitemap exist | Strong SEO foundation; editorial CMS workflow remains partly manual |
 | SEO and AI-search readiness | Canonicals, registry, metadata, JSON-LD, sitemap, HTML sitemap, crawlable guides, indexability gates, raw HTML smoke tests, and source-aware copy exist | Strong; continue adding verified content rather than generic pages |
-| Security/accessibility | Auth guards, organization scoping, rate/request controls, consent, validation, headers, keyboard checks, axe public smoke, and reduced-motion support exist | 2FA/CAPTCHA and broker-route axe coverage remain gaps |
+| Security/accessibility | Auth guards, organization scoping, rate/request controls, consent, validation, headers, keyboard checks, axe public smoke, and reduced-motion support exist | **Broker-route axe coverage added** (`pnpm test:a11y:broker` — guarded desk routes scanned on the Next runtime with the preview demo hatch; verifies real content renders past the session gate before scanning). 2FA/CAPTCHA remain external-provider gaps tied to §4 auth go-live |
 | Mobile responsiveness, dark mode, bilingual UI | Implemented and visually verified | Keep; PWA/offline/native app are not launch requirements |
 
 ## Functionality that should be added

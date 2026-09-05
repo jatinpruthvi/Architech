@@ -52,7 +52,8 @@
     "provisioning:audit": "pnpm env:audit && pnpm secrets:audit && pnpm production:plan:audit && pnpm provisioning:smoke",
     "provisioning:smoke": "node scripts/operations/provisioning-smoke.mjs",
     "start:next": "node node_modules/next/dist/bin/next start",
-    "start:static": "node dist/index.js"
+    "start:static": "node dist/index.js",
+    "test:a11y:broker": "playwright test --config playwright.a11y.broker.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.9.1",

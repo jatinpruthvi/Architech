@@ -1,5 +1,6 @@
 import "server-only";
 import { createLead, findLeadForOrganization, listActiveLeads, maskPhone, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
+import { emitLeadEvent } from "./events";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { demoBrokerSession } from "@/lib/auth/roles";
@@ -52,7 +53,11 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
      session reads. Crucially the value is still derived here and never taken
      from the request body. */
   if (!isPrismaLeadStorage()) {
-    return createLead({ ...input, organizationId: demoBrokerSession.organization?.id ?? null });
+    const created = createLead({ ...input, organizationId: demoBrokerSession.organization?.id ?? null });
+    if (created.ok && !created.duplicate) {
+      emitLeadEvent({ type: "lead.created", leadId: created.lead.id, organizationId: created.lead.organizationId, listingId: input.listingId, listingTitle: created.lead.listingTitle, createdAt: created.lead.createdAt });
+    }
+    return created;
   }
 
   const errors = baseErrors(input);
@@ -124,6 +129,9 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
   }
 
   const lead = dbLeadContract(owning, listing.title, result.dbLead.id, result.audit.id, false, result.dbLead.createdAt.toISOString(), "api.leads.prisma", organizationName);
+  /* Emit only on a genuinely new durable lead — the duplicate paths above
+     re-return the winner and must not re-notify. */
+  emitLeadEvent({ type: "lead.created", leadId: lead.id, organizationId: listing.brokerOrgId ?? null, listingId: input.listingId, listingTitle: listing.title, createdAt: lead.createdAt });
   return { ok: true, lead, duplicate: false };
 }
 
