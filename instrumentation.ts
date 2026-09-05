@@ -10,6 +10,12 @@ export async function register() {
        by convention. */
     const { registerSeoDiscovery } = await import("./client/src/lib/seo/discovery");
     registerSeoDiscovery();
+    /* Saved-search alerts (I-12): the `notify` flag is a stored promise, and
+       this is the delivery arm. Registered gated-on-envs; when the keys are
+       absent it logs once and stays silent rather than pretending a queue
+       exists. Same startup-discipline as the SEO spine. */
+    const { registerSavedSearchAlertRuntime } = await import("./client/src/lib/saved-search/alerts-runtime");
+    registerSavedSearchAlertRuntime();
     /* Retention policy enforcement (M-6): policy alone does not remove stale
        media. Registered at startup, on the same in-process scheduler model as
        the SEO spine; disable with MEDIA_RETENTION_SWEEP=off. */
