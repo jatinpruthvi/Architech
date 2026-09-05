@@ -12,6 +12,10 @@ Architech keeps the public indexability and live-provider boundary explicit. A l
 | `ARCHITECH_LEAD_STORAGE` | `prisma` | Enables durable lead storage and retention workflow. |
 | `ARCHITECH_MEDIA_STORAGE` | approved R2 mode | Enables durable media storage and lifecycle controls. |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL` | real non-empty secrets/URL | Required for live authentication and database-backed sessions. |
+| `MEDIA_RETENTION_SWEEP`, `MEDIA_RETENTION_SWEEP_INTERVAL_MINUTES` | unset/default; set `off` only deliberately | Enables the in-process retention sweep (default interval 60 min) applying PENDING 30d / REJECTED 14d / TAKEDOWN 7d policy with audit events. |
+| `SAVED_SEARCH_ALERTS`, `RESEND_API_KEY`, `SAVED_SEARCH_ALERT_FROM` | set together, after LEG-005 | Saved-search alert emails: registered on the listing event spine only when all three are present; without them the gate logs the silence once and `/api/observability/status` reports the missing names. |
+| `LEAD_NOTIFICATIONS`, `RESEND_API_KEY`, `LEAD_NOTIFICATION_FROM` | set together, after LEG-005 | Broker-side new-enquiry emails to active org members. Idempotency-keyed; buyer PII never crosses. |
+| `BUYER_REPLY_NOTIFICATIONS`, `RESEND_API_KEY`, `BUYER_REPLY_NOTIFICATION_FROM` | set together, after LEG-005 | Buyer-side "the partner acknowledged/replied" transactional email, sent only to the address the buyer consented with at enquiry time; a lead without an email is never mailed. |
 
 The production readiness procedure must confirm legal approval, real source provenance, migration completion, backup verification, rate-limit behavior, and rendered-HTML SEO checks before enabling `PUBLIC_INDEXING_ENABLED`. A production deployment with that flag unset or set to `false` receives `X-Robots-Tag: noindex, nofollow`, an empty sitemap, and a disallow-all robots policy.
 
