@@ -1,75 +1,131 @@
 # Blockers to clear before going live
 
-**Purpose:** everything Architech cannot ship without, gathered into one checklist. Each item states *why it is blocked*, *what to do*, and *how to verify it cleared*. Nothing here is code-blocked — every item needs an external account, a credential, a legal decision, a person, or hardware.
+**Purpose:** everything Architech cannot ship without, gathered into one checklist by sweeping every markdown file in the repository (verified 5 Sep 2026). Each item states *why it is blocked*, *what to do*, and *how to verify it cleared*. Most items need an external account, credential, legal decision, person, or hardware; §8 lists the engineering items that need code only.
 
-**Verified state:** 5 Sep 2026 — all code/test/CI gates are green (tsc, eslint, 1517 unit tests, 19-route SEO smoke, 113 E2E checks, crawl simulation 494 pages / 0 problems). This file is the gap between "green" and "live".
+**Verified baseline:** all code/test/CI gates are green locally (tsc, eslint, 1517 unit tests, 19-route SEO smoke, 113 E2E checks, crawl simulation 494 pages / 0 problems). This file is the gap between "green" and "live".
 
-Cross-references: workstream IDs (`P1-…`) are from `PHASE-1-IMPLEMENTATION-PLAN.md`; decision IDs (`D5-…`) from `docs/phase-1-batch5.md`; production env contract from `docs/runtime-activation-gates.md`.
+Cross-references: workstream IDs (`P1-…`) per `PHASE-1-IMPLEMENTATION-PLAN.md`; decision IDs (`D5-…`) per `docs/phase-1-batch5.md`; production env contract per `docs/runtime-activation-gates.md`.
 
 ---
 
-## 0. Do today — one action only the repo owner can take
+## 0. Do today — owner-only action
 
-- [ ] **Revoke the exposed GitHub personal access token.** A token value was pasted in chat earlier. Verification (2026-08-30) found NO token material in the repo or git history, and the sandbox pushes as the platform bot `arena-ai-coding-agent[bot]` — the exposed token is not in use anywhere here. **Still revoke it:** GitHub → Settings → Developer settings → Personal access tokens → delete it. Do not paste token values in chat or docs again.
+- [ ] **Revoke the exposed GitHub personal access token.** A token value was pasted in chat earlier. Verified 2026-08-30: no token material in the repo or git history; the sandbox pushes as `arena-ai-coding-agent[bot]`, so the exposed token is in use nowhere here. **Still revoke it:** GitHub → Settings → Developer settings → Personal access tokens → delete. Never paste token values in chat, tickets, or docs again.
 
-## 1. Legal & policy sign-off (gates everything below)
+## 1. Legal & privacy gates (LEG-001…LEG-009)
 
-- [ ] **Public-indexing approval.** `PUBLIC_INDEXING_ENABLED=true` is the final switch; until approved, the site serves `noindex`, an empty sitemap, and a disallowing robots policy (verified by `pnpm test:seo`). Required sign-off: legal + ops review of public content claims, consent wording, and RERA attribution. (Ref: `docs/runtime-activation-gates.md`)
-- [ ] **Lead & consent legal review.** Lead capture stores masked phone + consent text + audit events (in-memory in fixture mode, Prisma-capable). Legal must approve the consent copy, retention windows, and the deletion workflow before real leads are collected. (`P1-LEAD-001`, `P1-DATA-002`)
-- [ ] **RERA usage approval.** The demo RERA adapter must not face the public as-is; the approved Gujarat RERA source integration requires legal review. (`P1-RERA-001`)
+Canonical table with owners, evidence requirements, and release procedure: [`governance/legal/LEGAL-GATES.md`](./governance/legal/LEGAL-GATES.md). All nine are **pending approval** (`docs/release/phase-1-release-report.md`). A rejected/expired gate disables the feature or sends it to its safe fallback — the code paths already honor this.
 
-## 2. Production infrastructure
+- [ ] **LEG-001 RERA ingestion** — source terms, field mapping, provenance, freshness, correction, republication, disclaimer.
+- [ ] **LEG-002 Personal data** — notice, consent/withdrawal, access/correction/deletion, retention, processor inventory, security, incident process. Specifically: approve the 180-day requirement-retention window, approve a retention period for every active flow in `docs/security/privacy-data-flow-map.md`, schedule purge monitoring, name the incident-response owner, enable managed encryption-key rotation.
+- [ ] **LEG-003 Broker media rights** — rights record linked to every public asset.
+- [ ] **LEG-004 Public-record republication** — permitted use, attribution, caching, update, correction, liability (RERA + market data).
+- [ ] **LEG-005 Email/messaging** — consent, transactional classification, unsubscribe, deliverability (gates Resend/alert delivery).
+- [ ] **LEG-006 Sponsored links/PR** — disclosure, `rel="sponsored"`, editorial separation, rendered-link audit.
+- [ ] **LEG-007 Commercial leads** — broker terms, billing, dispute, data-sharing (gates any pay-per-lead product).
+- [ ] **LEG-008 AI/generated content** — human review, no-invention rules, provenance, correction process (gates any LLM search).
+- [ ] **LEG-009 Localization** — translation rights, editorial responsibility, claims review (gates Hindi pages publicly).
+- [ ] **Public-indexing approval** — after the above lands per scope: `PUBLIC_INDEXING_ENABLED=true` is the final switch; until then the site serves noindex + empty sitemap + disallowing robots (verified by `pnpm test:seo`).
+- [ ] **DPDP Act review** for exact-coordinate/DIGIPIN access control and encrypted contacts (`docs/data/india-location-architecture.md` §Production gates 5).
 
-- [ ] **Provision hosting + database.** Railway/Vercel app service, PostgreSQL with PostGIS, private networking. Runbook: `docs/operations/environment-provisioning-runbook.md`; checklist: `docs/operations/provisioning-execution-checklist.md`. (`P1-PLAT-001`, `P1-PLAT-002`)
-- [ ] **Verify migrations against the fresh DB.** `pnpm db:validate`, then `pnpm db:migrate -- --live`. Expected clean run: 14/14 migrations (sandbox proved 5 Sep 2026; two ordering bugs were fixed and are committed).
-- [ ] **Seed the production DB.** `pnpm db:seed` equivalent against the production URL. Sandbox proof: 12 cities / 72 localities / 5 listings / 1 org + RLS proof 29/29.
-- [ ] **Backups + restore drill.** `docs/operations/backup-restore-cost-readiness.md` — schedule the backup job and perform one real restore before launch.
-- [ ] **Replace the in-process rate limiter.** `docs/runtime-activation-gates.md` notes the current limiter is per-process and is deliberately a free-tier baseline; before multi-instance launch, move to a shared edge/Redis-backed limiter.
-- [ ] **Secrets through the proper channel.** All secrets via the runbook's delivery path (never chat). Reference: `docs/operations/secrets-management.md`.
+## 2. Official location / PIN data (the big one)
 
-## 3. Authentication go-live
+Everything is **implemented and fail-closed**: OGD snapshot fetcher, India Post + LGD importers, coverage release audit, `/locations/*` pages and APIs, staging-until-proved import states. What does not exist is the *data itself* in production. Full handoff with exact resource IDs, thresholds, and acceptance checklist: [`official India Post and LGD resource IDs and URLs todo.md`](./official%20India%20Post%20and%20LGD%20resource%20IDs%20and%20URLs%20todo.md); runbook: [`docs/data/india-location-operations.md`](./docs/data/india-location-operations.md).
 
-- [ ] **Set live auth env.** `BETTER_AUTH_SECRET` (real), `BETTER_AUTH_URL` (production origin). Flip `ARCHITECH_AUTH_SOURCE=better-auth`.
-- [ ] **Provision passkeys/2FA/recovery + org memberships** in the database, then smoke the live flows. (`P1-AUTH-001`; live-mode e2e flows already exist and pass: `pnpm test:e2e:only`)
-- [ ] **Confirm demo auth stays off.** In production builds, demo sessions are refused (`DEMO_AUTH_DISABLED`, asserted by e2e). Never set `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION` on the real deployment — that flag exists only for previews/E2E (D5-05).
+- [ ] **Obtain an authorized `DATA_GOV_IN_API_KEY`** (registered data.gov.in account) into the runtime secret manager — never in chat, Git, manifests, or tickets. Alternative approved path: a human attaches the two original official CSV exports; production apply stays blocked until provenance is approved.
+- [ ] **Unblock egress to `api.data.gov.in:443` / `www.data.gov.in:443`** — the previous sandbox attempt failed with TLS resets (ECONNRESET) before any API response. If unattended environments can't reach OGD, use the attach-original-exports path.
+- [ ] **GODL-India / OGD legal approval** for the exact distributions (attribution, non-endorsement, exemptions), plus per-source license review: India Post circle PDFs (reuse terms; parser + human reconciliation), LGD portal formats, Survey of India boundary products (product-specific; viewable ≠ bulk-republishable), OSM ODbL attribution/share-alike.
+- [ ] **Archive immutably** — approved, encrypted, versioned object storage for CSV+manifest pairs (local staging is not a production archive; records object version IDs).
+- [ ] **Apply + activate:** migrations applied to PostGIS, dry-runs reviewed (rejections zero or individually approved), then `corepack pnpm location:coverage:audit` must exit 0 — expected minimums: India Post ≥150,000 rows / ≥18,000 unique PINs / ≥35 jurisdictions; LGD ≥4,000 rows / ≥3,000 bodies / ≥3,000 unique PINs / ≥30 jurisdictions; freshness ≤45d (India Post) / ≤90d (LGD). Only then `ARCHITECH_DATA_SOURCE=prisma` for location reads.
+- [ ] **Standing freshness ops:** scheduled monthly imports, checksum drift alerts, stale-source thresholds, rollback to prior snapshot, import-run dashboards.
+- [ ] **Locality reconciliation job** — multi-signal (name/alias, containment, PIN overlap, OSM proximity, listing evidence) with the documented confidence policy (0.5 fixture = never auto-published; <0.8 never exact) and manual editorial review of conflicts.
+- [ ] **Never promote post-office/LGD labels to product City/Locality rows, never infer state from PIN prefix, never claim authoritative nationwide locality coverage until gates pass.** Today PIN data is illustrative demo data; README states this and must stay accurate until reconciliation completes.
 
-## 4. Data cutover (order matters)
+## 3. Production infrastructure
 
-- [ ] **First — land the M-1 deferred slice (D5-04): make the `SeoPage` registry, sitemap, and PIN-directory indexes prisma-backed.** Today they read the fixture registry. If you enable indexing while pages are prisma-built but the sitemap is fixture-built, the sitemap advertises URLs the live graph does not link (orphans / sitemap-404s). The crawl gate will catch this locally: `node scripts/seo/crawl-simulation.mjs` must pass with 0 problems under the prisma build before continuing.
-- [ ] **Then flip `ARCHITECH_DATA_SOURCE=prisma`** with `DATABASE_URL` pointed at the provisioned DB.
-- [ ] **Re-run the indexed crawl against the production-like build** (`PUBLIC_INDEXING_ENABLED=true`): expect sitemap ⊆ crawl, self-canonicals, depth ≤ 4, 0 problems.
-- [ ] **Reconcile PIN data against an authoritative India Post source, recording the retrieval date** (LEG-001-style provenance). Until then `?pincode=` and PIN pages stay demo-sourced. (`P1-DATA-004` remaining acceptance)
-- [ ] *(Optional, quality)* **Enrich seed listing dossiers** (`sourceSummary`/`details`) so prisma-mode listing pages carry the same `numberOfBathroomsTotal`-grade JSON-LD detail as fixtures. The mappers already pass the field through; only the seed data is thinner. (D5-06 follow-up)
+- [ ] **Provision hosting + managed data.** Railway/Vercel app, PostgreSQL with the **PostGIS extension installed** (`postgis` must be creatable/installed before migrations if the migration role lacks superuser). Runbook: `docs/operations/environment-provisioning-runbook.md`; checklist: `docs/operations/provisioning-execution-checklist.md`; prepared manifests (`vercel.json`, `railway.json`, `docker-compose.production-like.yml`, `governance/environments/phase-1-environments.json`). (`P1-PLAT-001/002`)
+- [ ] **Production deploy target serves APIs.** `pnpm start` today serves a static prerender snapshot (all API routes 404 on that target — `railway.json` currently references it). Production must run `next start`/Vercel functions, or the target must be relabelled static-demo and gated. (I-10)
+- [ ] **DB verification + seed.** `pnpm db:validate`, `pnpm db:migrate -- --live` (sandbox-proved 14/14 migrations on 5 Sep; two ordering bugs fixed and committed), then seed; RLS policy proof re-run against the production cluster.
+- [ ] **Backups + restore drill** with the procedure from `docs/operations/backup-restore-cost-readiness.md` — including replaying erasure tombstones before restored services accept traffic (deleted PII must not reappear).
+- [ ] **Secrets via the inventory.** Every secret lands in the platform secret store per `governance/secrets/phase-1-secret-inventory.json` policy — never chat/Git. Storage audit exists: `pnpm security:audit`.
+- [ ] **Shared rate limiting + cross-instance events.** In-process rate limiter is a deliberate single-instance baseline (`docs/runtime-activation-gates.md`); replace/supplement with edge/Redis before multi-instance. Same for the in-memory listing event bus (M-5) — durable queue or documented single-replica constraint.
+- [ ] **Rollback tested, environment management live, health checks wired** (`/api/observability/status` exists; hook it to the platform monitor).
 
-## 5. Live provider wiring
+## 4. Authentication go-live
 
-- [ ] **Sentry org + DSN, log drains, OpenTelemetry export, dashboards + alert thresholds.** Flip the Sentry env per `docs/runtime-activation-gates.md`; expected effect: SLO basis flips from `bootstrapped` to `observed` as traffic arrives (already wired through `/api/observability/web-vitals` + `/api/observability/slo`). (`P1-OBS-001`)
-- [ ] **Cloudflare R2 / Stream for media.** `ARCHITECH_MEDIA_STORAGE` → approved R2 mode; enable malware scanning, worker-generated derivatives, captions/transcripts. (`P1-MEDIA-001`)
-- [ ] **Gujarat RERA live adapter.** Set `ARCHITECH_RERA_SOURCE=gujarat` only after the legal item in §1 clears. (`P1-RERA-001`)
-- [ ] **Google Search Console.** Verify domain ownership, provision API credentials, submit `sitemap.xml`, enable live ingestion. (`P1-SEO-004`; dry-run audit already in CI via `pnpm seo:gsc:audit`)
-- [ ] **Notification provider** (email/SMS/push): saved-search alerts currently persist intent only; delivery needs a provider account.
+- [ ] Set `BETTER_AUTH_SECRET` (real) + `BETTER_AUTH_URL` (production origin); flip `ARCHITECH_AUTH_SOURCE=better-auth`.
+- [ ] Provision passkeys/2FA/recovery flows and organization memberships in the DB; verify with the live-mode E2E flows (`pnpm test:e2e:only` covers registration/sign-in/session revocation in live mode).
+- [ ] Confirm demo auth remains refused in production (`DEMO_AUTH_DISABLED`; never set `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION` outside previews/E2E — D5-05).
+- [ ] **Buyer account dashboard** becomes possible here (attentiveness: favorites + saved searches + alerts visible per account).
 
-## 6. People & process
+## 5. Data cutover (strict order)
 
-- [ ] **Editorial review workflow staffing.** Guides have publishability gates and freshness policies; someone must own review before content flips indexable. (`P1-CONT-001`)
-- [ ] **Disclosure review process for outreach.** The authority registry forbids paid links and requires named reviewers; appoint them and run one dry-run disclosure review. (`P1-OFF-001`)
-- [ ] **Incident runbook exercise.** Walk one synthetic incident (backup restore + rollback) with the runbooks before real traffic relies on them.
+1. [ ] **Land the M-1 deferred slice first (D5-04): prisma-back the SeoPage registry, sitemap, and PIN-directory indexes.** Otherwise pages are prisma-built while the sitemap advertises the fixture corpus — orphan URLs and sitemap-404s. Gate: `node scripts/seo/crawl-simulation.mjs` must show 0 problems on the prisma-built, indexing-enabled candidate.
+2. [ ] Then flip `ARCHITECH_DATA_SOURCE=prisma` with the production `DATABASE_URL`.
+3. [ ] Re-run indexed crawl on the production-like build: sitemap ⊆ crawl, self-canonicals, depth ≤ 4, 0 problems.
+4. [ ] *(Quality, non-blocking)* Enrich seed/listing dossiers with structured details so prisma-mode pages match fixture JSON-LD richness (D5-06 follow-up).
 
-## 7. Hardware
+## 6. Live providers
 
-- [ ] **Redmi-class device motion benchmark.** Motion system fallbacks exist (no-WebGL/reduced-motion), but the acceptance bar is a real low-end device pass — cannot be faked in CI. (`P1-UI-002`)
+- [ ] **Sentry org + DSN**, log drain, OpenTelemetry export, dashboards + alert thresholds, release/environment tagging in deploys. SLO basis flips bootstrapped→observed automatically once traffic flows. (`P1-OBS-001`)
+- [ ] **R2/Stream media.** Today the R2 signer is a placeholder (no SigV4 presigning — I-3). Real presigning + malware scanning + derivative workers + captions/transcripts, then `ARCHITECH_MEDIA_STORAGE` → approved R2 mode. (`P1-MEDIA-001`)
+- [ ] **Gujarat RERA adapter** returns a placeholder parser today (I-5); implement the approved source fetch/parse, then set `ARCHITECH_RERA_SOURCE=gujarat` after LEG-001. Each additional state authority needs its own legal-approved adapter. (`P1-RERA-001`)
+- [ ] **Search Console:** domain verification + API credentials; submit sitemaps; enable live GSC per-URL ingestion (board exists; `pnpm seo:gsc:audit` dry-runs in CI). (`P1-SEO-004`)
+- [ ] **GA4** connection (analytics provider account).
+- [ ] **Notifications (Resend/email-SMS-push):** saved-search `notify` flags persist intent with no delivery pipeline (I-12); lead notifications needed too. Provider account + LEG-005 templates.
+- [ ] **AI provider (optional):** `ARCHITECH_AI_PROVIDER=external` falls back deterministically with cost reported 0 (I-2) — wire a real provider with real token-cost telemetry, or formally keep deterministic-only.
+
+## 7. Broker WhatsApp channel (lead follow-up)
+
+The broker decision docs select a private, feature-flagged evolution/Baileys-style adapter for near-immediate consented lead follow-up from brokerage-owned numbers, with the official Meta Cloud path as the compliant alternative (`docs/broker-suite/open-source-ecosystem-evaluation.md`, `docs/broker-suite/decision.md`).
+
+- [ ] Choose and provision the provider account (official BSP/Meta Cloud, or the private adapter behind its documented activation gate).
+- [ ] Encrypted contact point, durable outbox, HMAC gateway, feature flag, per-shard capacity testing.
+- [ ] **Before-launch proof (from the decision doc):** API sends appear on the employee phone; customer replies appear there; native replies emit the expected provider event; reconnect/replay does not duplicate CRM activity.
+- [ ] Generic-content push fallback only ("New lead assigned — open CRM" with no customer PII), itself needing a browser/privacy test.
+
+## 8. Engineering gates before launch (code only, no external account)
+
+- [ ] **M-1 deferred slice** — see §5 step 1 (blocks prisma+indexing launch, not fixture launch).
+- [ ] **`Listing.details` column (I-9).** Structured bath/parking/furnishing/floor data currently rides in `sourceSummary` (JSON/prose); the bath/parking facet is desk-only and unfacetable until a `detailsJson` (or typed columns) migration lands. Keeps `listingDetailsFromSourceSummary` as the legacy reader.
+- [ ] **Scope Compare/Collections localStorage per account** (`architech.compare.v1` + collections keys are unscoped — two signed-in accounts on one device share them; `docs/dashboard/second-audit-findings.md` flagged this for pre-launch scoping).
+- [ ] **Media retention enforcement at runtime (I-11)** — `decideMediaRetention`/`isPublishable` are policy-only today; a scheduled job must apply retention/takedown (PENDING 30d, REJECTED 14d, TAKEDOWN 7d, EXIF gate) and the publish path must consult `isPublishable`.
+- [ ] **Agent workspace placeholder surfaces (I-6)** — wire or hide the static stubs (filters, KPI zeros, empty-state sections) so a broker never sees dead UI in production.
+- [ ] **"Search this area" map control (I-8)** — currently a toast-only stub; wire to bounds→bbox search or remove.
+
+## 9. Content & data backlogs (code cannot create these)
+
+- [ ] **Project/society pages data** — sold prices, RERA project records, yield, distance data (the round-11 wedge; gates and contracts exist).
+- [ ] **Original city price reports** — blocked on transaction data (the link-earning core).
+- [ ] **Locality landmark data** — 60/72 localities currently carry none; content backlog, not code.
+- [ ] **Per-city editorial guides** beyond Ahmedabad (reviewed content per market).
+- [ ] **Rights-cleared video**, **Google Business Profile** creation/maintenance, **genuine review collection**, **builder/society/media association relationships** (off-page authority is earned, not coded).
+- [ ] **Verified per-city inventory sources** replacing generated demo listings before claiming real supply (`P1-DATA-003` remaining acceptance).
+- [ ] **Statutory rate tables** per state/UT with versioned conditions/effective dates + legal review (Gujarat-only today; unknown states correctly show "unavailable").
+
+## 10. People & hardware
+
+- [ ] **Editorial review owner** for guides (gates content indexability — `P1-CONT-001`).
+- [ ] **Outreach disclosure reviewer** (named reviewer per accepted placement — `P1-OFF-001`).
+- [ ] **Incident-response owner + one live runbook drill** (backup restore + rollback) before real traffic.
+- [ ] **Redmi-class device motion benchmark** (`P1-UI-002`) — cannot be validated in CI.
+
+## 11. Phase-2 scope (listed so nobody mistakes absence for oversight)
+
+Schedule tours, digital offer submission/negotiation, e-signature, escrow/earnest-money, payment processing, rent collection, maintenance tracking, rent-vs-buy calculator, school ratings, walk score, 3D/virtual tours, AVM, fractional ownership, virtual staging, MLS/IDX (not applicable — RERA covers this market). These need financial/legal providers and are deliberate Phase-2, not launch blockers.
 
 ---
 
 ## Go-live sequence, in order
 
 1. §0 token revocation (owner, today)
-2. §1 legal approvals — indexing gate stays OFF until signed
-3. §2 infrastructure + DB verification + backups
-4. §3 auth go-live on live env
-5. §4 data cutover — M-1 deferred slice first, then the prisma flip, then the indexed crawl must be 0 problems
-6. §5 providers one by one, each verified by its audit script (`security:audit`, `ops:audit`, `release:audit`, `provisioning:audit`, `seo:gsc:audit`)
-7. §6 processes staffed, §7 device benchmark
-8. FINAL: `PUBLIC_INDEXING_ENABLED=true` → full gate run (`check`, `lint`, `test`, `build`, `test:seo`, `test:e2e:only`, crawl simulation) must be green on the production build
-
-When every box above is checked, the release report `docs/release/` and this plan's tracker rows can move to their launch states.
+2. §1 legal gates approved per scope (indexing stays OFF until the applicable LEGs are signed)
+3. §3 infrastructure — deploy target fixed (I-10), DB verified, backups drilled, secrets inventoried
+4. §4 auth go-live on live env
+5. §2 official location data acquired/imported/audited — `location:coverage:audit` exits 0
+6. §5 data cutover — M-1 slice first, then the prisma flip, then indexed crawl = 0 problems
+7. §8 engineering gates cleared on the release branch
+8. §6 providers wired one by one, each verified by its audit (`security:audit`, `ops:audit`, `release:audit`, `provisioning:audit`, `seo:gsc:audit`)
+9. §7 WhatsApp channel activated separately, with its launch proof
+10. §10 processes staffed, device benchmark passed
+11. **FINAL:** `PUBLIC_INDEXING_ENABLED=true`, then the full gate set — `check`, `lint`, `test`, `db:validate`, `build`, `test:seo`, `test:e2e:only`, crawl simulation — green on the exact production build
