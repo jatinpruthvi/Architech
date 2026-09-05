@@ -83,20 +83,18 @@ export class GujaratReraProvider implements ReraProvider {
     if (!this.env.GUJARAT_RERA_BASE_URL || !this.env.GUJARAT_RERA_API_KEY) {
       return { ok: false, provider: this.id, jurisdiction: this.jurisdiction, status: 503, errors: ["Gujarat RERA provider is not configured."] };
     }
-    // Placeholder contract until legal-approved source access is available.
+    /* Fail CLOSED (I-5): the official fetch/parser is not implemented and its
+       source access awaits LEG-001 approval. The old placeholder returned
+       ok:true with NOT_FOUND — a fabricated verdict. On a real registration
+       number that quietly failed legitimate listings; if it had been inverted
+       it would have VERIFIED fabricated ones. Until the approved adapter
+       lands, "configured" still means "unavailable": 501, not a verdict. */
     return {
-      ok: true,
+      ok: false,
       provider: this.id,
       jurisdiction: this.jurisdiction,
-      record: null,
-      verificationStatus: "NOT_FOUND",
-      provenance: {
-        sourceUrl: this.env.GUJARAT_RERA_BASE_URL,
-        retrievedAt: new Date().toISOString(),
-        parserVersion: "gujarat-rera-provider-v1-placeholder",
-        legalGate: "LEG-001",
-        disclaimer: "Live provider configured; official fetch/parser implementation remains behind legal/source approval.",
-      },
+      status: 501,
+      errors: ["Gujarat RERA live verification is not implemented: the authority source is not legally approved (LEG-001) and no parser is deployed. Do not infer any verification state from this response."],
     };
   }
 }
