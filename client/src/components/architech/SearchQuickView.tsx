@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import Pic from "@/components/architech/Pic";
 import { labelForFacing, labelForFurnishing, propertyFactRows } from "@/lib/listing-details";
+import { mediaDisplayUrl } from "@/lib/media/display-url";
 import type { Property } from "@/lib/repositories";
 
 export default function SearchQuickView({
@@ -30,7 +31,8 @@ export default function SearchQuickView({
               <button type="button" onClick={() => onOpenChange(false)} className="touch-44 rounded-lg border border-ink/15 px-3 stamp font-semibold ink-2 hover:border-brick hover:text-brick">Close</button>
             </div>
             <div className="mt-5 overflow-hidden border border-ink/12 bg-sand">
-              <Pic name={property.image} alt={`${property.title}, ${property.locality}`} className="aspect-[1.6] h-full w-full object-cover" sizes="520px" />
+              {/* src resolves R2 media through the edge transform; undefined in fixture mode. */}
+              <Pic name={property.image} src={mediaDisplayUrl(property.imageUrl, 1040)} alt={`${property.title}, ${property.locality}`} className="aspect-[1.6] h-full w-full object-cover" sizes="520px" />
             </div>
             <div className="mt-5 grid grid-cols-2 gap-4 border-y border-ink/12 py-4 sm:grid-cols-4">
               <div><p className="stamp ink-3">Price</p><p className="mt-1 font-display text-lg font-semibold [font-variant-numeric:tabular-nums]">{property.price}</p></div>

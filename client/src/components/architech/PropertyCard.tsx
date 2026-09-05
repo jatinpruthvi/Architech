@@ -10,7 +10,8 @@ import { useSaved } from "@/contexts/SavedContext";
 import { useCompare } from "@/contexts/CompareContext";
 import { useLang } from "@/contexts/LangContext";
 import Pic from "./Pic";
-import { secondaryImage } from "@/lib/listing/media";
+import { secondaryImage, secondaryImageUrl } from "@/lib/listing/media";
+import { mediaDisplayUrl } from "@/lib/media/display-url";
 import { labelForFurnishing } from "@/lib/listing-details";
 
 export type { Property };
@@ -42,6 +43,10 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  const compared = isCompared(property.id);
  // A real second photograph of THIS listing, or null. Never a stock stand-in.
  const hoverImage = secondaryImage(property);
+ // R2-mode media: absolute URLs resolved through the edge transform.
+ // undefined in fixture mode, where the local /images/* assets render.
+ const photoSrc = mediaDisplayUrl(property.imageUrl, 640);
+ const hoverSrc = mediaDisplayUrl(secondaryImageUrl(property), 640);
  // `parkingSpaces === 0` is a fact ("no parking"), not a missing value, so the
  // grid's presence test must not treat it as falsy.
  const parkingLabel = property.details.parkingSpaces === undefined
@@ -70,7 +75,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  <article className="relative overflow-hidden rounded-xl border border-ink/12 bg-card shadow-sm">
  <Link href={`/listing/${property.id}`} aria-label={`View ${property.title}, ${property.price}`} className="block">
  <div className="img-hover relative h-24 bg-sand">
- <Pic name={property.image} alt={`${property.title}, ${property.locality}`} className="h-full w-full object-cover" sizes="160px" />
+ <Pic name={property.image} src={photoSrc} alt={`${property.title}, ${property.locality}`} className="h-full w-full object-cover" sizes="160px" />
  <span className="clay-fill absolute bottom-2 left-2 rounded-full bg-brick px-2.5 py-1 font-display text-xs font-semibold text-cream shadow-sm">{property.price}</span>
  </div>
  <div className="flex items-center justify-between p-2.5">
@@ -97,11 +102,11 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  <div className="flex">
  <Link href={`/listing/${property.id}`} className="relative block w-[200px] shrink-0 overflow-hidden bg-sand" aria-label={`View ${property.title}`}>
  <div className="img-hover relative aspect-[4/3]">
- <Pic name={property.image} alt={`${property.title}, ${property.locality}, ${property.city}`} className="h-full w-full object-cover" sizes="200px" />
+ <Pic name={property.image} src={photoSrc} alt={`${property.title}, ${property.locality}, ${property.city}`} className="h-full w-full object-cover" sizes="200px" />
  {/* Cross-fade on hover ONLY when this listing really has another
  photo of itself. One photo = no swap, ever. */}
  {hoverImage ? (
- <Pic name={hoverImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" sizes="200px" />
+ <Pic name={hoverImage} src={hoverSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" sizes="200px" />
  ) : null}
  </div>
  </Link>
@@ -128,13 +133,13 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  `aspect-[1.25]`, taller than wide, which cropped the one thing
  people are actually shopping on. */}
  <div className="aspect-[1.5]">
- <Pic name={property.image} alt={`${property.title}, ${property.locality}, ${property.city}`} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+ <Pic name={property.image} src={photoSrc} alt={`${property.title}, ${property.locality}, ${property.city}`} className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
  {/* Restrained editorial hover: scale 1 -> 1.05 (see .img-hover), and
  cross-fade a second photo — but only a real one of THIS listing.
  A single-photo listing keeps its own image; it never ghosts an
  unrelated stock shot over it. */}
  {hoverImage ? (
- <Pic name={hoverImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+ <Pic name={hoverImage} src={hoverSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
  ) : null}
  </div>
  <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-3.5">

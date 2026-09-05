@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { imageCountLabel, listingPhotos, listingSlides, secondaryImage, slideLabels } from "./media";
+import { imageCountLabel, listingPhotos, listingSlides, secondaryImage, secondaryImageUrl, slideLabels } from "./media";
 import { getFeaturedListings, getListingById } from "@/lib/repositories";
 
 describe("listing gallery media model", () => {
@@ -72,5 +72,40 @@ describe("property card hover image", () => {
     expect(slides.map((s) => s.name).slice(0, 2)).toEqual(["prop-courtyard", "prop-light"]);
     expect(slides[1].label).toBe("View 2");
     expect(new Set(slides.map((s) => s.name)).size).toBe(slides.length);
+  });
+});
+
+/* R2 mode: the mapper carries absolute media URLs (imageUrl/galleryUrls) in
+   parallel with the local names. Slides of the real photographs must expose
+   the matching URL; editorial context shots have no bucket URL and must not
+   pretend to. */
+describe("slide media URLs (R2 mode)", () => {
+  const r2 = {
+    imageUrl: "https://media.architech.test/originals/listings/h1/primary.jpg",
+    galleryUrls: ["https://media.architech.test/originals/listings/h1/second.jpg"],
+  };
+
+  it("attaches srcUrl to the listing's own photographs, primary first", () => {
+    const property = { ...getListingById("garden-courtyard")!, gallery: ["prop-light"], ...r2 };
+    const slides = listingSlides(property);
+    expect(slides[0].srcUrl).toBe(r2.imageUrl);
+    expect(slides[1].srcUrl).toBe(r2.galleryUrls[0]);
+    // Editorial context shots carry local names only.
+    for (const slide of slides.slice(2)) expect(slide.srcUrl).toBeUndefined();
+  });
+
+  it("leaves srcUrl off entirely in fixture mode", () => {
+    const slides = listingSlides(getListingById("garden-courtyard")!);
+    expect(slides.every((s) => s.srcUrl === undefined)).toBe(true);
+  });
+
+  it("exposes the secondary photo's URL in parallel with its name", () => {
+    const base = getListingById("garden-courtyard")!;
+    const named = { ...base, gallery: ["prop-light"] };
+    const withUrls = { ...named, ...r2 };
+    expect(secondaryImageUrl(withUrls)).toBe(r2.galleryUrls[0]);
+    expect(secondaryImageUrl(named)).toBeNull();
+    // The name path and the URL path point at the same photograph slot.
+    expect(secondaryImage(withUrls)).toBe(named.gallery![0]);
   });
 });

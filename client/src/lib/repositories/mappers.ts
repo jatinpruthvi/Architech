@@ -96,6 +96,15 @@ function imageNamesFromMedia(media?: DbListingRow["media"]): string[] {
     .filter((name) => name.length > 0);
 }
 
+/** Absolute media URLs (R2 public URLs in r2 mode), in source order. Relative
+    or scheme-less URLs are dropped: they have no origin the browser can
+    fetch, so the local-asset-name path (imageNamesFromMedia) stands in. */
+function mediaAbsoluteUrls(media?: DbListingRow["media"]): string[] {
+  return (media ?? [])
+    .map((item) => item?.url ?? "")
+    .filter((url) => /^https?:\/\//.test(url));
+}
+
 function imageNameFromMedia(media?: DbListingRow["media"]): string {
   return imageNamesFromMedia(media)[0] ?? "locality-street";
 }
@@ -152,6 +161,10 @@ export function dbListingToProperty(row: DbListingRow): Property {
   const propertyType: PropertyTypeCode = isPropertyTypeCode(row.propertyType) ? row.propertyType : "APARTMENT";
   const availability: AvailabilityCode = normalizeAvailability(row.availability) ?? "READY_TO_MOVE";
   const subtype: Property["subtype"] = propertyType === "VILLA" ? "Villa" : propertyType === "PLOT" ? "Plot" : "Flat/Apartment";
+  // Absolute media URLs (R2 public URLs) when the source stores them —
+  // renderers prefer these over the local asset names. Absent when the source
+  // stores none, so fixture-style rows keep a single shape.
+  const mediaUrls = mediaAbsoluteUrls(row.media);
   return {
     id: row.stableId || row.slug,
     title: row.title,
@@ -168,6 +181,9 @@ export function dbListingToProperty(row: DbListingRow): Property {
     areaNum: area,
     image: imageNameFromMedia(row.media),
     gallery: galleryFromMedia(row.media),
+    ...mediaUrls.length
+      ? { imageUrl: mediaUrls[0], galleryUrls: mediaUrls.length > 1 ? mediaUrls.slice(1) : undefined }
+      : {},
     badge: badgeFromVerification(row.verification),
     status: freshnessLabel(row.meaningfulUpdatedAt),
     /* The absolute freshness stamp the dossier renders. Prisma hands us a

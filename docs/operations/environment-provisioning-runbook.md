@@ -38,6 +38,7 @@ Do not create production before staging passes migrations, smoke tests, restore 
 - Provision Railway Redis.
 - Create Sentry staging project.
 - Create R2 staging bucket.
+- Set the R2 env **in the build environment** (not just runtime): `ARCHITECH_MEDIA_STORAGE`, `R2_PUBLIC_BASE_URL`, and `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`. The CSP `img-src` allowlist and the `NEXT_PUBLIC_*` client inlining are computed at build time, so a runtime-only value leaves listing images blocked/undelivered.
 - Create Resend staging domain/API key.
 - Store secrets in platform secret managers only.
 - Run `pnpm db:migrate` and `pnpm db:seed` against staging.
@@ -49,6 +50,7 @@ Do not create production before staging passes migrations, smoke tests, restore 
 - Create production Vercel environment.
 - Provision production Railway PostgreSQL/PostGIS and Redis.
 - Configure Cloudflare R2/Stream production buckets.
+- Ensure the R2 env (`ARCHITECH_MEDIA_STORAGE`, `R2_PUBLIC_BASE_URL`, `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`) is present **at build time** — the CSP `img-src` and `NEXT_PUBLIC_*` inlining are build-time, so listing images will not render from a runtime-only value.
 - Configure Sentry production project and alerts.
 - Configure Resend production sender/domain.
 - Verify Google Search Console domain property.

@@ -26,6 +26,14 @@ const getCachedListing = cache((id?: string) => getListingByIdForServer(id));
    Unknown ids still render on demand (dynamicParams defaults to true). */
 export const revalidate = 600;
 
+/** The listing's published photograph. Prefers the absolute media URL the
+    data source carries (R2 public URL in r2 mode) so crawlers and social
+    cards fetch the real upload; fixture mode has no such URL and falls back
+    to the local /images/* asset. */
+function publishedListingImage(property: { image: string; imageUrl?: string }): string {
+  return property.imageUrl ?? assetUrl(`/images/${property.image}.jpg`);
+}
+
 export async function generateStaticParams() {
   return getListingStaticParamsForServer();
 }
@@ -44,7 +52,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: listingSerpDescription(property),
     alternates: { canonical: listingUrl(property.id) },
     robots: { index: metadataDecision.indexable, follow: true },
-    openGraph: { title, url: listingUrl(property.id), images: [socialImage(property.image)] },
+    // A real upload (R2 mode) publishes the actual photograph; fixture mode
+    // keeps the measured local-asset card.
+    openGraph: { title, url: listingUrl(property.id), images: [property.imageUrl ? { url: property.imageUrl } : socialImage(property.image)] },
   };
 }
 
@@ -97,7 +107,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     ...(coordinates && coordinates.length === 2 && coordinates.every(Number.isFinite)
       ? { geo: { "@type": "GeoCoordinates", latitude: coordinates[0], longitude: coordinates[1] } }
       : {}),
-    image: assetUrl(`/images/${property.image}.jpg`),
+    image: publishedListingImage(property),
     additionalProperty: [
       { "@type": "PropertyValue", name: "propertyType", value: property.subtype },
       { "@type": "PropertyValue", name: "parkingSpaces", value: property.details.parkingSpaces },
@@ -121,7 +131,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         name: property.title,
         description: property.meta,
         about: residence,
-        image: [assetUrl(`/images/${property.image}.jpg`)],
+        image: [publishedListingImage(property)],
         // Content-change date from the listing record (mirrors
         // Listing.meaningfulUpdatedAt), not the render clock — a re-crawl that
         // sees an unchanged date is a signal the page genuinely did not change.

@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { Scale } from "lucide-react";
 import { getListings } from "@/lib/repositories";
+import { mediaDisplayUrl } from "@/lib/media/display-url";
 import { COMPARE_ROWS, selectComparableListings } from "@/lib/compare";
 
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ i
           <div className="mt-10 overflow-x-auto border border-ink/12 bg-card">
             <div className="grid min-w-[720px] gap-x-5" style={{ gridTemplateColumns: `140px repeat(${homes.length}, minmax(150px, 1fr))` }}>
               <div className="bg-night p-4 stamp !text-[10px] text-cream/65">Compare</div>
-              {homes.map((property) => <Link key={property.id} href={`/listing/${property.id}`} className="night-fill group bg-night p-4 text-cream"><span className="block aspect-[1.6] overflow-hidden"><img src={`/images/${property.image}.jpg`} alt={property.title} className="h-full w-full object-cover" width="260" height="160" /></span><span className="mt-3 block font-display text-base leading-tight group-hover:text-ember">{property.title}</span></Link>)}
+              {homes.map((property) => <Link key={property.id} href={`/listing/${property.id}`} className="night-fill group bg-night p-4 text-cream"><span className="block aspect-[1.6] overflow-hidden"><img src={mediaDisplayUrl(property.imageUrl, 640) ?? `/images/${property.image}.jpg`} alt={property.title} className="h-full w-full object-cover" width="260" height="160" /></span><span className="mt-3 block font-display text-base leading-tight group-hover:text-ember">{property.title}</span></Link>)}
               {COMPARE_ROWS.map(({ label, get }) => <div key={label} className="contents"><div className="border-t border-ink/10 bg-sand/45 px-4 py-4 stamp !text-[10px] text-ink/60">{label}</div>{homes.map((property) => <div key={`${label}-${property.id}`} className={`border-t border-ink/10 px-4 py-4 text-sm ${label === "Price" ? "font-display text-lg font-semibold" : "text-ink/80"}`}>{get(property)}</div>)}</div>)}
             </div>
           </div>
