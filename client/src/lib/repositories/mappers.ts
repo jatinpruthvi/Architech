@@ -56,6 +56,13 @@ export type DbListingRow = {
   projectName?: string | null;
   developerName?: string | null;
   sourceSummary?: string | null;
+  /* The real `Listing.detailsJson` column (added by migration
+     `202609050001_listing_details_json`). Prisma types it `JsonValue`, so it
+     lands here as `unknown` and is validated field-by-field before the UI
+     ever sees it — never trust raw JSONB. */
+  detailsJson?: unknown;
+  /** Accept legacy callers that passed the pre-column stand-in name; both are
+      validated identically, so aliasing costs nothing. */
   details?: PropertyDetails | null;
 };
 
@@ -179,12 +186,15 @@ export function dbListingToProperty(row: DbListingRow): Property {
     canonicalToListingId: row.canonicalToListingId ?? undefined,
     /* Structured first, prose second — and "first" only when it is non-empty,
        otherwise a `{}` on the column would mask the fallback entirely.
-       `row.details` does not exist on the `Listing` model yet, so today the
-       left side is always undefined and the cast at the call site
-       (server/prisma.ts) is what stops the compiler from saying so: see
-       listing-details-contract.ts for why that column is the real fix and why
-       it is deliberately not in this commit. */
-    details: hasAnyListingDetail(row.details) ? normalizeListingDetails(row.details) : listingDetailsFromSourceSummary(row.sourceSummary),
+       `detailsJson` is the real column (migration
+       `202609050001_listing_details_json`); the legacy `details` alias covers
+       any caller still holding a pre-column row shape. Rows stored before the
+       column existed have neither, and fall through to the validated prose
+       scrape of `sourceSummary` exactly as before. */
+    details: (() => {
+      const stored = row.detailsJson ?? row.details;
+      return hasAnyListingDetail(stored) ? normalizeListingDetails(stored) : listingDetailsFromSourceSummary(row.sourceSummary);
+    })(),
   };
 }
 

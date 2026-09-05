@@ -9,7 +9,7 @@ import { isPropertyTypeCode, normalizeAvailability, type PropertyTypeCode } from
 import { normalizeListerType } from "@/lib/listing/lister-type";
 import { formatPrice } from "@/lib/property-generator";
 import { inrToBigInt, inrToNumber } from "@/lib/money";
-import { listingDetailsFromSourceSummary } from "@/lib/listing-details-contract";
+import { hasAnyListingDetail, listingDetailsFromSourceSummary, normalizeListingDetails } from "@/lib/listing-details-contract";
 import { isPrismaPersistence } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { getListings } from "@/lib/repositories";
@@ -57,6 +57,15 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
      BIGINT, so Prisma requires a bigint on write. */
   const priceInrValue = inrToBigInt(draft.priceInr, "Listing.priceInr");
   const pricePerSqft = draft.areaSqft > 0 ? `₹${Math.round(draft.priceInr / draft.areaSqft).toLocaleString("en-IN")} / sq ft` : null;
+  /* Structured details live on their own column now. The old
+     `sourceSummary: JSON.stringify(draft.details)` smuggling is what made one
+     column carry two meanings — prose for feeds, JSON for drafts — and is why
+     reader paths had to guess. Validated ONCE here, so what we store is
+     exactly what the UI can filter and render; empty details stay NULL rather
+     than `{}`, which keeps the prose fallback meaningful for legacy rows. */
+  const validatedDetails = normalizeListingDetails(draft.details ?? {});
+  const detailsJson = hasAnyListingDetail(validatedDetails) ? validatedDetails : null;
+
   await db.listing.upsert({
     where: { stableId: draft.stableId },
     update: {
@@ -71,7 +80,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       availability: draft.availability,
       listerType: draft.listerType ?? "OWNER",
       description: draft.description,
-      sourceSummary: JSON.stringify(draft.details ?? {}),
+      detailsJson,
       postalCode: draft.postalCode,
       cityId: city.id,
       localityId: locality.id,
@@ -93,7 +102,7 @@ async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
       availability: draft.availability,
       listerType: draft.listerType ?? "OWNER",
       brokerOrgId: draft.organizationId,
-      sourceSummary: JSON.stringify(draft.details ?? {}),
+      detailsJson,
       postalCode: draft.postalCode,
       cityId: city.id,
       localityId: locality.id,
@@ -514,12 +523,17 @@ function contractFromRow(row: Record<string, unknown>): ListingDraft {
     listerType: normalizeListerType(row.listerType) ?? "OWNER",
     description: String(row.description ?? ""),
     mediaRightsConfirmed: true,
-    /* Same contract as the public read path (repositories/mappers.ts). This
-       used to be a second, looser copy of the parser, which is how "one column,
-       two meanings" became "one column, two behaviours": the broker's own draft
-       round-tripped unvalidated JSON while the shopper-facing path silently
-       dropped it. */
-    details: listingDetailsFromSourceSummary(typeof row.sourceSummary === "string" ? row.sourceSummary : null),
+    /* Same contract as the public read path (repositories/mappers.ts): the
+       structured `detailsJson` column wins when non-empty, and rows written
+       before the column existed fall through to the validated sourceSummary
+       scrape. This used to be a second, looser copy of the parser, which is
+       how "one column, two meanings" became "one column, two behaviours":
+       the broker's own draft round-tripped unvalidated JSON while the
+       shopper-facing path silently dropped it. */
+    details: (() => {
+      const stored = (row as { detailsJson?: unknown }).detailsJson;
+      return hasAnyListingDetail(stored) ? normalizeListingDetails(stored) : listingDetailsFromSourceSummary(typeof row.sourceSummary === "string" ? row.sourceSummary : null);
+    })(),
     organizationId: String(row.brokerOrgId ?? ""),
     status: (String(row.lifecycle ?? "IN_REVIEW") as ListingDraft["status"]) || "IN_REVIEW",
     auditTrail: [],

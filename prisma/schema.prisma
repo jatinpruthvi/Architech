@@ -728,6 +728,16 @@ model Listing {
   locationVerifiedAt   DateTime?
 
   sourceSummary        String?
+  /**
+   * Structured listing details (bathrooms, parkingSpaces, furnishing, floor,
+   * facing, amenities), validated at the boundary by
+   * `lib/listing-details-contract.ts`. This column is what ended the
+   * "sourceSummary is prose for feeds, JSON for broker drafts" ambiguity:
+   * writers now store validated details HERE, and readers fall back to a
+   * prose-safe scrape of sourceSummary only for rows written before this
+   * column existed. Details are filterable facts, not decoration.
+   */
+  detailsJson          Json?
   meaningfulUpdatedAt  DateTime  @default(now())
   publishedAt          DateTime?
   expiresAt            DateTime?

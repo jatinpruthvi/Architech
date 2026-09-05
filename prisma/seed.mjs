@@ -5,11 +5,15 @@ import { CITIES, LOCALITIES } from "./seed-registry.mjs";
 // Prisma 7 clients require a driver adapter.
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
+/* `details` are illustrative demo facts (the listings themselves are demo
+   data) — but they are written to the structured `detailsJson` column so the
+   prisma read path exercises the same structured-first contract the broker
+   write path uses. */
 const listings = [
-  { stableId: "garden-courtyard", slug: "garden-courtyard", title: "A garden courtyard in Paldi", localitySlug: "paldi", priceLabel: "₹1.85 Cr", priceInr: 18_500_000, pricePerSqft: "₹12,480 / sq ft", bhk: 3, areaSqft: 1482, propertyType: "APARTMENT", availability: "READY_TO_MOVE", verification: "RERA_VERIFIED", description: "Old trees, kota stone floors, and a courtyard that carries the whole house.", image: "prop-courtyard" },
-  { stableId: "light-filled-home", slug: "light-filled-home", title: "Light across every room", localitySlug: "prahlad-nagar", priceLabel: "₹1.24 Cr", priceInr: 12_400_000, pricePerSqft: "₹11,350 / sq ft", bhk: 2, areaSqft: 1092, propertyType: "APARTMENT", availability: "NEW_LAUNCH", verification: "VERIFIED_PARTNER", description: "Morning sun through sheer curtains; a single brick wall keeps it grounded.", image: "prop-light" },
-  { stableId: "thaltej-dusk-house", slug: "thaltej-dusk-house", title: "A quieter edge of Thaltej", localitySlug: "thaltej", priceLabel: "₹2.40 Cr", priceInr: 24_000_000, pricePerSqft: "₹10,860 / sq ft", bhk: 4, areaSqft: 2210, propertyType: "VILLA", availability: "RESALE", verification: "RERA_VERIFIED", description: "Brick and white plaster volumes glowing at blue hour, west of the city's rush.", image: "prop-thaltej" },
-  { stableId: "neem-lane-rowhouse", slug: "neem-lane-rowhouse", title: "Under the neem canopy", localitySlug: "navrangpura", priceLabel: "₹98 L", priceInr: 9_800_000, pricePerSqft: "₹10,420 / sq ft", bhk: 2, areaSqft: 940, propertyType: "ROWHOUSE", availability: "RESALE", verification: "SOURCE_REVIEWED", description: "A tree-lined lane where the street itself is the amenity.", image: "locality-street" },
+  { stableId: "garden-courtyard", slug: "garden-courtyard", title: "A garden courtyard in Paldi", localitySlug: "paldi", priceLabel: "₹1.85 Cr", priceInr: 18_500_000, pricePerSqft: "₹12,480 / sq ft", bhk: 3, areaSqft: 1482, propertyType: "APARTMENT", availability: "READY_TO_MOVE", verification: "RERA_VERIFIED", description: "Old trees, kota stone floors, and a courtyard that carries the whole house.", image: "prop-courtyard", details: { bathrooms: 3, parkingSpaces: 1, furnishing: "SEMI_FURNISHED", facing: "EAST", amenities: ["Garden or courtyard", "Balcony"] } },
+  { stableId: "light-filled-home", slug: "light-filled-home", title: "Light across every room", localitySlug: "prahlad-nagar", priceLabel: "₹1.24 Cr", priceInr: 12_400_000, pricePerSqft: "₹11,350 / sq ft", bhk: 2, areaSqft: 1092, propertyType: "APARTMENT", availability: "NEW_LAUNCH", verification: "VERIFIED_PARTNER", description: "Morning sun through sheer curtains; a single brick wall keeps it grounded.", image: "prop-light", details: { bathrooms: 2, parkingSpaces: 1, furnishing: "UNFURNISHED", facing: "EAST" } },
+  { stableId: "thaltej-dusk-house", slug: "thaltej-dusk-house", title: "A quieter edge of Thaltej", localitySlug: "thaltej", priceLabel: "₹2.40 Cr", priceInr: 24_000_000, pricePerSqft: "₹10,860 / sq ft", bhk: 4, areaSqft: 2210, propertyType: "VILLA", availability: "RESALE", verification: "RERA_VERIFIED", description: "Brick and white plaster volumes glowing at blue hour, west of the city's rush.", image: "prop-thaltej", details: { bathrooms: 4, parkingSpaces: 2, furnishing: "FURNISHED", amenities: ["Garden or courtyard", "Lift", "Reserved parking"] } },
+  { stableId: "neem-lane-rowhouse", slug: "neem-lane-rowhouse", title: "Under the neem canopy", localitySlug: "navrangpura", priceLabel: "₹98 L", priceInr: 9_800_000, pricePerSqft: "₹10,420 / sq ft", bhk: 2, areaSqft: 940, propertyType: "ROWHOUSE", availability: "RESALE", verification: "SOURCE_REVIEWED", description: "A tree-lined lane where the street itself is the amenity.", image: "locality-street", details: { bathrooms: 2, parkingSpaces: 0, furnishing: "SEMI_FURNISHED" } },
 ];
 
 async function main() {
@@ -151,6 +155,7 @@ async function main() {
         brokerOrgId: broker.id,
         reraRecordId: listing.verification === "RERA_VERIFIED" ? rera.id : undefined,
         sourceSummary: "Seeded from the August 2026 Amdavad Modern prototype fixtures.",
+        detailsJson: listing.details,
         publishedAt: new Date(),
       },
       create: {
@@ -175,6 +180,7 @@ async function main() {
         brokerOrgId: broker.id,
         reraRecordId: listing.verification === "RERA_VERIFIED" ? rera.id : undefined,
         sourceSummary: "Seeded from the August 2026 Amdavad Modern prototype fixtures.",
+        detailsJson: listing.details,
         publishedAt: new Date(),
       },
     });

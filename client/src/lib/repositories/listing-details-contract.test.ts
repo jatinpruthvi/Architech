@@ -120,22 +120,32 @@ describe("the mapper that lost facts", () => {
     expect(property.details).not.toHaveProperty("bathrooms");
   });
 
-  it("prefers a structured column over the prose fallback", () => {
+  it("prefers the structured detailsJson column over the prose fallback", () => {
     const property = dbListingToProperty({
       ...base,
-      details: { bathrooms: 4 },
+      detailsJson: { bathrooms: 4 },
       sourceSummary: "Seeded from the August 2026 prototype fixtures.",
     });
+    expect(property.details.bathrooms).toBe(4);
+  });
+
+  it("still accepts the pre-column `details` alias for legacy callers", () => {
+    const property = dbListingToProperty({ ...base, details: { bathrooms: 4 } });
     expect(property.details.bathrooms).toBe(4);
   });
 
   it("does not let an empty structured column mask the fallback", () => {
     const property = dbListingToProperty({
       ...base,
-      details: {},
+      detailsJson: {},
       sourceSummary: JSON.stringify({ bathrooms: 2 }),
     });
     expect(property.details.bathrooms).toBe(2);
+  });
+
+  it("never forwards unvalidated JSONB to the UI", () => {
+    const property = dbListingToProperty({ ...base, detailsJson: { bathrooms: "see brochure", amenities: null, parkingSpaces: -3 } });
+    expect(property.details).toEqual({});
   });
 
   it("never forwards an unvalidated feed value to the UI", () => {
