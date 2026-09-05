@@ -76,6 +76,14 @@ describe("backend search contract", () => {
   });
 
   it("reads ?pincode= from URL params", () => {
+    /* "Search this area" (I-8): a bbox around Paldi returns only Paldi. */
+    const bboxResponse = searchListingsFromSearchParams(new URLSearchParams("bbox=72.55,23.0,72.57,23.02"));
+    expect(bboxResponse.results.length).toBeGreaterThan(0);
+    expect(bboxResponse.results.every((property) => property.localitySlug === "paldi")).toBe(true);
+    /* A malformed box is dropped, not applied (never an empty page by accident). */
+    const all = searchListingsFromSearchParams(new URLSearchParams(""));
+    expect(searchListingsFromSearchParams(new URLSearchParams("bbox=not-a-box")).results.length).toBe(all.results.length);
+
     const response = searchListingsFromSearchParams(new URLSearchParams("pincode=560066"));
     expect(response.pincode).toBe("560066");
     expect(response.results.every((property) => property.localitySlug === "whitefield")).toBe(true);

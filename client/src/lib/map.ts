@@ -1,6 +1,47 @@
 import type { Property } from "@/lib/repositories";
 import type { Locality } from "@/lib/localities";
 
+/* ---------- "Search this area" bounds (I-8) ----------
+ *
+ * Precision rule: published listing positions are LOCALITY-level (public
+ * coordinates are approximations by contract — see the location docs), so a
+ * bounds search includes a listing when its LOCALITY's reviewed marker falls
+ * inside the rectangle. That is exactly how far the data honours; inventing a
+ * doorstep-level match would silently promise precision the signal never had.
+ */
+export type MapBounds = { west: number; south: number; east: number; north: number };
+
+/** Strict bbox parser for the `?bbox=w,s,e,n` URL contract. Anything even
+    slightly off (wrong arity, NaN, inverted or zero-area box, out-of-globe
+    coordinates) yields null and the search behaves as if no bbox was given —
+    a malformed box must NOT return an empty page. A sane India-span sanity
+    cap (≤ 8° per side ≈ one metro region plus margin) keeps an absurd query
+    (whole planet) from silently being "everything", but rejecting it rather
+    than clamping keeps the URL the truth of what the user saw. */
+export function parseBoundsParam(raw: string | null | undefined): MapBounds | null {
+  if (!raw) return null;
+  const parts = raw.split(",").map((part) => Number.parseFloat(part.trim()));
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) return null;
+  const [west, south, east, north] = parts;
+  if (west < -180 || west > 180 || east < -180 || east > 180 || south < -90 || south > 90 || north < -90 || north > 90) return null;
+  if (west >= east || south >= north) return null;
+  if (east - west > 8 || north - south > 8) return null;
+  return { west, south, east, north };
+}
+
+export function boundsContainPoint(bounds: MapBounds, coordinates: [number, number]): boolean {
+  const [lon, lat] = coordinates;
+  return lon >= bounds.west && lon <= bounds.east && lat >= bounds.south && lat <= bounds.north;
+}
+
+/** True when the listing's locality marker (city-scoped, matching
+    makeListingMapPoints' provenance rule) lies inside the bounds. */
+export function listingWithinBounds(property: Pick<Property, "localitySlug" | "citySlug">, localities: Locality[], bounds: MapBounds): boolean {
+  const locality = localities.find((item) => item.slug === property.localitySlug && item.citySlug === property.citySlug);
+  const coordinates = locality ? parseMarker(locality.marker) : null;
+  return coordinates ? boundsContainPoint(bounds, coordinates) : false;
+}
+
 export type ListingMapPoint = {
   id: string;
   title: string;

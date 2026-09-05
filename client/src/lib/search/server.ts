@@ -3,6 +3,8 @@ import { applyMarket, applyQuery, parseFilterParam, type MarketCategory, type Ma
 import { getListingsForServer, MAX_UNSCOPED_LISTING_ROWS } from "@/lib/repositories/server/prisma";
 import { getCityBySlug } from "@/lib/repositories";
 import { listingMatchesPincode, parsePincode } from "@/lib/pincodes";
+import { listingWithinBounds, parseBoundsParam } from "@/lib/map";
+import { getLocalities } from "@/lib/repositories/localities";
 import { buildPostgresSearchPlan } from "./sql";
 import { narrowListingIdsForQuery, sqlNarrowEnabled } from "./sql-narrow";
 import { isPrismaSearchSource } from "./source";
@@ -75,7 +77,13 @@ export async function searchListingsForServer(request: SearchRequest = {}): Prom
 
   // A malformed PIN is ignored rather than returning an empty page.
   const pincode = parsePincode(request.pincode);
-  const scoped = pincode ? listings.filter((listing) => listingMatchesPincode(listing.localitySlug, pincode)) : listings;
+  const pinned = pincode ? listings.filter((listing) => listingMatchesPincode(listing.localitySlug, pincode)) : listings;
+
+  /* "Search this area" (I-8): locality-marker containment, same helper and
+     same fixture-seeded locality registry as the client path — both data
+     modes must answer a bounds search identically. */
+  const bounds = parseBoundsParam(request.bbox);
+  const scoped = bounds ? pinned.filter((listing) => listingWithinBounds(listing, getLocalities(), bounds)) : pinned;
 
   const groups = facetGroupsFor({ intent, projection });
   const state: FacetState = parseFacetState(tokens.join(","), groups);
@@ -126,6 +134,7 @@ export function searchListingsFromSearchParamsForServer(params: URLSearchParams)
     q: params.get("q") ?? "",
     city: params.get("city") ?? undefined,
     pincode: params.get("pincode") ?? undefined,
+    bbox: params.get("bbox") ?? undefined,
     filters: parseFilterParam(params.get("filters")),
     category: (params.get("category") as MarketCategory) || "all",
     intent: params.get("intent") === "rent" ? "rent" : "buy",
