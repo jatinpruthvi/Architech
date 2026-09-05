@@ -64,6 +64,23 @@ export function serializeFilters(ids: string[]): string {
 /* ---------- Free-text query matching (?q=) ---------- */
 export type QueryableProperty = { bhk: number; locality: string; title: string; city: string; priceNum: number; project?: string; developer?: string; subtype?: string };
 
+/** The residual free-text tokens after the structured extractions (PIN, "2 bhk",
+    "under 1.5 cr", filler words). Exported because the SQL narrowing path
+    (lib/search/server/sql-narrow.ts) MUST use the identical token set or the
+    database candidates stop being a superset of the JS result — different
+    tokenizers on the two sides is exactly the drift this function exists to
+    prevent. \p{M} keeps Devanagari vowel signs attached to their consonant. */
+export function queryResidualTokens(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const residual = q
+    .replace(/(?<![0-9])[1-9][0-9]{5}(?![0-9])/g, " ")
+    .replace(/(\d+)\s*bhk/g, " ")
+    .replace(/under\s*₹?\s*([\d.]+)\s*(cr|crore|l|lakh)/g, " ")
+    .replace(/near|in|homes?|flats?|apartments?|the/g, " ");
+  return residual.split(/[^\p{L}\p{M}]+/u).filter((t) => t.length > 2);
+}
+
 /** Token-AND matching: "2 bhk thaltej" → bhk===2 AND text contains "thaltej".
     "under 1.5 cr" / "under 1 cr" style tokens match price. */
 export function matchesQuery<T extends QueryableProperty>(p: T, query: string): boolean {
@@ -88,20 +105,14 @@ export function matchesQuery<T extends QueryableProperty>(p: T, query: string): 
   // "under X cr" / "under X crore"
   const underMatch = q.match(/under\s*₹?\s*([\d.]+)\s*(cr|crore|l|lakh)/);
 
-  const residual = q
-    .replace(/(?<![0-9])[1-9][0-9]{5}(?![0-9])/g, " ")
-    .replace(/(\d+)\s*bhk/g, " ")
-    .replace(/under\s*₹?\s*([\d.]+)\s*(cr|crore|l|lakh)/g, " ")
-    .replace(/near|in|homes?|flats?|apartments?|the/g, " ");
-
   if (bhkMatch && p.bhk !== parseInt(bhkMatch[1], 10)) return false;
   if (underMatch) {
     const n = parseFloat(underMatch[1]);
     const limit = underMatch[2].startsWith("l") ? n * 100_000 : n * 10_000_000;
     if (p.priceNum >= limit) return false;
   }
-  // \p{M} keeps Devanagari vowel signs attached to their consonant.
-  const tokens = residual.split(/[^\p{L}\p{M}]+/u).filter((t) => t.length > 2);
+  /* Same tokenizer as the SQL narrowing path — see queryResidualTokens. */
+  const tokens = queryResidualTokens(query);
   return tokens.every((t) => haystack.includes(t) || tokenMatchesLocality(t));
 }
 

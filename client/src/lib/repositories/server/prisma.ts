@@ -83,7 +83,7 @@ export const MAX_UNSCOPED_LISTING_ROWS = 5000;
  * i.e. one unbounded table read per search, growing with the feed. The city is
  * now pushed into the query and an explicit ceiling caps the nationwide case.
  */
-export async function getListingsForServer(scope: ListingScope = {}) {
+export async function getListingsForServer(scope: ListingScope & { narrowToIds?: string[] } = {}) {
   /* Every read — city-scoped or not — gets the same ceiling and the same
      stable ordering. Before this, a city-scoped read omitted `take` entirely
      and could pull an entire city table into memory while the nationwide read
@@ -92,14 +92,20 @@ export async function getListingsForServer(scope: ListingScope = {}) {
   const ceiling = scope.limit ?? MAX_UNSCOPED_LISTING_ROWS;
   if (!isPrismaDataSource()) {
     const all = getListings();
-    const cityScoped = scope.citySlug ? all.filter((listing) => listing.citySlug === scope.citySlug) : all;
+    const narrowed = scope.narrowToIds ? all.filter((listing) => scope.narrowToIds!.includes(listing.id)) : all;
+    const cityScoped = scope.citySlug ? narrowed.filter((listing) => listing.citySlug === scope.citySlug) : narrowed;
     return cityScoped.slice(0, ceiling);
   }
+  /* An executed SQL narrowing that produced ZERO candidates is authoritative
+     (the candidates are a superset of what the JS filter would keep — see
+     buildSqlNarrowPlan), so the read is skipped entirely. */
+  if (scope.narrowToIds && scope.narrowToIds.length === 0) return [];
   const prisma = getPrismaClient();
   const rows = await prisma.listing.findMany({
     where: {
       lifecycle: "ACTIVE",
       ...(scope.citySlug ? { city: { slug: scope.citySlug } } : {}),
+      ...(scope.narrowToIds ? { id: { in: scope.narrowToIds } } : {}),
     },
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
