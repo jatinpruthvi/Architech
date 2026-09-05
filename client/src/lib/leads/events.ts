@@ -6,7 +6,7 @@
  * a throwing listener must never break lead creation for the buyer.
  */
 export type LeadEvent = {
-  type: "lead.created";
+  type: "lead.created" | "lead.acknowledged" | "lead.replied";
   leadId: string;
   /** The organization that owns the inbox this lead landed in, when known.
       Null means an unattributed fixture lead; nobody should be mailed. */

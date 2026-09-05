@@ -4,9 +4,10 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/observability/logger", () => ({ logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() } }));
 
 import { buildLeadNotification, leadNotificationGate, leadNotifyTargets } from "./notifications";
+import { buildBuyerReplyNotification, buyerReplyIdempotencyKey, buyerReplyNotificationGate } from "./buyer-notifications";
 import { dispatchLeadEventNotifications } from "./notifications-runtime";
-import { onLeadEvent, resetLeadEventListenersForTests } from "./events";
-import { createLeadForServer } from "./server";
+import { onLeadEvent, resetLeadEventListenersForTests, type LeadEvent } from "./events";
+import { createLeadForServer, updateLeadStatusForServer } from "./server";
 
 describe("leadNotificationGate", () => {
   const env = { LEAD_NOTIFICATIONS: "on", RESEND_API_KEY: "re_test", LEAD_NOTIFICATION_FROM: "desk@architech.in" };
@@ -98,6 +99,44 @@ describe("lead event spine + create wiring", () => {
     onLeadEvent(() => { throw new Error("boom"); });
     const result = await createLeadForServer({ listingId: "garden-courtyard", name: "Calm Buyer", phone: "+91 98765 40002", message: "Calling about a walkthrough this week.", consentText: "I consent to masked contact for this enquiry.", idempotencyKey: `notify-test-3-${Date.now()}` });
     expect(result.ok).toBe(true);
+    resetLeadEventListenersForTests();
+  });
+});
+
+describe("buyer reply notifications", () => {
+  it("gate requires its own flag plus the Resend pair", () => {
+    const env = { BUYER_REPLY_NOTIFICATIONS: "on", RESEND_API_KEY: "re_test", BUYER_REPLY_NOTIFICATION_FROM: "hello@architech.in" };
+    expect(buyerReplyNotificationGate(env)).toMatchObject({ enabled: true });
+    expect(buyerReplyNotificationGate({ RESEND_API_KEY: "re_test" })).toMatchObject({ enabled: false, missing: ["BUYER_REPLY_NOTIFICATIONS=on", "BUYER_REPLY_NOTIFICATION_FROM"] });
+  });
+
+  it("copy is transactional about the buyer's own enquiry — no upsell, no pipeline jargon", () => {
+    const ack = buildBuyerReplyNotification({ type: "lead.acknowledged", buyerName: "Kinjal", listingTitle: "A garden courtyard in Paldi", listingId: "garden-courtyard", organizationName: "Nivasa Partners", baseUrl: "https://www.architech.in" });
+    expect(ack.subject).toContain("Nivasa Partners");
+    expect(ack.text).toContain("Kinjal");
+    expect(ack.text).toContain("A garden courtyard in Paldi");
+    expect(ack.text).toContain("acknowledged");
+    expect(ack.text).not.toMatch(/funnel|lead id|inbox/i); /* broker-internal words don't belong in the buyer's mailbox */
+    const replied = buildBuyerReplyNotification({ type: "lead.replied", buyerName: "Kinjal", listingTitle: "T", listingId: "x", organizationName: "Nivasa Partners", baseUrl: "https://www.architech.in" });
+    expect(replied.text).toContain("replied");
+  });
+
+  it("idempotency key binds lead, transition, and address", () => {
+    expect(buyerReplyIdempotencyKey("L1", "lead.replied", "b@x.in")).toBe("buyer:L1:lead.replied:b@x.in");
+    expect(buyerReplyIdempotencyKey("L1", "lead.acknowledged", "b@x.in")).not.toBe(buyerReplyIdempotencyKey("L1", "lead.replied", "b@x.in"));
+  });
+
+  it("status changes emit exactly the buyer-visible events; CLOSED notifies nobody", async () => {
+    resetLeadEventListenersForTests();
+    const seen: LeadEvent["type"][] = [];
+    onLeadEvent((event) => { seen.push(event.type); });
+    const created = await createLeadForServer({ listingId: "garden-courtyard", name: "Notified Buyer", phone: "+91 98765 40007", message: "Keen to understand this home's surroundings.", consentText: "I consent to masked contact for this enquiry.", idempotencyKey: `buyer-emit-${Date.now()}` });
+    expect(created.ok && !created.duplicate).toBe(true);
+    const leadId = created.ok ? created.lead.id : "";
+    await updateLeadStatusForServer(leadId, "ACKNOWLEDGED");
+    await updateLeadStatusForServer(leadId, "REPLIED");
+    await updateLeadStatusForServer(leadId, "CLOSED");
+    expect(seen).toEqual(["lead.created", "lead.acknowledged", "lead.replied"]);
     resetLeadEventListenersForTests();
   });
 });
