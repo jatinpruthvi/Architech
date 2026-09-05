@@ -292,11 +292,38 @@ function ListingsSource({ section }: { section: "newspaper" | "agent-listings" |
   return <><LedgerIntro label="Inventory source" detail={`RAIL / ${deskMeta[section].index}`} body={meta.description} /><div className="mt-7"><FilterStrip searchLabel={meta.search} fields={["Listing type", "Property type", "Locality", "Budget", "Area", "Bedrooms", "Posted date"]} /></div><div className="mt-5"><TableFrame columns={["Status", "Property ID", "Type", "Property type", "Locality", "Price", "Area", "BHK", "Project", section === "newspaper" ? "Contact" : section === "agent-listings" ? "Agent" : "Owner", "Posted"]}><tr><td colSpan={11} className="px-4 py-12 text-center"><EmptyState title={`No ${meta.title.toLowerCase()} rows`} body="No records are available for this account and filter set. Connect an approved inventory source before presenting live contact details." /></td></tr></TableFrame></div></>;
 }
 
-function MyListings({ drafts }: { drafts: ListingDraft[] }) {
+/* Per-record actions (Property-CRUD): every action is a real call to the
+   draft API the broker-store already enforces — PATCH lives in the listing
+   wizard (?draft=), archive/resume/map through POST x-draft-action, delete is
+   double-click confirmed. Nothing here fakes a control: an error from the
+   server is surfaced as-is. */
+function MyListings({ drafts, onChanged }: { drafts: ListingDraft[]; onChanged?: () => void }) {
   const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const runAction = async (draft: ListingDraft, action: "archive" | "resume" | "delete") => {
+    if (busy) return;
+    setBusy(`${draft.id}:${action}`);
+    setFeedback(null);
+    try {
+      const response = action === "delete"
+        ? await fetch(`/api/broker/listings/${encodeURIComponent(draft.id)}`, { method: "DELETE" })
+        : await fetch(`/api/broker/listings/${encodeURIComponent(draft.id)}`, { method: "POST", headers: { "x-draft-action": action } });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "The server refused the action.");
+      setFeedback(action === "delete" ? `Draft ${draft.id} deleted.` : `Draft ${draft.id} ${action === "archive" ? "archived" : "restored"}.`);
+      if (action === "delete") setConfirmingDelete(null);
+      onChanged?.();
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "The action failed.");
+    } finally {
+      setBusy(null);
+    }
+  };
   const needle = query.trim().toLowerCase();
   const visible = needle ? drafts.filter((draft) => [draft.id, draft.title, draft.localitySlug, draft.propertyType].join(" ").toLowerCase().includes(needle)) : drafts;
-  return <><LedgerIntro label="Your source records" detail="REGISTER / 05" body="Manage your own source records from draft to review to publish. Public visibility only follows moderation and evidence checks." /><div className="mt-7 flex items-center justify-between gap-4"><p className="max-w-xl text-sm leading-6 text-ink/60">The listing dossier keeps media rights, RERA context, locality, price, and description attached to the same reviewable submission.</p><Link href="/broker/listings/new" className="btn-sweep inline-flex min-h-11 items-center gap-2 px-4 stamp !text-[10px] font-semibold text-cream"><Plus size={14} /> Post property</Link></div><div className="mt-6"><FilterStrip searchLabel="Project name" fields={["Listing type", "Property type", "Locality", "Budget", "Area", "Bedrooms", "Status", "Posted date"]} value={query} onValueChange={setQuery} /></div><div className="mt-5"><TableFrame columns={["Action", "Property ID", "Type", "Property type", "Locality", "Price", "Area", "BHK", "Project", "Status", "Posted"]}>{visible.length ? visible.map((draft) => <tr key={draft.id} className="border-t border-ink/10"><td className="px-4 py-4"><Link className="stamp !text-[10px] font-semibold text-brick" href="/admin/moderation/listings">Review</Link></td><td className="px-4 py-4 font-mono text-xs">{draft.id}</td><td className="px-4 py-4">Sell</td><td className="px-4 py-4">Residential</td><td className="px-4 py-4">{draft.localitySlug}</td><td className="px-4 py-4">₹{draft.priceInr.toLocaleString("en-IN")}</td><td className="px-4 py-4">—</td><td className="px-4 py-4">{draft.bhk}</td><td className="px-4 py-4">{draft.title}</td><td className="px-4 py-4"><span className="stamp ink-3 bg-sand px-2 py-1">{draft.status.toLowerCase()}</span></td><td className="px-4 py-4">—</td></tr>) : <tr><td colSpan={11} className="px-4 py-12 text-center"><EmptyState title={needle ? "No properties match that search" : "No properties yet"} body={needle ? "Adjust the query above; every draft below it is your own live source record." : "Start with the five-step listing wizard. Drafts remain private until your evidence and moderation checks are complete."} action={needle ? undefined : "Create property draft"} href={needle ? undefined : "/broker/listings/new"} /></td></tr>}</TableFrame></div></>;
+  return <><LedgerIntro label="Your source records" detail="REGISTER / 05" body="Manage your own source records from draft to review to publish. Public visibility only follows moderation and evidence checks." /><div className="mt-7 flex items-center justify-between gap-4"><p className="max-w-xl text-sm leading-6 text-ink/60">The listing dossier keeps media rights, RERA context, locality, price, and description attached to the same reviewable submission.</p><Link href="/broker/listings/new" className="btn-sweep inline-flex min-h-11 items-center gap-2 px-4 stamp !text-[10px] font-semibold text-cream"><Plus size={14} /> Post property</Link></div><div className="mt-6"><FilterStrip searchLabel="Project name" fields={["Listing type", "Property type", "Locality", "Budget", "Area", "Bedrooms", "Status", "Posted date"]} value={query} onValueChange={setQuery} /></div>{feedback ? <p role="status" className="mt-4 text-sm ink-2">{feedback}</p> : null}<div className="mt-5"><TableFrame columns={["Action", "Property ID", "Type", "Property type", "Locality", "Price", "Area", "BHK", "Project", "Status", "Posted"]}>{visible.length ? visible.map((draft) => <tr key={draft.id} className="border-t border-ink/10"><td className="px-4 py-4"><div className="flex flex-wrap items-center gap-x-3 gap-y-1">{(draft.status === "DRAFT" || draft.status === "CHANGES_REQUESTED") ? <Link className="stamp font-semibold text-brick" href={`/broker/listings/new?draft=${encodeURIComponent(draft.id)}`}>Edit</Link> : null}{draft.status === "IN_REVIEW" || draft.status === "ACTIVE" ? <Link className="stamp font-semibold text-brick" href="/admin/moderation/listings">Review</Link> : null}{draft.status === "ARCHIVED" ? <button type="button" disabled={busy !== null} onClick={() => void runAction(draft, "resume")} className="stamp font-semibold text-brick disabled:opacity-50">{busy === `${draft.id}:resume` ? "Restoring…" : "Restore"}</button> : <button type="button" disabled={busy !== null} onClick={() => void runAction(draft, "archive")} className="stamp font-semibold ink-3 disabled:opacity-50">{busy === `${draft.id}:archive` ? "Archiving…" : "Archive"}</button>}{(draft.status === "DRAFT" || draft.status === "ARCHIVED") ? (confirmingDelete === draft.id ? <span className="inline-flex items-center gap-2"><button type="button" disabled={busy !== null} onClick={() => void runAction(draft, "delete")} className="stamp font-semibold text-brick disabled:opacity-50">{busy === `${draft.id}:delete` ? "Deleting…" : "Delete permanently"}</button><button type="button" onClick={() => setConfirmingDelete(null)} className="stamp ink-3">Keep</button></span> : <button type="button" disabled={busy !== null} onClick={() => setConfirmingDelete(draft.id)} className="stamp ink-3 disabled:opacity-50">Delete</button>) : null}</div></td><td className="px-4 py-4 font-mono text-xs">{draft.id}</td><td className="px-4 py-4">Sell</td><td className="px-4 py-4">Residential</td><td className="px-4 py-4">{draft.localitySlug}</td><td className="px-4 py-4">₹{draft.priceInr.toLocaleString("en-IN")}</td><td className="px-4 py-4">—</td><td className="px-4 py-4">{draft.bhk}</td><td className="px-4 py-4">{draft.title}</td><td className="px-4 py-4"><span className="stamp ink-3 bg-sand px-2 py-1">{draft.status.toLowerCase()}</span></td><td className="px-4 py-4">—</td></tr>) : <tr><td colSpan={11} className="px-4 py-12 text-center"><EmptyState title={needle ? "No properties match that search" : "No properties yet"} body={needle ? "Adjust the query above; every draft below it is your own live source record." : "Start with the five-step listing wizard. Drafts remain private until your evidence and moderation checks are complete."} action={needle ? undefined : "Create property draft"} href={needle ? undefined : "/broker/listings/new"} /></td></tr>}</TableFrame></div></>;
 }
 
 
@@ -329,7 +356,7 @@ export default function AgentWorkspace({ section = "dashboard" }: { section?: Ag
     if (section === "subscriptions") return <Subscriptions />;
     if (section === "leads") return <Leads leads={leads} leadsState={leadsState} />;
     if (section === "channel") return <BrokerChannelPanel drafts={drafts} />;
-    if (section === "my-listings") return <MyListings drafts={drafts} />;
+    if (section === "my-listings") return <MyListings drafts={drafts} onChanged={() => void loadDrafts()} />;
     if (section === "newspaper" || section === "agent-listings" || section === "owner-listings") return <ListingsSource section={section} />;
     if (section === "ai") return <AiSuite />;
     if (section === "auctions") return <Auctions />;

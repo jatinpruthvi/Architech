@@ -51,6 +51,48 @@ export default function ListingSubmission() {
     const declared = session?.user.listerType;
     if (declared) setDraft((current) => ({ ...current, listerType: declared }));
   }, [session, status, listerTypeTouched]);
+  /* Edit mode (Property-CRUD): /broker/listings/new?draft=<id> loads the
+     broker's own draft back into this same packet and saves through PATCH
+     instead of POST. Read straight from location.search inside an effect —
+     useSearchParams would force a Suspense boundary through the whole route
+     tree for one optional param. The API re-checks ownership and status
+     server-side; a draft that is not yours or not editable simply surfaces
+     the server's error, never a silent no-op. */
+  const [editLoading, setEditLoading] = useState(false);
+  /* Distinct from draftId: the create flow ALSO sets draftId on success, so
+     only this flag (the packet was loaded from the URL) picks PATCH over POST. */
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    const editingId = new URLSearchParams(window.location.search).get("draft");
+    if (!editingId) return;
+    let cancelled = false;
+    setEditLoading(true);
+    setListerTypeTouched(true); /* the loaded draft's attribution wins over the sign-up seed */
+    void (async () => {
+      try {
+        const response = await fetch("/api/broker/listings", { cache: "no-store" });
+        const payload = await response.json();
+        const drafts: Array<ListingDraftInput & { id: string; status: string }> = Array.isArray(payload.drafts) ? payload.drafts : [];
+        const existing = drafts.find((item) => item.id === editingId);
+        if (cancelled) return;
+        if (!existing) {
+          toast("Draft not found.", { description: "That draft is not in your workspace. Starting a fresh packet." });
+          return;
+        }
+        const { id, status: _status, ...input } = existing;
+        void id; void _status;
+        setDraft(input);
+        setDraftId(editingId);
+        setEditing(true);
+        toast("Draft loaded.", { description: `Editing ${editingId}; saving updates it in place.` });
+      } catch {
+        if (!cancelled) toast("Could not load the draft.", { description: "Starting a fresh packet instead." });
+      } finally {
+        if (!cancelled) setEditLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const localities = useMemo(() => getLocalities(draft.citySlug), [draft.citySlug]);
   const selectedLocality = useMemo(() => localities.find((locality) => locality.slug === draft.localitySlug), [localities, draft.localitySlug]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -206,6 +248,31 @@ export default function ListingSubmission() {
     }
   };
 
+  /* Save-back path for edit mode: PATCH /api/broker/listings/[draftId]. The
+     server enforces organization scope and editable status; here we only
+     decide create-vs-update from whether the form was loaded with a draft. */
+  const patchDraft = async () => {
+    if (!draftId || submitting) return;
+    setSubmitting(true);
+    setErrors([]);
+    try {
+      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "Could not update the draft.");
+      toast("Draft updated.", { description: `Draft ${draftId} now reflects these edits.` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not update the draft.";
+      setErrors([message]);
+      toast("Could not update the draft.", { description: message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const submitForReview = async () => {
     if (!draftId || submitting) return;
     setSubmitting(true);
@@ -239,14 +306,14 @@ export default function ListingSubmission() {
 
   const onDraft = async () => {
     if (!validate()) return;
-    await postDraft();
+    await (editing ? patchDraft() : postDraft());
   };
 
   return (
     <div className="page-transition listing-dossier bg-paper pt-[78px] text-ink">
       <section className="listing-dossier-hero border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><p className="kicker text-brick">Listing draft · moderation required</p><span className="stamp text-ink/45">SOURCE PACKET / 01 · INDIA LOCATION-SCOPED</span></div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><p className="kicker text-brick">Listing draft · moderation required</p><span className="stamp text-ink/45">SOURCE PACKET / 01 · INDIA LOCATION-SCOPED</span>{editing ? <span className="stamp font-semibold text-brick" data-testid="edit-mode-stamp">EDITING DRAFT · SAVES IN PLACE</span> : null}{editLoading ? <span className="stamp ink-3">LOADING DRAFT…</span> : null}</div>
           <h1 className="display mt-6 max-w-[760px] text-[clamp(40px,6vw,78px)]">Submit a home with the <em className="text-brick">source trail</em> attached.</h1>
           <p className="mt-6 max-w-[560px] text-base leading-8 text-ink/65">Capture the fields enforced by the listing contract, create a private draft, then submit the evidence packet for moderation.</p>
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-ink/12 pt-4 stamp text-ink/50"><span>01 / capture</span><span>02 / verify</span><span>03 / review</span><span>04 / publish</span></div>
