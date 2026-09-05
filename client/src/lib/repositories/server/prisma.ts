@@ -1,7 +1,7 @@
 import "server-only";
 import { createRequire } from "node:module";
 import { dbListingToProperty, dbLocalityToLocality } from "@/lib/repositories/mappers";
-import { getListings, getListingById, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
+import { getListings, getListingById, getListingsByLocality, getLocalities, getLocalityBySlug, getCities, type City } from "@/lib/repositories";
 import {
   dbOrganizationToPublicAgent,
   demoDirectoryAgents,
@@ -18,6 +18,9 @@ type PrismaClientLike = {
   locality: {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
+  };
+  city: {
+    findMany(args: unknown): Promise<unknown[]>;
   };
   brokerOrganization: {
     findMany(args: unknown): Promise<unknown[]>;
@@ -206,6 +209,24 @@ export async function getListingsByLocalityForServer(localitySlug: string, cityS
     take: MAX_UNSCOPED_LISTING_ROWS,
   });
   return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
+}
+
+/** City rows as registry identities. The prisma City carries no editorial
+    garnish (tagline/tier/hero live in the reference fixtures), and the SEO
+    composer only consumes `slug/name/stateSlug`, so this returns exactly
+    that pick rather than fabricating the editorial shape — a page builder
+    that needs the full `City` enrichment resolves it by slug from the
+    reference registry, the same DB-facts/reference-data split the listing
+    mappers use. */
+export async function getCitiesForServer(): Promise<Array<Pick<City, "slug" | "name" | "stateSlug">>> {
+  if (!isPrismaDataSource()) return getCities();
+  const prisma = getPrismaClient();
+  const rows = await prisma.city.findMany({ select: { slug: true, name: true, state: true }, orderBy: { name: "asc" } });
+  return (rows as Array<Record<string, unknown>>).map((row) => ({
+    slug: String(row.slug),
+    name: String(row.name),
+    stateSlug: String(row.state ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+  }));
 }
 
 export async function getLocalitiesForServer() {

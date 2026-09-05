@@ -64,14 +64,14 @@ export function isSitemapSegment(value: string): value is SeoSitemapSegment {
     "Published" is registry-indexable **and** quality-gate approved. A page the
     gate holds back stays useful to users but is never submitted to Google —
     which is exactly what makes programmatic page generation safe. */
-export function getSegmentPages(segment: SeoSitemapSegment): SeoPage[] {
-  return getPublishableSeoPages().filter((page) => sitemapSegmentForPage(page) === segment);
+export function getSegmentPages(segment: SeoSitemapSegment, pages?: SeoPage[]): SeoPage[] {
+  return (pages ?? getPublishableSeoPages()).filter((page) => sitemapSegmentForPage(page) === segment);
 }
 
 /** Every page must land in exactly one child sitemap — a page in two is a
     duplicate-submission bug, a page in none is silently uncrawlable. */
-export function collectUnsegmentedPages(): SeoPage[] {
-  return getPublishableSeoPages().filter((page) => !isSitemapSegment(sitemapSegmentForPage(page)));
+export function collectUnsegmentedPages(pages?: SeoPage[]): SeoPage[] {
+  return (pages ?? getPublishableSeoPages()).filter((page) => !isSitemapSegment(sitemapSegmentForPage(page)));
 }
 
 export function toSitemapEntries(pages: SeoPage[]): SitemapUrlEntry[] {
@@ -85,9 +85,9 @@ export function toSitemapEntries(pages: SeoPage[]): SitemapUrlEntry[] {
 
 /** The index advertises each child sitemap at the newest date inside it, so
     Google can skip a child sitemap whose contents have not moved. */
-export function toSitemapIndexEntries(): SitemapUrlEntry[] {
+export function toSitemapIndexEntries(pages?: SeoPage[]): SitemapUrlEntry[] {
   return SITEMAP_SEGMENTS.map((segment) => {
-    const dates = getSegmentPages(segment.id)
+    const dates = getSegmentPages(segment.id, pages)
       .map((page) => page.lastModified)
       .filter((date): date is string => Boolean(date))
       .sort();
@@ -151,12 +151,15 @@ export function renderSitemapIndexXml(entries: SitemapUrlEntry[]): string {
 
 /** Child-sitemap payload for one segment. Empty while public indexing is
     gated off, so a preview build never advertises URLs that are `noindex`. */
-export function buildSegmentSitemap(segment: SeoSitemapSegment, env: RuntimeEnvironment = process.env): string {
+export function buildSegmentSitemap(segment: SeoSitemapSegment, env: RuntimeEnvironment = process.env, pages?: SeoPage[]): string {
   if (!isPublicIndexingEnabled(env)) return renderUrlsetXml([]);
-  return renderUrlsetXml(toSitemapEntries(getSegmentPages(segment)));
+  /* `pages` is the live (prisma-composed) publishable set when the handlers
+     run the server data mode; absent, the fixture registry is used — so CI
+     and preview builds behave byte-for-byte as before. */
+  return renderUrlsetXml(toSitemapEntries(getSegmentPages(segment, pages)));
 }
 
-export function buildSitemapIndex(env: RuntimeEnvironment = process.env): string {
+export function buildSitemapIndex(env: RuntimeEnvironment = process.env, pages?: SeoPage[]): string {
   if (!isPublicIndexingEnabled(env)) return renderSitemapIndexXml([]);
-  return renderSitemapIndexXml(toSitemapIndexEntries());
+  return renderSitemapIndexXml(toSitemapIndexEntries(pages));
 }

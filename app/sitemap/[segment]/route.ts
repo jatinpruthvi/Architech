@@ -6,6 +6,7 @@
    submitting nothing. */
 import { notFound } from "next/navigation";
 import { buildSegmentSitemap, isSitemapSegment } from "@/lib/seo/sitemap";
+import { getPublishableSeoPagesForServer } from "@/lib/seo/pages-server";
 import type { SeoSitemapSegment } from "@/lib/seo/pages";
 
 /* Dynamic, not prerendered.
@@ -29,7 +30,8 @@ export async function GET(_request: Request, context: { params: Promise<{ segmen
   const { segment } = await context.params;
   const id = segment.replace(/\.xml$/, "");
   if (!isSitemapSegment(id)) notFound();
-  return new Response(buildSegmentSitemap(id as SeoSitemapSegment), {
+  const pages = await getPublishableSeoPagesForServer();
+  return new Response(buildSegmentSitemap(id as SeoSitemapSegment, process.env, pages), {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
       "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",

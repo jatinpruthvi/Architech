@@ -1,8 +1,8 @@
-import { getCities, getGuides, getListings, getLocalities } from "@/lib/repositories";
+import { getCities, getGuides, getListings, getLocalities, type City, type Locality, type Property } from "@/lib/repositories";
 import { localityIntel } from "@/lib/realestate/locality-intel";
 import { cityMarketTrends } from "@/lib/realestate/market-trends";
-import { demoDirectoryAgents, isAgentIndexable } from "@/lib/agent/directory";
-import { evaluateSeoPageQuality } from "./page-gate";
+import { demoDirectoryAgents, isAgentIndexable, type PublicAgentOrganization } from "@/lib/agent/directory";
+import { evaluateSeoPageQuality, type PageGateEvidence } from "./page-gate";
 import type { PageQualityDecision } from "./page-quality";
 import { isIndexable } from "./lifecycle";
 import { listingTargetQuery } from "./query-targeting";
@@ -116,78 +116,6 @@ const buyIndiaPage: SeoPage = {
   sitemap: { changeFrequency: "daily", priority: 0.95 },
 };
 
-/* Locality fact dates are computed once and shared: a city hub is as fresh as
-   the newest locality it aggregates, and recomputing per call would make
-   registry construction O(cities × localities × listings). */
-const localityFactDates = new Map<string, string>(
-  getLocalities().map((locality) => [locality.slug, localityIntel(locality.slug, locality.citySlug).asOfDate] as const),
-);
-
-/** Newest locality fact date inside a city — the honest `lastmod` for its hub. */
-function cityFactDate(citySlug: string): string | undefined {
-  const dates = getLocalities(citySlug)
-    .map((locality) => localityFactDates.get(locality.slug))
-    .filter((date): date is string => Boolean(date))
-    .sort();
-  return dates.length ? dates[dates.length - 1] : undefined;
-}
-
-/* One hub per live city, generated from the city registry so launching a city
-   is a single registry edit (SEO-002). */
-const cityPages: SeoPage[] = getCities().map((city) => ({
-  id: `city:${city.slug}:buy`,
-  routeType: "city",
-  path: cityPath(city.slug),
-  canonicalUrl: cityUrl(city.slug),
-  primaryIntent: `Help buyers compare ${city.name} localities before selecting a property.`,
-  indexability: "indexable",
-  owner: "SEO",
-  qualityState: "prototype-validated",
-  freshnessPolicy: "Refresh when locality coverage, counts, or city-level internal links change.",
-  entityIds: [`city:${city.slug}`, `state:${city.stateSlug}`],
-  lastModified: cityFactDate(city.slug),
-  sitemap: { changeFrequency: "daily", priority: 0.9 },
-}));
-
-const localityPages: SeoPage[] = getCities().flatMap((city) =>
-  getLocalities(city.slug).map((locality) => ({
-    id: `locality:${city.slug}:${locality.slug}:buy`,
-    routeType: "locality" as const,
-    path: localityPath(city.slug, locality.slug),
-    canonicalUrl: localityUrl(city.slug, locality.slug),
-    primaryIntent: `Show homes and locality context for ${locality.name}, ${city.name}.`,
-    indexability: "indexable" as const,
-    owner: "SEO" as const,
-    qualityState: "prototype-validated" as const,
-    freshnessPolicy: "Refresh when listings, coordinates, landmarks, or locality editorial context materially change.",
-    entityIds: [`city:${city.slug}`, `locality:${locality.slug}`],
-    // The date the locality's own aggregated facts were last refreshed.
-    lastModified: localityFactDates.get(locality.slug),
-    sitemap: { changeFrequency: "daily" as const, priority: 0.8 },
-  })),
-);
-
-const listingPages: SeoPage[] = getListings().map((property) => ({
-  id: `listing:${property.id}`,
-  routeType: "listing",
-  path: listingPath(property.id),
-  canonicalUrl: listingUrl(property.id),
-  primaryIntent: `Present property facts, trust context, and next action for ${property.title}.`,
-  // Only ACTIVE listings are indexable; SOLD context stays viewable but noindexed,
-  // and non-public states are excluded entirely (SEO-003/SEO-004).
-  indexability: isIndexable(property.lifecycle ?? "ACTIVE") ? "indexable" : "noindex",
-  owner: "SEO",
-  qualityState: "needs-production-data",
-  freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",
-  entityIds: [`city:${property.citySlug}`, `locality:${property.localitySlug}`, `listing:${property.id}`],
-  // The query this page is the answer to, declared as data so measurement has
-  // something to measure against. See client/src/lib/seo/query-targeting.ts.
-  targetQuery: listingTargetQuery(property).text,
-  // Mirrors `Listing.meaningfulUpdatedAt`, not `updatedAt`: a moderation touch
-  // is not a content change and must not bump `lastmod`.
-  lastModified: property.meaningfulUpdatedAt,
-  sitemap: { changeFrequency: "daily", priority: 0.7 },
-}));
 
 /* The guide index renders the guide list, so its honest `lastmod` is the
    newest guide revision it displays — not the build clock. */
@@ -338,19 +266,6 @@ const agentsHubPage: SeoPage = {
   sitemap: { changeFrequency: "weekly", priority: 0.5 },
 };
 
-const agentProfilePages: SeoPage[] = demoDirectoryAgents().map((agent) => ({
-  id: `agent:${agent.slug}`,
-  routeType: "hub" as const,
-  path: agentPath(agent.slug),
-  canonicalUrl: agentUrl(agent.slug),
-  primaryIntent: `Present ${agent.name}: verification tier, review evidence, and the live inventory this organization answers for.`,
-  indexability: isAgentIndexable(agent.verificationStatus) ? ("indexable" as const) : ("noindex" as const),
-  owner: "Product" as const,
-  qualityState: isAgentIndexable(agent.verificationStatus) ? ("prototype-validated" as const) : ("editorial-review-required" as const),
-  freshnessPolicy: "Refresh when the organization's verification status, reviews, or inventory changes.",
-  entityIds: [`agent:${agent.slug}`, "brand:architech"],
-  sitemap: { changeFrequency: "weekly" as const, priority: 0.4 },
-}));
 
 const reviewPage: SeoPage = {
   id: "page:review",
@@ -422,7 +337,127 @@ const priceIndexHubPage: SeoPage = {
   sitemap: { changeFrequency: "weekly", priority: 0.7 },
 };
 
-const cityPriceIndexPages: SeoPage[] = getCities().map((city) => {
+
+/* ---------- buildSeoPages: the ONE registry composer (D5-04, M-1 slice) ----------
+ *
+ * The registry used to be computed at module load straight off the fixture
+ * repositories. Under `ARCHITECH_DATA_SOURCE=prisma` that advertised the
+ * fixture corpus in the sitemap while the rendered graph came from the
+ * database — the orphan-URL bug D5-04 named. Now the composer takes its
+ * sources explicitly:
+ *
+ *  - fixture mode (CI, preview, `seoPages` constant below): fixture
+ *    repositories, byte-for-byte what this file produced before the refactor;
+ *  - prisma mode: `lib/seo/pages-server.ts` passes the DB-mapped rows. City
+ *    identity is DB-pinned (slug/name/stateSlug); editorial enrichment that
+ *    only exists in reference garners (guide bodies, market intel) stays
+ *    fixture-keyed BY SLUG — the same DB-facts/reference-data split the
+ *    listing mappers already use.
+ *
+ * Types enforce the boundary: the composition needs only the identity fields
+ * of a city, so a prisma-derived city can never have to fake editorial copy
+ * it does not carry. */
+export type SeoPageSources = {
+  cities: Array<Pick<City, "slug" | "name" | "stateSlug">>;
+  localities: Locality[];
+  listings: Property[];
+  agents: PublicAgentOrganization[];
+};
+
+export function buildSeoPages(src: SeoPageSources): SeoPage[] {
+
+/* Locality fact dates are computed once and shared: a city hub is as fresh as
+   the newest locality it aggregates, and recomputing per call would make
+   registry construction O(cities × localities × listings). */
+const localityFactDates = new Map<string, string>(
+  src.localities.map((locality) => [locality.slug, localityIntel(locality.slug, locality.citySlug).asOfDate] as const),
+);
+
+/** Newest locality fact date inside a city — the honest `lastmod` for its hub. */
+function cityFactDate(citySlug: string): string | undefined {
+  const dates = src.localities.filter((locality) => locality.citySlug === citySlug)
+    .map((locality) => localityFactDates.get(locality.slug))
+    .filter((date): date is string => Boolean(date))
+    .sort();
+  return dates.length ? dates[dates.length - 1] : undefined;
+}
+
+/* One hub per live city, generated from the city registry so launching a city
+   is a single registry edit (SEO-002). */
+const cityPages: SeoPage[] = src.cities.map((city) => ({
+  id: `city:${city.slug}:buy`,
+  routeType: "city",
+  path: cityPath(city.slug),
+  canonicalUrl: cityUrl(city.slug),
+  primaryIntent: `Help buyers compare ${city.name} localities before selecting a property.`,
+  indexability: "indexable",
+  owner: "SEO",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh when locality coverage, counts, or city-level internal links change.",
+  entityIds: [`city:${city.slug}`, `state:${city.stateSlug}`],
+  lastModified: cityFactDate(city.slug),
+  sitemap: { changeFrequency: "daily", priority: 0.9 },
+}));
+
+
+const localityPages: SeoPage[] = src.cities.flatMap((city) =>
+  src.localities.filter((candidate) => candidate.citySlug === city.slug).map((locality) => ({
+    id: `locality:${city.slug}:${locality.slug}:buy`,
+    routeType: "locality" as const,
+    path: localityPath(city.slug, locality.slug),
+    canonicalUrl: localityUrl(city.slug, locality.slug),
+    primaryIntent: `Show homes and locality context for ${locality.name}, ${city.name}.`,
+    indexability: "indexable" as const,
+    owner: "SEO" as const,
+    qualityState: "prototype-validated" as const,
+    freshnessPolicy: "Refresh when listings, coordinates, landmarks, or locality editorial context materially change.",
+    entityIds: [`city:${city.slug}`, `locality:${locality.slug}`],
+    // The date the locality's own aggregated facts were last refreshed.
+    lastModified: localityFactDates.get(locality.slug),
+    sitemap: { changeFrequency: "daily" as const, priority: 0.8 },
+  })),
+);
+
+
+const listingPages: SeoPage[] = src.listings.map((property) => ({
+  id: `listing:${property.id}`,
+  routeType: "listing",
+  path: listingPath(property.id),
+  canonicalUrl: listingUrl(property.id),
+  primaryIntent: `Present property facts, trust context, and next action for ${property.title}.`,
+  // Only ACTIVE listings are indexable; SOLD context stays viewable but noindexed,
+  // and non-public states are excluded entirely (SEO-003/SEO-004).
+  indexability: isIndexable(property.lifecycle ?? "ACTIVE") ? "indexable" : "noindex",
+  owner: "SEO",
+  qualityState: "needs-production-data",
+  freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",
+  entityIds: [`city:${property.citySlug}`, `locality:${property.localitySlug}`, `listing:${property.id}`],
+  // The query this page is the answer to, declared as data so measurement has
+  // something to measure against. See client/src/lib/seo/query-targeting.ts.
+  targetQuery: listingTargetQuery(property).text,
+  // Mirrors `Listing.meaningfulUpdatedAt`, not `updatedAt`: a moderation touch
+  // is not a content change and must not bump `lastmod`.
+  lastModified: property.meaningfulUpdatedAt,
+  sitemap: { changeFrequency: "daily", priority: 0.7 },
+}));
+
+
+const agentProfilePages: SeoPage[] = src.agents.map((agent) => ({
+  id: `agent:${agent.slug}`,
+  routeType: "hub" as const,
+  path: agentPath(agent.slug),
+  canonicalUrl: agentUrl(agent.slug),
+  primaryIntent: `Present ${agent.name}: verification tier, review evidence, and the live inventory this organization answers for.`,
+  indexability: isAgentIndexable(agent.verificationStatus) ? ("indexable" as const) : ("noindex" as const),
+  owner: "Product" as const,
+  qualityState: isAgentIndexable(agent.verificationStatus) ? ("prototype-validated" as const) : ("editorial-review-required" as const),
+  freshnessPolicy: "Refresh when the organization's verification status, reviews, or inventory changes.",
+  entityIds: [`agent:${agent.slug}`, "brand:architech"],
+  sitemap: { changeFrequency: "weekly" as const, priority: 0.4 },
+}));
+
+
+const cityPriceIndexPages: SeoPage[] = src.cities.map((city) => {
   const report = cityMarketTrends(city.slug);
   return {
     id: `report:price-index:${city.slug}`,
@@ -443,16 +478,36 @@ const cityPriceIndexPages: SeoPage[] = getCities().map((city) => {
   };
 });
 
-export const seoPages: SeoPage[] = [homePage, agentsHubPage, ...agentProfilePages, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, locationsIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
+  return [homePage, agentsHubPage, ...agentProfilePages, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, locationsIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
+}
+
+/* The fixture composition. This constant is byte-for-byte the registry the
+   pre-refactor module computed (buildSeoPages over the fixture sources), and
+   stays the default for CI, previews, and every consumer that does not run a
+   server data mode. */
+export const seoPages: SeoPage[] = buildSeoPages({
+  cities: getCities(),
+  localities: getLocalities(),
+  listings: getListings(),
+  agents: demoDirectoryAgents(),
+});
 
 /* Quality decisions are computed once at module load: evaluating per call would
    re-scan the listing table for every consumer. */
-const qualityByPageId: ReadonlyMap<string, PageQualityDecision> = new Map(
-  getIndexableSeoPages().map((page) => [page.id, evaluateSeoPageQuality(page)] as const),
-);
+export function buildSeoPageQualityMap(pages: SeoPage[], evidence?: PageGateEvidence): ReadonlyMap<string, PageQualityDecision> {
+  return new Map(
+    pages.filter((page) => page.indexability === "indexable").map((page) => [page.id, evaluateSeoPageQuality(page, evidence)] as const),
+  );
+}
 
-export function getIndexableSeoPages() {
-  return seoPages.filter((page) => page.indexability === "indexable");
+const qualityByPageId: ReadonlyMap<string, PageQualityDecision> = buildSeoPageQualityMap(seoPages);
+
+/* The exported helpers take the page array as an optional argument: prisma-mode
+   callers (seo/pages-server.ts) pass the DB-composed registry WITH its matching
+   quality map so the gate never adjudicates pages it did not build against the
+   same evidence. */
+export function getIndexableSeoPages(pages: SeoPage[] = seoPages) {
+  return pages.filter((page) => page.indexability === "indexable");
 }
 
 /** Pages that are both registry-indexable and quality-gate approved.
@@ -461,8 +516,9 @@ export function getIndexableSeoPages() {
     indexed; `page-gate.ts` decides whether the page has the evidence to earn
     it. Keeping the two separate is what stops a generated page from being
     published just because someone added it to the registry. */
-export function getPublishableSeoPages() {
-  return getIndexableSeoPages().filter((page) => qualityByPageId.get(page.id)?.indexable ?? false);
+export function getPublishableSeoPages(pages: SeoPage[] = seoPages, qualityMap?: ReadonlyMap<string, PageQualityDecision>) {
+  const map = qualityMap ?? qualityByPageId;
+  return getIndexableSeoPages(pages).filter((page) => map.get(page.id)?.indexable ?? false);
 }
 
 /** The quality decision for a page, or undefined if it is not registered. */
@@ -472,15 +528,17 @@ export function qualityDecisionFor(pageId: string) {
 
 /** Pages the registry wants indexed but the quality gate holds back, with the
     reasons. This is the report to act on — not an error, a worklist. */
-export function getHeldBackPages(): { page: SeoPage; decision: PageQualityDecision }[] {
+export function getHeldBackPages(pages: SeoPage[] = seoPages, qualityMap?: ReadonlyMap<string, PageQualityDecision>): { page: SeoPage; decision: PageQualityDecision }[] {
+  const map = qualityMap ?? qualityByPageId;
   const held: { page: SeoPage; decision: PageQualityDecision }[] = [];
-  for (const page of getIndexableSeoPages()) {
-    const decision = qualityByPageId.get(page.id);
+  for (const page of getIndexableSeoPages(pages)) {
+    const decision = map.get(page.id);
     if (decision && !decision.indexable) held.push({ page, decision });
   }
   return held;
 }
 
-export function findSeoPageByPath(path: string) {
-  return seoPages.find((page) => page.path === path);
+export function findSeoPageByPath(path: string, pages: SeoPage[] = seoPages) {
+  return pages.find((page) => page.path === path);
 }
+
