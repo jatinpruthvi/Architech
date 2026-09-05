@@ -3,6 +3,8 @@
 **Last updated:** 24 Aug 2026
 **Purpose:** A step-by-step tracker for finishing Phase 1 one item at a time: pick one item, implement it, validate it, update this file, then move to the next item.
 
+> **Going live?** Everything that still needs an external account, credential, legal decision, person, or device is consolidated in [`blocker.md`](./blocker.md) — clear that file's checklist before enabling `PUBLIC_INDEXING_ENABLED`.
+
 This tracker is derived from:
 
 - `governance/contracts/IMPLEMENTATION-MATRIX.md`
