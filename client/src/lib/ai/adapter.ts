@@ -17,7 +17,13 @@ export type AiUsage = {
   inputTokens?: number;
   outputTokens?: number;
   latencyMs: number;
-  estimatedCostInr: number;
+  /* Money truth contract (I-2): `0` means FREE — the deterministic fallback
+     genuinely costs nothing, so 0 there is a fact. An external provider call
+     whose cost we cannot meter is null ("untracked"), never 0: a hardcoded
+     zero in the usage column made the "auditable cost" contract claim a ₹0
+     spend on calls that actually bill by token, which is how a budget alarm
+     stays silent while the meter runs. */
+  estimatedCostInr: number | null;
 };
 
 export type AiResult<T> = {
@@ -106,8 +112,8 @@ export async function runAiAdapter<TInput, T>(
       data,
       fallbackUsed: false,
       provider,
-      usage: { latencyMs: Math.round(performance.now() - start), estimatedCostInr: 0 },
-      warnings,
+      usage: { latencyMs: Math.round(performance.now() - start), estimatedCostInr: null },
+      warnings: [...warnings, "External provider cost is not tracked by this adapter yet; budget readers must treat the call as unmetered, not free."],
     };
   } catch (error) {
     return {
