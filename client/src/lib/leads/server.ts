@@ -13,7 +13,10 @@ type PrismaLeadClient = ReturnType<typeof getPrismaClient> & {
     create(args: unknown): Promise<{ id: string; createdAt: Date }>;
     update(args: unknown): Promise<{ id: string }>;
   };
-  auditEvent: { create(args: unknown): Promise<{ id: string }> };
+  auditEvent: {
+    create(args: unknown): Promise<{ id: string }>;
+    findMany(args: unknown): Promise<Array<Record<string, unknown>>>;
+  };
   $transaction<T>(fn: (tx: PrismaLeadClient) => Promise<T>): Promise<T>;
 };
 
@@ -157,7 +160,7 @@ function dbLeadContract(input: LeadInput, listingTitle: string, id: string, audi
 }
 
 /** Map a Prisma lead row (with listing title) to the lead contract. */
-function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "Verified partner"): LeadRecord {
+function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "Verified partner", statusHistory: LeadRecord["statusHistory"] = []): LeadRecord {
   const id = String(row.id ?? "");
   const listing = (row.listing ?? {}) as { title?: string; brokerOrg?: { name?: string } | null };
   const createdAt = safeIso(row.createdAt);
@@ -176,7 +179,7 @@ function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "V
     consentText: String(row.consentText ?? ""),
     idempotencyKey: String(row.idempotencyKey ?? ""),
     auditEvent: { id: stableId("audit", `${id}:lead.created`), action: "lead.created", entityType: "Lead", metadata: { masked: true, source: "api.leads.prisma" } },
-    statusHistory: [],
+    statusHistory,
     createdAt,
   };
 }
@@ -203,7 +206,26 @@ export async function listLeadsForServer(organizationId: string): Promise<LeadRe
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: LEAD_LISTING_INCLUDE,
   });
-  return rows.map((row) => dbLeadRowToContract(row));
+  /* Hydrate status history from the lead's AuditEvent rows: without it prisma
+     rows came back with an EMPTY history and every consumer of it (first-response
+     analytics on the desk, consent trail views) would silently see nothing while
+     looking authoritative. The creation transaction and every status change
+     write these events, so this join is the same story the fixture store tells. */
+  const ids = rows.map((row) => String(row.id ?? "")).filter(Boolean);
+  const byLead = new Map<string, LeadRecord["statusHistory"]>();
+  if (ids.length) {
+    const events = await prisma.auditEvent.findMany({
+      where: { entityType: "Lead", entityId: { in: ids } },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+    for (const event of events) {
+      const leadId = String(event.entityId ?? "");
+      const list = byLead.get(leadId) ?? [];
+      list.push({ id: String(event.id ?? ""), action: String(event.action ?? ""), at: safeIso(event.createdAt), metadata: (typeof event.metadata === "object" && event.metadata ? event.metadata : {}) as Record<string, unknown> });
+      byLead.set(leadId, list);
+    }
+  }
+  return rows.map((row) => dbLeadRowToContract(row, undefined, byLead.get(String(row.id ?? "")) ?? []));
 }
 
 /* Ownership check shared by every lead mutation.
