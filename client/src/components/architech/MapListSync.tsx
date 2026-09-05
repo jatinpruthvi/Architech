@@ -6,7 +6,7 @@ import { Crosshair } from "lucide-react";
 import { toast } from "sonner";
 import type { Property } from "@/lib/repositories";
 import { getLocalities } from "@/lib/repositories/localities";
-import { boundsForPoints, makeListingMapPoints, makeLocalityClusters } from "@/lib/map";
+import { boundsForPoints, makeListingMapPoints, makeLocalityClusters, type MapBounds } from "@/lib/map";
 
 type MapLibreModule = typeof import("maplibre-gl");
 
@@ -30,6 +30,10 @@ type MapListSyncProps = {
   listings: Property[];
   selectedId?: string | null;
   onSelect: (id: string) => void;
+  /** "Search this area": handed the current viewport rectangle. Absent or a
+      not-ready map degrades the control to an explanation toast, never a dead
+      click (the behaviour that audit I-8 named). */
+  onSearchArea?: (bounds: MapBounds) => void;
   className?: string;
   copy: {
     mapLabel: string;
@@ -41,7 +45,7 @@ type MapListSyncProps = {
   };
 };
 
-export default function MapListSync({ listings, selectedId, onSelect, className = "", copy }: MapListSyncProps) {
+export default function MapListSync({ listings, selectedId, onSelect, onSearchArea, className = "", copy }: MapListSyncProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Map<string, Marker>>(new Map());
@@ -168,7 +172,18 @@ export default function MapListSync({ listings, selectedId, onSelect, className 
       )}
 
       <button
-        onClick={() => toast(copy.searchingArea, { description: copy.searchingAreaDescription })}
+        /* Fires the real bounds search when the map shows a meaningful
+           rectangle; the toast copy remains as the feedback for the not-ready
+           state (map still loading, or the fallback list) so the control is
+           never inert anywhere. */
+        onClick={() => {
+          const bounds = mapRef.current?.getBounds();
+          if (bounds && onSearchArea) {
+            onSearchArea({ west: bounds.getWest(), south: bounds.getSouth(), east: bounds.getEast(), north: bounds.getNorth() });
+          } else {
+            toast(copy.searchingArea, { description: copy.searchingAreaDescription });
+          }
+        }}
         className="night-fill touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp !text-[11px] font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
         <Crosshair size={14} className="text-ember" /> {copy.searchArea}
       </button>

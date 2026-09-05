@@ -86,9 +86,18 @@ export async function runMediaRetentionSweep(now = new Date()): Promise<{ scanne
 }
 
 /** Register the periodic sweep with the process runtime (instrumentation). */
+/** Inspectable gate (used by the route AND by observability/status so an
+    operator can ask "is the sweep live here" without digging through logs). */
+export function mediaRetentionSweepGate(env: Record<string, string | undefined> = process.env): { enabled: boolean; intervalMinutes: number; mode: "in-process-single-replica" | "disabled" } {
+  if (env.MEDIA_RETENTION_SWEEP === "off") return { enabled: false, intervalMinutes: 0, mode: "disabled" };
+  const intervalMinutes = Math.max(1, Number(env.MEDIA_RETENTION_SWEEP_INTERVAL_MINUTES ?? 60) || 60);
+  return { enabled: true, intervalMinutes, mode: "in-process-single-replica" };
+}
+
 export function registerMediaRetentionRuntime(): void {
-  if (process.env.MEDIA_RETENTION_SWEEP === "off") return;
-  const intervalMinutes = Math.max(1, Number(process.env.MEDIA_RETENTION_SWEEP_INTERVAL_MINUTES ?? 60) || 60);
+  const gate = mediaRetentionSweepGate();
+  if (!gate.enabled) return;
+  const intervalMinutes = gate.intervalMinutes;
   const run = () => {
     runMediaRetentionSweep()
       .then((result) => {

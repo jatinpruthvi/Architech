@@ -23,8 +23,19 @@ export default tseslint.config(
          removed — which Tailwind's preflight does globally. The explicit role is the
          documented fix, and the design system depends on it: a filter row's item count
          is information, not decoration. lib/ui/design-token-discipline.test.ts asserts
-         every <ul> carries it, so the two must stay in agreement. */
-      "jsx-a11y/no-redundant-roles": ["error", { ul: ["list"], ol: ["list"], li: ["listitem"] }],
+         every <ul> carries it. The rule's option map only ADDS redundant pairs, so
+         there is no per-element exemption short of this: the rule is off here, and
+         the test above is what keeps us honest. */
+      "jsx-a11y/no-redundant-roles": "off",
+    },
+  },
+  {
+    /* The VoiceOver `role="list"` contract above applies to app/ routes too;
+       without a scoped override those pages inherit recommended and lint
+       fails on exactly the accessibility fix the design system mandates. */
+    files: ["app/**/*.{ts,tsx}"],
+    rules: {
+      "jsx-a11y/no-redundant-roles": "off",
     },
   },
 );

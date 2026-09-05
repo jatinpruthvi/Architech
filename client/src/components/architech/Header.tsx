@@ -11,6 +11,7 @@ import { useLang } from "@/contexts/LangContext";
 import { useSession } from "@/contexts/SessionContext";
 import { loginUrlFor } from "@/lib/auth/redirects";
 import AccountMenu from "@/components/architech/AccountMenu";
+import CommandPaletteLauncher from "@/components/architech/CommandPaletteLauncher";
 
 const RequirementCapture = dynamic(() => import("@/components/architech/RequirementCapture"), {
   ssr: false,
@@ -83,6 +84,7 @@ export default function Header() {
             {saved.length > 0 && <span className="clay-fill grid h-4.5 min-w-[18px] place-items-center rounded-full bg-brick px-1 text-[10px] font-bold text-cream">{saved.length}</span>}
           </Link>
           <AccountMenu onDark={onDark} />
+          <CommandPaletteLauncher onDark={onDark} />
           <RequirementCapture compact />
           <Link href="/search/" className="clay-fill btn-sweep btn-primary motion-press hidden items-center gap-2 border border-white/15 bg-brick px-5 py-3 stamp !text-[12px] font-semibold text-cream md:inline-flex"><Search size={14} /> {t.nav.start}</Link>
           <button className={`grid h-11 w-11 place-items-center lg:hidden ${onDark ? "text-cream" : "text-ink"}`} onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>

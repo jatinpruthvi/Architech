@@ -157,6 +157,28 @@ describe("public API contract", () => {
     expect((body as { endpoints: { health: string } }).endpoints.health).toBe("/api/observability/health");
   });
 
+  it("GET /api/observability/status exposes activation-gate state with credential NAMES, never credential values", async () => {
+    const body = await json(await statusGet());
+    const gates = (body as { activationGates: Record<string, unknown> }).activationGates;
+    expect(gates).toBeTruthy();
+    /* Every gate is inspectable: the state is data, not a log line. */
+    for (const key of ["publicIndexing", "authSource", "dataSource", "durablePersistence", "savedSearchAlerts", "leadNotifications", "mediaRetentionSweep", "listingEventSpine", "burstRateLimiter"]) {
+      expect(gates, `activationGates must carry ${key}`).toHaveProperty(key);
+    }
+    /* The in-process subsystems declare their single-replica constraint as
+       data (M-5), not just in docs. */
+    expect((gates.listingEventSpine as { mode: string }).mode).toBe("in-process-single-replica");
+    expect((gates.burstRateLimiter as { mode: string }).mode).toBe("in-process-single-replica");
+    /* In this test env no provider credentials are set, so the email gates
+       must report disabled WITH the missing credential names — and the whole
+       payload must never contain a value that looks like a Resend/secret blob. */
+    expect(gates.savedSearchAlerts).toMatchObject({ enabled: false });
+    expect((gates.savedSearchAlerts as { missing: string[] }).missing).toEqual(expect.arrayContaining(["RESEND_API_KEY"]));
+    expect(gates.leadNotifications).toMatchObject({ enabled: false });
+    expect(JSON.stringify(body)).not.toMatch(/re_[A-Za-z0-9]{8,}/);
+    expect(JSON.stringify(body)).not.toContain(process.env.RESEND_API_KEY ?? "\0-never-set-\0");
+  });
+
   it("GET /api/broker/listings rejects an anonymous request", async () => {
     const response = await brokerDraftsGet(new Request("http://example.com/api/broker/listings?mode=none"));
     expect(response.status).toBe(401);

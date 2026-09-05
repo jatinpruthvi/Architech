@@ -3,6 +3,8 @@ import { getCities, getGuides, getListings, getLocalities } from "@/lib/reposito
 import { getIndexableSeoPages, seoPages } from "./pages";
 import { savedPath, searchPath } from "./urls";
 
+import { demoDirectoryAgents } from "@/lib/agent/directory";
+
 describe("SeoPage registry", () => {
   it("registers the current indexable public page set", () => {
     const expectedCount =
@@ -16,12 +18,15 @@ describe("SeoPage registry", () => {
       getCities().length + // one price index per city
       1 + // guide index
       getGuides().length +
+      1 + // agents directory hub
+      demoDirectoryAgents().length + // one profile per public organization
       9; // standing pages
     expect(seoPages).toHaveLength(expectedCount);
     expect(seoPages.map((page) => page.routeType)).toContain("home");
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length);
     expect(seoPages.filter((page) => page.routeType === "city")).toHaveLength(getCities().length);
-    expect(seoPages.filter((page) => page.routeType === "hub")).toHaveLength(2);
+    // buy India hub + locations India hub + agents hub + one profile per public organization
+    expect(seoPages.filter((page) => page.routeType === "hub")).toHaveLength(3 + demoDirectoryAgents().length);
     expect(seoPages.find((page) => page.id === "hub:locations:india")?.path).toBe("/locations/");
     expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
     expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(4 + getGuides().length); // guide index + developer index + investment lens + home loan context

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
+import WebVitalsReporter from "@/components/architech/WebVitalsReporter";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { organizationJsonLd } from "@/lib/seo/organization";
@@ -18,7 +19,10 @@ export const metadata: Metadata = {
   description:
     "Architech is a high-trust way to discover homes across India: verified RERA context, locality intelligence, and architecture-grade curation in 12 cities.",
   manifest: "/manifest.webmanifest",
-  alternates: { canonical: homeUrl() },
+  /* No layout-level canonical default: any route that forgets its own would
+     otherwise publish `<canonical = homepage>` — a false identity claim the
+     crawl simulation now catches. Home sets homeUrl() explicitly in page.tsx;
+     every other route carries its own canonical via the urls.ts builders. */
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }], apple: "/icon-192.png" },
   openGraph: {
     type: "website",
@@ -85,6 +89,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           extensions inject attributes (e.g. __processed_*) before React hydrates; it is
           not caused by app state. Warnings for child content still surface normally. */}
       <body suppressHydrationWarning>
+        {/* RUM heartbeat: reports LCP/INP/CLS/TTFB to /api/observability/web-vitals. */}
+        <WebVitalsReporter />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
           <Header />

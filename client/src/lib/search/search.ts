@@ -1,6 +1,8 @@
 import { applyMarket, applyQuery, applySort, type MarketCategory, type MarketIntent, type SortId } from "@/lib/filters";
 import { getCityBySlug, getListings, type Property } from "@/lib/repositories";
 import { listingMatchesPincode, parsePincode } from "@/lib/pincodes";
+import { listingWithinBounds, parseBoundsParam } from "@/lib/map";
+import { getLocalities } from "@/lib/repositories/localities";
 import { normalizePage, normalizePageSize, paginate, type PaginationMeta } from "./pagination";
 import {
   activeFacetCount,
@@ -27,6 +29,9 @@ export type SearchRequest = {
   city?: string;
   /** Restrict results to localities serving this PIN code. */
   pincode?: string;
+  /** "Search this area" rectangle (w,s,e,n degrees). Strictly parsed; a
+      malformed box is ignored rather than returning an empty page. */
+  bbox?: string;
   /**
    * `group:value` tokens (see `facets.ts`). Bare legacy chip ids are still
    * accepted and mapped onto groups, so links shared before the facet rebuild
@@ -88,7 +93,14 @@ export function searchListings(request: SearchRequest = {}): SearchResponse {
 
   // A malformed PIN is ignored rather than returning an empty page.
   const pincode = parsePincode(request.pincode);
-  const scoped = pincode ? byCity.filter((listing) => listingMatchesPincode(listing.localitySlug, pincode)) : byCity;
+  const pinned = pincode ? byCity.filter((listing) => listingMatchesPincode(listing.localitySlug, pincode)) : byCity;
+
+  /* "Search this area": locality-marker containment — locality-level precision
+     is what the data publishes, so this is as sharp as the signal allows. The
+     locality registry is the same one prisma rows are seeded from, so both
+     data modes filter identically. */
+  const bounds = parseBoundsParam(request.bbox);
+  const scoped = bounds ? pinned.filter((listing) => listingWithinBounds(listing, getLocalities(), bounds)) : pinned;
 
   const groups = facetGroupsFor({ intent, projection });
   const state = parseFacetState(tokens.join(","), groups);
@@ -203,6 +215,7 @@ export function searchListingsFromSearchParams(params: URLSearchParams): SearchR
     q: params.get("q") ?? "",
     city: params.get("city") ?? undefined,
     pincode: params.get("pincode") ?? undefined,
+    bbox: params.get("bbox") ?? undefined,
     // Raw token pass-through: legacy chip ids and `group:value` tokens are both
     // interpreted downstream by `parseFacetState`, so nothing is dropped here.
     filters: (params.get("filters") ?? "").split(",").map((token) => token.trim()).filter(Boolean),

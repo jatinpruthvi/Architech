@@ -62,7 +62,7 @@
 
 1. **Collections with notes on saved homes** (user-level `localStorage` + context + `/collections` page).
 2. **Buyer/renter account dashboard** (favorites + saved searches + alerts) once live auth is enabled.
-3. **Agent directory** (`/agents` or `/agent/:slug`) surfacing broker profiles + reviews + listings.
+3. ~~**Agent directory**~~ ✅ Shipped (batch 5): `/agents/` directory + `/agent/[slug]/` profiles surfacing verification tier, source-labelled reviews, and live inventory, registered in the SEO registry and sitemap with verification-gated indexability.
 4. **Real notification provider abstraction** (email/SMS/push contracts) — gated on provider accounts.
 
 ## Blocked on external accounts (not fabricated)

@@ -10,7 +10,18 @@ describe("optional AI adapter contract", () => {
     expect(result.fallbackUsed).toBe(false);
     expect(result.data).toBe("det:hello");
     expect(result.usage.latencyMs).toBeGreaterThanOrEqual(0);
+    /* Deterministic compute has no provider bill; 0 is the true cost here. */
     expect(result.usage.estimatedCostInr).toBe(0);
+  });
+
+  it("reports external-provider cost as untracked (null), never as 0 (I-2)", async () => {
+    const result = await runAiAdapter("hello", { deterministic, external: async (value) => `six-pro:${value}`, provider: "external" });
+    expect(result.fallbackUsed).toBe(false);
+    expect(result.provider).toBe("external");
+    /* A metered-by-someone-else call reporting ₹0 would silence the very
+       budget alarm this column exists to feed. */
+    expect(result.usage.estimatedCostInr).toBeNull();
+    expect(result.warnings.some((warning) => warning.includes("unmetered"))).toBe(true);
   });
 
   it("falls back to deterministic when the external provider is absent", async () => {

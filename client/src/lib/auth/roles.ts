@@ -65,6 +65,7 @@ export const demoBrokerSession: AuthSession = {
     "broker.dashboard.read",
     "listing.draft.create",
     "lead.inbox.read",
+    "lead.inbox.write",
     "broker.channel.read",
     "broker.channel.write",
     "organization.profile.read",
@@ -91,6 +92,11 @@ const ROLE_PERMISSIONS_SOURCE: string[] = [
   "broker.dashboard.read",
   "listing.draft.create",
   "lead.inbox.read",
+  /* Writes are not reads: reply/close/delete/consent-revoke on a lead require
+     the explicit write grant (second dashboard audit — flagged note). A
+     read-only introspection session can now exist without inheriting
+     mutation rights by accident. */
+  "lead.inbox.write",
   "broker.channel.read",
   "broker.channel.write",
   "organization.profile.read",
@@ -114,6 +120,7 @@ const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
     "broker.dashboard.read",
     "listing.draft.create",
     "lead.inbox.read",
+    "lead.inbox.write",
     "broker.channel.read",
     "broker.channel.write",
     "organization.profile.read",

@@ -29,9 +29,15 @@ describe("RERA provider adapters", () => {
     }
   });
 
-  it("returns configured placeholder from Gujarat provider", async () => {
-    const result = await new GujaratReraProvider({ GUJARAT_RERA_BASE_URL: "https://gujrera.gujarat.gov.in", GUJARAT_RERA_API_KEY: "key" }).verify("GJ/RERA/AHM/2026/04821-DEMO");
-    expect(result.ok && result.provider).toBe("gujarat-rera");
-    expect(result.ok && result.provenance.parserVersion).toContain("placeholder");
+  it("fail-closes with 501 when 'configured' — the unimplemented adapter must not emit verdicts", async () => {
+    const provider = new GujaratReraProvider({ GUJARAT_RERA_BASE_URL: "https://gujrera.gujarat.gov.in", GUJARAT_RERA_API_KEY: "key" });
+    const result = await provider.verify("GJ/RERA/AHM/2026/04821-DEMO");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(501);
+      /* Never imply a verification state — not even a pessimistic one — for a
+         number the adapter did not actually check against the authority. */
+      expect(result.errors.join(" ")).toContain("not implemented");
+    }
   });
 });

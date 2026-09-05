@@ -150,6 +150,16 @@ export default function ResultsPage({
  // guard the effect re-fetched on every render and flashed skeletons over
  // correct results — the single biggest contributor to "this search is slow".
  const consumedRef = useRef<string | null>(null);
+
+ /* "Search this area" (I-8): the map hands back the viewport rectangle; it
+    becomes a `bbox` URL param, which re-runs the SHARED search pipeline (same
+    URL → same results on reload/share) instead of a private client-side
+    filter that would disagree with counts and pagination. */
+ const searchAreaBounds = useCallback((bounds: { west: number; south: number; east: number; north: number }) => {
+   const p = new URLSearchParams(searchStr);
+   p.set("bbox", [bounds.west, bounds.south, bounds.east, bounds.north].map((n) => n.toFixed(5)).join(","));
+   router.replace(`/search/${`?${p}`}`, { scroll: false });
+ }, [router, searchStr]);
  // Fallback snapshot for a failed API call, held in a ref so the fetch effect
  // reads the CURRENT value without listing a per-render object identity in its
  // deps (which re-fired the effect forever — the v4 skeleton flash).
@@ -683,6 +693,7 @@ export default function ResultsPage({
  listings={results}
  selectedId={selectedId}
  onSelect={setSelectedId}
+ onSearchArea={searchAreaBounds}
  className="vh-cta border border-ink/12"
  copy={{
  mapLabel: t.search.mapLabel,
@@ -701,6 +712,7 @@ export default function ResultsPage({
  listings={results}
  selectedId={selectedId}
  onSelect={setSelectedId}
+ onSearchArea={searchAreaBounds}
  className="h-[52vh]"
  copy={{
  mapLabel: t.search.mapLabel,

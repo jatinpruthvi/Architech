@@ -1,12 +1,22 @@
+import type { Metadata } from "next";
 import Home from "@/pages/Home";
-import { getCities, getFeaturedListings, getListings, getListingsByCity, getLocalities } from "@/lib/repositories";
+import { getCities, getLocalities } from "@/lib/repositories";
+import { getFeaturedListingsForServer, getListingsForServer } from "@/lib/repositories/server/prisma";
 import { exampleQuery, popularQueries } from "@/lib/search/suggest";
 import { formatBudget } from "@/lib/search/parse-query";
+import { homeUrl } from "@/lib/seo/urls";
+import type { Property } from "@/lib/repositories";
+
+/* The root layout carries no canonical default (a default would masquerade as
+   the homepage on every route that forgot its own), so home says it itself. */
+export const metadata: Metadata = {
+  alternates: { canonical: homeUrl() },
+};
 
 const showcaseCities = ["mumbai", "bengaluru", "ahmedabad"];
 
-function heroPresets() {
-  const buyPrices = getListings()
+function heroPresets(listings: Property[]) {
+  const buyPrices = listings
     .filter((listing) => (listing.transaction ?? "buy") === "buy")
     .map((listing) => listing.priceNum)
     .sort((a, b) => a - b);
@@ -20,7 +30,15 @@ function heroPresets() {
   return presets;
 }
 
-export default function Page() {
+export default async function Page() {
+  /* Server-mode reads: prisma when ARCHITECH_DATA_SOURCE=prisma (the public
+     site then publishes exactly the inventory the database holds), fixture
+     adapter otherwise — identical output for the CI/demo build. */
+  const allListings = await getListingsForServer({});
+  const showcaseListingsByCity = new Map<string, Property[]>();
+  for (const citySlug of showcaseCities) {
+    showcaseListingsByCity.set(citySlug, await getListingsForServer({ citySlug }));
+  }
   const cities = getCities().map((city) => ({
     slug: city.slug,
     name: city.name,
@@ -32,15 +50,15 @@ export default function Page() {
   }));
   return (
     <Home
-      featured={getFeaturedListings(6)}
-      listingCount={getListings().length}
+      featured={await getFeaturedListingsForServer(6)}
+      listingCount={allListings.length}
       localityCount={getLocalities().length}
       cityCount={cities.length}
       cities={cities}
       popularSearches={popularQueries({}, 4)}
-      heroPresets={heroPresets()}
+      heroPresets={heroPresets(allListings)}
       example={exampleQuery()}
-      marketProjects={showcaseCities.flatMap((citySlug) => getListingsByCity(citySlug).slice(0, 1)).map((listing) => ({
+      marketProjects={showcaseCities.flatMap((citySlug) => (showcaseListingsByCity.get(citySlug) ?? []).slice(0, 1)).map((listing) => ({
         name: listing.project,
         developer: listing.developer,
         locality: `${listing.locality}, ${listing.city}`,

@@ -110,11 +110,12 @@ const inrRange = (intent: "buy" | "rent"): FacetRange => ({
 /* ---------- Group registry ----------
    `trust` is a toggle rather than a chip: verification is the brand promise, so
    it gets its own affordance and can state what it hides. `size` (baths,
-   parking, furnishing) is desk-only for now: those fields have no column, they
-   are scraped out of `sourceSummary`, which is prose for most feed rows — see
-   lib/listing-details-contract.ts for the parse/validate boundary and for the
-   schema change that would let these be counted in SQL. Until then a `size`
-   facet would promise filters over data we cannot index. */
+   parking, furnishing) stays desk-only BY DESIGN: the `detailsJson` column
+   now exists (see lib/listing-details-contract.ts) and every value reaches the
+   UI validated, but coverage is still fanned-in from feeds and legacy rows —
+   surfacing a facet whose counts silently exclude unscaped rows would train
+   buyers to distrust the filter bar. The moment feed import lands structured
+   details at volume, this note flips to a chip group. */
 
 export function facetGroups(options: { intent: "buy" | "rent" }): FacetGroup[] {
   const types: Array<{ code: PropertyTypeCode; label: string; labelHi: string }> = [

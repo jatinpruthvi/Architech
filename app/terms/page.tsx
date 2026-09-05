@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { termsUrl } from "@/lib/seo/urls";
 
 export const metadata: Metadata = {
   title: "Terms and disclaimers",
   description: "Architech Phase 1 terms, demo-data disclaimers, RERA disclaimer, broker media rights, and lead consent terms.",
+  alternates: { canonical: termsUrl() },
   robots: { index: false, follow: true },
 };
 

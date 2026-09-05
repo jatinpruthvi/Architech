@@ -9,15 +9,29 @@
    asserted to make a page pass: a listing without a recorded update date fails
    the sourced-freshness bar, and a locality with no live listings fails the
    evidence bar. */
-import { getGuides, getListings, getLocalityBySlug, type Property } from "@/lib/repositories";
+import { getGuides, getListings, getLocalityBySlug, type Locality, type Property } from "@/lib/repositories";
 import { localityIntel } from "@/lib/realestate/locality-intel";
 import { isIndexable } from "./lifecycle";
 import { evaluatePageQuality, type PageKind, type PageQualityDecision, type PageQualityInput } from "./page-quality";
 import type { SeoPage } from "./pages";
 
+/** The evidence the gate measures, injectable because the registry has two
+    data modes: in fixture mode the gate reads the fixture repositories (the
+    historical default — every existing caller behaves exactly as before); in
+    prisma mode `seo/pages-server.ts` passes the DB-mapped rows so the gate
+    measures the SAME inventory the pages are built from. Evaluating prisma
+    pages against fixture listings is precisely the orphan/lying-count bug the
+    M-1 slice exists to retire. */
+export type PageGateEvidence = {
+  listings: Property[];
+  /** Mapped rows when available (prisma mode); falls back to the fixture
+      locality registry, which the seed corpus is generated from anyway. */
+  localities?: Locality[];
+};
+
 /** Indexable (ACTIVE) listings in one locality. */
-function activeListingsIn(citySlug: string, localitySlug: string): number {
-  return getListings().filter(
+function activeListingsIn(citySlug: string, localitySlug: string, listings: Property[]): number {
+  return listings.filter(
     (property) =>
       property.citySlug === citySlug &&
       property.localitySlug === localitySlug &&
@@ -34,8 +48,10 @@ function activeListingsIn(citySlug: string, localitySlug: string): number {
     it serves, or real aggregated price facts. A registry entry carrying nothing
     but a name and coordinates fails, which is exactly the page that should not
     be published. */
-function localityHasUniqueData(citySlug: string, localitySlug: string): boolean {
-  const locality = getLocalityBySlug(localitySlug, citySlug);
+function localityHasUniqueData(citySlug: string, localitySlug: string, evidence?: PageGateEvidence): boolean {
+  const locality = evidence
+    ? (evidence.localities ?? []).find((item) => item.slug === localitySlug && item.citySlug === citySlug) ?? getLocalityBySlug(localitySlug, citySlug)
+    : getLocalityBySlug(localitySlug, citySlug);
   if (!locality) return false;
   const hasLandmarks = (locality.landmarks ?? []).length > 0;
   const hasPincodes = locality.pincodes.length > 0;
@@ -73,7 +89,7 @@ export function pageKindFor(page: SeoPage): PageKind {
 }
 
 /** Build the quality-gate input for one registered page from real data. */
-export function qualityInputFor(page: SeoPage): PageQualityInput {
+export function qualityInputFor(page: SeoPage, evidence?: PageGateEvidence): PageQualityInput {
   const kind = pageKindFor(page);
 
   const base: PageQualityInput = {
@@ -98,13 +114,13 @@ export function qualityInputFor(page: SeoPage): PageQualityInput {
       const [, citySlug, localitySlug] = page.id.split(":");
       return {
         ...base,
-        activeListings: activeListingsIn(citySlug, localitySlug),
-        hasUniqueData: localityHasUniqueData(citySlug, localitySlug),
+        activeListings: activeListingsIn(citySlug, localitySlug, evidence?.listings ?? getListings()),
+        hasUniqueData: localityHasUniqueData(citySlug, localitySlug, evidence),
       };
     }
     case "listing": {
       const listingId = page.id.slice("listing:".length);
-      const property = getListings().find((item: Property) => item.id === listingId);
+      const property = (evidence?.listings ?? getListings()).find((item: Property) => item.id === listingId);
       return {
         ...base,
         activeListings: property && isIndexable(property.lifecycle ?? "ACTIVE") ? 1 : 0,
@@ -120,6 +136,6 @@ export function qualityInputFor(page: SeoPage): PageQualityInput {
   }
 }
 
-export function evaluateSeoPageQuality(page: SeoPage): PageQualityDecision {
-  return evaluatePageQuality(qualityInputFor(page));
+export function evaluateSeoPageQuality(page: SeoPage, evidence?: PageGateEvidence): PageQualityDecision {
+  return evaluatePageQuality(qualityInputFor(page, evidence));
 }

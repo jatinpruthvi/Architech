@@ -12,10 +12,12 @@
     "audit:contrast": "node scripts/audit-surface-contrast.mjs",
     "test": "vitest run",
     "format": "prettier --write .",
-    "test:seo": "pnpm build:ci && node scripts/seo/raw-html-smoke.mjs",
+    "test:seo": "node scripts/seo/run-seo-suite.mjs",
+    "test:crawl": "pnpm build:ci && node scripts/seo/crawl-simulation.mjs",
     "test:e2e": "pnpm build:ci && node tests/e2e/run-all.mjs",
     "test:e2e:only": "node tests/e2e/run-all.mjs",
     "test:a11y": "playwright test --config playwright.a11y.config.ts",
+    "test:ui": "playwright test --config playwright.ui.config.ts",
     "storybook": "storybook dev --host 0.0.0.0 -p 6006",
     "storybook:smoke": "storybook dev --host 0.0.0.0 -p 6006 --ci --smoke-test",
     "build-storybook": "storybook build",
@@ -48,7 +50,10 @@
     "env:audit": "node scripts/operations/environment-audit.mjs",
     "secrets:audit": "node scripts/operations/secrets-audit.mjs",
     "provisioning:audit": "pnpm env:audit && pnpm secrets:audit && pnpm production:plan:audit && pnpm provisioning:smoke",
-    "provisioning:smoke": "node scripts/operations/provisioning-smoke.mjs"
+    "provisioning:smoke": "node scripts/operations/provisioning-smoke.mjs",
+    "start:next": "node node_modules/next/dist/bin/next start",
+    "start:static": "node dist/index.js",
+    "test:a11y:broker": "playwright test --config playwright.a11y.broker.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.9.1",
@@ -61,6 +66,7 @@
     "@sentry/nextjs": "^10.71.0",
     "better-auth": "^1.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "^0.453.0",
     "maplibre-gl": "^6.5.0",
     "motion": "^13.1.1",

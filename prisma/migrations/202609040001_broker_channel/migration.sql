@@ -14,8 +14,9 @@ CREATE TYPE "ChannelDealCloseMode" AS ENUM ('SINGLE', 'DUAL');
 CREATE TYPE "ErpnextSyncStatus" AS ENUM ('PENDING', 'IN_FLIGHT', 'SUCCESS', 'FAILED', 'RECONCILED');
 CREATE TYPE "CommissionEntryType" AS ENUM ('COMMISSION_INCOME', 'COMMISSION_EXPENSE');
 
+-- businessPhoneE164 already arrives in 202609030003_interop_foundation
+-- (normalised E.164 at VARCHAR(20)); the channel only adds its masked twin.
 ALTER TABLE "BrokerOrganization"
-    ADD COLUMN "businessPhoneE164" TEXT,
     ADD COLUMN "businessPhoneMasked" TEXT;
 
 CREATE TABLE "ChannelRequest" (
@@ -35,6 +36,9 @@ CREATE TABLE "ChannelRequest" (
     "budgetMaxInr" BIGINT,
     "priceInr" BIGINT,
     "detailSummary" TEXT NOT NULL,
+    -- Free text a human wrote; capped because it ships cross-agency. The app
+    -- layer additionally refuses contact details in it (see channel/publish).
+    "brokerNote" VARCHAR(500),
     "status" "ChannelRequestStatus" NOT NULL DEFAULT 'DRAFT',
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "publishedAt" TIMESTAMP(3),
@@ -206,7 +210,14 @@ CREATE INDEX "ErpnextCloseWrite_channelDealId_idx" ON "ErpnextCloseWrite" ("chan
 ALTER TABLE "ChannelRequest" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "ChannelRequest" FORCE ROW LEVEL SECURITY;
 CREATE POLICY "ChannelRequest_owner_or_open_select" ON "ChannelRequest" FOR SELECT
-    USING ("organizationId" = current_setting('app.current_org_id', true) OR "status" = 'OPEN');
+    USING (
+        /* Fail closed the way 202609030004 does: an unscoped connection (the
+           tenant GUC unset or empty) sees nothing at all. Discovery of OPEN
+           requests is a broker privilege, not an anonymous one -- without the
+           gate, a missing SET in any code path would leak the open channel. */
+        NULLIF(current_setting('app.current_org_id', true), '') IS NOT NULL
+        AND ("organizationId" = current_setting('app.current_org_id', true) OR "status" = 'OPEN')
+    );
 CREATE POLICY "ChannelRequest_owner_insert" ON "ChannelRequest" FOR INSERT
     WITH CHECK ("organizationId" = current_setting('app.current_org_id', true));
 CREATE POLICY "ChannelRequest_owner_update" ON "ChannelRequest" FOR UPDATE

@@ -7,6 +7,11 @@ const routes = [
   { path: "/buy/ahmedabad/paldi/", heading: /Paldi, Ahmedabad/i },
   { path: "/listing/garden-courtyard/", heading: /garden courtyard/i },
   { path: "/saved/", heading: /Saved|Nothing saved/i },
+  /* Public partner discovery (audit: public broker discovery): directory and
+     the demo partner profile are prerendered, so the static snapshot hosts
+     both — cover them here rather than in the session-gated broker suite. */
+  { path: "/agents/", heading: /Verified\s*agents/i },
+  { path: "/agent/nivasa-partners/", heading: /Nivasa Partners/i },
 ];
 
 test.describe("accessibility smoke", () => {

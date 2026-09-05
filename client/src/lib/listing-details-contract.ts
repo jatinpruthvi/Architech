@@ -2,24 +2,27 @@
  *
  * WHY THIS FILE EXISTS
  * `bathrooms`, `parkingSpaces`, `furnishing`, `floor`, `facing`, `amenities`
- * have no column of their own on `Listing`. The only place they can live is
- * `sourceSummary String?`, and that same column is a PROSE note in every other
- * writer: `prisma/seed.mjs` puts a human sentence in it, and external feed
- * import is expected to do the same. One field, two incompatible meanings.
+ * now have their own column (`detailsJson Json?`, migration
+ * `202609050001_listing_details_json`). Before it existed, the only place they
+ * could live was `sourceSummary String?`, which every other writer used as a
+ * PROSE note: `prisma/seed.mjs` put a human sentence in it, and external feed
+ * import was expected to do the same. One field, two incompatible meanings.
  *
  * That produced two bugs at once, and the second is the worse one:
  *
  * 1. SILENT LOSS. `JSON.parse("Seeded from the August 2026 … fixtures.")`
- *    throws, the catch returned `{}`, and Baths / Parking / Furnishing vanished
- *    from the card, the quick view and the dossier with no signal anywhere. This
- *    is also exactly why the `size` facet cannot be surfaced to buyers: the
- *    data is not indexable, it is scraped.
+ *    threw, the catch returned `{}`, and Baths / Parking / Furnishing vanished
+ *    from the card, the quick view and the dossier with no signal anywhere
+ *    — the broker's own vessel for structured data was being misparsed as
+ *    prose on every other path.
  * 2. UNVALIDATED JSON INTO THE UI. When `sourceSummary` DID hold JSON — the
- *    broker path writes `JSON.stringify(draft.details)` — it was `as
+ *    broker path wrote `JSON.stringify(draft.details)` — it was `as
  *    PropertyDetails` and forwarded. A feed row containing
  *    `{"bathrooms":"see brochure","amenities":null}` yielded `NaN`, `null.map`,
  *    or a number outside the vocabulary the rest of the app assumes. The UI
- *    rendered whatever the string said.
+ *    rendered whatever the string said. JSONB being `unknown` in Prisma types
+ *    recreates this exact hazard on the new column, so validation stays here,
+ *    at the single boundary.
  *
  * So this is a validation boundary, not a parser. Structured input is coerced or
  * DROPPED field by field against the same option lists the broker form offers
@@ -27,14 +30,14 @@
  * which means: a value the product can also *filter* on is a value we will
  * *display*. Anything else is a missing value, not a guess.
  *
- * WHAT STILL NEEDS THE SCHEMA (deliberately not done here)
- * A `Listing` column — `detailsJson JSONB`, or typed `bathrooms Int?` /
- * `parkingSpaces Int?` / `furnishing …?` — is the only way to make these
- * filterable in SQL rather than in JS after the read. That change is
- * intentionally not in this commit: `prisma validate`/`generate` cannot run in
- * this environment (its engine download is blocked), so committing a schema
- * edit here would ship a migration nobody has checked compiles. The read path
- * below already prefers such a column when one exists.
+ * THE SCHEMA SIDE (now landed)
+ * The `detailsJson Json?` column exists (migration
+ * `202609050001_listing_details_json`) and all writers store VALIDATED
+ * details there. This contract still matters twice over: JSONB is `unknown`
+ * in Prisma types, so every read validates field-by-field before the UI sees
+ * it; and rows written before the column existed still fall through to the
+ * prose-safe sourceSummary scrape below. Faceting in SQL (baths/parking
+ * filters against the column) is the follow-up this now unblocks.
  */
 import { logger } from "@/lib/observability/logger";
 import {

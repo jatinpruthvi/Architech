@@ -6,6 +6,21 @@ export type Lang = "en" | "hi";
 export const strings = {
   en: {
     nav: { explore: "Explore cities", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring", list: "List your property" },
+    palette: {
+      open: "Search or jump — press ⌘K",
+      label: "Command palette",
+      placeholder: "Search a city, locality, PIN, BHK — or jump to a page…",
+      recentGroup: "Recent on this device",
+      suggestionsGroup: "Suggestions",
+      actionsGroup: "Go to",
+      searchFor: "Search for",
+      empty: "No suggestions — press Enter to search exactly this.",
+      close: "Close the palette",
+      actions: {
+        "go-buy": "Explore cities", "go-search": "Search homes", "go-saved": "Saved homes",
+        "go-saved-searches": "Saved searches", "go-guide": "Field notes", "go-list-property": "List your property",
+      } as Record<string, string>,
+    },
     hero: {
       kicker: "India · 12 cities mapped · भारत",
       h1a: "Find the ",
@@ -144,6 +159,21 @@ export const strings = {
   },
   hi: {
     nav: { explore: "भारत के शहर देखें", find: "घर खोजें", notes: "फ़ील्ड नोट्स", saved: "सहेजे गए", start: "खोज शुरू करें", list: "अपनी संपत्ति सूचीबद्ध करें" },
+    palette: {
+      open: "खोजें या सीधे जाएँ — ⌘K दबाएँ",
+      label: "कमांड पैलेट",
+      placeholder: "शहर, इलाक़ा, पिन कोड, BHK खोजें — या किसी पेज पर जाएँ…",
+      recentGroup: "इस डिवाइस पर हाल के खोज",
+      suggestionsGroup: "सुझाव",
+      actionsGroup: "यहाँ जाएँ",
+      searchFor: "खोजें",
+      empty: "कोई सुझाव नहीं — इसी नाम से खोजने के लिए Enter दबाएँ।",
+      close: "पैलेट बंद करें",
+      actions: {
+        "go-buy": "शहर देखें", "go-search": "घर खोजें", "go-saved": "सहेजे गए घर",
+        "go-saved-searches": "सहेजी गई खोजें", "go-guide": "फ़ील्ड नोट्स", "go-list-property": "अपनी संपत्ति सूचीबद्ध करें",
+      } as Record<string, string>,
+    },
     hero: {
       kicker: "भारत · 12 शहर · India",
       h1a: "पहले ", h1em: "जगह", h1b: "फिर पता चुनिए।",

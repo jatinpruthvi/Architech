@@ -1,5 +1,6 @@
 import "server-only";
 import { createLead, findLeadForOrganization, listActiveLeads, maskPhone, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
+import { emitLeadEvent } from "./events";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { demoBrokerSession } from "@/lib/auth/roles";
@@ -12,7 +13,10 @@ type PrismaLeadClient = ReturnType<typeof getPrismaClient> & {
     create(args: unknown): Promise<{ id: string; createdAt: Date }>;
     update(args: unknown): Promise<{ id: string }>;
   };
-  auditEvent: { create(args: unknown): Promise<{ id: string }> };
+  auditEvent: {
+    create(args: unknown): Promise<{ id: string }>;
+    findMany(args: unknown): Promise<Array<Record<string, unknown>>>;
+  };
   $transaction<T>(fn: (tx: PrismaLeadClient) => Promise<T>): Promise<T>;
 };
 
@@ -52,7 +56,11 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
      session reads. Crucially the value is still derived here and never taken
      from the request body. */
   if (!isPrismaLeadStorage()) {
-    return createLead({ ...input, organizationId: demoBrokerSession.organization?.id ?? null });
+    const created = createLead({ ...input, organizationId: demoBrokerSession.organization?.id ?? null });
+    if (created.ok && !created.duplicate) {
+      emitLeadEvent({ type: "lead.created", leadId: created.lead.id, organizationId: created.lead.organizationId, listingId: input.listingId, listingTitle: created.lead.listingTitle, createdAt: created.lead.createdAt });
+    }
+    return created;
   }
 
   const errors = baseErrors(input);
@@ -124,6 +132,9 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
   }
 
   const lead = dbLeadContract(owning, listing.title, result.dbLead.id, result.audit.id, false, result.dbLead.createdAt.toISOString(), "api.leads.prisma", organizationName);
+  /* Emit only on a genuinely new durable lead — the duplicate paths above
+     re-return the winner and must not re-notify. */
+  emitLeadEvent({ type: "lead.created", leadId: lead.id, organizationId: listing.brokerOrgId ?? null, listingId: input.listingId, listingTitle: listing.title, createdAt: lead.createdAt });
   return { ok: true, lead, duplicate: false };
 }
 
@@ -149,7 +160,7 @@ function dbLeadContract(input: LeadInput, listingTitle: string, id: string, audi
 }
 
 /** Map a Prisma lead row (with listing title) to the lead contract. */
-function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "Verified partner"): LeadRecord {
+function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "Verified partner", statusHistory: LeadRecord["statusHistory"] = []): LeadRecord {
   const id = String(row.id ?? "");
   const listing = (row.listing ?? {}) as { title?: string; brokerOrg?: { name?: string } | null };
   const createdAt = safeIso(row.createdAt);
@@ -168,7 +179,7 @@ function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "V
     consentText: String(row.consentText ?? ""),
     idempotencyKey: String(row.idempotencyKey ?? ""),
     auditEvent: { id: stableId("audit", `${id}:lead.created`), action: "lead.created", entityType: "Lead", metadata: { masked: true, source: "api.leads.prisma" } },
-    statusHistory: [],
+    statusHistory,
     createdAt,
   };
 }
@@ -177,6 +188,37 @@ const LEAD_LISTING_INCLUDE = { listing: { select: { title: true, brokerOrg: { se
 
 function refetchLeadOrNotFound(prisma: PrismaLeadClient, id: string): Promise<Record<string, unknown> | null> {
   return prisma.lead.findUnique({ where: { id }, include: LEAD_LISTING_INCLUDE }) as Promise<Record<string, unknown> | null>;
+}
+
+/** Hydration extracted and shared: prisma rows otherwise carry an EMPTY
+    statusHistory, and every consumer of it (first-response analytics, consent
+    trails) would silently believe nothing ever happened. The creation
+    transaction and every status change write AuditEvents, so this join is the
+    same story the fixture store tells. Used by the inbox list AND every
+    single-row refetch (B: consistency). */
+async function hydrateLeadHistory(prisma: PrismaLeadClient, ids: string[]): Promise<Map<string, LeadRecord["statusHistory"]>> {
+  const byLead = new Map<string, LeadRecord["statusHistory"]>();
+  if (ids.length === 0) return byLead;
+  const events = await prisma.auditEvent.findMany({
+    where: { entityType: "Lead", entityId: { in: ids } },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  for (const event of events) {
+    const leadId = String(event.entityId ?? "");
+    const list = byLead.get(leadId) ?? [];
+    list.push({ id: String(event.id ?? ""), action: String(event.action ?? ""), at: safeIso(event.createdAt), metadata: (typeof event.metadata === "object" && event.metadata ? event.metadata : {}) as Record<string, unknown> });
+    byLead.set(leadId, list);
+  }
+  return byLead;
+}
+
+/** Single-row refetch WITH history: a `lead` object that reports an empty
+    history after a reply would contradict the audit it just wrote. */
+async function refetchLeadWithHistory(prisma: PrismaLeadClient, id: string): Promise<{ row: Record<string, unknown>; history: LeadRecord["statusHistory"] } | null> {
+  const row = await refetchLeadOrNotFound(prisma, id);
+  if (!row) return null;
+  const byLead = await hydrateLeadHistory(prisma, [id]);
+  return { row, history: byLead.get(id) ?? [] };
 }
 
 /** All leads for the broker inbox, newest-first. */
@@ -195,7 +237,9 @@ export async function listLeadsForServer(organizationId: string): Promise<LeadRe
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: LEAD_LISTING_INCLUDE,
   });
-  return rows.map((row) => dbLeadRowToContract(row));
+  const ids = rows.map((row) => String(row.id ?? "")).filter(Boolean);
+  const byLead = await hydrateLeadHistory(prisma, ids);
+  return rows.map((row) => dbLeadRowToContract(row, undefined, byLead.get(String(row.id ?? "")) ?? []));
 }
 
 /* Ownership check shared by every lead mutation.
@@ -224,9 +268,9 @@ export async function deleteLeadForServer(id: string): Promise<{ ok: true; lead:
   await prisma.lead.update({ where: { id }, data: { deletedAt: new Date(), status: "DELETED" } });
   /* B-6: a missing row after the update is a real not-found, not a licence to
      fabricate a lead with `new Date(undefined)` (a RangeError → 500). */
-  const row = await refetchLeadOrNotFound(prisma, id);
-  if (!row) return { ok: false, status: 404, errors: ["Lead not found."] };
-  return { ok: true, lead: dbLeadRowToContract(row) };
+  const refetched = await refetchLeadWithHistory(prisma, id);
+  if (!refetched) return { ok: false, status: 404, errors: ["Lead not found."] };
+  return { ok: true, lead: dbLeadRowToContract(refetched.row, undefined, refetched.history) };
 }
 
 /** Revoke a lead's stored data at the buyer's request (privacy/consent). */
@@ -237,9 +281,31 @@ export async function revokeLeadConsentForServer(id: string): Promise<{ ok: true
   if (!existing) return { ok: false, status:404, errors: ["Lead not found."] };
   await prisma.lead.update({ where: { id }, data: { deletedAt: new Date(), status: "DELETED" } });
   await prisma.auditEvent.create({ data: { leadId: id, action: "lead.consent.revoked", entityType: "Lead", entityId: id, metadata: { source: "api.broker.leads.consent.prisma" } } });
-  const row = await refetchLeadOrNotFound(prisma, id);
-  if (!row) return { ok: false, status: 404, errors: ["Lead not found."] };
-  return { ok: true, lead: dbLeadRowToContract(row) };
+  const refetched = await refetchLeadWithHistory(prisma, id);
+  if (!refetched) return { ok: false, status: 404, errors: ["Lead not found."] };
+  return { ok: true, lead: dbLeadRowToContract(refetched.row, undefined, refetched.history) };
+}
+
+/** Emit a buyer-relevant spine event for the two statuses a BUYER cares about.
+    CLOSED/deletion stay internal — a "your enquiry was closed" email is noise
+    at best and sales pressure at worst. */
+function emitStatusEvent(lead: LeadRecord, status: Exclude<LeadStatus, "NEW" | "DELETED">): void {
+  if (status !== "ACKNOWLEDGED" && status !== "REPLIED") return;
+  emitLeadEvent({ type: status === "ACKNOWLEDGED" ? "lead.acknowledged" : "lead.replied", leadId: lead.id, organizationId: lead.organizationId, listingId: lead.listingId, listingTitle: lead.listingTitle, createdAt: new Date().toISOString() });
+}
+
+/** Org-scoped lead read for notification delivery: the recipient (buyer
+    email, buyer name) and the partner name, never for a foreign org. Not the
+    inbox read — this is the server-internal notification path. */
+export async function getLeadForNotification(id: string, organizationId: string): Promise<LeadRecord | null> {
+  if (!organizationId) return null;
+  if (!isPrismaLeadStorage()) return findLeadForOrganization(id, organizationId);
+  const prisma = getPrismaClient() as unknown as PrismaLeadClient;
+  const refetched = await refetchLeadWithHistory(prisma, id);
+  if (!refetched) return null;
+  const row = refetched.row as { organizationId?: string | null };
+  if (row.organizationId !== organizationId) return null;
+  return dbLeadRowToContract(refetched.row, undefined, refetched.history);
 }
 
 /** Advance a lead's status in the masked-response workflow (with audit). */
@@ -247,7 +313,11 @@ export async function updateLeadStatusForServer(
   id: string,
   status: Exclude<LeadStatus, "NEW" | "DELETED">
 ): Promise<{ ok: true; lead: LeadRecord } | { ok: false; status: number; errors: string[] }> {
-  if (!isPrismaLeadStorage()) return updateLeadStatus(id, status);
+  if (!isPrismaLeadStorage()) {
+    const updated = updateLeadStatus(id, status);
+    if (updated.ok) emitStatusEvent(updated.lead, status);
+    return updated;
+  }
   const prisma = getPrismaClient() as unknown as PrismaLeadClient;
   const existing = (await prisma.lead.findUnique({ where: { id } })) as { id: string; listingId: string; organizationId?: string | null } | null;
   if (!existing) return { ok: false, status: 404, errors: ["Lead not found."] };
@@ -255,9 +325,11 @@ export async function updateLeadStatusForServer(
   await prisma.auditEvent.create({
     data: { leadId: id, listingId: existing.listingId, organizationId: existing.organizationId, action: `lead.${status.toLowerCase()}`, entityType: "Lead", entityId: id, metadata: { source: "api.broker.leads.reply.prisma" } },
   });
-  const row = await refetchLeadOrNotFound(prisma, id);
-  if (!row) return { ok: false, status: 404, errors: ["Lead not found."] };
-  return { ok: true, lead: dbLeadRowToContract(row) };
+  const refetched = await refetchLeadWithHistory(prisma, id);
+  if (!refetched) return { ok: false, status: 404, errors: ["Lead not found."] };
+  const lead = dbLeadRowToContract(refetched.row, undefined, refetched.history);
+  emitStatusEvent(lead, status);
+  return { ok: true, lead };
 }
 
 export function validateLeadInputForConfiguredSource(input: Partial<LeadInput>) {
