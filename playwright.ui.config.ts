@@ -18,7 +18,10 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm build && pnpm start",
+    /* Run against the canonical Next runtime, not the static publish snapshot:
+       palette journeys need /api/search/suggest, which only the runtime
+       serves. Same choice as playwright.a11y.broker.config.ts. */
+    command: "pnpm build:ci && pnpm start:next",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

@@ -78,7 +78,10 @@ test.describe("Hindi / Devanagari", () => {
 });
 
 test.describe("command palette", () => {
-  test("opens on the launcher, searches, and navigates", async ({ page }) => {
+  test("opens on the launcher, searches, and navigates", async ({ page, isMobile }) => {
+    /* The header launcher button is desktop-only by design (hidden below md);
+       mobile opens the palette with ⌘K, covered by the sibling tests. */
+    test.skip(isMobile ?? false, "palette launcher button is desktop-only by design");
     await page.goto("/");
     await page.getByRole("button", { name: "Search or jump — press ⌘K" }).click();
     const dialog = page.getByRole("dialog", { name: "Command palette" });
@@ -101,7 +104,9 @@ test.describe("command palette", () => {
     await expect(dialog).toBeHidden();
   });
 
-  test("palette works in Hindi too", async ({ page }) => {
+  test("palette works in Hindi too", async ({ page, isMobile }) => {
+    /* Same desktop-only launcher affordance as the English journey above. */
+    test.skip(isMobile ?? false, "palette launcher button is desktop-only by design");
     await page.goto("/");
     await page.getByRole("button", { name: "हिन्दी में देखें" }).click();
     await page.getByRole("button", { name: "खोजें या सीधे जाएँ — ⌘K दबाएँ" }).click();
