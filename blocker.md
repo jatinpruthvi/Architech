@@ -44,7 +44,7 @@ Everything is **implemented and fail-closed**: OGD snapshot fetcher, India Post 
 ## 3. Production infrastructure
 
 - [ ] **Provision hosting + managed data.** Railway/Vercel app, PostgreSQL with the **PostGIS extension installed** (`postgis` must be creatable/installed before migrations if the migration role lacks superuser). Runbook: `docs/operations/environment-provisioning-runbook.md`; checklist: `docs/operations/provisioning-execution-checklist.md`; prepared manifests (`vercel.json`, `railway.json`, `docker-compose.production-like.yml`, `governance/environments/phase-1-environments.json`). (`P1-PLAT-001/002`)
-- [ ] **Production deploy target serves APIs.** `pnpm start` today serves a static prerender snapshot (all API routes 404 on that target — `railway.json` currently references it). Production must run `next start`/Vercel functions, or the target must be relabelled static-demo and gated. (I-10)
+- [ ] **Production deploy target serves APIs.** *(code fixed)* `railway.json` now runs `pnpm start:next` (the Next runtime; `/api/observability/health/` returns 200 against a live boot, verified locally) and the old static snapshot survives as the explicitly-labelled `pnpm start:static` demo target. Remaining: run the target once on the live host as part of §3.
 - [ ] **DB verification + seed.** `pnpm db:validate`, `pnpm db:migrate -- --live` (sandbox-proved 14/14 migrations on 5 Sep; two ordering bugs fixed and committed), then seed; RLS policy proof re-run against the production cluster.
 - [ ] **Backups + restore drill** with the procedure from `docs/operations/backup-restore-cost-readiness.md` — including replaying erasure tombstones before restored services accept traffic (deleted PII must not reappear).
 - [ ] **Secrets via the inventory.** Every secret lands in the platform secret store per `governance/secrets/phase-1-secret-inventory.json` policy — never chat/Git. Storage audit exists: `pnpm security:audit`.
@@ -69,11 +69,11 @@ Everything is **implemented and fail-closed**: OGD snapshot fetcher, India Post 
 
 - [ ] **Sentry org + DSN**, log drain, OpenTelemetry export, dashboards + alert thresholds, release/environment tagging in deploys. SLO basis flips bootstrapped→observed automatically once traffic flows. (`P1-OBS-001`)
 - [ ] **R2/Stream media.** Today the R2 signer is a placeholder (no SigV4 presigning — I-3). Real presigning + malware scanning + derivative workers + captions/transcripts, then `ARCHITECH_MEDIA_STORAGE` → approved R2 mode. (`P1-MEDIA-001`)
-- [ ] **Gujarat RERA adapter** returns a placeholder parser today (I-5); implement the approved source fetch/parse, then set `ARCHITECH_RERA_SOURCE=gujarat` after LEG-001. Each additional state authority needs its own legal-approved adapter. (`P1-RERA-001`)
+- [ ] **Gujarat RERA adapter** *(honesty fixed)*: the "configured" path used to emit a fabricated `ok`/`NOT_FOUND` verdict from a placeholder parser — it now fails closed (501, explicit refusal) so no unverified verdict can ever reach a buyer. Remaining: implement the approved source fetch/parse, then set `ARCHITECH_RERA_SOURCE=gujarat` after LEG-001. Each additional state authority needs its own legal-approved adapter. (`P1-RERA-001`)
 - [ ] **Search Console:** domain verification + API credentials; submit sitemaps; enable live GSC per-URL ingestion (board exists; `pnpm seo:gsc:audit` dry-runs in CI). (`P1-SEO-004`)
 - [ ] **GA4** connection (analytics provider account).
-- [ ] **Notifications (Resend/email-SMS-push):** saved-search `notify` flags persist intent with no delivery pipeline (I-12); lead notifications needed too. Provider account + LEG-005 templates.
-- [ ] **AI provider (optional):** `ARCHITECH_AI_PROVIDER=external` falls back deterministically with cost reported 0 (I-2) — wire a real provider with real token-cost telemetry, or formally keep deterministic-only.
+- [ ] **Notifications (Resend/email-SMS-push):** saved-search **delivery pipeline now implemented** (`lib/saved-search/alerts.ts` + runtime subscribed to the listing event spine): gated on `SAVED_SEARCH_ALERTS=on` + `RESEND_API_KEY` + sender, conservative both-intent matching, `Idempotency-Key` dedupe, per-recipient fail-soft, LEG-005-shaped copy with manage link. Remaining: provider account + verified sender + LEG-005 template approval, and lead notifications still needed.
+- [ ] **AI provider (optional):** *(honesty fixed)* `ARCHITECH_AI_PROVIDER=external` still falls back deterministically, but an external success now reports `estimatedCostInr: null` (unmetered) with an explicit warning — never a fabricated 0. Remaining: wire a real provider with real token-cost telemetry, or formally keep deterministic-only.
 
 ## 7. Broker WhatsApp channel (lead follow-up)
 
@@ -86,12 +86,13 @@ The broker decision docs select a private, feature-flagged evolution/Baileys-sty
 
 ## 8. Engineering gates before launch (code only, no external account)
 
-- [ ] **M-1 deferred slice** — see §5 step 1 (blocks prisma+indexing launch, not fixture launch).
+- [x] **M-1 deferred slice** — DONE (`dce311a`): prisma-backed SeoPage registry + sitemap composition landed; the crawl-simulation gate still must be re-run on the release candidate (see §5 step 1).
+- [x] **Agent workspace placeholder surfaces (I-6)** — DONE (`430a9aa`): dashboard KPIs, filter strips, inquiry/leads tabs now render live counts/rows or honest "—" with explanatory sublabels; no dead controls remain.
 - [ ] **`Listing.details` column (I-9).** Structured bath/parking/furnishing/floor data currently rides in `sourceSummary` (JSON/prose); the bath/parking facet is desk-only and unfacetable until a `detailsJson` (or typed columns) migration lands. Keeps `listingDetailsFromSourceSummary` as the legacy reader.
 - [ ] **Scope Compare/Collections localStorage per account** (`architech.compare.v1` + collections keys are unscoped — two signed-in accounts on one device share them; `docs/dashboard/second-audit-findings.md` flagged this for pre-launch scoping).
 - [ ] **Media retention enforcement at runtime (I-11)** — `decideMediaRetention`/`isPublishable` are policy-only today; a scheduled job must apply retention/takedown (PENDING 30d, REJECTED 14d, TAKEDOWN 7d, EXIF gate) and the publish path must consult `isPublishable`.
-- [ ] **Agent workspace placeholder surfaces (I-6)** — wire or hide the static stubs (filters, KPI zeros, empty-state sections) so a broker never sees dead UI in production.
 - [ ] **"Search this area" map control (I-8)** — currently a toast-only stub; wire to bounds→bbox search or remove.
+- [x] **Property CRUD UI** — DONE: the wizard (`/broker/listings/new?draft=<id>`) now loads an existing draft and saves back through PATCH (an edit-mode marker makes the action unambiguous), and the workspace My-listings table carries real Edit / Archive / Restore / two-step Delete actions wired to `app/api/broker/listings/[draftId]` with surfaced server errors. No hidden "Review-only" dead end remains.
 
 ## 9. Content & data backlogs (code cannot create these)
 
