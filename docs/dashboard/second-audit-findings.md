@@ -63,8 +63,13 @@ the caller's organization**. Any broker could delete, close, or revoke consent
 on any other organization's lead by guessing or observing an id — and ids are
 returned by the (leaking) list endpoint.
 
-Note the permission on the reply/delete routes is `lead.inbox.read`, a *read*
-permission gating *writes*. Left as-is to keep this change scoped, but flagged.
+Note the permission on the reply/delete routes was `lead.inbox.read`, a *read*
+permission gating *writes* — **resolved (2026-09-05)**: reply, delete, and
+consent-revoke now require a dedicated `lead.inbox.write` grant, held by
+BROKER_MEMBER and BROKER_ADMIN via `permissionsForRole` (and the demo grant
+list). A read-only watcher session may list the inbox but gets refused on all
+three mutations; `tenant-isolation.test.ts` covers wash-writes in both
+directions.
 
 ## Why the first pass missed these
 

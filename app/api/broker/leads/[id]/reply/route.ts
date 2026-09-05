@@ -5,7 +5,9 @@ import { assertLeadBelongsToOrg, updateLeadStatusForServer } from "@/lib/leads/s
 export const runtime = "nodejs";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const access = await authorizeRequest(request, { permission: "lead.inbox.read" });
+  /* Status advancement is a write: gated by `lead.inbox.write`, not the read
+     grant (second dashboard audit — flagged note). */
+  const access = await authorizeRequest(request, { permission: "lead.inbox.write" });
   if (!isAuthorized(access)) return access.response;
   const { id } = await params;
   const leadId = decodeURIComponent(id);

@@ -6,15 +6,17 @@ export const runtime = "nodejs";
 
 /** Soft-delete (retention-privacy) or revoke consent for a lead. */
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const access = await authorizeRequest(request, { permission: "lead.inbox.read" });
+  /* Mutations carry the write grant, not the read one: a permission named
+     `read` gating delete/consent-revoke was the flagged second-audit note. */
+  const access = await authorizeRequest(request, { permission: "lead.inbox.write" });
   if (!isAuthorized(access)) return access.response;
   const { id } = await params;
   const leadId = decodeURIComponent(id);
 
-  /* Permission alone is not enough: every broker holds `lead.inbox.read`, so
-     without an ownership check any broker could delete or revoke consent on
-     any other organization's lead by id -- and ids were being handed out by
-     the (previously unscoped) list endpoint. */
+  /* Permission alone is not enough: the write grant is per-role, so without
+     an ownership check any broker could delete or revoke consent on any other
+     organization's lead by id -- and ids were being handed out by the
+     (previously unscoped) list endpoint. */
   const owned = await assertLeadBelongsToOrg(leadId, access.session.organization?.id ?? "");
   if (!owned.ok) return NextResponse.json(owned, { status: owned.status });
 

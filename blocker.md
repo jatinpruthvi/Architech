@@ -68,7 +68,7 @@ Everything is **implemented and fail-closed**: OGD snapshot fetcher, India Post 
 ## 6. Live providers
 
 - [ ] **Sentry org + DSN**, log drain, OpenTelemetry export, dashboards + alert thresholds, release/environment tagging in deploys. SLO basis flips bootstrapped→observed automatically once traffic flows. (`P1-OBS-001`)
-- [ ] **R2/Stream media.** Today the R2 signer is a placeholder (no SigV4 presigning — I-3). Real presigning + malware scanning + derivative workers + captions/transcripts, then `ARCHITECH_MEDIA_STORAGE` → approved R2 mode. (`P1-MEDIA-001`)
+- [ ] **R2/Stream media.** *(signer code fixed)* — SigV4 presigning is real now (`lib/media/sigv4.ts` with the worked golden-vector test, `R2MediaStorageProvider`, R2 env fail-closed validation). Remaining is provisioning-side: R2 account + bucket, malware scanning, derivative workers, captions/transcripts, then `ARCHITECH_MEDIA_STORAGE` → approved R2 mode. (`P1-MEDIA-001`)
 - [ ] **Gujarat RERA adapter** *(honesty fixed)*: the "configured" path used to emit a fabricated `ok`/`NOT_FOUND` verdict from a placeholder parser — it now fails closed (501, explicit refusal) so no unverified verdict can ever reach a buyer. Remaining: implement the approved source fetch/parse, then set `ARCHITECH_RERA_SOURCE=gujarat` after LEG-001. Each additional state authority needs its own legal-approved adapter. (`P1-RERA-001`)
 - [ ] **Search Console:** domain verification + API credentials; submit sitemaps; enable live GSC per-URL ingestion (board exists; `pnpm seo:gsc:audit` dry-runs in CI). (`P1-SEO-004`)
 - [ ] **GA4** connection (analytics provider account).

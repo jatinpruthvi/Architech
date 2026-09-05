@@ -46,6 +46,17 @@ function signIn(userId: string, organization?: AuthSession["organization"]) {
   };
 }
 
+/* Read-only inbox watcher (e.g. a reporting tooling account): holds the read
+   grant and an org, but NOT lead.inbox.write. */
+function signInReadOnly(userId: string, organization: AuthSession["organization"]) {
+  currentSession.value = {
+    user: { id: userId, name: userId, email: `${userId}@example.com`, role: "BROKER_MEMBER" },
+    organization,
+    permissions: permissionsForRole("BROKER_MEMBER").filter((p) => !p.startsWith("lead.inbox.write")),
+    source: "better-auth-contract-demo",
+  };
+}
+
 const req = (url: string, init?: RequestInit) => new Request(`http://localhost:3000${url}`, init);
 const jsonPost = (url: string, body: unknown) =>
   req(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -159,6 +170,29 @@ describe("lead inbox is isolated per organization", () => {
     signIn("broker-a", ORG_A);
     const after = await body(await getLeads(req("/api/broker/leads/")));
     expect((after.leads as Array<{ status: string }>)[0].status).toBe("NEW");
+  });
+
+  it("a read-only inbox session may watch but must not mutate (second-audit flagged note)", async () => {
+    const lead = seedLead(ORG_A.id, "Alpha Buyer", "iso-ro");
+    signInReadOnly("watcher-a", ORG_A);
+
+    /* Read works — the read grant is real. */
+    expect((await getLeads(req("/api/broker/leads/"))).status).toBe(200);
+
+    /* Writes do not: reply, delete, and consent-revoke all require
+       lead.inbox.write now, not merely lead.inbox.read. */
+    const reply = await replyToLead(jsonPost(`/api/broker/leads/${lead.id}/reply`, { status: "ACKNOWLEDGED" }), { params: Promise.resolve({ id: lead.id }) });
+    expect(reply.status).toBeGreaterThanOrEqual(400);
+    const del = await deleteLead(req(`/api/broker/leads/${lead.id}`, { method: "DELETE" }), { params: Promise.resolve({ id: lead.id }) });
+    expect(del.status).toBeGreaterThanOrEqual(400);
+    const revoke = await deleteLead(req(`/api/broker/leads/${lead.id}?mode=consent`, { method: "DELETE" }), { params: Promise.resolve({ id: lead.id }) });
+    expect(revoke.status).toBeGreaterThanOrEqual(400);
+
+    /* And a full-grant member of the same org still can — the gate is
+       narrowed, not shut. */
+    signIn("broker-a", ORG_A);
+    const ok = await replyToLead(jsonPost(`/api/broker/leads/${lead.id}/reply`, { status: "ACKNOWLEDGED" }), { params: Promise.resolve({ id: lead.id }) });
+    expect(ok.status).toBe(200);
   });
 
   it("lets an organization act on its own lead", async () => {
