@@ -11,6 +11,11 @@ Architech keeps the public indexability and live-provider boundary explicit. A l
 | `ARCHITECH_RERA_SOURCE` | `gujarat` | Enables the approved Gujarat RERA adapter. |
 | `ARCHITECH_LEAD_STORAGE` | `prisma` | Enables durable lead storage and retention workflow. |
 | `ARCHITECH_MEDIA_STORAGE` | approved R2 mode | Enables durable media storage and lifecycle controls. |
+| `ARCHITECH_MEDIA_KINDS` | `images` (default) | Media kind gate: `images` (initial phase, video refused at the sign endpoint + UI) or `all` (re-enables the retained video path). UI mirror: `NEXT_PUBLIC_ARCHITECH_MEDIA_KINDS`. |
+| `MEDIA_MAX_IMAGES_PER_LISTING` | `10` (default) | Per-listing upload quota: non-deleted media items per listing draft, enforced at sign time (media-storage-decision phase 4). |
+| `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` | same as `R2_PUBLIC_BASE_URL` in R2 mode | Browser-visible R2 origin for the `next/image` custom loader (Cloudflare Image Transformations URLs). |
+| `CRON_SECRET` | real non-empty secret | Bearer token for internal scheduled jobs (`/api/internal/scheduled/*`). When the platform cron drives the media-retention sweep, set `MEDIA_RETENTION_SWEEP=off` so only the single cron instance runs it. |
+| `NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE` | `1` (every metric) | Client-side RUM sampling (0..1); lower to 0.05–0.1 at scale, `0` disables web-vitals ingest. |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL` | real non-empty secrets/URL | Required for live authentication and database-backed sessions. |
 | `MEDIA_RETENTION_SWEEP`, `MEDIA_RETENTION_SWEEP_INTERVAL_MINUTES` | unset/default; set `off` only deliberately | Enables the in-process retention sweep (default interval 60 min) applying PENDING 30d / REJECTED 14d / TAKEDOWN 7d policy with audit events. |
 | `SAVED_SEARCH_ALERTS`, `RESEND_API_KEY`, `SAVED_SEARCH_ALERT_FROM` | set together, after LEG-005 | Saved-search alert emails: registered on the listing event spine only when all three are present; without them the gate logs the silence once and `/api/observability/status` reports the missing names. |

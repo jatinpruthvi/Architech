@@ -15,6 +15,25 @@ for (const file of ["maplibre-gl.mjs", "maplibre-gl-shared.mjs", "maplibre-gl-wo
 }
 
 const isProduction = process.env.NODE_ENV === "production";
+
+/* Image delivery (docs/media/media-storage-decision.md): in R2 mode listing
+   images are served from Cloudflare's edge via Image Transformations, so
+   next/image gets a custom loader that rewrites R2 URLs to
+   <origin>/img/<width>-auto/<key> (WebP/AVIF negotiated at the edge; the
+   8 MB original is never downloaded). Memory/dev mode keeps the plain
+   <picture>/<img> pipeline over pre-generated WebP derivatives. The public
+   base is resolved from the browser-visible var first (the loader runs in the
+   client bundle), falling back to the server-only var for build-time CSP. */
+const r2ImageDelivery = process.env.ARCHITECH_MEDIA_STORAGE === "r2";
+const r2PublicBase = (process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL ?? process.env.R2_PUBLIC_BASE_URL ?? "").replace(/\/+$/, "");
+let r2PublicOrigin: string | null = null;
+if (r2PublicBase) {
+  try {
+    r2PublicOrigin = new URL(r2PublicBase).origin;
+  } catch {
+    r2PublicOrigin = null;
+  }
+}
 /* Preview proxies: both the current (manus.computer) and legacy (e2b.app)
    wildcard families so dev previews can embed the app in either environment.
    Exact hostnames are never listed — they rotate per sandbox. */
@@ -37,8 +56,8 @@ const securityHeaders = [
       `script-src ${scriptSource}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://tile.openstreetmap.org",
-      "connect-src 'self' https://*.ingest.sentry.io https://tile.openstreetmap.org",
+      `img-src 'self' data: blob: https://tile.openstreetmap.org${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
+      `connect-src 'self' https://*.ingest.sentry.io https://tile.openstreetmap.org${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
       "frame-src 'self' https://www.openstreetmap.org",
       "form-action 'self'",
       "upgrade-insecure-requests",
@@ -63,14 +82,19 @@ const nextConfig: NextConfig = {
     "localhost",
     "127.0.0.1",
   ],
-  // Plain <img>/<picture> pipeline (pre-generated WebP derivatives)
-  images: {
-    // Public assets currently use pre-generated WebP derivatives. Keep this
-    // explicit until the R2 image loader is activated, then remove the flag
-    // and enforce responsive derivative tests in the deployment pipeline.
-    unoptimized: true,
-    formats: ["image/avif", "image/webp"],
-  },
+  // Image pipeline. R2 mode: custom loader rewrites R2 URLs to Cloudflare
+  // Image Transformations URLs (edge-side WebP/AVIF + resize), so Next's
+  // optimizer is bypassed. Memory/dev mode: plain <img>/<picture> over
+  // pre-generated WebP derivatives (unoptimized, as before).
+  images: r2ImageDelivery
+    ? {
+        loader: "custom",
+        loaderFile: "./client/src/lib/media/next-image-loader.ts",
+      }
+    : {
+        unoptimized: true,
+        formats: ["image/avif", "image/webp"],
+      },
   async headers() {
     const rules = [{ source: "/:path*", headers: securityHeaders }];
     if (!isProduction) {

@@ -1,7 +1,7 @@
 import "server-only";
 import { createRequire } from "node:module";
 import { dbListingToProperty, dbLocalityToLocality } from "@/lib/repositories/mappers";
-import { getListings, getListingById, getListingsByLocality, getLocalities, getLocalityBySlug, getCities, type City } from "@/lib/repositories";
+import { getListings, getListingById, getListingsByLocality, getListingStaticParams, getLocalities, getLocalityBySlug, getCities, type City } from "@/lib/repositories";
 import {
   dbOrganizationToPublicAgent,
   demoDirectoryAgents,
@@ -77,6 +77,33 @@ export type ListingScope = {
 };
 
 export const MAX_UNSCOPED_LISTING_ROWS = 5000;
+
+/**
+ * Static params for `/listing/[id]` — audit P0.5.
+ *
+ * Fixture mode returns the reference catalogue (build-safe, no DB). Prisma
+ * mode returns every listing's `stableId` and `slug`, so listings created in
+ * the database become pre-rendered ISR pages at deploy time instead of paying
+ * per-request SSR forever. A build without a reachable database (CI, some
+ * edge deploys) must not fail: the lookup is best-effort and falls back to
+ * the fixture ids, which keeps `dynamicParams` serving unknown ids on demand.
+ */
+export async function getListingStaticParamsForServer(): Promise<Array<{ id: string }>> {
+  const fallback = getListingStaticParams();
+  if (!isPrismaDataSource()) return fallback;
+  try {
+    const prisma = getPrismaClient();
+    const rows = (await prisma.listing.findMany({ select: { stableId: true, slug: true } })) as Array<{ stableId: string; slug: string }>;
+    const ids = new Set<string>();
+    for (const row of rows) {
+      if (row.stableId) ids.add(row.stableId);
+      if (row.slug) ids.add(row.slug);
+    }
+    return ids.size > 0 ? [...ids].map((id) => ({ id })) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 /**
  * Read the active inventory for a scope.

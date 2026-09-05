@@ -3,7 +3,24 @@
 **Date:** 2026-09-05 (updated for second-pass, in-depth audit)
 **Scope:** Whole repo — runtime, hosting, data, search, media, observability, CI, external calls, schedulers, and documented operational posture.
 **Method:** Reviewed **docs** (`docs/architecture`, `docs/data`, `docs/search`, `docs/observability`, `docs/operations`, `docs/performance`, `docs/media`) and **code** (`app/*`, `client/src/lib/*`, `client/src/pages/*`, `client/src/components/*`, `next.config.ts`, `prisma/*`, `scripts/*`, `.github/workflows/*`, `governance/*`).
-**Status:** Findings only. **No code changed.**
+**Status:** Findings; P0/P1 first batch implemented (see status table below).
+
+## 0. Execution status (first batch, 2026-09-05)
+
+| Item | Status | Where |
+|---|---|---|
+| P0.1 SQL search | **Partially done.** The executed candidate-narrowing path (`ARCHITECH_SEARCH_SQL_NARROW=on`, FTS + trigram + ILIKE superset, fail-closed) already exists in `lib/search/sql.ts` + `sql-narrow.ts`; the search API now carries `s-maxage=30, stale-while-revalidate=60` (see P0.2). Full DB-side filtering/pagination (facet counts in SQL) is the remaining step — kept off-by-default until the pg_trgm migrations are confirmed in every prisma environment. | `app/api/search/route.ts`, `client/src/lib/search/sql-narrow.ts` |
+| P0.2 Cache deterministic GETs | **Done.** `/api/search` → `public, s-maxage=30, stale-while-revalidate=60`; `/api/ai/compare`, `/api/ai/search-assist`, `/api/cities/[slug]/market-trends`, `/api/localities/[slug]/price-trends` → `public, s-maxage=300, stale-while-revalidate=86400` (404s stay `no-store`). | each route |
+| P0.3 Image delivery | **Done (R2 path).** R2 presigned signing (SigV4), `next/image` custom loader → Cloudflare Image Transformations URLs when `ARCHITECH_MEDIA_STORAGE=r2` (`next.config.ts`, `client/src/lib/media/next-image-loader.ts`). Dropped derivative files stay in `public/images` until R2 serving is live in production (see media-storage-decision phase 3). | `next.config.ts`, `client/src/lib/media/*` |
+| P0.4 De-dynamic render-only pages | **Done (safe set).** `/blogs`, `/list-property`, `/collections` → static; `/developers`, `/locations` → ISR `revalidate=3600`. `/compare`, `/locations/[state]` keep request-time rendering (searchParams-driven); authenticated pages untouched. | the pages |
+| P0.5 Listing page double read | **Done.** `generateMetadata` + page share one `React.cache()`-deduped lookup; ISR `revalidate=600`; `generateStaticParams` now reads DB ids in prisma mode (best-effort, fixture fallback) so DB listings become pre-rendered pages. | `app/listing/[id]/page.tsx`, `client/src/lib/repositories/server/prisma.ts` |
+| P0.6 Duplicate CI pipelines | **Done.** `quality.yml` deleted — it re-ran check + lint + test + db:validate + build that `ci.yml` already runs on the same events. | `.github/workflows/` |
+| P1.1 Broker channel fan-out | **Partially done.** All channel GETs now carry `private, max-age=15, stale-while-revalidate=30` (cuts tab-switch refetches). Consolidating the 6 parallel panel calls into one dashboard payload is the remaining step. | `app/api/broker/channel/*` |
+| P1.2 Per-instance schedulers | **Partially done.** New single-driver endpoint `POST /api/internal/scheduled/media-retention-sweep/` (`CRON_SECRET` bearer, fails closed) for a platform cron; set `MEDIA_RETENTION_SWEEP=off` when the cron is live. In-process behavior unchanged for single-replica dev. | `app/api/internal/scheduled/*` |
+| P1.3 Observability per-event | **Done (client-side).** Web-vitals sampled via `NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE` (prod example: 0.1; 0 disables ingest); Sentry traces lowered in prod examples (`0.05→0.01`, public `0.01→0.001`). | `WebVitalsReporter.tsx`, `.env.production.example` |
+| P1.5 Media object lifecycle | **Done (app-side).** Retention sweep + takedown delete the R2 object (SigV4 DELETE, idempotent), `PropertyMedia.objectKey` persisted at sign time (migration `202609050002`); failures are counted + audited, never thrown. Quota `MEDIA_MAX_IMAGES_PER_LISTING` (default 10) enforced at sign. Bucket-level R2 lifecycle rules remain an operator task. | `client/src/lib/media/*`, `prisma/migrations/202609050002_*` |
+
+Remaining (not started): P0.1 full SQL pagination, P1.1 dashboard consolidation, P1.4 R2 location snapshots, P1.6 email digests, P1.7 scheduler for ERPNext/RERA syncs, all P2 hygiene items.
 
 ---
 

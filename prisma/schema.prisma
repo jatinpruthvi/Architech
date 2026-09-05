@@ -782,6 +782,11 @@ model PropertyMedia {
   listingId        String
   kind             String                @default("image")
   url              String
+  /// Storage object key (e.g. R2 `listing-drafts/<draft>/<uploadId>/<file>`).
+  /// Present for uploads signed through the storage provider, so the
+  /// retention sweep can delete the bytes — not just the row — when policy
+  /// says media is gone (docs/media/media-storage-decision.md, phase 4).
+  objectKey        String?
   alt              String?
   width            Int?
   height           Int?

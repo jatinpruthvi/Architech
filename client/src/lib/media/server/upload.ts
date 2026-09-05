@@ -1,22 +1,54 @@
 import "server-only";
-import { createSignedMediaUpload, type MediaUploadInput } from "@/lib/media/upload";
-import { MemoryMediaStorageProvider, mediaObjectKey, R2MediaStorageProvider, type MediaStorageProvider } from "@/lib/media/provider";
-import { getMediaStorageMode, validateR2Environment } from "@/lib/media/source";
-import { createMediaUploadForServer } from "@/lib/persistence/media-store";
+import { createSignedMediaUpload, detectMediaKind, type MediaUploadInput } from "@/lib/media/upload";
+import { getMediaStorageProvider, mediaObjectKey, type MediaStorageProvider } from "@/lib/media/provider";
+import { getMediaKindGate, getMediaQuota, VIDEO_GATE_ERROR, type MediaKindGate } from "@/lib/media/policy";
+import { countActiveMediaForDraftForServer, createMediaUploadForServer } from "@/lib/persistence/media-store";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 
-export function getMediaStorageProvider(mode = getMediaStorageMode()): MediaStorageProvider {
-  if (mode === "r2") {
-    const env = validateR2Environment();
-    if (!env.ok) throw new Error(`R2 media storage is missing: ${env.missing.join(", ")}`);
-    return new R2MediaStorageProvider();
-  }
-  return new MemoryMediaStorageProvider();
+export { getMediaStorageProvider };
+export type { MediaStorageProvider };
+
+function gateAllowsKind(gate: MediaKindGate, kind: "image" | "video" | undefined) {
+  if (kind === "image") return true;
+  if (kind === "video") return gate === "all";
+  return false;
 }
 
+/**
+ * The server sign endpoint: validates, applies the media policy, signs a
+ * direct-to-storage upload URL, and (in prisma mode) persists the record.
+ *
+ * Media policy (docs/media/media-storage-decision.md):
+ *  - KIND GATE: the initial phase is images-only. `ARCHITECH_MEDIA_KINDS=all`
+ *    re-enables the retained video path; the default refuses `video/*` here so
+ *    the bytes never leave the browser — the UI hides video too, but the
+ *    server is the authoritative gate.
+ *  - QUOTA: `MEDIA_MAX_IMAGES_PER_LISTING` caps non-deleted items per draft so
+ *    one account cannot unbound object storage or the DB.
+ */
 export async function createSignedMediaUploadForServer(input: MediaUploadInput) {
   const result = createSignedMediaUpload(input);
   if (!result.ok) return result;
+
+  // KIND GATE — authoritative. Runs after base validation so the error list
+  // stays consistent, and before any signing so a gated kind never gets a URL.
+  const kind = detectMediaKind(input.mimeType);
+  if (!gateAllowsKind(getMediaKindGate(), kind)) {
+    return { ok: false as const, status: 400, errors: [VIDEO_GATE_ERROR] };
+  }
+
+  // QUOTA — count non-deleted items already attached to this draft. The new
+  // record's stable id is excluded so re-signing an in-flight upload (a
+  // duplicate request) is not counted against its own quota.
+  const quota = getMediaQuota();
+  const existing = await countActiveMediaForDraftForServer(input.listingDraftId, result.upload.id);
+  if (existing >= quota.maxItemsPerListing) {
+    return {
+      ok: false as const,
+      status: 409,
+      errors: [`This listing already has ${quota.maxItemsPerListing} media items (the maximum). Remove one before adding more.`],
+    };
+  }
 
   const provider = getMediaStorageProvider();
   const objectKey = mediaObjectKey(input, result.upload.id);
@@ -24,8 +56,9 @@ export async function createSignedMediaUploadForServer(input: MediaUploadInput) 
 
   // Persist a durable PropertyMedia record when the data source is `prisma`.
   // Idempotent: the shared stable id means this reconciles with the contract
-  // upload without creating a second record.
-  if (isPrismaPersistence()) await createMediaUploadForServer(input);
+  // upload without creating a second record. The objectKey is stored so the
+  // retention sweep / takedown can delete the R2 object, not just the row.
+  if (isPrismaPersistence()) await createMediaUploadForServer(input, { objectKey });
 
   return {
     ...result,

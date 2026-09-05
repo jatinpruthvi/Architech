@@ -1,7 +1,7 @@
 # Media Storage Decision — Initial Phase
 
 **Date:** 2026-09-05
-**Status:** Decided (documentation only, no code changes yet)
+**Status:** Decided; implementation phases 1–4 landed (2026-09-05)
 **Owner:** Product / Platform
 
 ## Summary
@@ -47,6 +47,9 @@ The deciding factor is **public, read-heavy delivery**. R2 has zero egress, so a
 
 - `ARCHITECH_MEDIA_STORAGE=memory` → local/sandbox (default)
 - `ARCHITECH_MEDIA_STORAGE=r2` → staging/production
+- `ARCHITECH_MEDIA_KINDS=images` (default) → images-only gate; `all` re-enables the retained video path. UI mirror: `NEXT_PUBLIC_ARCHITECH_MEDIA_KINDS`.
+- `MEDIA_MAX_IMAGES_PER_LISTING=10` → per-listing upload quota (non-deleted items per draft).
+- `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` → browser-visible twin of `R2_PUBLIC_BASE_URL`; the `next/image` loader needs it client-side to build transformation URLs.
 
 Required env (already in `.env.production.example` / `.env.staging.example`):
 
@@ -58,13 +61,13 @@ R2_SECRET_ACCESS_KEY
 R2_PUBLIC_BASE_URL
 ```
 
-## Implementation phases (future work — not yet coded)
+## Implementation phases
 
-1. **Finish real R2 presigned signing** in `client/src/lib/media/provider.ts` / `server/upload.ts` — replace the current placeholder signed URL.
-2. **Image-only gate**: users only see/upload images; server rejects `video/*` in `images-only` mode. Keep video code in place.
-3. **Transform/serve layer**: WebP/AVIF + thumbnails via Cloudflare Image Transformations (remote R2 origin) or `next/image`.
-4. **Quotas + lifecycle**: per-account upload caps; lifecycle/cleanup rules for rejected/orphaned/replaced media.
-5. **Video (later)**: enable only when revenue starts; evaluate Bunny Stream vs Cloudflare Stream through the same provider abstraction.
+1. **Finish real R2 presigned signing** — **done.** `client/src/lib/media/sigv4.ts` performs dependency-free SigV4 (pinned to the AWS worked example in `sigv4.test.ts`); `R2MediaStorageProvider.signUpload` returns a 15-minute, host-bound, query-signed PUT URL. No placeholder remains.
+2. **Image-only gate** — **done.** `client/src/lib/media/policy.ts` (`ARCHITECH_MEDIA_KINDS`, default `images`) is enforced at the sign endpoint (`server/upload.ts`) and mirrored in the UI (`ListingSubmission.tsx`, `NEXT_PUBLIC_ARCHITECH_MEDIA_KINDS`). The video code path is retained; `all` re-enables it.
+3. **Transform/serve layer** — **done (URL scheme).** `client/src/lib/media/image-loader.ts` builds Cloudflare Image Transformations URLs (`<origin>/img/<width>-auto/<key>`); `next.config.ts` activates a `next/image` custom loader (`next-image-loader.ts`) when `ARCHITECH_MEDIA_STORAGE=r2`. The bucket domain must have Image Transformations enabled.
+4. **Quotas + lifecycle** — **done (app-side).** Per-listing quota `MEDIA_MAX_IMAGES_PER_LISTING` (default 10) enforced at sign time; the retention sweep and takedown path delete the R2 **object** (not just the DB row) via `MediaStorageProvider.deleteObject` + `PropertyMedia.objectKey`. Bucket-level R2 lifecycle rules for orphaned/long-stale objects are an operator task on the bucket itself.
+5. **Video (later)** — **deferred by decision.** Enable only when revenue starts; evaluate Bunny Stream vs Cloudflare Stream through the same provider abstraction.
 
 ## Guardrail
 

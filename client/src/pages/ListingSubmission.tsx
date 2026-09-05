@@ -14,6 +14,7 @@ import { getLocalities } from "@/lib/repositories/localities";
 import type { ListingDraftInput } from "@/lib/broker/workflow";
 import { AVAILABILITY_OPTIONS, PROPERTY_TYPE_OPTIONS } from "@/lib/listing-vocabulary";
 import type { SignedMediaUpload } from "@/lib/media/upload";
+import { VIDEO_GATE_ERROR } from "@/lib/media/policy";
 import { AMENITY_OPTIONS, BATHROOM_OPTIONS, FACING_OPTIONS, FURNISHING_OPTIONS, PARKING_OPTIONS } from "@/lib/listing-details";
 import { DEFAULT_LISTER_TYPE, LISTER_TYPE_OPTIONS, labelForListerType, type ListerType } from "@/lib/listing/lister-type";
 import { useSession } from "@/contexts/SessionContext";
@@ -140,8 +141,22 @@ export default function ListingSubmission() {
     return { ...current, details: { ...(current.details ?? {}), amenities: amenities.includes(amenity) ? amenities.filter((item) => item !== amenity) : [...amenities, amenity] } };
   });
 
+  /* Media kind gate (docs/media/media-storage-decision.md, phase 2). The
+     server sign endpoint is the authoritative gate; this is the user-side half
+     that keeps video out of the picker and out of the local preview during the
+     images-only phase. The video code path is retained — setting
+     NEXT_PUBLIC_ARCHITECH_MEDIA_KINDS=all re-enables it without a rewrite. */
+  const videoUploadsEnabled = (process.env.NEXT_PUBLIC_ARCHITECH_MEDIA_KINDS ?? "images").trim().toLowerCase() === "all";
+  const mediaAccept = videoUploadsEnabled ? "image/jpeg,image/png,image/webp,video/mp4,video/quicktime" : "image/jpeg,image/png,image/webp";
+
   const onMediaFile = (file: File | null) => {
     setMediaUpload(null);
+    if (file && !videoUploadsEnabled && file.type.startsWith("video/")) {
+      setMediaFile(null);
+      setMediaPreviewUrl(null);
+      setErrors([VIDEO_GATE_ERROR]);
+      return;
+    }
     setMediaFile(file);
     setMediaPreviewUrl(file ? URL.createObjectURL(file) : null);
   };
@@ -436,10 +451,10 @@ export default function ListingSubmission() {
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-[180px_1fr]">
                 <div className="aspect-[4/3] overflow-hidden border border-ink/12 bg-sand/60">
-                  {mediaPreviewUrl && mediaFile?.type.startsWith("video/") ? <video src={mediaPreviewUrl} controls muted playsInline className="h-full w-full object-cover" aria-label="Selected media preview" /> : mediaPreviewUrl ? <img src={mediaPreviewUrl} alt={`Local preview of ${mediaFile?.name ?? "selected media"}`} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center p-4 text-center stamp !text-[10px] text-ink/45">Choose an image or video to preview it here.</div>}
+                  {mediaPreviewUrl && mediaFile?.type.startsWith("video/") ? <video src={mediaPreviewUrl} controls muted playsInline className="h-full w-full object-cover" aria-label="Selected media preview" /> : mediaPreviewUrl ? <img src={mediaPreviewUrl} alt={`Local preview of ${mediaFile?.name ?? "selected media"}`} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center p-4 text-center stamp !text-[10px] text-ink/45">{videoUploadsEnabled ? "Choose an image or video to preview it here." : "Choose an image to preview it here."}</div>}
                 </div>
                 <div className="grid gap-4">
-                  <label className="stamp !text-[10px] text-ink/60">Image or video<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" onChange={(e) => onMediaFile(e.target.files?.[0] ?? null)} className="mt-1.5 block w-full border border-ink/20 bg-paper/35 px-3 py-2 text-sm file:mr-3 file:border-0 file:bg-night file:px-3 file:py-2 file:text-xs file:text-cream" /></label>
+                  <label className="stamp !text-[10px] text-ink/60">{videoUploadsEnabled ? "Image or video" : "Image"}<input type="file" accept={mediaAccept} onChange={(e) => onMediaFile(e.target.files?.[0] ?? null)} className="mt-1.5 block w-full border border-ink/20 bg-paper/35 px-3 py-2 text-sm file:mr-3 file:border-0 file:bg-night file:px-3 file:py-2 file:text-xs file:text-cream" /></label>
                   <label className="stamp !text-[10px] text-ink/60">Rights evidence<input value={mediaLicenseEvidence} onChange={(e) => setMediaLicenseEvidence(e.target.value)} className={inputCls} placeholder="Owner authorization or partner agreement reference" /></label>
                   <label className="flex items-start gap-3 text-xs leading-5 text-ink/65"><input type="checkbox" checked={mediaRightsConfirmed} onChange={(e) => setMediaRightsConfirmed(e.target.checked)} className="mt-1 accent-[var(--brick)]" /><span>I confirm I own or am authorised to publish this specific file.</span></label>
                   <button type="button" onClick={() => void prepareMediaUpload()} disabled={!draftId || !mediaFile || mediaSubmitting} className="night-fill btn-sweep btn-solid touch-44 w-fit bg-night px-4 py-3 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed">{mediaSubmitting ? "Preparing…" : "Sign & attach media"}</button>

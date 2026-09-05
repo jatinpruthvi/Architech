@@ -164,10 +164,12 @@ export function getMediaUpload(uploadId: string) {
   return uploads.get(uploadId);
 }
 
-/** Live media records for the retention sweep (M-6). */
-export function listMediaUploadRecords(): Array<Pick<SignedMediaUpload, "id" | "moderationStatus" | "exifStripped" | "createdAt">> {
+/** Live media records for the retention sweep (M-6) and the per-listing
+    upload quota (media-storage-decision phase 4). */
+export function listMediaUploadRecords(): Array<Pick<SignedMediaUpload, "id" | "listingDraftId" | "moderationStatus" | "exifStripped" | "createdAt">> {
   return [...uploads.values()].map((upload) => ({
     id: upload.id,
+    listingDraftId: upload.listingDraftId,
     moderationStatus: upload.moderationStatus,
     exifStripped: upload.exifStripped,
     createdAt: upload.createdAt,
