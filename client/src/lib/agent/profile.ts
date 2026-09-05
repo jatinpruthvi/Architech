@@ -92,7 +92,7 @@ export const SAMPLE_AGENT_REVIEWS: AgentReview[] = SAMPLE_REVIEWS.map((review) =
 
 export const isRatingWithinScale = (rating: number): boolean => rating >= REVIEW_SCALE.min && rating <= REVIEW_SCALE.max;
 
-export function buildAgentJsonLd(profile: AgentProfile) {
+export function buildAgentJsonLd(profile: AgentProfile, profileUrl?: string) {
   /* Review markup is emitted only when genuine verified-buyer reviews exist,
      and it asserts that itself rather than trusting `rating` alone.
 
@@ -108,7 +108,11 @@ export function buildAgentJsonLd(profile: AgentProfile) {
     "@type": "RealEstateAgent",
     name: profile.name,
     identifier: profile.slug,
-    url: "/guide/",
+    /* The agent's own page, or nothing: previously this defaulted to
+       "/guide/", which claimed every agent's canonical identity was an
+       unrelated guide index. `url` is optional in schema.org terms, so an
+       unknown profile URL is omitted rather than mis-pointed. */
+    ...(profileUrl ? { url: profileUrl } : {}),
     description: `Verified broker organization: ${profile.verificationStatus.replaceAll("_", " ").toLowerCase()}.`,
     aggregateRating: hasGenuineReviews
       ? { "@type": "AggregateRating", ratingValue: profile.rating, reviewCount: profile.reviewCount }

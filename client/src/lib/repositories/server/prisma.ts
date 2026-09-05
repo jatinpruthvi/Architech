@@ -2,6 +2,12 @@ import "server-only";
 import { createRequire } from "node:module";
 import { dbListingToProperty, dbLocalityToLocality } from "@/lib/repositories/mappers";
 import { getListings, getListingById, getListingsByLocality, getLocalities, getLocalityBySlug } from "@/lib/repositories";
+import {
+  dbOrganizationToPublicAgent,
+  demoDirectoryAgents,
+  isPublicVerification,
+  type PublicAgentOrganization,
+} from "@/lib/agent/directory";
 import { isPrismaDataSource } from "@/lib/repositories/source";
 
 type PrismaClientLike = {
@@ -10,6 +16,10 @@ type PrismaClientLike = {
     findFirst(args: unknown): Promise<unknown | null>;
   };
   locality: {
+    findMany(args: unknown): Promise<unknown[]>;
+    findFirst(args: unknown): Promise<unknown | null>;
+  };
+  brokerOrganization: {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
   };
@@ -94,6 +104,76 @@ export async function getListingsForServer(scope: ListingScope = {}) {
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
     take: ceiling,
+  });
+  return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
+}
+
+/** Featured-first selection, same contract as the fixture getFeaturedListings:
+    featured homes lead, the rest fill to the limit. */
+export async function getFeaturedListingsForServer(limit = 8, citySlug?: string) {
+  const pool = await getListingsForServer({ citySlug });
+  const featured = pool.filter((property) => property.featured);
+  return [...featured, ...pool.filter((property) => !property.featured)].slice(0, limit);
+}
+
+/* ---- public agent directory ------------------------------------------------ */
+
+type DbOrganizationRow = {
+  slug: string;
+  name: string;
+  verificationStatus: string;
+  reraNumber?: string | null;
+  website?: string | null;
+  city?: { slug: string; name: string } | null;
+  _count?: { listings?: number };
+};
+
+function organizationRowToPublicAgent(row: DbOrganizationRow): PublicAgentOrganization {
+  return dbOrganizationToPublicAgent({
+    slug: row.slug,
+    name: row.name,
+    citySlug: row.city?.slug ?? "ahmedabad",
+    cityName: row.city?.name ?? "Ahmedabad",
+    verificationStatus: row.verificationStatus,
+    reraNumber: row.reraNumber,
+    website: row.website,
+    listingCount: row._count?.listings ?? 0,
+  });
+}
+
+/** Public directory: every organization whose verification tier is public. */
+export async function getAgentDirectoryForServer(): Promise<PublicAgentOrganization[]> {
+  if (!isPrismaDataSource()) return demoDirectoryAgents();
+  const prisma = getPrismaClient();
+  const rows = (await prisma.brokerOrganization.findMany({
+    include: { city: { select: { slug: true, name: true } }, _count: { select: { listings: true } } },
+    orderBy: { name: "asc" },
+  })) as DbOrganizationRow[];
+  return rows.filter((row) => isPublicVerification(row.verificationStatus)).map(organizationRowToPublicAgent);
+}
+
+export async function getAgentBySlugForServer(slug?: string): Promise<PublicAgentOrganization | undefined> {
+  if (!slug) return undefined;
+  if (!isPrismaDataSource()) return demoDirectoryAgents().find((agent) => agent.slug === slug);
+  const prisma = getPrismaClient();
+  const row = (await prisma.brokerOrganization.findFirst({
+    where: { slug },
+    include: { city: { select: { slug: true, name: true } }, _count: { select: { listings: true } } },
+  })) as DbOrganizationRow | null;
+  return row && isPublicVerification(row.verificationStatus) ? organizationRowToPublicAgent(row) : undefined;
+}
+
+/** Listings attributable to one organization. Fixture listings are attributed
+    to the demo organization product-wide (see the lead module), so fixture
+    mode returns the first-page slice of the fixture inventory. */
+export async function getListingsByAgentForServer(slug: string, limit = 12) {
+  if (!isPrismaDataSource()) return getListings().slice(0, limit);
+  const prisma = getPrismaClient();
+  const rows = await prisma.listing.findMany({
+    where: { lifecycle: "ACTIVE", organization: { slug } },
+    include: listingInclude,
+    orderBy: { meaningfulUpdatedAt: "desc" },
+    take: limit,
   });
   return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
 }

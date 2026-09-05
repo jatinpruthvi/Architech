@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assetUrl, canonicalUrl, cityUrl, guideUrl, homeUrl, listingUrl, localityUrl, normalizeSiteUrl, savedUrl, searchUrl, sitemapIndexPath, sitemapIndexUrl, sitemapSegmentPath, sitemapSegmentUrl, withTrailingSlash } from "./urls";
+import { assetUrl, brokerListingNewUrl, canonicalUrl, cityUrl, guideUrl, homeUrl, listingUrl, localityUrl, normalizeSiteUrl, privacyUrl, savedSearchesUrl, savedUrl, searchUrl, sitemapIndexPath, sitemapIndexUrl, sitemapSegmentPath, sitemapSegmentUrl, termsUrl, withTrailingSlash } from "./urls";
 
 const base = "https://example.com/";
 
@@ -25,6 +25,16 @@ describe("canonical URL helpers", () => {
     expect(searchUrl(base)).toBe("https://example.com/search/");
     expect(savedUrl(base)).toBe("https://example.com/saved/");
     expect(canonicalUrl("buy/ahmedabad", base)).toBe("https://example.com/buy/ahmedabad/");
+  });
+
+  it("self-canonicalises noindex utility pages instead of claiming the homepage", () => {
+    /* A canonical is an identity statement; privacy/terms/saved-searches/draft
+       pages are noindex, but a noindex page canonicalising to `/` publishes a
+       false identity. Self-referencing keeps the statement true. */
+    expect(privacyUrl(base)).toBe("https://example.com/privacy/");
+    expect(termsUrl(base)).toBe("https://example.com/terms/");
+    expect(savedSearchesUrl(base)).toBe("https://example.com/saved-searches/");
+    expect(brokerListingNewUrl(base)).toBe("https://example.com/broker/listings/new/");
   });
 
   it("builds absolute asset and sitemap URLs without route slash mutation", () => {

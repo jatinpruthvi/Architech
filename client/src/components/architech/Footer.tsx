@@ -22,6 +22,8 @@ export default function Footer() {
               <li><Link href="/guide/" className="link-rail">{t.footer.links.notes}</Link></li>
               <li><Link href="/list-property/" className="link-rail">{t.footer.links.listProperty}</Link></li>
               <li><Link href="/home-loan/" className="link-rail">Home loan calculator</Link></li>
+              <li><Link href="/price-index/" className="link-rail">City price index</Link></li>
+              <li><Link href="/agents/" className="link-rail">Verified agents</Link></li>
               <li><Link href="/blogs/" className="link-rail">Blogs & field notes</Link></li>
               <li><Link href="/locations/" className="link-rail">India location & PIN directory</Link></li>
             </ul>

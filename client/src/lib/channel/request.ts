@@ -4,9 +4,10 @@
    adapter and the API routes both call into here, which is what lets the whole
    ruleset be tested without a database.
 
-   The database CHECK constraints in 202609030006 are the real enforcement --
-   these functions exist so a broker gets a readable message instead of a
-   constraint violation, not as a substitute for them. */
+   The database constraints in 202609040001_broker_channel are the real
+   enforcement (demand/supply shape, unique source per listing, RLS) -- these
+   functions exist so a broker gets a readable message instead of a constraint
+   violation, not as a substitute for them. */
 
 import { checkDemandPublish, checkSupplyPublish, type ListingSnapshot, type OrganizationSnapshot, type PublishCheck } from "./publish";
 

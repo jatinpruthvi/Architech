@@ -249,6 +249,25 @@ const routeChecks = [
     },
   },
   {
+    route: "/agents/",
+    check(html) {
+      assertCommonSeo(html, "/agents/");
+      includes(html, "Verified", "/agents/");
+      includes(html, "@type\":\"CollectionPage", "/agents/");
+      includes(html, "/agent/nivasa-partners/", "/agents/"); // directory links its only fixture org
+    },
+  },
+  {
+    route: "/agent/nivasa-partners/",
+    check(html) {
+      assertCommonSeo(html, "/agent/nivasa-partners/");
+      includes(html, "Nivasa Partners", "/agent/nivasa-partners/");
+      includes(html, "@type\":\"RealEstateAgent\"", "/agent/nivasa-partners/");
+      includes(html, "Sample review", "/agent/nivasa-partners/"); // source labelling is part of the trust contract
+      includes(html, "@type\":\"BreadcrumbList", "/agent/nivasa-partners/");
+    },
+  },
+  {
     route: "/listing/garden-courtyard/",
     check(html) {
       assertCommonSeo(html, "/listing/garden-courtyard/");
@@ -364,7 +383,20 @@ const baseUrl = `http://127.0.0.1:${port}`;
 const nextBin = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "next.cmd" : "next");
 const child = spawn(nextBin, ["start", "-H", "127.0.0.1", "-p", String(port)], {
   cwd: root,
-  env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
+  env: {
+    ...process.env,
+    NEXT_TELEMETRY_DISABLED: "1",
+    /* This suite asserts FIXTURE registry identities (garden-courtyard's
+       dossier details, the ₹1.85 Cr route title, fixture sitemap URLs). The
+       fixture build is what CI produces — CI has no .env and nothing sets
+       ARCHITECH_DATA_SOURCE. A local shell that has ARCHITECH_DATA_SOURCE=
+       prisma in .env must build with `ARCHITECH_DATA_SOURCE= pnpm build:ci`
+       before running this suite, because SSG HTML is baked at build time.
+       The runtime override below keeps the DYNAMIC routes (sitemaps, robots,
+       which render live under `next start`) on the same fixture corpus so a
+       local prisma DB can't skew those checks either. */
+    ARCHITECH_DATA_SOURCE: "",
+  },
   stdio: ["ignore", "pipe", "pipe"],
   detached: process.platform !== "win32",
 });

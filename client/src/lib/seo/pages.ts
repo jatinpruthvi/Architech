@@ -1,11 +1,12 @@
 import { getCities, getGuides, getListings, getLocalities } from "@/lib/repositories";
 import { localityIntel } from "@/lib/realestate/locality-intel";
 import { cityMarketTrends } from "@/lib/realestate/market-trends";
+import { demoDirectoryAgents, isAgentIndexable } from "@/lib/agent/directory";
 import { evaluateSeoPageQuality } from "./page-gate";
 import type { PageQualityDecision } from "./page-quality";
 import { isIndexable } from "./lifecycle";
 import { listingTargetQuery } from "./query-targeting";
-import { canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, htmlSitemapPath, htmlSitemapUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, priceIndexPath, priceIndexUrl, cityPriceIndexPath, cityPriceIndexUrl, requirementsPath, requirementsUrl } from "./urls";
+import { agentPath, agentsPath, agentUrl, agentsUrl, canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, htmlSitemapPath, htmlSitemapUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, priceIndexPath, priceIndexUrl, cityPriceIndexPath, cityPriceIndexUrl, requirementsPath, requirementsUrl } from "./urls";
 
 export type SeoRouteType = "home" | "hub" | "city" | "locality" | "listing" | "guide" | "report";
 
@@ -317,6 +318,40 @@ const homeLoanPage: SeoPage = {
   sitemap: { changeFrequency: "monthly", priority: 0.4 },
 };
 
+/* Public agent directory (P1-AGENT-001 public slice, gap-analysis step 3).
+   The profile behind every listing already existed as a data contract; these
+   two entries are its crawl surface. Profile indexability follows the org's
+   verification tier, the same gate the trust badge uses. Fixture mode yields
+   exactly the demo organization; a prisma deployment's registry still lists
+   the fixture set today (M-1 deferred slice, D5-04). */
+const agentsHubPage: SeoPage = {
+  id: "page:agents",
+  routeType: "hub",
+  path: agentsPath(),
+  canonicalUrl: agentsUrl(),
+  primaryIntent: "Let buyers and sellers find a verified agent or partner organization, with verification tier, reviews, and inventory on one page.",
+  indexability: "indexable",
+  owner: "Product",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh when organizations are added, verified, or removed.",
+  entityIds: ["brand:architech", "country:india", "topic:agents"],
+  sitemap: { changeFrequency: "weekly", priority: 0.5 },
+};
+
+const agentProfilePages: SeoPage[] = demoDirectoryAgents().map((agent) => ({
+  id: `agent:${agent.slug}`,
+  routeType: "hub" as const,
+  path: agentPath(agent.slug),
+  canonicalUrl: agentUrl(agent.slug),
+  primaryIntent: `Present ${agent.name}: verification tier, review evidence, and the live inventory this organization answers for.`,
+  indexability: isAgentIndexable(agent.verificationStatus) ? ("indexable" as const) : ("noindex" as const),
+  owner: "Product" as const,
+  qualityState: isAgentIndexable(agent.verificationStatus) ? ("prototype-validated" as const) : ("editorial-review-required" as const),
+  freshnessPolicy: "Refresh when the organization's verification status, reviews, or inventory changes.",
+  entityIds: [`agent:${agent.slug}`, "brand:architech"],
+  sitemap: { changeFrequency: "weekly" as const, priority: 0.4 },
+}));
+
 const reviewPage: SeoPage = {
   id: "page:review",
   routeType: "home",
@@ -408,7 +443,7 @@ const cityPriceIndexPages: SeoPage[] = getCities().map((city) => {
   };
 });
 
-export const seoPages: SeoPage[] = [homePage, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, locationsIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
+export const seoPages: SeoPage[] = [homePage, agentsHubPage, ...agentProfilePages, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, locationsIndiaPage, ...cityPages, ...localityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
 
 /* Quality decisions are computed once at module load: evaluating per call would
    re-scan the listing table for every consumer. */

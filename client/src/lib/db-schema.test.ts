@@ -151,33 +151,45 @@ describe("Phase 1 Prisma schema contract", () => {
   });
 
   describe("Broker channel", () => {
-    const channel = readFileSync("prisma/migrations/202609030006_broker_channel/migration.sql", "utf8");
+    /* Design B is canonical: it is the design schema.prisma declares and the
+       only broker-channel migration. The earlier listing-anchored draft was
+       superseded before any environment applied it (durable data is not
+       activated yet), so it was removed rather than shipped side by side. */
+    const channel = readFileSync("prisma/migrations/202609040001_broker_channel/migration.sql", "utf8");
 
     it("declares the channel models", () => {
-      for (const model of ["ChannelRequest", "ChannelMatch", "ChannelNotification"]) {
+      for (const model of ["ChannelRequest", "ChannelRequestSource", "ChannelMatch", "ChannelDeal", "ChannelNotification"]) {
         expect(schema).toContain(`model ${model} {`);
       }
     });
 
-    it("anchors every SUPPLY request to a real listing", () => {
-      /* This is the whole point of the design: matches score against verified
-         inventory, and the counterparty opens the actual listing with photos. */
-      expect(channel).toContain("supply_requires_listing");
-      expect(channel).toContain(`("type" = 'SUPPLY' AND "listingId" IS NOT NULL)`);
+    it("separates demand shape from supply shape at the database", () => {
+      /* DEMAND describes a search: it must carry a budget and must not carry a
+         price. SUPPLY describes an offer: a price, never a budget range. */
+      expect(channel).toContain("ChannelRequest_demand_shape_chk");
+      expect(channel).toContain(`("type" = 'SUPPLY' AND "priceInr" IS NOT NULL AND "budgetMinInr" IS NULL AND "budgetMaxInr" IS NULL)`);
+      expect(channel).toContain(`("type" = 'DEMAND' AND "budgetMinInr" IS NOT NULL AND "budgetMaxInr" IS NOT NULL AND "priceInr" IS NULL)`);
     });
 
-    it("keeps DEMAND listing-free, since no listing exists yet", () => {
-      expect(channel).toContain(`("type" = 'DEMAND' AND "listingId" IS NULL)`);
+    it("anchors a published offer to at most one private source listing", () => {
+      /* The private link lives on ChannelRequestSource so the cross-agency
+         channel stays sanitized; one source row per listing stops one broker
+         flooding the channel by republishing the same flat. */
+      expect(channel).toContain('CREATE UNIQUE INDEX "ChannelRequestSource_sourceListingId_key" ON "ChannelRequestSource" ("sourceListingId")');
     });
 
-    it("allows only one live offer per listing", () => {
-      // Stops one broker flooding the channel by republishing the same flat.
-      expect(channel).toContain("ChannelRequest_one_open_supply_per_listing");
-      expect(channel).toContain(`WHERE "listingId" IS NOT NULL AND "status" IN ('OPEN', 'MATCHED')`);
+    it("keeps customer PII out of the sanitized channel projection", () => {
+      expect(channel).toContain('CREATE VIEW "ChannelRequestSanitized"');
+      expect(channel).toContain("deliberately excluded");
     });
 
-    it("refuses a self-match", () => {
-      expect(channel).toContain("distinct_organizations");
+    it("refuses a deal between an organization and itself", () => {
+      expect(channel).toContain("ChannelDeal_orgs_distinct_chk");
+    });
+
+    it("keeps commission splits balanced to the paisa", () => {
+      expect(channel).toContain("ChannelDeal_split_sum_chk");
+      expect(channel).toContain('"demandBrokerShareInr" + "supplyBrokerShareInr" = "totalCommissionInr"');
     });
 
     it("bounds the score to 0-100", () => {
@@ -185,23 +197,34 @@ describe("Phase 1 Prisma schema contract", () => {
     });
 
     it("re-running the matcher updates rather than duplicates a pairing", () => {
-      expect(channel).toContain('CREATE UNIQUE INDEX "ChannelMatch_pair_key" ON "ChannelMatch" ("demandRequestId", "supplyRequestId")');
+      expect(channel).toContain('CREATE UNIQUE INDEX "ChannelMatch_demandRequestId_supplyRequestId_key" ON "ChannelMatch" ("demandRequestId", "supplyRequestId")');
     });
 
     it("lets brokers discover each other's open requests but not edit them", () => {
-      /* Discovery needs cross-org SELECT: a channel request carries no customer
-         identity, and a SUPPLY row points at an already-public listing. */
+      /* Discovery needs cross-org SELECT of OPEN rows only: a channel request
+         carries no customer identity, and DRAFT rows stay invisible. */
       expect(channel).toContain('ALTER TABLE "ChannelRequest" ENABLE ROW LEVEL SECURITY');
-      expect(channel).toContain('CREATE POLICY "ChannelRequest_discovery_read"');
+      expect(channel).toContain('ALTER TABLE "ChannelRequest" FORCE ROW LEVEL SECURITY');
+      expect(channel).toContain('CREATE POLICY "ChannelRequest_owner_or_open_select"');
+      expect(channel).toContain(`"status" = 'OPEN'`);
       for (const write of ["owner_insert", "owner_update", "owner_delete"]) {
         expect(channel).toContain(`CREATE POLICY "ChannelRequest_${write}"`);
       }
     });
 
-    it("keeps match creation out of tenant hands", () => {
-      // The matcher runs privileged; FORCE plus no INSERT policy denies tenants.
+    it("keeps cross-agency discovery behind a tenant scope (fail-closed)", () => {
+      /* Without the NULLIF gate the open-discovery branch would also fire for
+         a connection whose tenant GUC is unset or empty — i.e. an application
+         bug becomes a data leak. Same idiom as the core RLS migration. */
+      const selectPolicy = channel.match(/CREATE POLICY "ChannelRequest_owner_or_open_select"[\s\S]{0,800}?;/);
+      expect(selectPolicy?.[0]).toContain("NULLIF(current_setting('app.current_org_id', true), '') IS NOT NULL");
+    });
+
+    it("constrains match writes to the participating organizations", () => {
+      // A tenant can only write a match that cites its own request; a pure
+      // outsider's insert fails the WITH CHECK even with table GRANTs.
+      expect(channel).toContain('CREATE POLICY "ChannelMatch_participant_insert" ON "ChannelMatch" FOR INSERT');
       expect(channel).toContain('ALTER TABLE "ChannelMatch" FORCE ROW LEVEL SECURITY');
-      expect(channel).not.toMatch(/CREATE POLICY[^;]*ON "ChannelMatch"[\s\S]{0,200}FOR INSERT/);
     });
 
     it("caps the broker note, which is free text a human wrote", () => {

@@ -90,6 +90,8 @@
 - [x] Write product gap alignment doc (`docs/product/product-gap-alignment.md`).
 - [x] Execute production environment provisioning when accounts/secrets are available. — Activation gate documented; no accounts or secrets were supplied for execution.
 - [x] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available. — Activation gate documented; live provider wiring remains intentionally disabled without credentials.
+- [x] Batch 5 (non-blocked pending sweep, see `docs/phase-1-batch5.md`): sandbox Postgres validation with RLS proof (`P1-DATA-001`); M-1 public-read `*ForServer` slice on buy/developers/home; cmdk command palette (`P1-SEARCH-002`); registry snapshot-drift tests (`P1-SEO-002`); links-first crawl simulation with sitemap⊆crawl + click-depth budget as a CI gate (`P1-SEO-003`, incl. footer fix for the `/price-index/*` orphan family); marketplace E2E journeys (`P1-TEST-001`); browser layout/Devanagari suite (`P1-UI-001`, CI-gated); entity locale-field contract (`P1-I18N-001`); decision register (`P1-GOV-001`).
+- [ ] Deferred before a prisma-mode launch with indexing enabled: make the SeoPage registry, sitemap, and PIN-directory indexes prisma-backed (M-1 deferred slice, D5-04 in `docs/phase-1-batch5.md`), otherwise the sitemap advertises fixture URLs the prisma-built graph does not link.
 
 ## Chrome Follow-up Debugging
 

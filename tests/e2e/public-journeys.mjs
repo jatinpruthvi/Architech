@@ -25,6 +25,8 @@ const PUBLIC_ROUTES = [
   { path: "/guide/", label: "field notes" },
   { path: "/saved/", label: "saved shortlist" },
   { path: "/list-property/", label: "list property" },
+  { path: "/agents/", label: "agent directory" },
+  { path: "/agent/nivasa-partners/", label: "agent profile" },
   { path: "/contact-us/", label: "contact" },
   { path: "/about-us/", label: "about" },
   { path: "/privacy/", label: "privacy" },
