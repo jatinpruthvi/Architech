@@ -29,3 +29,33 @@ export function r2TransformUrl(src: string, width: number, baseUrl: string): str
 export function r2ImageLoader(src: string, width: number, baseUrl: string): string {
   return r2TransformUrl(src, width, baseUrl) ?? src;
 }
+
+/* The derivative plan in lib/media/upload.ts predates R2 and still names the
+   legacy in-app paths (/media/derived/..., /media/thumbs/...). In r2 mode the
+   resized variants are served on demand by Cloudflare Image Transformations,
+   so the plan must point at real URLs or the record lies about what exists.
+   Original → the stored object; resized kinds → /img/<width>-auto/<key>;
+   `hls` has no equivalent in the images-only phase and stays as planned
+   (guardrail: keep the video plan intact). */
+export type PlannedDerivative = {
+  kind: string;
+  url: string;
+  width?: number;
+  [key: string]: unknown;
+};
+
+export function mapDerivativesToR2(
+  derivatives: ReadonlyArray<PlannedDerivative>,
+  publicUrl: string,
+  objectKey: string,
+): PlannedDerivative[] {
+  const base = publicUrl.slice(0, publicUrl.length - objectKey.length);
+  if (!publicUrl.endsWith(objectKey) || !base.endsWith("/")) return [...derivatives];
+  return derivatives.map((derivative) => {
+    if (derivative.kind === "original") return { ...derivative, url: publicUrl };
+    if (derivative.kind === "hls") return derivative;
+    const width = derivative.kind === "webp_800" ? 800 : derivative.kind === "thumbnail" ? 320 : derivative.width ?? 1600;
+    const transformed = r2TransformUrl(publicUrl, width, base);
+    return transformed ? { ...derivative, url: transformed } : derivative;
+  });
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { r2ImageLoader, r2TransformUrl } from "./image-loader";
+import { mapDerivativesToR2, r2ImageLoader, r2TransformUrl } from "./image-loader";
 
 /* Phase 3 of the media decision: R2 originals are served through Cloudflare
    Image Transformations URLs, never through the app origin. */
@@ -49,5 +49,51 @@ describe("r2ImageLoader (next/image custom loader)", () => {
 
   it("transforms R2 URLs with the requested width", () => {
     expect(r2ImageLoader(`${BASE}/listing-drafts/d/x.jpg`, 480, BASE)).toBe(`${BASE}/img/480-auto/listing-drafts/d/x.jpg`);
+  });
+});
+
+describe("mapDerivativesToR2 (signed-upload derivative records, phase 3)", () => {
+  const key = "listing-drafts/draft_1/media_1/courtyard-hero.jpg";
+  const publicUrl = `${BASE}/${key}`;
+
+  it("maps image derivatives to real transformation URLs", () => {
+    const mapped = mapDerivativesToR2(
+      [
+        { kind: "original", width: 1600, height: 1000, url: "/media/original/courtyard-hero", status: "planned" },
+        { kind: "webp", width: 1600, url: "/media/derived/courtyard-hero.webp", status: "planned" },
+        { kind: "webp_800", width: 800, url: "/media/derived/courtyard-hero-800.webp", status: "planned" },
+        { kind: "thumbnail", width: 320, url: "/media/thumbs/courtyard-hero.webp", status: "planned" },
+      ],
+      publicUrl,
+      key,
+    );
+    expect(mapped[0].url).toBe(publicUrl);
+    expect(mapped[1].url).toBe(`${BASE}/img/1600-auto/${key}`);
+    expect(mapped[2].url).toBe(`${BASE}/img/800-auto/${key}`);
+    expect(mapped[3].url).toBe(`${BASE}/img/320-auto/${key}`);
+    // non-URL fields survive the mapping
+    expect(mapped[0].status).toBe("planned");
+    expect(mapped[0].height).toBe(1000);
+  });
+
+  it("keeps the video plan intact (hls has no edge equivalent in this phase)", () => {
+    const mapped = mapDerivativesToR2(
+      [
+        { kind: "original", url: "/media/original/tour", status: "planned" },
+        { kind: "thumbnail", width: 640, url: "/media/thumbs/tour.webp", status: "planned" },
+        { kind: "hls", url: "/media/hls/tour/master.m3u8", status: "planned" },
+      ],
+      publicUrl,
+      key,
+    );
+    expect(mapped[0].url).toBe(publicUrl);
+    expect(mapped[1].url).toBe(`${BASE}/img/320-auto/${key}`);
+    expect(mapped[2].url).toBe("/media/hls/tour/master.m3u8");
+  });
+
+  it("leaves the plan unchanged when the URL/key pair does not line up", () => {
+    const plan = [{ kind: "original", url: "/media/original/x", status: "planned" }];
+    const mapped = mapDerivativesToR2(plan, "https://other.example.com/nope.jpg", key);
+    expect(mapped).toEqual(plan);
   });
 });

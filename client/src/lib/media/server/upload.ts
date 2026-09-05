@@ -2,6 +2,7 @@ import "server-only";
 import { createSignedMediaUpload, detectMediaKind, type MediaUploadInput } from "@/lib/media/upload";
 import { getMediaStorageProvider, mediaObjectKey, type MediaStorageProvider } from "@/lib/media/provider";
 import { getMediaKindGate, getMediaQuota, VIDEO_GATE_ERROR, type MediaKindGate } from "@/lib/media/policy";
+import { mapDerivativesToR2 } from "@/lib/media/image-loader";
 import { countActiveMediaForDraftForServer, createMediaUploadForServer } from "@/lib/persistence/media-store";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 
@@ -60,6 +61,11 @@ export async function createSignedMediaUploadForServer(input: MediaUploadInput) 
   // retention sweep / takedown can delete the R2 object, not just the row.
   if (isPrismaPersistence()) await createMediaUploadForServer(input, { objectKey });
 
+  /* In r2 mode the planned derivatives must name real, served URLs (Cloudflare
+     Image Transformations), not the legacy in-app /media/* placeholders.
+     Memory mode keeps the contract plan (its derivatives are local previews). */
+  const derivatives = signed.provider === "cloudflare-r2" ? mapDerivativesToR2(result.upload.derivatives, signed.publicUrl, objectKey) : result.upload.derivatives;
+
   return {
     ...result,
     upload: {
@@ -69,6 +75,7 @@ export async function createSignedMediaUploadForServer(input: MediaUploadInput) 
       storageProvider: signed.provider,
       requiredHeaders: signed.requiredHeaders,
       expiresAt: signed.expiresAt,
+      derivatives,
       auditTrail: [
         ...result.upload.auditTrail,
         {
