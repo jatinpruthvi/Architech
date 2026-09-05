@@ -54,8 +54,10 @@ const securityHeaders = [
       "object-src 'none'",
       `frame-ancestors ${frameAncestors}`,
       `script-src ${scriptSource}`,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' data: https://fonts.gstatic.com",
+      /* Fonts are self-hosted by next/font (.next/static/media), so no
+         third-party font origin is needed in the CSP. */
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
       `img-src 'self' data: blob: https://tile.openstreetmap.org${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
       `connect-src 'self' https://*.ingest.sentry.io https://tile.openstreetmap.org${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
       "frame-src 'self' https://www.openstreetmap.org",
