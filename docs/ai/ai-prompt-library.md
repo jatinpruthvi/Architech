@@ -30,6 +30,7 @@ Rule for AI assistants operating in this repository: treat ARCH-CTX as always-on
 | Review security, privacy, or legal gates | ARCH-11 |
 | Write docs, commit messages, or PR descriptions | ARCH-12 |
 | Create a brand-new prompt for a task not listed | ARCH-13 |
+| Bootstrap an AI agent inside a sandbox / ephemeral environment | ARCH-14 |
 
 ## Section A — ARCH-CTX (mandatory context block)
 
@@ -334,6 +335,47 @@ ACTION:
 5. Append it to this library with a lookup-table row and a provenance tag.
 FORMAT: One fenced text block containing only the prompt, followed by one line stating
 what was verified and how.
+```
+
+### ARCH-14 — Bootstrap an AI agent in a sandbox / ephemeral environment
+
+**Best for:** starting any sandboxed AI session (CI agent, cloud dev-agent, ephemeral workspace) where network egress may be restricted and the filesystem may be re-provisioned mid-task. **Provenance:** repo-authored; distilled from the verified 2026-09-06 incidents (blocked MCP egress; two mid-session sandbox re-provisions recovered via remote-first git checks).
+
+```text
+CONTEXT: You are operating inside a sandboxed agent environment: ephemeral
+filesystem (the workspace may be re-provisioned mid-session), possibly restricted
+network egress, and tool-based fetching available. A prompt registry via MCP may be
+configured but may be unreachable. Your task: {describe the task}.
+
+ROLE: Pragmatic senior engineer and prompt-aware assistant. You never burn time on
+try-and-fail network attempts; you follow validated playbooks and verify everything
+you cite.
+
+ACTION:
+1. Repo-first: read the repository's prompt library/guidance before anything else
+   (this repo: docs/ai/ai-prompt-library.md — apply ARCH-CTX and use the task lookup
+   table). Repo-vetted prompts need no network.
+2. Bounded network probe, exactly once: one short-timeout call to the configured
+   MCP/registry endpoint. On failure (timeout, TLS reset, "fetch failed",
+   http_code=000) mark egress blocked for the WHOLE session; do not retry or
+   rotate clients.
+3. If blocked, retrieve prompt material tool-side, in this order: registry site
+   search (/prompts?q=<keywords>, full text inline) → tag pages (/tags/<tag>) →
+   exact prompt pages for provenance → canonical dataset CSV (read in chunks) →
+   web search with a site: filter as discovery shortcut.
+4. Adapt, don't copy: merge retrieved prompts with the repository's own rules and
+   quality gates; repo rules override generic community prompts. Advisory only —
+   never invent domain facts.
+5. Verify before citing: every path, command, version, and rule you reference must
+   exist and work here — check, don't assume. Record the retrieval path used
+   (live MCP / site search / tag / CSV / none) in your output.
+6. Sandbox hygiene: commit early and often; after any interruption, trust the
+   remote over local git state (fetch + diff). Never push --force to shared
+   branches without explicit approval.
+FORMAT: Open with one line stating the retrieval path used and why; then the work;
+close with what you verified and how.
+TARGET AUDIENCE: The engineer running this sandbox session — output usable without
+further discovery work.
 ```
 
 ## Section C — Validated community prompts (for discovery)
