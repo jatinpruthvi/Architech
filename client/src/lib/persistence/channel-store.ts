@@ -21,6 +21,7 @@ import {
   saveChannelDealSplit,
   sanitizeChannelSummary,
   scoreChannelMatch,
+  toNumberOrNull,
   transitionOwnChannelRequest,
   validateChannelRequest,
   type ChannelDealCloseMode,
@@ -626,9 +627,13 @@ export async function getChannelDealForServer(id: string, session: AuthSession) 
 export async function saveChannelDealSplitForServer(id: string, input: { totalCommissionInr?: unknown; demandBrokerShareInr?: unknown; supplyBrokerShareInr?: unknown; splitAgreement?: Record<string, unknown>; closeMode?: ChannelDealCloseMode }, session: AuthSession) {
   if (!isPrismaPersistence()) return saveChannelDealSplit(id, input, session);
   if (!session.organization) return fail(403, "Broker organization is required.");
-  const total = toNumber(input.totalCommissionInr);
-  const demandShare = toNumber(input.demandBrokerShareInr);
-  const supplyShare = toNumber(input.supplyBrokerShareInr);
+  // Same amount semantics as the in-memory path (toNumberOrNull in
+  // lib/broker/channel.ts): whole rupees, non-negative. The local `toNumber`
+  // accepts negatives and fractions — fractions then hit BigInt() and throw
+  // (unhandled 500), and negatives would be persisted as commission.
+  const total = toNumberOrNull(input.totalCommissionInr);
+  const demandShare = toNumberOrNull(input.demandBrokerShareInr);
+  const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
   if (total === null || demandShare === null || supplyShare === null) return fail(400, "totalCommissionInr, demandBrokerShareInr, and supplyBrokerShareInr are required.");
   if (demandShare + supplyShare !== total) return fail(400, "Commission split must add up to totalCommissionInr.");
   const row = await withOrg(prisma(), session.organization.id, async (db) => {
