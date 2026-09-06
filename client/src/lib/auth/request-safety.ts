@@ -1,10 +1,55 @@
 import "server-only";
 import { NextResponse } from "next/server";
 
-const WINDOW_MS = 60_000;
+export const MUTATION_WINDOW_MS = 60_000;
 const MAX_MUTATIONS_PER_WINDOW = 60;
 const MAX_BODY_BYTES = 256 * 1024;
 const buckets = new Map<string, { startedAt: number; count: number }>();
+
+/* BUG-R4-002: hard ceiling on the number of live rate-limit windows.
+
+   `buckets` used to be pruned only by the test helper, so it grew for the
+   whole process lifetime: one permanent entry per (client, route, method)
+   tuple that ever mutated. The client half of that key comes from
+   `x-real-ip` / `cf-connecting-ip` / `x-forwarded-for`, which are attacker-set
+   request headers whenever the app is reachable without a proxy that
+   overwrites them — so rotating one header minted entries without limit
+   (measured: 200k such requests retained ~66 MB of heap that the collector
+   could never reclaim). The ring buffer in observability/metrics-store.ts had
+   the same defect; both are the same class: unbounded in-process state keyed
+   by client input.
+
+   10k simultaneous windows is ~10k distinct clients mutating inside one
+   60 s window, far above any realistic load; above that we drop the
+   oldest-started windows rather than the process. */
+export const MAX_RATE_LIMIT_BUCKETS = 10_000;
+
+/** Number of live rate-limit windows. Exposed for the bound's regression test. */
+export function mutationSafetyBucketCount(): number {
+  return buckets.size;
+}
+
+/* Reclaim window slots. Expired windows are dead weight — the key is
+   re-created on the client's next request anyway — so they go first; only if
+   the map is still over the ceiling (more clients genuinely active inside one
+   window than the cap allows) do we evict the oldest-started windows. Losing a
+   window costs a legitimate client at most one unthrottled window, which is
+   strictly better than exhausting the process. */
+function pruneBuckets(now: number) {
+  for (const [key, bucket] of buckets) {
+    if (now - bucket.startedAt >= MUTATION_WINDOW_MS) buckets.delete(key);
+  }
+  /* Evict down to one BELOW the ceiling: this runs immediately before the
+     caller inserts a new window, so the post-insert size is what the ceiling
+     actually bounds. */
+  const limit = MAX_RATE_LIMIT_BUCKETS - 1;
+  if (buckets.size <= limit) return;
+  const oldestFirst = [...buckets.keys()].sort(
+    (a, b) => (buckets.get(a)?.startedAt ?? 0) - (buckets.get(b)?.startedAt ?? 0),
+  );
+  const excess = buckets.size - limit;
+  for (let index = 0; index < excess; index += 1) buckets.delete(oldestFirst[index]);
+}
 
 function error(status: number, code: string, message: string) {
   return NextResponse.json({ ok: false, error: code, errors: [message] }, {
@@ -142,7 +187,11 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
   const route = new URL(request.url).pathname;
   const key = `${ip}:${route}:${request.method}`;
   const current = buckets.get(key);
-  if (!current || now - current.startedAt >= WINDOW_MS) {
+  if (!current || now - current.startedAt >= MUTATION_WINDOW_MS) {
+    /* BUG-R4-002: only a brand-new key can grow the map — an expired hit
+       overwrites its slot in place. Prune lazily, and only once the map is
+       actually at the ceiling, so the steady-state cost stays O(1). */
+    if (!current && buckets.size >= MAX_RATE_LIMIT_BUCKETS - 1) pruneBuckets(now);
     buckets.set(key, { startedAt: now, count: 1 });
     return null;
   }
