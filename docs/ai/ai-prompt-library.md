@@ -32,6 +32,7 @@ Rule for AI assistants operating in this repository: treat ARCH-CTX as always-on
 | Create a brand-new prompt for a task not listed | ARCH-13 |
 | Bootstrap an AI agent inside a sandbox / ephemeral environment | ARCH-14 |
 | Hunt bugs across the codebase and fix verified findings | ARCH-15 |
+| Hunt performance bugs (bundle, rendering, data, API) and fix verified ones | ARCH-16 |
 
 ## Section A — ARCH-CTX (mandatory context block)
 
@@ -404,6 +405,43 @@ ordered by severity, executive summary, and an audit trail linking every fix to 
 BUG-ID and failing test.
 TARGET AUDIENCE: Reviewers who must be able to re-verify every claim from the report
 alone, without rerunning your session.
+```
+
+### ARCH-16 — Hunt performance bugs (bundle, rendering, data, API) and fix verified ones
+
+**Best for:** proactively finding *performance* defects (not correctness bugs — ARCH-15; not a known regression from a failing budget — ARCH-04). **Provenance:** "Performance Tuning Agent Role" (prompts.chat *Performance* tag, validated 2026-09-06 and used for the day's performance audit) fused with ARCH-15's proof-before-fix discipline and the repo's own perf gate model. Registry note: no dedicated "performance bug" community prompt existed at query time (0 results, 6 Sep 2026) — composition documented per the retrieval playbook.
+
+```text
+CONTEXT: Proactive performance-bug hunt on the Architech repository (ARCH-CTX).
+Performance evidence is first-class here: performance/budgets.json caps,
+scripts/performance/budget.mjs, pnpm perf:shell (universal-shell attribution),
+.next/diagnostics/route-bundle-stats.json after a build, the RUM reporter
+(WebVitalsReporter), and .github/workflows/lighthouse.yml for lab runs.
+A PERF BUG is a verifiable defect costing measurable time, bytes, or stability
+beyond the intended budget or design — never an unmeasured style preference.
+ROLE: Performance engineer; you measure before you touch anything.
+ACTION:
+1. Baseline: pnpm build:ci, then node scripts/performance/budget.mjs and
+   pnpm perf:shell; record the measured table. Any failing gate is a confirmed
+   perf bug by definition.
+2. Discovery sweeps (every finding needs exact file + line evidence):
+   - bundle: route stats vs budgets.json ceilings and previous audit
+     measurements; unexpected shared-chunk growth (perf:shell signatures).
+   - rendering: client-side fetching of public content; effect-driven
+     waterfalls; <img> without width/height (CLS risk).
+   - data: sequential awaits over collections (N+1); findMany without take/page
+     caps (unbounded payloads); JSON.parse(JSON.stringify()) on request paths.
+   - api: list endpoints without pagination/limits; expensive per-request
+     recomputation where a cacheable constant exists.
+3. Classify: PERF-BUG-ID, impact class (bundle/render/data/api), reproduction
+   (command or code path), measured cost where obtainable. Speculation goes to
+   a watchlist — never report intuition as a bug.
+4. Fix only verified findings: minimal change; capture before/after numbers and
+   add a guard (budget line or test) so the class cannot silently return.
+5. Verify: node scripts/performance/budget.mjs, pnpm check, pnpm lint, pnpm test.
+FORMAT: report docs/ai/perf-bug-hunt-<date>.md with a PERF-BUG-ID table,
+before/after measurements, a cleared-by-evidence list, and the watchlist.
+TARGET AUDIENCE: reviewers verifying performance claims from artifacts alone.
 ```
 
 ## Section C — Validated community prompts (for discovery)
