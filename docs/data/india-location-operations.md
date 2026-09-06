@@ -49,7 +49,18 @@ corepack pnpm location:fetch:ogd -- \
   --manifest tmp/location/lgd-local-bodies-YYYY-MM-DD.manifest.json
 ```
 
-Immediately copy each CSV and its manifest as an immutable pair to approved object storage. Record the object version, encryption/retention policy, operator, approval, and import ticket. Do not hand-edit a generated manifest: importers bind the byte checksum and all allowlisted publisher/resource/licence fields.
+**Keep the immutable pair in R2 (cost-reduction-audit P1.4).** The raw snapshot + manifest is the provenance record — it must outlive the machine that fetched it. Add `--upload-to-r2` and the fetcher PUTs both objects to `location-snapshots/<resource>/<retrieval-stamp>/` in the R2 bucket (SigV4, body-hash signed, $0 egress), then stamps the manifest's `r2` section with the object keys and re-uploads it, so the R2 copy is self-describing: an auditor can find the CSV from the manifest alone.
+
+```bash
+DATA_GOV_IN_API_KEY="$DATA_GOV_IN_API_KEY" R2_ACCOUNT_ID=... R2_BUCKET=... \
+  corepack pnpm location:fetch:ogd -- \
+  --resource india-post \
+  --output tmp/location/india-post-YYYY-MM-DD.csv \
+  --manifest tmp/location/india-post-YYYY-MM-DD.manifest.json \
+  --upload-to-r2
+```
+
+`--upload-to-r2` requires `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`; the local tmp/ files are written first, so a failed upload still leaves the full local pair. Keys are per-retrieval, never overwritten. Do not hand-edit a generated manifest: importers bind the byte checksum and all allowlisted publisher/resource/licence fields.
 
 Expected minimums (these are rejection gates, not promises about future government totals):
 
@@ -128,6 +139,30 @@ corepack pnpm location:import:lgd -- \
 ```
 
 Replacement is completeness-gated. It retires absent records with validity timestamps; it does not delete history. Never use it for a circle-only, state-only, truncated, manually filtered, or sample export.
+
+### Importing only the states you operate in (P1.4)
+
+The snapshots are national and the completeness checks demand the whole file — that is correct, the provenance pair must stay whole. But the OLTP database does not need every state. `--states` narrows the *working set* only, after the file has been validated as the complete national snapshot:
+
+```bash
+# Dry-run: the report's counts.stateFilter shows requested states, rows kept
+# and rows dropped; counts.accepted still describes the complete file.
+corepack pnpm location:import:india-post -- \
+  --file tmp/location/india-post.csv \
+  --manifest tmp/location/india-post.csv.manifest.json \
+  --states gujarat,27 \
+  --report tmp/location/india-post-report.json
+
+# Apply: only the requested states' rows are upserted.
+corepack pnpm location:import:lgd -- \
+  --file tmp/location/lgd-local-bodies.csv \
+  --manifest tmp/location/lgd-local-bodies.csv.manifest.json \
+  --states gujarat \
+  --report tmp/location/lgd-local-body-apply-report.json \
+  --apply
+```
+
+`--states` accepts official LGD state names (case/diacritic-insensitive, alias-aware — `Orissa` resolves like `Odisha`) or LGD codes, comma-separated. Unknown names/codes are an error — a silent no-op filter would import nothing and look like success. A state-scoped import **cannot be combined with `--replace-full-snapshot`**: it would retire rows for states it never imported, so the importer refuses the combination instead.
 
 ## 5. Audit and activate
 

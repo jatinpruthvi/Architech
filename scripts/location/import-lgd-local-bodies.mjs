@@ -13,6 +13,12 @@
  *     --manifest tmp/location/lgd-local-bodies.csv.manifest.json
  *
  * Add --apply only against a migrated PostgreSQL/PostGIS database.
+ *
+ * P1.4: --states gujarat,27 imports only the requested states' local bodies
+ * and PIN links (names or LGD codes). The file is still validated as the
+ * complete national snapshot first; only the working set is narrowed. It
+ * cannot be combined with --replace-full-snapshot (a scoped import must
+ * never retire rows it did not import).
  */
 import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -21,6 +27,7 @@ import { pathToFileURL } from "node:url";
 import { parseCsv } from "./import-india-post.mjs";
 import { comparableStateName, officialStatesByCode } from "./india-state-registry.mjs";
 import { parseOgdDate, validateOgdSnapshotManifest } from "./fetch-ogd-snapshot.mjs";
+import { filterRowsByStates, resolveStateFilter } from "./state-filter.mjs";
 
 const RESOURCE_ID = "71818d1a-c114-46cb-aa9b-56ed70d4bc4a";
 const SOURCE_KEY = "lgd-local-bodies-with-pin-codes";
@@ -324,6 +331,18 @@ export async function main(argv = process.argv.slice(2)) {
     throw new Error(`LGD snapshot has ${normalized.rejected.length} rejected rows; review them or pass --allow-rejections explicitly.`);
   }
   if (options.replaceFullSnapshot && !options.apply) throw new Error("--replace-full-snapshot requires --apply.");
+  // P1.4: the file is validated as the complete national snapshot above; only
+  // now do we narrow the working set to the requested states. A scoped import
+  // must never retire rows it did not import, so it is mutually exclusive
+  // with --replace-full-snapshot.
+  const stateCodes = resolveStateFilter(options.states);
+  if (stateCodes && options.replaceFullSnapshot) {
+    throw new Error("--states cannot be combined with --replace-full-snapshot: a state-scoped import must never retire rows it did not import.");
+  }
+  const stateFilter = stateCodes
+    ? filterRowsByStates(normalized.accepted, stateCodes, (row) => row.stateCode)
+    : null;
+  const scopedRows = stateFilter ? stateFilter.kept : normalized.accepted;
   await writeJson(rejectionFile, { schemaVersion: "lgd-local-body-rejections-v1", checksumSha256, rejected: normalized.rejected });
   const publishedAt = parseOgdDate(manifest.apiUpdated || manifest.apiUpdatedDate, "OGD manifest publication/update time");
   const metadata = {
@@ -335,12 +354,23 @@ export async function main(argv = process.argv.slice(2)) {
     rowsRejected: normalized.rejected.length,
     rejectionReport: rejectionFile,
   };
-  const applied = options.apply ? await applyRows(normalized.accepted, metadata, options) : null;
+  // `coverage` describes the complete validated national file; `imported` and
+  // `stateFilter` describe the scoped working set this run actually loaded.
+  const applied = options.apply ? await applyRows(scopedRows, metadata, options) : null;
   const report = {
     schemaVersion: "lgd-local-body-import-report-v1",
     mode: options.apply ? "APPLY" : "DRY_RUN",
     source: { resourceId: RESOURCE_ID, checksumSha256, retrievedAt: manifest.retrievedAt, licenseName: manifest.licenseName, licenseUrl: manifest.licenseUrl },
-    counts: { rowsRead: normalized.rowsRead, accepted: normalized.accepted.length, rejected: normalized.rejected.length, ...coverage },
+    counts: {
+      rowsRead: normalized.rowsRead,
+      accepted: normalized.accepted.length,
+      rejected: normalized.rejected.length,
+      imported: scopedRows.length,
+      ...coverage,
+      stateFilter: stateFilter
+        ? { requested: options.states, states: [...stateCodes].sort(), acceptedBeforeFilter: normalized.accepted.length, dropped: stateFilter.dropped }
+        : null,
+    },
     replacementRequested: options.replaceFullSnapshot,
     rejectionReport: rejectionFile,
     applied,

@@ -12,11 +12,18 @@
  *
  *   DATA_GOV_IN_API_KEY=... pnpm location:fetch:ogd -- \
  *     --resource lgd-local-bodies --output tmp/location/lgd-local-bodies.csv
+ *
+ * P1.4: add --upload-to-r2 to keep the immutable raw snapshot + manifest in
+ * Cloudflare R2 (object-storage cost, $0 egress) instead of only ephemeral
+ * tmp/ on the fetching machine. Requires R2_ACCOUNT_ID, R2_BUCKET,
+ * R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY; the manifest is stamped with
+ * the object keys so R2's copy is self-describing.
  */
 import { createHash } from "node:crypto";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { uploadSnapshotToR2 } from "./r2-upload.mjs";
 
 export const OGD_RESOURCES = {
   "india-post": {
@@ -60,6 +67,7 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--help" || argument === "-h") options.help = true;
+    else if (argument === "--upload-to-r2") options.uploadToR2 = true;
     else if (argument.startsWith("--")) {
       const key = argument.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
       const value = argv[index + 1];
@@ -315,7 +323,21 @@ export async function main(argv = process.argv.slice(2)) {
   };
   await atomicWrite(output, csv);
   await atomicWrite(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log(JSON.stringify({ output, manifestFile, recordCount: manifest.recordCount, checksumSha256, resourceId: manifest.resourceId }, null, 2));
+  // P1.4: durably keep the immutable raw snapshot + manifest in R2. This runs
+  // AFTER the local writes, so the tmp/ files always exist even if R2 is
+  // down; uploadSnapshotToR2 re-stamps the manifest with the object keys and
+  // re-uploads it so R2's copy is self-describing.
+  let r2 = null;
+  if (options.uploadToR2) {
+    r2 = await uploadSnapshotToR2({
+      env: process.env,
+      resourceName,
+      csvFile: output,
+      manifest,
+      manifestFile,
+    });
+  }
+  console.log(JSON.stringify({ output, manifestFile, recordCount: manifest.recordCount, checksumSha256, resourceId: manifest.resourceId, r2 }, null, 2));
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
