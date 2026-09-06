@@ -124,4 +124,40 @@ describe("Prisma-backed requirement capture", () => {
     expect(database.requirement.create).not.toHaveBeenCalled();
     expect(logged).toHaveBeenCalled();
   });
+
+  /* BUG-R4-005: the write boundary must never hand PostgreSQL a value its
+     column cannot hold. Migration DDL: "budgetMinInr" BIGINT (max
+     9223372036854775807) and "areaMinSqft"/"bhkMin" INTEGER (max
+     2147483647). Pre-fix, a public POST with budgetMinInr: 1e30 passed
+     validateRequirementInput, was converted by BigInt(Math.round(Number(...)))
+     — which succeeds in JS at arbitrary precision — and reached create() as a
+     bigint ~1e11 times past the column's range, so Postgres rejected it and the
+     route 500'd instead of returning a 400. */
+  it("BUG-R4-005: refuses a budget past the BIGINT column range instead of writing it", async () => {
+    const result = await createRequirementForServer({ ...input, budgetMinInr: 1e30, budgetMaxInr: 2e30 });
+    expect(result).toMatchObject({ ok: false, status: 400 });
+    expect(database.requirement.create).not.toHaveBeenCalled();
+  });
+
+  it("BUG-R4-005: refuses an area past the INTEGER column range instead of writing it", async () => {
+    const result = await createRequirementForServer({ ...input, areaMinSqft: 1e10, areaMaxSqft: 2e10 });
+    expect(result).toMatchObject({ ok: false, status: 400 });
+    expect(database.requirement.create).not.toHaveBeenCalled();
+  });
+
+  it("BUG-R4-005: any value that does reach create() fits its column", async () => {
+    const PG_INT_MAX = 2_147_483_647n;
+    const PG_BIGINT_MAX = 9_223_372_036_854_775_807n;
+    const result = await createRequirementForServer({ ...input, budgetMinInr: 8e9, budgetMaxInr: 9e10 });
+    expect(result.ok).toBe(true);
+    const data = (database.requirement.create.mock.calls[0][0] as { data: Record<string, unknown> }).data;
+    for (const field of ["budgetMinInr", "budgetMaxInr"]) {
+      const value = data[field] as bigint;
+      expect(value <= PG_BIGINT_MAX, `${field}=${value} overflows BIGINT`).toBe(true);
+    }
+    for (const field of ["bhkMin", "bhkMax", "areaMinSqft", "areaMaxSqft"]) {
+      const value = BigInt(data[field] as number);
+      expect(value <= PG_INT_MAX, `${field}=${value} overflows INTEGER`).toBe(true);
+    }
+  });
 });

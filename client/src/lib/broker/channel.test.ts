@@ -177,3 +177,47 @@ describe("BUG-R3-001: channel request expiresAt validation", () => {
     expect(result.ok).toBe(true);
   });
 });
+
+/* BUG-R4-005: `toNumberOrNull` accepted any finite non-negative number, so an
+   absurd budget/price/area passed validateChannelRequest and reached
+   BigInt(Math.round(Number(...))) in channel-store.ts normalizeInput. JS BigInt
+   is arbitrary-precision, so the conversion SUCCEEDED and the failure only
+   happened inside PostgreSQL, whose ChannelRequest columns are INTEGER (bhk,
+   area; max 2147483647) and BIGINT (budget, price; max 9223372036854775807) —
+   an unhandled 500 on the broker write path where a 400 was owed. Same defect
+   class as BUG-2026-001 (split amounts) and BUG-R3-001 (expiresAt): convert
+   before validate. */
+describe("BUG-R4-005: channel request amounts must fit their columns", () => {
+  beforeEach(resetBrokerChannelForTests);
+
+  it("rejects a DEMAND budget past the BIGINT column range with a 400", () => {
+    const org = session("org-r4-budget");
+    const result = createChannelRequest({ ...demand, budgetMinInr: 1e30, budgetMaxInr: 2e30 }, org);
+    expect(result.ok).toBe(false);
+    expect(result.ok || result.status).toBe(400);
+    expect(result.ok || result.errors.join(" ")).toContain("budgetMinInr");
+  });
+
+  it("rejects a SUPPLY price past the BIGINT column range with a 400", () => {
+    const org = session("org-r4-price");
+    const result = createChannelRequest({ ...supply, priceInr: 1e30 }, org);
+    expect(result.ok).toBe(false);
+    expect(result.ok || result.status).toBe(400);
+    expect(result.ok || result.errors.join(" ")).toContain("priceInr");
+  });
+
+  it("rejects an area past the INTEGER column range with a 400", () => {
+    const org = session("org-r4-area");
+    const result = createChannelRequest({ ...demand, areaMinSqft: 1e10, areaMaxSqft: 2e10 }, org);
+    expect(result.ok).toBe(false);
+    expect(result.ok || result.status).toBe(400);
+    expect(result.ok || result.errors.join(" ")).toContain("areaMinSqft");
+  });
+
+  it("still accepts realistic large values", () => {
+    const org = session("org-r4-ok");
+    // ₹9,000 crore is absurd-but-storable and must not be refused.
+    expect(createChannelRequest({ ...demand, budgetMinInr: 8e9, budgetMaxInr: 9e10 }, org).ok).toBe(true);
+    expect(createChannelRequest({ ...supply, priceInr: 9e10 }, org).ok).toBe(true);
+  });
+});
