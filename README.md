@@ -277,6 +277,16 @@ The India privacy posture includes notice, purpose limitation, consent and withd
 
 An AI coding system must read `architecture/normative/final-three-phase-architecture.md` before writing production code; treat the canonical entity model, route grammar, `SeoPage` registry, page-authority hierarchy, and server-rendering contract as foundational; preserve approved capabilities through interfaces, feature flags, dynamic imports, benchmarks, and fallbacks; never invent property, price, availability, or RERA facts; use real `<a href>` links for public pages; keep public content server-first; maintain localization fields; run SEO, accessibility, security, performance, and mobile tests; avoid manipulative link tactics; and document any changed architecture decision.
 
+## MCP servers (AI assistant tooling)
+
+The prompts.chat MCP server is installed locally as a dev dependency (`@fkadev/prompts.chat-mcp`) and committed configs are provided for common clients, so no remote MCP endpoint needs to be configured per machine:
+
+- `.mcp.json` — Claude Code / clients reading the project-scoped standard.
+- `.vscode/mcp.json` — VS Code (format matches the `"mcp": { "servers": ... }` user-settings block).
+- `.cursor/mcp.json` — Cursor.
+
+After `pnpm install`, restart or reload the MCP server in your editor. The client spawns the local stdio server via `npx --no-install prompts-chat-mcp`; no credentials are required for public prompts. Set the `PROMPTS_API_KEY` environment variable in your client config only if you need private prompts or the `save_prompt` tool. Available tools: `search_prompts` and `get_prompt`. Per `free-first-design-mcp-workflow.md`, treat this server as prompt reference material only; it must never supply listing facts, prices, availability, RERA claims, or SEO evidence.
+
 ## Version history
 
 | Version | Main purpose |
