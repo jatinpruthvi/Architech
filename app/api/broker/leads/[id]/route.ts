@@ -11,7 +11,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const access = await authorizeRequest(request, { permission: "lead.inbox.write" });
   if (!isAuthorized(access)) return access.response;
   const { id } = await params;
-  const leadId = decodeURIComponent(id);
+  const leadId = id;
 
   /* Permission alone is not enough: the write grant is per-role, so without
      an ownership check any broker could delete or revoke consent on any other

@@ -22,7 +22,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
   }
 
-  const result = await respondToMatchForServer(decodeURIComponent(id), action, access.session);
+  const result = await respondToMatchForServer(id, action, access.session);
   if (!result.ok) {
     return NextResponse.json({ ok: false, errors: result.errors }, { status: result.status, headers: { "Cache-Control": "no-store" } });
   }

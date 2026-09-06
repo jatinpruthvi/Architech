@@ -4,7 +4,7 @@ import { attachMediaToDraftForServer, detachMediaFromDraftForServer, listDraftMe
 
 export const runtime = "nodejs";
 
-const draftIdFrom = (params: { draftId: string }) => decodeURIComponent(params.draftId);
+const draftIdFrom = (params: { draftId: string }) => params.draftId;
 
 export async function GET(request: Request, { params }: { params: Promise<{ draftId: string }> }) {
   const access = await authorizeRequest(request, { permission: "broker.dashboard.read" });

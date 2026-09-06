@@ -10,7 +10,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const access = await authorizeRequest(request, { permission: "lead.inbox.write" });
   if (!isAuthorized(access)) return access.response;
   const { id } = await params;
-  const leadId = decodeURIComponent(id);
+  const leadId = id;
   const body = await request.json().catch(() => ({}));
   const status = String(body.status ?? "REPLIED");
   if (status !== "ACKNOWLEDGED" && status !== "REPLIED" && status !== "CLOSED") {

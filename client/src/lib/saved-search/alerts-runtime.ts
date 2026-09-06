@@ -291,7 +291,11 @@ export async function flushSavedSearchAlertDigestForServer(fetchImpl: typeof fet
       logger.error({ event: "saved_search.digest_failed", email, error }, "saved-search digest transport failed");
     }
   }
-  const remaining = rows.length - rowsDelivered;
+  /* True backlog, not the read window: `rows` was bounded by `take: 500`,
+     so `rows.length - rowsDelivered` under-reports whenever PENDING exceeds
+     the window (a cron run could report remaining: 0 while 700+ rows were
+     still owed). Counting PENDING after the loop is the honest figure. */
+  const remaining = await outbox.count({ where: { status: "PENDING" } });
   logger.info({ event: "saved_search.digest_flushed", emails, emailsFailed, rowsDelivered, remaining }, "saved-search alert digest flushed");
   return { ok: true, emails, emailsFailed, rowsDelivered, remaining };
 }
