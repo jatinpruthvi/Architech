@@ -201,7 +201,7 @@ function normalizePropertyType(value: string) {
    DDL: bhk/area INTEGER, budget/price BIGINT). The money ceiling is the
    exact-integer bound money.ts already commits to (MAX_SAFE_INR). */
 const MAX_STORED_INT = 2_147_483_647;
-const MAX_INR = Number.MAX_SAFE_INTEGER;
+export const MAX_INR = Number.MAX_SAFE_INTEGER;
 
 export function toNumberOrNull(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
@@ -580,6 +580,13 @@ export function saveChannelDealSplit(dealId: string, input: { totalCommissionInr
   const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
   if (total === null || demandShare === null || supplyShare === null) return { ok: false, status: 400, errors: ["totalCommissionInr, demandBrokerShareInr, and supplyBrokerShareInr are required."] };
   if (demandShare + supplyShare !== total) return { ok: false, status: 400, errors: ["Commission split must add up to totalCommissionInr."] };
+  /* BUG-R4-005: the ceiling as well as the sign. BUG-2026-001 routed this path
+     through toNumberOrNull, which rejects negatives and fractions but accepts
+     any finite value — so a 1e30 commission passed and only failed inside
+     PostgreSQL ("totalCommissionInr" BIGINT, max 9223372036854775807). */
+  if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) {
+    return { ok: false, status: 400, errors: ["Commission amounts are out of range."] };
+  }
   deal.totalCommissionInr = total;
   deal.demandBrokerShareInr = demandShare;
   deal.supplyBrokerShareInr = supplyShare;

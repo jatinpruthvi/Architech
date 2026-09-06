@@ -220,4 +220,31 @@ describe("BUG-R4-005: channel request amounts must fit their columns", () => {
     expect(createChannelRequest({ ...demand, budgetMinInr: 8e9, budgetMaxInr: 9e10 }, org).ok).toBe(true);
     expect(createChannelRequest({ ...supply, priceInr: 9e10 }, org).ok).toBe(true);
   });
+
+  /* The commission split has its OWN inline validation, duplicated in both
+     storage modes (channel.ts saveChannelDealSplit and channel-store.ts
+     saveChannelDealSplitForServer). BUG-2026-001 closed the negative and
+     fractional holes there but not the ceiling, so a 1e30 commission passed the
+     sum check in both. */
+  it("rejects a commission split past the BIGINT column range", () => {
+    const orgA = session("org-r4-split-a");
+    const orgB = session("org-r4-split-b");
+    const createdDemand = createChannelRequest(demand, orgA);
+    const createdSupply = createChannelRequest(supply, orgB);
+    if (!createdDemand.ok || !createdSupply.ok) throw new Error("fixture setup failed");
+    publishChannelRequest(createdDemand.request.id, orgA);
+    const publishResult = publishChannelRequest(createdSupply.request.id, orgB);
+    if (!publishResult.ok) throw new Error("match setup failed");
+    const accepted = acceptChannelMatch(publishResult.matches[0].id, orgA);
+    if (!accepted.ok) throw new Error("accept failed");
+
+    // 6e29 + 4e29 === 1e30, so the sum check passes; the column cannot hold it.
+    const split = saveChannelDealSplit(
+      accepted.deal.id,
+      { totalCommissionInr: 1e30, demandBrokerShareInr: 6e29, supplyBrokerShareInr: 4e29 },
+      orgA,
+    );
+    expect(split.ok).toBe(false);
+    expect(split.ok || split.status).toBe(400);
+  });
 });

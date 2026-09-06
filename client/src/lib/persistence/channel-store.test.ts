@@ -108,6 +108,36 @@ describe("saveChannelDealSplitForServer (Prisma path) — commission amount vali
     );
   });
 
+  /* BUG-R4-005: BUG-2026-001 closed the negative and fractional holes but not
+     the CEILING. `toNumberOrNull` accepts any finite non-negative number, so a
+     1e30 commission passed validation and the sum check, then reached
+     BigInt(total) — which succeeds in JS at arbitrary precision — against
+     "totalCommissionInr" BIGINT (max 9223372036854775807). Postgres rejects it
+     as out of range: an unhandled 500 on the commission write path. */
+  it("BUG-R4-005: rejects a commission past the BIGINT column range with 400", async () => {
+    const result = await saveChannelDealSplitForServer(
+      "deal-1",
+      { totalCommissionInr: 1e30, demandBrokerShareInr: 6e29, supplyBrokerShareInr: 4e29 },
+      session,
+    );
+    expect(result).toMatchObject({ ok: false, status: 400 });
+    expect(mockDb.channelDeal.update).not.toHaveBeenCalled();
+  });
+
+  it("BUG-R4-005: any commission that does reach the write fits BIGINT", async () => {
+    const PG_BIGINT_MAX = 9_223_372_036_854_775_807n;
+    const result = await saveChannelDealSplitForServer(
+      "deal-1",
+      { totalCommissionInr: 9e14, demandBrokerShareInr: 5e14, supplyBrokerShareInr: 4e14 },
+      session,
+    );
+    expect(result.ok).toBe(true);
+    const data = (mockDb.channelDeal.update as ReturnType<typeof vi.fn>).mock.calls[0][0].data;
+    for (const field of ["totalCommissionInr", "demandBrokerShareInr", "supplyBrokerShareInr"]) {
+      expect((data[field] as bigint) <= PG_BIGINT_MAX, `${field} overflows BIGINT`).toBe(true);
+    }
+  });
+
   it("still accepts a valid integer split (regression guard)", async () => {
     const result = await saveChannelDealSplitForServer(
       "deal-1",
