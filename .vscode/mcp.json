@@ -1,9 +1,8 @@
 {
   "servers": {
     "prompts.chat": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["--no-install", "prompts-chat-mcp"]
+      "type": "http",
+      "url": "https://prompts.chat/api/mcp"
     }
   }
 }

@@ -26,6 +26,7 @@ Generated on 2026-08-27 from the repository Markdown tree.
 ## Product and Engineering Docs
 
 - [Phase 1 Ai Assistance](./docs/ai/phase-1-ai-assistance.md)
+- [Ai Prompt Library](./docs/ai/ai-prompt-library.md)
 - [Live Better Auth Handoff](./docs/auth/live-better-auth-handoff.md)
 - [Phase 1 Better Auth Organizations](./docs/auth/phase-1-better-auth-organizations.md)
 - [Phase 1 Moderation Queue](./docs/broker/phase-1-moderation-queue.md)
