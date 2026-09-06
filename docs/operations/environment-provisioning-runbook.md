@@ -59,15 +59,19 @@ Do not create production before staging passes migrations, smoke tests, restore 
 
 ## Scheduled jobs and object lifecycle
 
-The app runs two recurring maintenance jobs. On a single long-lived replica the
-in-process timers (started from `instrumentation.ts`) are enough; on any
+The app runs several recurring maintenance jobs. On a single long-lived replica
+the in-process timers (started from `instrumentation.ts`) are enough; on any
 multi-replica or serverless deployment they must be replaced by **one**
-external driver, or every replica sweeps/purges on its own.
+external driver, or every replica sweeps/purges on its own. The external-driver
+columns are all driven by platform cron hitting the internal scheduled
+endpoints (cost-reduction-audit P1.2/P1.7).
 
 | Job | In-process (single replica) | External driver (recommended) |
 |---|---|---|
 | Media retention sweep (PENDING 30d / REJECTED 14d / TAKEDOWN 7d) | on by default, every `MEDIA_RETENTION_SWEEP_INTERVAL_MINUTES` (60) | platform cron → `POST /api/internal/scheduled/media-retention-sweep/` with `Authorization: Bearer $CRON_SECRET`; then set `MEDIA_RETENTION_SWEEP=off` |
 | Expired-requirement purge | not scheduled | platform cron → `pnpm privacy:requirements:purge` (see `scripts/privacy/purge-expired-requirements.mjs`) |
+| ERPNext deal-close sync | only via the dashboard "Sync" button | platform cron (every few minutes) → `POST /api/internal/scheduled/erpnext-close-sync/` with `Authorization: Bearer $CRON_SECRET`; flushes every org's due `ErpnextCloseWrite` rows (atomic claim, so the cron and the button can coexist without double-sending) |
+| RERA stale-record refresh | only via the admin refresh button | platform cron (daily) → `POST /api/internal/scheduled/rera-refresh/` with `Authorization: Bearer $CRON_SECRET`; re-verifies STALE records and restores a badge only when the configured authority confirms it |
 
 The cron endpoint fails closed: with no `CRON_SECRET` configured it returns
 503 (never an open admin surface), and the comparison is constant-time.

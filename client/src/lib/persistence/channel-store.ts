@@ -51,7 +51,7 @@ type ChannelPrismaClient = ReturnType<typeof getPrismaClient> & {
   channelMatch: { create(args: unknown): Promise<ChannelMatchRow>; findMany(args: unknown): Promise<ChannelMatchWithRequestsRow[]>; findFirst(args: unknown): Promise<ChannelMatchWithRequestsRow | null>; update(args: unknown): Promise<ChannelMatchRow>; count(args: unknown): Promise<number> };
   channelDeal: { create(args: unknown): Promise<ChannelDealRow>; findMany(args: unknown): Promise<ChannelDealRow[]>; findFirst(args: unknown): Promise<ChannelDealRow | null>; update(args: unknown): Promise<ChannelDealRow>; count(args: unknown): Promise<number> };
   commissionEntry: { create(args: unknown): Promise<unknown>; findMany(args: unknown): Promise<unknown[]>; count(args: unknown): Promise<number>; aggregate(args: unknown): Promise<{ _sum: { amountInr: bigint | number | null } }> };
-  erpnextCloseWrite: { create(args: unknown): Promise<unknown>; findMany(args: unknown): Promise<ErpnextCloseWriteRow[]>; count(args: unknown): Promise<number>; update(args: unknown): Promise<ErpnextCloseWriteRow> };
+  erpnextCloseWrite: { create(args: unknown): Promise<unknown>; findMany(args: unknown): Promise<ErpnextCloseWriteRow[]>; count(args: unknown): Promise<number>; update(args: unknown): Promise<ErpnextCloseWriteRow>; updateMany(args: unknown): Promise<{ count: number }> };
   channelNotification: { create(args: unknown): Promise<ChannelNotificationRow>; findMany(args: unknown): Promise<ChannelNotificationRow[]>; count(args: unknown): Promise<number>; update(args: unknown): Promise<ChannelNotificationRow> };
   channelRequestSource: { create(args: unknown): Promise<unknown>; findFirst(args: unknown): Promise<unknown | null> };
 };
@@ -745,9 +745,36 @@ export async function expireChannelRequestsForServer(session: AuthSession, now =
   return { ok: true, expired: Number(result.count ?? 0) };
 }
 
+/* ERPNext close-write sync (cost-reduction-audit P1.7).
+
+   Two drivers exist by design: the broker-dashboard "Sync ERPNext closes"
+   button (single-replica dev / manual catch-up) and the platform cron hitting
+   /api/internal/scheduled/erpnext-close-sync. Both funnel through the same
+   per-organization processor below, and the claim step is an ATOMIC
+   updateMany so the two drivers can never double-send one close: the loser of
+   the race sees count 0 and skips the row.
+
+   IN_FLIGHT rows are not owned forever: a crash between claim and result
+   would otherwise wedge the write, so rows stuck IN_FLIGHT past the cutoff
+   are reclaimable (selection and claim both accept them). */
+const ERPWRITE_IN_FLIGHT_STUCK_MS = 30 * 60 * 1000;
+
+function erpnextDueWriteWhere(organizationId: string | undefined, stuckCutoff: Date) {
+  // Stuck IN_FLIGHT rows are reclaimable once old; PENDING/FAILED are due when
+  // their backoff window (nextRetryAt) has passed or was never set.
+  const conditions: Array<Record<string, unknown>> = [];
+  if (organizationId) {
+    conditions.push({ organizationId, status: { in: ["PENDING", "FAILED"] }, OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: new Date() } }] });
+  } else {
+    conditions.push({ status: { in: ["PENDING", "FAILED"] }, OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: new Date() } }] });
+  }
+  conditions.push(organizationId ? { organizationId, status: "IN_FLIGHT", updatedAt: { lt: stuckCutoff } } : { status: "IN_FLIGHT", updatedAt: { lt: stuckCutoff } });
+  return { OR: conditions };
+}
+
 export async function pendingErpnextCloseWritesForServer(limit = 25, organizationId?: string): Promise<ErpnextCloseWriteRecord[]> {
   if (!isPrismaPersistence() || !organizationId) return [];
-  const rows = await withOrg(prisma(), organizationId, (db) => db.erpnextCloseWrite.findMany({ where: { organizationId, status: { in: ["PENDING", "FAILED"] }, OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: new Date() } }] }, orderBy: { createdAt: "asc" }, take: limit }));
+  const rows = await withOrg(prisma(), organizationId, (db) => db.erpnextCloseWrite.findMany({ where: erpnextDueWriteWhere(organizationId, new Date(Date.now() - ERPWRITE_IN_FLIGHT_STUCK_MS)), orderBy: { createdAt: "asc" }, take: limit }));
   return rows.map(erpWriteFromRow);
 }
 
@@ -756,17 +783,27 @@ export async function markErpnextCloseWriteForServer(id: string, organizationId:
   return withOrg(prisma(), organizationId, (db) => db.erpnextCloseWrite.update({ where: { id }, data: { status, ...data, processedAt: status === "SUCCESS" ? new Date() : undefined, attemptCount: status === "IN_FLIGHT" ? { increment: 1 } : undefined, nextRetryAt: status === "FAILED" ? new Date(Date.now() + 15 * 60 * 1000) : undefined } }));
 }
 
-export async function processPendingErpnextCloseWritesForServer(session: AuthSession, limit = 10) {
-  const endpoint = process.env.BROKER_CHANNEL_ERPNEXT_URL;
-  const token = process.env.BROKER_CHANNEL_ERPNEXT_TOKEN;
-  if (!endpoint) return { ok: true as const, processed: 0, skipped: true, reason: "BROKER_CHANNEL_ERPNEXT_URL is not configured." };
-  if (!session.organization) return { ok: false as const, processed: 0, errors: ["Broker organization is required."] };
-  if (!isPrismaPersistence()) return { ok: true as const, processed: 0, skipped: true, reason: "ERPNext sync worker requires Prisma persistence." };
-  const writes = await pendingErpnextCloseWritesForServer(limit, session.organization.id);
+/** Atomic claim: flips a due write to IN_FLIGHT and returns true only for the
+    driver that won the race. Safe to call concurrently from the UI sync and
+    the platform cron. */
+export async function claimErpnextCloseWriteForServer(id: string, organizationId: string): Promise<boolean> {
+  if (!isPrismaPersistence()) return false;
+  const result = await withOrg(prisma(), organizationId, (db) =>
+    db.erpnextCloseWrite.updateMany({
+      where: { id, organizationId, OR: [{ status: { in: ["PENDING", "FAILED"] } }, { status: "IN_FLIGHT", updatedAt: { lt: new Date(Date.now() - ERPWRITE_IN_FLIGHT_STUCK_MS) } }] },
+      data: { status: "IN_FLIGHT", attemptCount: { increment: 1 } },
+    }),
+  );
+  return result.count === 1;
+}
+
+async function processErpnextCloseWritesForOrganization(organizationId: string, limit: number, endpoint: string, token: string | undefined): Promise<{ processed: number; errors: string[] }> {
+  const writes = await pendingErpnextCloseWritesForServer(limit, organizationId);
   let processed = 0;
   const errors: string[] = [];
   for (const write of writes) {
-    await markErpnextCloseWriteForServer(write.id, write.organizationId, "IN_FLIGHT");
+    const claimed = await claimErpnextCloseWriteForServer(write.id, write.organizationId);
+    if (!claimed) continue; /* another driver (UI sync or cron) owns this row */
     try {
       const db = prisma();
       const dealRow = await withOrg(db, write.organizationId, (tx) => tx.channelDeal.findFirst({ where: { id: write.channelDealId }, include: { match: { include: { demandRequest: true, supplyRequest: true } } } })) as ChannelDealWithMatchRow | null;
@@ -815,5 +852,45 @@ export async function processPendingErpnextCloseWritesForServer(session: AuthSes
       await markErpnextCloseWriteForServer(write.id, write.organizationId, "FAILED", { lastError: message });
     }
   }
+  return { processed, errors };
+}
+
+/** Broker-dashboard driver (unchanged contract): one organization per call,
+    scoped by the authenticated session. */
+export async function processPendingErpnextCloseWritesForServer(session: AuthSession, limit = 10) {
+  const endpoint = process.env.BROKER_CHANNEL_ERPNEXT_URL;
+  const token = process.env.BROKER_CHANNEL_ERPNEXT_TOKEN;
+  if (!endpoint) return { ok: true as const, processed: 0, skipped: true, reason: "BROKER_CHANNEL_ERPNEXT_URL is not configured." };
+  if (!session.organization) return { ok: false as const, processed: 0, errors: ["Broker organization is required."] };
+  if (!isPrismaPersistence()) return { ok: true as const, processed: 0, skipped: true, reason: "ERPNext sync worker requires Prisma persistence." };
+  const { processed, errors } = await processErpnextCloseWritesForOrganization(session.organization.id, limit, endpoint, token);
   return { ok: errors.length === 0, processed, errors };
+}
+
+/** Platform-cron driver: processes every organization that owes a sync, one
+    tenant scope at a time (RLS is fail-closed, so the per-org work still runs
+    under that org's own `app.current_org_id`). ErpnextCloseWrite is not
+    RLS-covered, which is what makes the cross-tenant due-organization scan
+    legal here; the scan is bounded (distinct orgs, capped) and never reads a
+    row of another tenant directly. */
+export async function processPendingErpnextCloseWritesForCron(limit = 10, maxOrganizations = 10) {
+  const endpoint = process.env.BROKER_CHANNEL_ERPNEXT_URL;
+  const token = process.env.BROKER_CHANNEL_ERPNEXT_TOKEN;
+  if (!endpoint) return { ok: true as const, processed: 0, organizations: 0, skipped: true, reason: "BROKER_CHANNEL_ERPNEXT_URL is not configured." };
+  if (!isPrismaPersistence()) return { ok: true as const, processed: 0, organizations: 0, skipped: true, reason: "ERPNext sync worker requires Prisma persistence." };
+  const dueOrganizations = await prisma().erpnextCloseWrite.findMany({
+    where: erpnextDueWriteWhere(undefined, new Date(Date.now() - ERPWRITE_IN_FLIGHT_STUCK_MS)),
+    select: { organizationId: true },
+    distinct: ["organizationId"],
+    take: maxOrganizations,
+  });
+  let processed = 0;
+  const errors: string[] = [];
+  for (const row of dueOrganizations) {
+    const organizationId = String(row.organizationId);
+    const result = await processErpnextCloseWritesForOrganization(organizationId, limit, endpoint, token);
+    processed += result.processed;
+    errors.push(...result.errors);
+  }
+  return { ok: errors.length === 0, processed, organizations: dueOrganizations.length, errors };
 }
