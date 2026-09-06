@@ -141,6 +141,9 @@ export async function createRequirementForServer(input: RequirementInput, sessio
   const requestedSlugs = [...new Set(normalizedSlugs)];
   const normalizedInput: RequirementInput = { ...scopedInput, propertyType: propertyTypeFromRequirement(scopedInput), localitySlugs: normalizedSlugs };
   const localities = (city && requestedSlugs.length
+    /* sql-perf: intentionally-unbounded — bounded by the caller's own
+       deduped locality-slug list (in: requestedSlugs) within one city, narrow
+       select; result size follows request input, not table growth. */
     ? await prisma.locality.findMany({ where: { cityId: city.id, slug: { in: requestedSlugs }, retiredAt: null }, select: { id: true, slug: true, cityId: true } })
     : []) as Array<{ id: string; slug: string; cityId: string }>;
   const localityBySlug = new Map<string, { id: string; slug: string; cityId: string }>(

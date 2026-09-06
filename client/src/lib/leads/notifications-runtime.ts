@@ -23,6 +23,10 @@ type MembershipPrismaClient = ReturnType<typeof getPrismaClient> & {
 export async function resolveLeadRecipientEmails(organizationId: string | null): Promise<string[]> {
   if (!organizationId || !isPrismaLeadStorage()) return [];
   const prisma = getPrismaClient() as unknown as MembershipPrismaClient;
+  /* sql-perf: intentionally-unbounded — org membership list (active members of
+     one broker team); naturally team-sized, narrow select, and indexed on
+     [organizationId, active]. A cap would silently drop members from lead
+     notifications. */
   const rows = await prisma.brokerUser.findMany({
     where: { organizationId, active: true },
     select: { user: { select: { email: true } } },

@@ -175,6 +175,9 @@ export async function getIndiaLocationCoverageForServer(now = new Date()): Promi
     postalSource,
     localBodySource,
   ] = await Promise.all([
+    /* sql-perf: intentionally-unbounded — Indian states/UTs are a ~36-row
+       reference table from a governed source; capping it would break the
+       coverage map rather than protect it. */
     prisma.administrativeArea.findMany({
       where: { type: "STATE_OR_UT", isActive: true, source: { key: STATE_SOURCE_KEY, status: "ACTIVE" } },
       select: { id: true, code: true, name: true, nativeName: true, slug: true, subtype: true },

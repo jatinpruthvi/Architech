@@ -329,6 +329,9 @@ async function rehydrateItems(ids: string[]): Promise<Property[]> {
   /* The page statement ordered by Prisma row id (deterministic window key);
      the mapper's public id is stableId||slug, so the rehydration map keeps
      the row id alongside the DbListingRow shape. */
+  /* sql-perf: intentionally-unbounded — rehydration of exactly one result
+     page (ids come from the already-windowed page statement), so the read
+     size is the page window, not the table. */
   const rows = (await client.listing.findMany({ where: { id: { in: ids } }, include: listingInclude })) as unknown as Array<DbListingRow & { id: string }>;
   const byId = new Map(rows.map((row) => [row.id, row]));
   return ids

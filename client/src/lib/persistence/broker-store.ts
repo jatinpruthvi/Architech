@@ -327,8 +327,18 @@ function memoryGatePeers(draft: ListingDraft): PublishGatePeer[] {
     }));
 }
 
+/* Cap for broker-facing list reads (moderation queue, drafts). Same
+   precedent as GOVERNANCE_LIST_PAGE_CAP (PERF-BUG-16-001): preserves the
+   ordering semantics under the cap, bounds worst-case memory/serialization
+   regardless of table growth. */
+const BROKER_LIST_PAGE_CAP = 500;
+
 /** Published peers from the database (Prisma mode). */
 async function draftGatePeersForServer(draft: ListingDraft, db: BrokerPrismaClient): Promise<PublishGatePeer[]> {
+  /* sql-perf: intentionally-unbounded — the publish gate must compare against
+     EVERY active peer in the locality; a cap would silently weaken a
+     correctness gate. Watchlist SQL-PERF-17: windowing (e.g. N nearest
+     peers) needs a product decision before any cap lands here. */
   const rows = (await db.listing.findMany({
     where: { lifecycle: "ACTIVE", locality: { slug: draft.localitySlug } },
     select: { stableId: true, title: true, description: true, locality: { select: { slug: true } } },
@@ -466,6 +476,11 @@ export async function getModerationQueueForServer() {
   const db = prisma();
   const rows = (await db.listing.findMany({
     where: { lifecycle: "IN_REVIEW" },
+    /* FIFO: a review queue must drain oldest-first, and the order was
+       previously undefined (no orderBy at all). Bounded by the queue cap so
+       a submission flood cannot pull the whole pending table into memory. */
+    orderBy: { updatedAt: "asc" },
+    take: BROKER_LIST_PAGE_CAP,
     include: { city: { select: { slug: true } }, locality: { select: { slug: true } } },
   })) as Array<Record<string, unknown>>;
   return rows.map((row) => contractFromRow(row));
@@ -478,6 +493,7 @@ export async function listBrokerDraftsForServer(organizationId: string): Promise
   const rows = (await db.listing.findMany({
     where: { brokerOrgId: organizationId },
     orderBy: { updatedAt: "desc" },
+    take: BROKER_LIST_PAGE_CAP,
     include: { city: { select: { slug: true } }, locality: { select: { slug: true } } },
   })) as Array<Record<string, unknown>>;
   return rows.map((row) => contractFromRow(row));
