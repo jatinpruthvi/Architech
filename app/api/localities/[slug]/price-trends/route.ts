@@ -10,19 +10,18 @@ export const runtime = "nodejs";
     which read as authoritative data for a place that does not exist. */
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const decoded = decodeURIComponent(slug);
   const citySlug = new URL(request.url).searchParams.get("city") ?? undefined;
-  if (getCityBySlug(decoded)) {
-    const summary = cityPriceTrends(decoded);
+  if (getCityBySlug(slug)) {
+    const summary = cityPriceTrends(slug);
     /* Cost-reduction-audit P0.2: deterministic summary over the registry —
        cacheable like /api/cities/[slug]/market-trends. */
     return NextResponse.json({ ok: true, summary }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400" } });
   }
-  const locality = getLocalities(citySlug).find((item) => item.slug === decoded);
+  const locality = getLocalities(citySlug).find((item) => item.slug === slug);
   if (!locality) {
     // 404s stay uncached (B-22: unknown slugs must never read as data).
     return NextResponse.json({ ok: false, errors: ["Unknown city or locality slug."] }, { status: 404, headers: { "Cache-Control": "no-store" } });
   }
-  const summary = localityPriceTrends(decoded, citySlug);
+  const summary = localityPriceTrends(slug, citySlug);
   return NextResponse.json({ ok: true, summary }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400" } });
 }

@@ -197,7 +197,7 @@ function normalizePropertyType(value: string) {
   return String(value || "APARTMENT").trim().toUpperCase().replace(/[^A-Z_]/g, "_");
 }
 
-function toNumberOrNull(value: unknown) {
+export function toNumberOrNull(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) && number >= 0 ? Math.round(number) : null;
