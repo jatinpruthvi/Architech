@@ -34,6 +34,20 @@ const LIFECYCLE_BY_DECISION: Record<ModerationDecision, "ACTIVE" | "CHANGES_REQU
   reject: "REJECTED",
 };
 
+/* The row's ListingLifecycle enum is NARROWER than the domain DraftStatus
+   vocabulary: it has no CHANGES_REQUESTED or REJECTED members, so writing
+   those to `lifecycle` failed Prisma validation — the "request changes" and
+   "reject" moderation actions 500'd in prisma mode AFTER the in-memory draft
+   had already been mutated. The row persists the closest valid state: a
+   sent-back draft is DRAFT again (editable, out of the moderation queue), a
+   rejected draft is kept but dead, so ARCHIVED (REMOVED stays reserved for
+   deletion). The event spine keeps the exact decision status. */
+const DB_LIFECYCLE_BY_DECISION: Record<ModerationDecision, "ACTIVE" | "DRAFT" | "ARCHIVED"> = {
+  approve: "ACTIVE",
+  request_changes: "DRAFT",
+  reject: "ARCHIVED",
+};
+
 async function upsertDraftListing(db: BrokerPrismaClient, draft: ListingDraft) {
   const city = (await db.city.findFirst({ where: { slug: draft.citySlug } })) as { id: string } | null;
   /* Never silently drop persistence. If the DB does not know the city/locality,
@@ -399,14 +413,17 @@ export async function moderateListingForServer(draftId: string, decision: Modera
 
   if (isPrismaPersistence()) {
     const db = prisma();
-    const lifecycle: ListingDraft["status"] = canonicalized ? "DUPLICATE" : LIFECYCLE_BY_DECISION[decision];
+    /* Row lifecycle = the decision mapped onto the ListingLifecycle enum
+       (see DB_LIFECYCLE_BY_DECISION); the domain DraftStatus stays on the
+       in-memory draft and the event spine below. */
+    const rowLifecycle: ListingDraft["status"] = canonicalized ? "DUPLICATE" : DB_LIFECYCLE_BY_DECISION[decision];
     /* B-16: the lifecycle transition is scoped by organization. An
        unscoped updateMany keyed on a guessable stableId lets any moderator
        flip any draft in the table; the draft's own organization is the
        row's brokerOrgId, so scoping on it costs nothing and closes the hole. */
     await db.listing.updateMany({
       where: { stableId: result.draft.stableId, brokerOrgId: result.draft.organizationId },
-      data: { lifecycle: lifecycle as string },
+      data: { lifecycle: rowLifecycle as string },
     });
 
     /* The canonical column has existed since the schema was written and was
