@@ -70,7 +70,7 @@ type ChannelNotificationRow = JsonObject & { id: string; organizationId: string;
 type ErpnextCloseWriteRow = JsonObject & { id: string; channelDealId: string; organizationId: string; idempotencyKey: string; payloadHash: string; status: ErpnextCloseWriteRecord["status"]; attemptCount?: unknown; lastError?: string | null; nextRetryAt?: unknown; erpnextDocId?: string | null; processedAt?: unknown; createdAt: unknown; updatedAt: unknown };
 type ListingSourceRow = JsonObject & { id: string; stableId?: string | null; lifecycle?: string | null; cityId: string; propertyType?: string | null; bhk?: unknown; areaSqft?: unknown; priceInr?: unknown; locality?: { slug?: string | null } | null };
 type RequirementLocalityRow = { locality?: { slug?: string | null } | null };
-type RequirementSourceRow = JsonObject & { id: string; intent?: string | null; city?: { slug?: string | null } | null; category?: string | null; subtype?: string | null; propertyType?: string | null; bhkMin?: unknown; bhkMax?: unknown; areaMinSqft?: unknown; areaMaxSqft?: unknown; budgetMinInr?: unknown; budgetMaxInr?: unknown; localities?: RequirementLocalityRow[] | null; role?: string | null; status?: string | null; createdAt?: unknown };
+type RequirementSourceRow = JsonObject & { id: string; intent?: string | null; resolvedCity?: { slug?: string | null } | null; category?: string | null; subtype?: string | null; propertyType?: string | null; bhkMin?: unknown; bhkMax?: unknown; areaMinSqft?: unknown; areaMaxSqft?: unknown; budgetMinInr?: unknown; budgetMaxInr?: unknown; localities?: RequirementLocalityRow[] | null; role?: string | null; status?: string | null; createdAt?: unknown };
 type ChannelMatchWithRequestsRow = ChannelMatchRow & { demandRequest: ChannelRequestRow & { organization?: BrokerOrganizationRow | null }; supplyRequest: ChannelRequestRow & { organization?: BrokerOrganizationRow | null } };
 type BrokerOrganizationRow = { id: string; name?: string | null; verificationStatus?: string | null; businessPhoneE164?: string | null; businessPhoneMasked?: string | null };
 type ChannelDealWithMatchRow = ChannelDealRow & { match?: { demandRequest?: ChannelRequestRow | null; supplyRequest?: ChannelRequestRow | null } | null };
@@ -297,7 +297,10 @@ function demandInputFromRequirement(input: ChannelRequestInput, requirement: Req
     budgetMinInr: requirement.budgetMinInr ?? null,
     budgetMaxInr: requirement.budgetMaxInr ?? null,
     priceInr: null,
-    detailSummary: input.detailSummary || "Requirement-backed demand; buyer contact and consent stay private.",
+    // The fallback must stay free of CONTACT_LIKE tokens (see sanitizeChannelSummary in
+    // broker/channel.ts): the previous wording contained the word "contact", so EVERY
+    // requirement-backed DEMAND created without an explicit detailSummary was rejected 400.
+    detailSummary: input.detailSummary || "Requirement-backed demand; buyer details stay private.",
   };
 }
 
@@ -335,7 +338,10 @@ async function prismaRequirementBackedDemand(dbClient: ChannelPrismaClient, inpu
   if (!organizationId || !sourceId) return fail(400, "Create a buyer requirement first, then generate a DEMAND channel request from that requirement.");
   const row = await dbClient.requirement.findFirst({
     where: { id: sourceId, organizationId, deletedAt: null },
-    include: { city: { select: { slug: true } }, localities: { include: { locality: { select: { slug: true } } }, orderBy: { priority: "asc" } } },
+    // `city` is NOT a relation on Requirement — the PrismaClientValidationError thrown at
+    // runtime for DEMAND channel creation proved it (same bug class as the requirements.server.ts
+    // audit fix). The city is joined via `resolvedCity`; keep the include aligned with that.
+    include: { resolvedCity: { select: { slug: true } }, localities: { include: { locality: { select: { slug: true } } }, orderBy: { priority: "asc" } } },
   }) as RequirementSourceRow | null;
   if (!row) return fail(404, "Source requirement was not found for this broker organization.");
   if (row.status && row.status !== "NEW") return fail(409, "Only active/new requirements can generate broker-channel demand.");
@@ -347,7 +353,7 @@ async function prismaRequirementBackedDemand(dbClient: ChannelPrismaClient, inpu
   const requirement: RequirementRecord = {
     id: row.id,
     intent: row.intent === "rent" ? "rent" : "buy",
-    citySlug: row.city?.slug ?? input.cityId,
+    citySlug: row.resolvedCity?.slug ?? input.cityId,
     category: (row.category ?? "residential") as RequirementCategory,
     subtype: row.subtype ?? "Flat/Apartment",
     propertyType: row.propertyType ?? propertyTypeFromRequirement({ subtype: row.subtype ?? "" }),
@@ -371,9 +377,11 @@ async function prismaRequirementBackedDemand(dbClient: ChannelPrismaClient, inpu
 
 async function refreshPrismaDemandFromRequirement(db: ChannelPrismaClient, request: ChannelRequestRecord): Promise<ChannelRequestRecord> {
   if (request.type !== "DEMAND" || !request.sourceRequirementId) return request;
+  // Same phantom-`city` fix as prismaRequirementBackedDemand: Requirement only joins City via
+  // `resolvedCity`; a `city` include throws PrismaClientValidationError at runtime.
   const row = await db.requirement.findFirst({
     where: { id: request.sourceRequirementId, organizationId: request.organizationId, deletedAt: null },
-    include: { city: { select: { slug: true } }, localities: { include: { locality: { select: { slug: true } } }, orderBy: { priority: "asc" } } },
+    include: { resolvedCity: { select: { slug: true } }, localities: { include: { locality: { select: { slug: true } } }, orderBy: { priority: "asc" } } },
   }) as RequirementSourceRow | null;
   if (!row || (row.status && row.status !== "NEW")) return request;
   const hydrated = await prismaRequirementBackedDemand(db, { ...request, sourceRequirementId: row.id }, brokerSystemSessionForRequest(request), { checkDuplicate: false });
