@@ -19,6 +19,13 @@ type AuthorityPrismaClient = ReturnType<typeof getPrismaClient> & {
 
 const prisma = () => getPrismaClient() as unknown as AuthorityPrismaClient;
 
+/* Perf-bug-hunt 2026-09-06 (PERF-BUG-16-001): registry/outreach lists were
+   loaded with unbounded findMany — fine at governance seed scale, a slow leak
+   as the outreach program grows. Newest-first ordering is already applied
+   below, so capping the page at a generous bound preserves every current
+   behavior while bounding worst-case payload and query cost. */
+export const GOVERNANCE_LIST_PAGE_CAP = 500;
+
 function trustString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
@@ -97,7 +104,7 @@ export async function registerAuthorityAssetForServer(input: Omit<AuthorityAsset
 export async function listRegistryAssetsForServer(): Promise<RegistryAsset[]> {
   if (!isPrismaAuthorityStorage()) return listRegistryAssets();
   const db = prisma();
-  const rows = (await db.authorityAsset.findMany({ orderBy: { updatedAt: "desc" } })) as Array<Record<string, unknown>>;
+  const rows = (await db.authorityAsset.findMany({ orderBy: { updatedAt: "desc" }, take: GOVERNANCE_LIST_PAGE_CAP })) as Array<Record<string, unknown>>;
   return rows.map(assetFromRow);
 }
 
@@ -107,7 +114,7 @@ export async function recordOutreachForServer(input: Omit<OutreachEntry, "id"> &
   /* In Prisma mode the registry lives in the database, so validation must
      happen against the database rows, not the in-memory registry. */
   const db = prisma();
-  const rows = (await db.authorityAsset.findMany()) as Array<Record<string, unknown>>;
+  const rows = (await db.authorityAsset.findMany({ take: GOVERNANCE_LIST_PAGE_CAP })) as Array<Record<string, unknown>>;
   const assets = rows.map(assetFromRow).map((asset): AuthorityAsset => ({
     id: asset.id,
     type: asset.type,
@@ -146,7 +153,7 @@ export async function recordOutreachForServer(input: Omit<OutreachEntry, "id"> &
 export async function listOutreachForServer(): Promise<OutreachRecord[]> {
   if (!isPrismaAuthorityStorage()) return listOutreach();
   const db = prisma();
-  const rows = (await db.authorityOutreach.findMany({ orderBy: { createdAt: "desc" } })) as Array<Record<string, unknown>>;
+  const rows = (await db.authorityOutreach.findMany({ orderBy: { createdAt: "desc" }, take: GOVERNANCE_LIST_PAGE_CAP })) as Array<Record<string, unknown>>;
   return rows.map(outreachFromRow);
 }
 
