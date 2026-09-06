@@ -28,6 +28,7 @@ Generated on 2026-08-27 from the repository Markdown tree.
 - [Phase 1 Ai Assistance](./docs/ai/phase-1-ai-assistance.md)
 - [Ai Prompt Library](./docs/ai/ai-prompt-library.md)
 - [Bug Hunt Report 2026 09 06 Round2](./docs/ai/bug-hunt-report-2026-09-06-round2.md)
+- [Bug Hunt Report 2026 09 06 Round3](./docs/ai/bug-hunt-report-2026-09-06-round3.md)
 - [Perf Bug Hunt 2026 09 06](./docs/ai/perf-bug-hunt-2026-09-06.md)
 - [Sql Perf Bug Hunt 2026 09 06](./docs/ai/sql-perf-bug-hunt-2026-09-06.md)
 - [Live Better Auth Handoff](./docs/auth/live-better-auth-handoff.md)

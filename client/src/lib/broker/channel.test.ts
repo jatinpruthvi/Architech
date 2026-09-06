@@ -156,3 +156,24 @@ describe("broker channel", () => {
     expect(dashboard.ok && dashboard.dashboard.unreadNotifications).toBeGreaterThan(0);
   });
 });
+
+describe("BUG-R3-001: channel request expiresAt validation", () => {
+  beforeEach(resetBrokerChannelForTests);
+
+  it("rejects an unparseable expiresAt with a 400 instead of throwing a RangeError", () => {
+    const org = session("org-r3-expiry");
+    let result: ReturnType<typeof createChannelRequest> | undefined;
+    expect(() => {
+      result = createChannelRequest({ ...demand, expiresAt: "not-a-date" }, org);
+    }).not.toThrow();
+    expect(result?.ok).toBe(false);
+    expect(result && !result.ok && result.status).toBe(400);
+    expect(result && !result.ok && result.errors.join(" ")).toContain("expiresAt");
+  });
+
+  it("still accepts a well-formed expiresAt", () => {
+    const org = session("org-r3-valid-expiry");
+    const result = createChannelRequest({ ...demand, expiresAt: "2030-01-01T00:00:00.000Z" }, org);
+    expect(result.ok).toBe(true);
+  });
+});
