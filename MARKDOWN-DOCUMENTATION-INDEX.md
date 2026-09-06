@@ -47,6 +47,7 @@ Generated on 2026-08-27 from the repository Markdown tree.
 - [Provisioning Execution Checklist](./docs/operations/provisioning-execution-checklist.md)
 - [Secrets Management](./docs/operations/secrets-management.md)
 - [Phase 1 Baseline](./docs/performance/phase-1-baseline.md)
+- [Performance Audit 2026 09 06](./docs/performance/performance-audit-2026-09-06.md)
 - [Phase 1 Batch2](./docs/phase-1-batch2.md)
 - [Phase 1 Batch3](./docs/phase-1-batch3.md)
 - [Phase 1 Batch4](./docs/phase-1-batch4.md)
