@@ -54,7 +54,10 @@ const PG_LOG = path.join(SANDBOX_DIR, "pg.log");
 const PG_PORT = Number(process.env.ARCHITECH_SANDBOX_PG_PORT ?? 5432);
 const PG_USER = "architech";
 const PG_PASS = "architech";
-const PG_DB = "architech";
+// Overridable (ARCHITECH_SANDBOX_DB_NAME) so a second, throwaway database —
+// e.g. the search latency bench's architech_bench — can be provisioned with
+// the exact same stub logic without touching the main sandbox database.
+const PG_DB = process.env.ARCHITECH_SANDBOX_DB_NAME ?? "architech";
 const DATABASE_URL = `postgresql://${PG_USER}:${PG_PASS}@localhost:${PG_PORT}/${PG_DB}?schema=public`;
 const SHIM_SRC = path.join(
   repoRoot,

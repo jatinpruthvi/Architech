@@ -30,29 +30,63 @@ const VOWEL_SIGNS: Record<string, string> = {
   "ा": "a", "ि": "i", "ी": "ee", "ु": "u", "ू": "oo", "े": "e", "ै": "ai", "ो": "o", "ौ": "au",
 };
 
+/* ---------- Registry indexes (latency) ----------
+
+   The registry is a STATIC in-memory fixture (loaded once at import), so the
+   lookups below are pure functions of (slug, name, token) for the process
+   lifetime. The matchers used to `Array.find` the whole registry — and rebuild
+   the normalized alias set from scratch — on EVERY (listing, token) pair: at
+   the 5,000-row ceiling that is O(rows × tokens × localities) work. The
+   prebuilt maps below collapse each of those to O(1) with identical
+   first-wins semantics (the maps are built in registry order). */
+const slugIndex = new Map<string, (typeof localities)[number]>();
+const lowerNameToSlug = new Map<string, string>();
+for (const locality of localities) {
+  if (!slugIndex.has(locality.slug)) slugIndex.set(locality.slug, locality);
+  const nameKey = locality.name.toLowerCase();
+  if (!lowerNameToSlug.has(nameKey)) lowerNameToSlug.set(nameKey, locality.slug);
+}
+
+/** Bounded memo for normalized tokens: token text is low-cardinality per
+    process (a handful per query × a handful of queries), and the function is
+    pure, so clearing the cache can only change speed, never output. */
+const normalizedTokenCache = new Map<string, string>();
+
 /**
  * Normalize a token into a lowercase, Latin-oriented canonical form for matching.
  * Strips diacritics, maps Devanagari characters, and collapses whitespace.
  */
 export function normalizeLocalityToken(value: string): string {
+  const cached = normalizedTokenCache.get(value);
+  if (cached !== undefined) return cached;
   let normalized = value.normalize("NFKC").toLowerCase();
   // Map Devanagari consonants/vowels and combining signs to Latin.
   normalized = normalized.replace(/[\u0900-\u097F]/g, (char) => DEVANAGARI_TO_LATIN[char] ?? VOWEL_SIGNS[char] ?? "");
   // Strip Latin accents/marks.
   normalized = normalized.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return normalized.replace(/\s+/g, " ").trim();
+  const result = normalized.replace(/\s+/g, " ").trim();
+  if (normalizedTokenCache.size > 4096) normalizedTokenCache.clear();
+  normalizedTokenCache.set(value, result);
+  return result;
 }
+
+/** Slug → alias set, built lazily and memoized (the registry never mutates). */
+const aliasesBySlug = new Map<string, string[]>();
 
 /** Build the set of canonical search aliases for a locality. */
 export function localityAliases(localitySlug: string): string[] {
-  const locality = localities.find((item) => item.slug === localitySlug);
+  const cached = aliasesBySlug.get(localitySlug);
+  if (cached) return cached;
+  const locality = slugIndex.get(localitySlug);
   if (!locality) return [];
   const names = new Set<string>();
   names.add(normalizeLocalityToken(locality.name));
   names.add(normalizeLocalityToken(locality.hindi));
   // Latin renderings of the Devanagari name.
   names.add(normalizeLocalityToken(locality.hindi).replace(/ /g, ""));
-  return [...names].filter(Boolean);
+  const aliases = [...names].filter(Boolean);
+  aliasesBySlug.set(localitySlug, aliases);
+  return aliases;
 }
 
 /** True when a query token matches a locality by name, Devanagari, or alias. */
@@ -64,8 +98,8 @@ export function localityMatchesToken(slug: string, token: string): boolean {
 
 /** True when a query token matches a locality identified by its English name. */
 export function localityNameMatchesToken(name: string, token: string): boolean {
-  const locality = localities.find((item) => item.name.toLowerCase() === name.toLowerCase());
-  return locality ? localityMatchesToken(locality.slug, token) : false;
+  const slug = lowerNameToSlug.get(name.toLowerCase());
+  return slug ? localityMatchesToken(slug, token) : false;
 }
 
 /** Resolve a search query to any matching locality slugs, in inventory order. */

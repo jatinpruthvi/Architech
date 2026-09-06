@@ -111,8 +111,35 @@ export function extractStructuredQuery(query: string): StructuredQuery {
 /** Token-AND matching: "2 bhk thaltej" → bhk===2 AND text contains "thaltej".
     "under 1.5 cr" / "under 1 cr" style tokens match price. */
 export function matchesQuery<T extends QueryableProperty>(p: T, query: string): boolean {
+  return matchesPreparedQuery(p, prepareQueryMatch(query));
+}
+
+/* ---------- Request-scoped query preparation (latency) ----------
+
+   `matchesQuery` used to re-run the ENTIRE query-side work per listing:
+   structured extraction (regexes + PIN parse) and residual tokenization
+   (4 regex passes + split) depend ONLY on the query, not on the listing —
+   but a 5,000-row read paid that cost 5,000 times per request. The prepared
+   form below computes it ONCE per request; `applyQuery` builds it before the
+   filter loop. Both functions are the same tokenizers/extractors as before,
+   so the result set is byte-for-byte unchanged. */
+export type PreparedQueryMatch = {
+  hasQuery: boolean;
+  pincode: string | null;
+  bhk: number | null;
+  underLimit: number | null;
+  tokens: string[];
+};
+
+export function prepareQueryMatch(query: string): PreparedQueryMatch {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
+  if (!q) return { hasQuery: false, pincode: null, bhk: null, underLimit: null, tokens: [] };
+  const structured = extractStructuredQuery(query);
+  return { hasQuery: true, pincode: structured.pincode, bhk: structured.bhk, underLimit: structured.underLimit, tokens: queryResidualTokens(query) };
+}
+
+export function matchesPreparedQuery<T extends QueryableProperty>(p: T, prepared: PreparedQueryMatch): boolean {
+  if (!prepared.hasQuery) return true;
   const haystack = `${p.locality} ${p.title} ${p.city} ${p.project ?? ""} ${p.developer ?? ""} ${p.subtype ?? ""}`.toLowerCase();
 
   // Mixed-language locality matching: a residual token matches if it is an alias
@@ -121,17 +148,15 @@ export function matchesQuery<T extends QueryableProperty>(p: T, query: string): 
   const tokenMatchesLocality = (token: string) =>
     (slug ? localityMatchesToken(slug, token) : false) || localityNameMatchesToken(p.locality, token);
 
-  const structured = extractStructuredQuery(query);
-  const { pincode, bhk, underLimit } = structured;
-  if (pincode && (!slug || !listingMatchesPincode(slug, pincode))) return false;
-
-  if (bhk !== null && p.bhk !== bhk) return false;
-  if (underLimit !== null && p.priceNum >= underLimit) return false;
+  if (prepared.pincode && (!slug || !listingMatchesPincode(slug, prepared.pincode))) return false;
+  if (prepared.bhk !== null && p.bhk !== prepared.bhk) return false;
+  if (prepared.underLimit !== null && p.priceNum >= prepared.underLimit) return false;
   /* Same tokenizer as the SQL narrowing path — see queryResidualTokens. */
-  const tokens = queryResidualTokens(query);
-  return tokens.every((t) => haystack.includes(t) || tokenMatchesLocality(t));
+  return prepared.tokens.every((t) => haystack.includes(t) || tokenMatchesLocality(t));
 }
 
 export function applyQuery<T extends QueryableProperty>(list: T[], query: string): T[] {
-  return list.filter((p) => matchesQuery(p, query));
+  const prepared = prepareQueryMatch(query);
+  if (!prepared.hasQuery) return list; // every row matches — skip the copy the old .filter made
+  return list.filter((p) => matchesPreparedQuery(p, prepared));
 }

@@ -123,11 +123,49 @@ function badgeFromVerification(verification?: string | null): string {
   return "Source reviewed";
 }
 
-function freshnessLabel(value?: Date | string | null): string {
-  if (!value) return "Updated recently";
+/* The two freshness renderings below are ICU calls (toLocaleDateString /
+   toISOString) — the most expensive pure work the mapper does per row, and a
+   5,000-row read would otherwise pay them 5,000× per request. The key to
+   memoising them cheaply: the label is `Updated <d MMM yyyy>` — a pure
+   function of the LOCAL calendar day — and the isoDay (`toISOString().slice(0,10)`)
+   is a pure function of the UTC day. NEITHER uses the time of day. Inventory
+   timestamps are effectively unique per row (feed imports, per-listing
+   updates), so a per-millisecond key misses on almost every row and buys
+   nothing. Key by the pair of calendar days instead — computed with plain
+   Date getters (no ICU, no toISOString) — so a read spanning N days pays N
+   formatting costs total instead of one per row. A cache miss computes the
+   value exactly the way the original code did, so output is unchanged;
+   clearing the bound can only change speed, never output. */
+const freshnessByDay = new Map<string, { label: string; isoDay: string }>();
+
+function freshnessParts(value?: Date | string | null): { label: string; isoDay?: string } {
+  if (!value) return { label: "Updated recently" };
   const date = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(date.getTime())) return "Updated recently";
-  return `Updated ${date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`;
+  const time = date.getTime();
+  if (Number.isNaN(time)) return { label: "Updated recently" };
+  const key = `${date.getFullYear()}:${date.getMonth() + 1}:${date.getDate()}:${date.getUTCFullYear()}:${date.getUTCMonth()}:${date.getUTCDate()}`;
+  const cached = freshnessByDay.get(key);
+  if (cached) return cached;
+  const parts = {
+    label: `Updated ${date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`,
+    isoDay: date.toISOString().slice(0, 10),
+  };
+  if (freshnessByDay.size > 4096) freshnessByDay.clear();
+  freshnessByDay.set(key, parts);
+  return parts;
+}
+
+/** Memoized en-IN grouping for the area label (area values are
+    low-cardinality integers; same bound-and-clear contract as the freshness
+    cache above). */
+const areaByValue = new Map<number, string>();
+function formatArea(area: number): string {
+  const cached = areaByValue.get(area);
+  if (cached !== undefined) return cached;
+  const formatted = area.toLocaleString("en-IN");
+  if (areaByValue.size > 2048) areaByValue.clear();
+  areaByValue.set(area, formatted);
+  return formatted;
 }
 
 export function dbLocalityToLocality(row: DbLocalityRow): Locality {
@@ -161,6 +199,10 @@ export function dbListingToProperty(row: DbListingRow): Property {
   const propertyType: PropertyTypeCode = isPropertyTypeCode(row.propertyType) ? row.propertyType : "APARTMENT";
   const availability: AvailabilityCode = normalizeAvailability(row.availability) ?? "READY_TO_MOVE";
   const subtype: Property["subtype"] = propertyType === "VILLA" ? "Villa" : propertyType === "PLOT" ? "Plot" : "Flat/Apartment";
+  /* ONE parse + at most ONE ICU formatting per row: `status` and the dossier
+     stamp derive from the same cached pair (previously two `new Date` parses
+     and two ICU calls each). */
+  const freshness = freshnessParts(row.meaningfulUpdatedAt);
   // Absolute media URLs (R2 public URLs) when the source stores them —
   // renderers prefer these over the local asset names. Absent when the source
   // stores none, so fixture-style rows keep a single shape.
@@ -177,7 +219,7 @@ export function dbListingToProperty(row: DbListingRow): Property {
     pricePerSqft: row.pricePerSqft ?? "Rate on request",
     meta: `${bhk} BHK · ${labelForAvailability(availability)}`,
     bhk,
-    area: area ? `${area.toLocaleString("en-IN")} sq ft` : "Area on request",
+    area: area ? `${formatArea(area)} sq ft` : "Area on request",
     areaNum: area,
     image: imageNameFromMedia(row.media),
     gallery: galleryFromMedia(row.media),
@@ -185,11 +227,13 @@ export function dbListingToProperty(row: DbListingRow): Property {
       ? { imageUrl: mediaUrls[0], galleryUrls: mediaUrls.length > 1 ? mediaUrls.slice(1) : undefined }
       : {},
     badge: badgeFromVerification(row.verification),
-    status: freshnessLabel(row.meaningfulUpdatedAt),
+    status: freshness.label,
     /* The absolute freshness stamp the dossier renders. Prisma hands us a
        Date (or a driver string); the fixture shape is an ISO date — normalize
-       here so "Updated on <date>" renders identically in both data modes. */
-    meaningfulUpdatedAt: row.meaningfulUpdatedAt ? new Date(row.meaningfulUpdatedAt).toISOString().slice(0, 10) : undefined,
+       here so "Updated on <date>" renders identically in both data modes.
+       (A corrupt/NaN timestamp now degrades to `undefined` instead of
+       throwing in `toISOString()` — the old path 500'd on such a row.) */
+    meaningfulUpdatedAt: freshness.isoDay,
     note: row.description,
     propertyType,
     availability,
