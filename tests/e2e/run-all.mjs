@@ -25,6 +25,7 @@ if (!existsSync(path.join(root, ".next"))) {
 const suites = [
   { name: "public journeys", file: "public-journeys.mjs" },
   { name: "marketplace flows", file: "marketplace-flows.mjs" },
+  { name: "broker ops flows", file: "broker-ops-flows.mjs" },
   { name: "auth flows", file: "auth-flows.mjs" },
 ];
 
