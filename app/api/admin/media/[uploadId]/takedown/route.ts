@@ -14,7 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ upl
   const body = await request.json().catch(() => ({}));
   const reason = String(body.reason ?? "Moderated through Phase 1 media contract.");
 
-  const result = action === "delete" ? await deleteMediaForServer(decodeURIComponent(uploadId)) : await requestMediaTakedownForServer(decodeURIComponent(uploadId), reason);
+  const result = action === "delete" ? await deleteMediaForServer(uploadId) : await requestMediaTakedownForServer(uploadId, reason);
   if (!result.ok) return NextResponse.json(result, { status: result.status });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

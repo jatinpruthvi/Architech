@@ -11,10 +11,11 @@
 | P0 Critical | 0 | — |
 | P1 High | 1 | 1 |
 | P2 Medium | 1 | 1 |
-| P3 Low | 1 | 0 (reported) |
+| P3 Low | 1 | 1 |
 | Watchlist (not confirmed) | 3 | 0 |
 
-- **1595 → 1716 tests** all green (incl. 8 new regression tests from this hunt), tsc clean, ESLint clean.
+- **1595 → 1717 tests** all green (incl. 9 new regression tests from this hunt), tsc clean, ESLint clean.
+- All 3 confirmed bugs are now fixed (BUG-2026-001 commit `c231ae4`, BUG-2026-002 commit `98e4863`, BUG-2026-003 in this report's follow-up commit).
 - The codebase is in good shape: no SQL injection found, JSON-LD XSS already guarded, cron auth fails closed, no empty catches, no TODO/FIXME debt. Both confirmed bugs were **cross-path inconsistencies** — the same operation behaving differently on the in-memory demo path vs the live Prisma path.
 
 ---
@@ -47,14 +48,14 @@
 - **Fix (this session):** `remaining = await outbox.count({ where: { status: "PENDING" } })` after the delivery loop.
 - **Test:** `client/src/lib/saved-search/alerts-runtime.test.ts` (3 tests; 2 red before the fix, all green after).
 
-### BUG-2026-003 — P3 · Low (robustness) — REPORTED, not fixed
+### BUG-2026-003 — P3 · Low (robustness) — FIXED
 
 - **Category:** Edge case
-- **File(s):** 23 route handlers under `app/api/` (e.g. `app/api/broker/channel/deals/[id]/*`, `app/api/broker/leads/[id]/*`, `app/api/listings/[id]/stats/route.ts`)
-- **Current behavior:** params are already decoded by Next.js, but the handlers call `decodeURIComponent(id)` a second time. A path containing a literal malformed `%` sequence (e.g. `/deals/100%/split`) throws `URIError` → unhandled 500.
-- **Expected behavior:** 404 for an unknown id, never 500 from param decoding.
-- **Impact:** low — requires an attacker/user to craft a path with a stray `%` against a semi-public route; no data exposure, availability-only.
-- **Recommendation:** one mechanical pass removing the redundant `decodeURIComponent` (or a shared `paramSafe` helper with try/catch → 404). Kept out of this pass deliberately: 23 files, zero functional signal, should ship as its own reviewed change.
+- **File(s):** 21 route files under `app/api/` (24 call sites: `app/api/broker/channel/*`, `app/api/broker/leads/[id]/*`, `app/api/broker/listings/[draftId]/media`, `app/api/admin/media/[uploadId]/takedown`, `app/api/admin/rera/[registration]/refresh`, `app/api/cities/[slug]/market-trends`, `app/api/localities/[slug]/price-trends`, `app/api/listings/[id]/stats`, `app/api/saved-searches/[id]`)
+- **Bug:** params are already decoded by Next.js exactly once, but the handlers called `decodeURIComponent` a second time. A path whose decoded param contains a literal `%` (raw path e.g. `/api/cities/100%25/market-trends` → param `100%`) threw `URIError` → unhandled 500. Secondary effect: ids containing a `%` sequence were silently re-decoded to a different value before lookup.
+- **Fix:** removed the redundant `decodeURIComponent` at all 24 call sites (params used as-is); inlined the now-dead `decoded` aliases in the two slug routes; added a regression-prevention comment at `app/api/listings/[id]/stats/route.ts`.
+- **Verified safe to remove:** client call sites single-encode with `encodeURIComponent` (e.g. `BrokerChannelPanel.tsx`), ids are cuids / lowercase slugs / RERA numbers — no caller double-encodes, so single-decode semantics are preserved for every real request.
+- **Test (TDD):** `client/src/lib/api-contract.test.ts` — "route params are not double-decoded" drives three real route handlers (`market-trends`, `price-trends`, `listings/:id/stats`) with param `100%`: red (URIError) before the fix, green after (404/404/200, never 500).
 
 ---
 

@@ -9,7 +9,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!isAuthorized(access)) return access.response;
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
-  const result = await saveChannelDealSplitForServer(decodeURIComponent(id), body, access.session);
+  const result = await saveChannelDealSplitForServer(id, body, access.session);
   if (result.ok === false) return NextResponse.json(result, { status: (result as { status: number }).status });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

@@ -12,7 +12,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ reg
   if (!/^[a-z][a-z-]{1,63}$/.test(stateSlug)) {
     return NextResponse.json({ ok: false, errors: ["State/UT slug is required."] }, { status: 400 });
   }
-  const result = await markReraStaleForServer(stateSlug, decodeURIComponent(registration));
+  const result = await markReraStaleForServer(stateSlug, registration);
   if (!result.ok) return NextResponse.json(result, { status: result.status });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

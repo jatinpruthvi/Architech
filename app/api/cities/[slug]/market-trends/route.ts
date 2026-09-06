@@ -15,15 +15,14 @@ export const runtime = "nodejs";
     quoted the number. */
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const decoded = decodeURIComponent(slug);
-  if (!getCityBySlug(decoded)) {
+  if (!getCityBySlug(slug)) {
     // 404s stay uncached: a mistyped slug must not pin a negative in the CDN.
-    return NextResponse.json({ ok: false, errors: [`Unknown city: ${decoded}`] }, { status: 404, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ok: false, errors: [`Unknown city: ${slug}`] }, { status: 404, headers: { "Cache-Control": "no-store" } });
   }
   /* Cost-reduction-audit P0.2: a deterministic report over the city's
      localities — cacheable, with the same shape as /api/locations/*. */
   return NextResponse.json(
-    { ok: true, report: cityMarketTrends(decoded) },
+    { ok: true, report: cityMarketTrends(slug) },
     { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400" } },
   );
 }

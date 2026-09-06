@@ -8,7 +8,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const access = await authorizeRequest(request, { permission: "broker.channel.write" });
   if (!isAuthorized(access)) return access.response;
   const { id } = await params;
-  const result = await markChannelNotificationReadForServer(decodeURIComponent(id), access.session);
+  const result = await markChannelNotificationReadForServer(id, access.session);
   if (result.ok === false) return NextResponse.json(result, { status: (result as { status: number }).status });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

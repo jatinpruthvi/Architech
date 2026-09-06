@@ -11,7 +11,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   /* Scoped to the caller. Deleting somebody else's saved search returns the
      same 404 as an id that does not exist, so the endpoint cannot be used to
      probe which ids are real. */
-  const ok = await deleteSavedSearchForServer(decodeURIComponent(id), access.session.user.id);
+  const ok = await deleteSavedSearchForServer(id, access.session.user.id);
   if (!ok) return NextResponse.json({ ok: false, errors: ["Saved search not found."] }, { status: 404 });
   return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
 }

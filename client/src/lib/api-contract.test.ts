@@ -147,6 +147,21 @@ describe("public API contract", () => {
     expect((getBody as { stats: { listingId: string } }).stats.listingId).toBe("garden-courtyard");
   });
 
+  it("route params are not double-decoded: a literal % in an id/slug is a 404/200, never a 500 (BUG-2026-003)", async () => {
+    // Next.js decodes dynamic params exactly once. `100%` is a legal param
+    // value after that single decode (raw path: /api/cities/100%25/market-trends),
+    // so handlers must use it as-is — re-running decodeURIComponent on it throws
+    // URIError and the route 500s.
+    const trends = await marketTrendsGet(new Request("http://example.com/api/cities/100%25/market-trends"), { params: Promise.resolve({ slug: "100%" }) });
+    expect(trends.status).toBe(404);
+
+    const price = await priceTrendsGet(new Request("http://example.com/api/localities/100%25/price-trends"), { params: Promise.resolve({ slug: "100%" }) });
+    expect(price.status).toBe(404);
+
+    const stats = await listingStatsGet(new Request("http://example.com/api/listings/100%25/stats"), { params: Promise.resolve({ id: "100%" }) });
+    expect(stats.status).toBe(200);
+  });
+
   it("GET /api/observability/status returns consolidated service status", async () => {
     const response = await statusGet();
     expect(response.status).toBe(200);
