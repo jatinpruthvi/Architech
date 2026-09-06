@@ -113,37 +113,51 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
     }
     const nextStatus = snapshotStatusToDb(result.record.verificationStatus);
     if (nextStatus === null) continue;
-    await db.reraRecord.upsert({
-      where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
-      update: {
-        state: result.record.state,
-        promoterName: result.record.promoterName,
-        projectName: result.record.projectName,
-        sourceUrl: result.record.sourceUrl,
-        retrievedAt: new Date(result.record.retrievedAt),
-        parserVersion: result.record.parserVersion,
-        confidence: result.record.confidence,
-        evidence: result.record.evidence,
-        verificationStatus: nextStatus,
-      },
-      create: {
-        jurisdictionSlug,
-        registrationNumber,
-        state: result.record.state,
-        promoterName: result.record.promoterName,
-        projectName: result.record.projectName,
-        sourceUrl: result.record.sourceUrl,
-        retrievedAt: new Date(result.record.retrievedAt),
-        parserVersion: result.record.parserVersion,
-        confidence: result.record.confidence,
-        evidence: result.record.evidence,
-        verificationStatus: nextStatus,
-      },
-    });
-    await db.auditEvent.create({
-      data: { action: "rera.record.refreshed", entityType: "ReraRecord", entityId, metadata: { verificationStatus: nextStatus, source: "scheduled.rera.refresh.prisma" } },
-    });
-    refreshed += 1;
+    /* BUG-R4-004: guard the WRITE half too, not only the provider call above.
+       An unguarded throw here escaped both the loop and the cron route
+       (`/api/internal/scheduled/rera-refresh` does not catch either), aborting
+       the whole batch and returning an unhandled 500. The worse consequence is
+       that this sweep is `where STALE orderBy updatedAt asc take limit`: a row
+       whose write throws is never updated, so it stays at the HEAD of every
+       subsequent run and throws again — permanently wedging the entire STALE
+       backlog rather than delaying it by one cycle. A row that cannot be
+       written is now reported and left STALE for the next run, exactly like a
+       row the provider cannot confirm. */
+    try {
+      await db.reraRecord.upsert({
+        where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
+        update: {
+          state: result.record.state,
+          promoterName: result.record.promoterName,
+          projectName: result.record.projectName,
+          sourceUrl: result.record.sourceUrl,
+          retrievedAt: new Date(result.record.retrievedAt),
+          parserVersion: result.record.parserVersion,
+          confidence: result.record.confidence,
+          evidence: result.record.evidence,
+          verificationStatus: nextStatus,
+        },
+        create: {
+          jurisdictionSlug,
+          registrationNumber,
+          state: result.record.state,
+          promoterName: result.record.promoterName,
+          projectName: result.record.projectName,
+          sourceUrl: result.record.sourceUrl,
+          retrievedAt: new Date(result.record.retrievedAt),
+          parserVersion: result.record.parserVersion,
+          confidence: result.record.confidence,
+          evidence: result.record.evidence,
+          verificationStatus: nextStatus,
+        },
+      });
+      await db.auditEvent.create({
+        data: { action: "rera.record.refreshed", entityType: "ReraRecord", entityId, metadata: { verificationStatus: nextStatus, source: "scheduled.rera.refresh.prisma" } },
+      });
+      refreshed += 1;
+    } catch (error) {
+      errors.push(`${entityId}: ${error instanceof Error ? error.message : "write error"}`);
+    }
   }
   return { ok: errors.length === 0, scanned: rows.length, refreshed, errors };
 }
