@@ -22,6 +22,7 @@
     "storybook:smoke": "storybook dev --host 0.0.0.0 -p 6006 --ci --smoke-test",
     "build-storybook": "storybook build",
     "test:perf": "pnpm build:ci && node scripts/performance/budget.mjs",
+    "perf:shell": "node scripts/performance/shell-report.mjs",
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",

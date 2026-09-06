@@ -32,6 +32,23 @@ const PUBLIC_ROUTES = [
   { path: "/privacy/", label: "privacy" },
   { path: "/terms/", label: "terms" },
   { path: "/login/", label: "login" },
+  { path: "/developers/", label: "developers index" },
+  { path: "/investment/", label: "investment" },
+  { path: "/home-loan/", label: "home loan" },
+  { path: "/review/", label: "feedback review" },
+  { path: "/requirements/", label: "public requirements" },
+  { path: "/collections/", label: "collections" },
+  { path: "/compare/", label: "compare" },
+  { path: "/saved-searches/", label: "saved searches shell" },
+  { path: "/price-index/", label: "price index" },
+  { path: "/price-index/ahmedabad/", label: "city price index" },
+  { path: "/locations/", label: "locations directory" },
+  { path: "/locations/gujarat/", label: "state directory" },
+  { path: "/locations/postal-codes/", label: "PIN directory" },
+  { path: "/locations/postal-codes/380007/", label: "PIN detail" },
+  { path: "/guide/city/ahmedabad/home-buying-guide/", label: "city guide" },
+  { path: "/guide/locality/ahmedabad/paldi-buying-guide/", label: "locality guide" },
+  { path: "/guide/rera/india/how-we-verify-rera/", label: "rera methodology guide" },
 ];
 
 async function run() {
@@ -228,6 +245,37 @@ async function run() {
       await test("an unknown listing is a 404", async () => {
         const response = await client.get("/listing/definitely-not-a-listing/");
         assertEqual(response.status, 404, "an unknown listing must 404");
+      });
+    });
+
+    await group("keyword URL aliases resolve to canonical search", async () => {
+      await test("/property/<slug> issues a permanent redirect to search", async () => {
+        const response = await client.get("/property/3bhk-buy-thaltej/");
+        assertEqual(response.status, 308, "a keyword slug must be a permanent alias (308)");
+        const location = response.headers.get("location") ?? "";
+        assertIncludes(location, "/search", "the destination must be the canonical search surface");
+        assertIncludes(decodeURIComponent(location.toLowerCase()), "thaltej", "the resolved query must carry the place the slug named");
+      });
+      await test("/property-search/<slug> shares the same resolver (no drift between the two shapes)", async () => {
+        const response = await client.get("/property-search/2bhk-rent-thaltej-ahmedabad/");
+        assertEqual(response.status, 308, "the second keyword shape must also be permanent");
+        const location = response.headers.get("location") ?? "";
+        assertIncludes(location, "/search", "the destination must be canonical search");
+        assertIncludes(decodeURIComponent(location.toLowerCase()), "thaltej", "the place token must survive resolution");
+      });
+      await test("the retired /blogs address stays aliased to field notes", async () => {
+        const response = await client.get("/blogs/");
+        assertEqual(response.status, 307, "the blog rename is a live alias, not a dead link");
+        assertEqual(response.headers.get("location") ?? "", "/guide/", "the alias must land on field notes");
+      });
+      await test("sitemap.html is canonical WITHOUT a trailing slash (it reads as a filename)", async () => {
+        const slashed = await client.get("/sitemap.html/");
+        assertEqual(slashed.status, 308, "the slashed form must collapse onto the canonical file name");
+        const location = (slashed.headers.get("location") ?? "").replace(/\/+$/, "");
+        assert(location.endsWith("/sitemap.html"), `the collapse must target the slashless file name, got ${location}`);
+        const bare = await client.get("/sitemap.html");
+        assertEqual(bare.status, 200, "the canonical slashless address must serve the html sitemap");
+        assertIncludes(bare.text, "<main", "the html sitemap must render the main landmark");
       });
     });
 

@@ -85,6 +85,10 @@ async function onListingPublished(event: ListingEvent): Promise<void> {
   const prisma = getPrismaClient() as unknown as {
     savedSearch: { findMany(args: unknown): Promise<AlertCandidateRow[]> };
   };
+  /* sql-perf: intentionally-unbounded — per design comment above: an
+     account-scoped opt-in scan chosen over a workers queue this quarter.
+     Watchlist SQL-PERF-17: if saved-search opt-ins outgrow the scan, this
+     becomes the perf bug the comment predicts. */
   const rows = await prisma.savedSearch.findMany({
     where: { notify: true, userId: { not: null } },
     select: { id: true, userId: true, notify: true, query: true, filters: true, user: { select: { email: true } } },

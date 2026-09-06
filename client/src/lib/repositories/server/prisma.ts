@@ -5,6 +5,7 @@ import { getListings, getListingById, getListingsByLocality, getListingStaticPar
 import {
   dbOrganizationToPublicAgent,
   demoDirectoryAgents,
+  PUBLIC_VERIFICATION_STATUSES,
   isPublicVerification,
   type PublicAgentOrganization,
 } from "@/lib/agent/directory";
@@ -96,6 +97,11 @@ export async function getListingStaticParamsForServer(): Promise<Array<{ id: str
   if (!isPrismaDataSource()) return fallback;
   try {
     const prisma = getPrismaClient();
+    /* sql-perf: intentionally-unbounded — build-time generateStaticParams id
+       map: correctness needs every id, columns are narrow (two strings per
+       row), and the read already has the fixture fallback documented above.
+       Watchlist SQL-PERF-17 if inventory growth ever turns this into
+       build-latency pain. */
     const rows = (await prisma.listing.findMany({ select: { stableId: true, slug: true } })) as Array<{ stableId: string; slug: string }>;
     const ids = new Set<string>();
     for (const row of rows) {
@@ -184,7 +190,15 @@ function organizationRowToPublicAgent(row: DbOrganizationRow): PublicAgentOrgani
 export async function getAgentDirectoryForServer(): Promise<PublicAgentOrganization[]> {
   if (!isPrismaDataSource()) return demoDirectoryAgents();
   const prisma = getPrismaClient();
+  /* SQL-PERF-17-006: the public-tier filter moved INTO the query — every
+     non-public organization row previously crossed the wire only to be
+     dropped in JS on this public request path. The JS filter below stays as
+     a second line of defense.
+     sql-perf: intentionally-unbounded — a directory page renders every
+     public organization; a cap would silently delist brokers. A paginated
+     directory is a product decision (watchlist). */
   const rows = (await prisma.brokerOrganization.findMany({
+    where: { verificationStatus: { in: [...PUBLIC_VERIFICATION_STATUSES] } },
     include: { city: { select: { slug: true, name: true } }, _count: { select: { listings: true } } },
     orderBy: { name: "asc" },
   })) as DbOrganizationRow[];
@@ -255,6 +269,9 @@ export async function getListingsByLocalityForServer(localitySlug: string, cityS
 export async function getCitiesForServer(): Promise<Array<Pick<City, "slug" | "name" | "stateSlug">>> {
   if (!isPrismaDataSource()) return getCities();
   const prisma = getPrismaClient();
+  /* sql-perf: intentionally-unbounded — the governed city registry (12 live
+     cities today), three narrow columns, consumed by SEO surfaces that need
+     the complete set. A cap would silently delete cities from the sitemap. */
   const rows = await prisma.city.findMany({ select: { slug: true, name: true, state: true }, orderBy: { name: "asc" } });
   return (rows as Array<Record<string, unknown>>).map((row) => ({
     slug: String(row.slug),
@@ -266,6 +283,11 @@ export async function getCitiesForServer(): Promise<Array<Pick<City, "slug" | "n
 export async function getLocalitiesForServer() {
   if (!isPrismaDataSource()) return getLocalities();
   const prisma = getPrismaClient();
+  /* sql-perf: intentionally-unbounded — locality reference registry feeding
+     locality pages/directories that need the complete set. Watchlist
+     SQL-PERF-17: the postalCodes include fans out per locality; if
+     nationwide coverage makes this read heavy, scope it by page/city instead
+     of capping it. */
   const rows = await prisma.locality.findMany({ include: { city: true, postalCodes: { where: { validTo: null }, orderBy: [{ isPrimary: "desc" }, { postalCode: "asc" }] } }, orderBy: [{ city: { name: "asc" } }, { name: "asc" }] });
   return rows.map((row) => dbLocalityToLocality(row as Parameters<typeof dbLocalityToLocality>[0]));
 }

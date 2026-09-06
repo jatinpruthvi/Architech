@@ -464,7 +464,7 @@ export async function createChannelRequestForServer(input: ChannelRequestInput, 
 export async function listChannelRequestsForServer(session: AuthSession) {
   if (!isPrismaPersistence()) return listOwnChannelRequests(session);
   if (!session.organization) return fail(403, "Broker organization is required.");
-  const rows = await withOrg(prisma(), session.organization.id, (db) => db.channelRequest.findMany({ where: { organizationId: session.organization!.id }, include: { source: true }, orderBy: [{ updatedAt: "desc" }] }));
+  const rows = await withOrg(prisma(), session.organization.id, (db) => db.channelRequest.findMany({ where: { organizationId: session.organization!.id }, include: { source: true }, orderBy: [{ updatedAt: "desc" }], take: BROKER_CHANNEL_LIST_PAGE_CAP }));
   return { ok: true, requests: rows.map(requestFromRow) };
 }
 
@@ -536,6 +536,12 @@ async function createMatchesForPrismaRequest(db: ChannelPrismaClient, request: C
   }
   return created;
 }
+
+/* Cap for broker-channel list reads (requests, deals). Same precedent as
+   GOVERNANCE_LIST_PAGE_CAP (PERF-BUG-16-001): newest-first semantics are
+   preserved under the cap, and an org's history growing unboundedly can no
+   longer make every list render heavier. */
+const BROKER_CHANNEL_LIST_PAGE_CAP = 500;
 
 export async function publishChannelRequestForServer(id: string, session: AuthSession) {
   if (!isPrismaPersistence()) return publishChannelRequest(id, session);
@@ -621,7 +627,7 @@ export async function rejectChannelMatchForServer(id: string, session: AuthSessi
 export async function listChannelDealsForServer(session: AuthSession) {
   if (!isPrismaPersistence()) return listChannelDeals(session);
   if (!session.organization) return fail(403, "Broker organization is required.");
-  const rows = await withOrg(prisma(), session.organization.id, (db) => db.channelDeal.findMany({ where: { OR: [{ demandOrganizationId: session.organization!.id }, { supplyOrganizationId: session.organization!.id }] }, orderBy: { updatedAt: "desc" } }));
+  const rows = await withOrg(prisma(), session.organization.id, (db) => db.channelDeal.findMany({ where: { OR: [{ demandOrganizationId: session.organization!.id }, { supplyOrganizationId: session.organization!.id }] }, orderBy: { updatedAt: "desc" }, take: BROKER_CHANNEL_LIST_PAGE_CAP }));
   return { ok: true, deals: rows.map(dealFromRow) };
 }
 

@@ -46,7 +46,7 @@ export type PublicAgentOrganizationInput = {
 const VERIFICATION_TIERS = new Set(["DEMO", "SOURCE_REVIEWED", "VERIFIED_PARTNER", "RERA_VERIFIED", "DISPUTED", "STALE"]);
 
 /** Every verification tier that is allowed a public profile page. */
-const PUBLIC_VERIFICATION_STATUSES = new Set(["RERA_VERIFIED", "VERIFIED_PARTNER", "SOURCE_REVIEWED"]);
+export const PUBLIC_VERIFICATION_STATUSES = new Set(["RERA_VERIFIED", "VERIFIED_PARTNER", "SOURCE_REVIEWED"]);
 
 /** DB rows carry verificationStatus as an unconstrained string; the session
     contract wants the union. Unknown values fall back to the most cautious

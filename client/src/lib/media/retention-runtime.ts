@@ -50,6 +50,13 @@ function ageDays(createdAt: string, now: Date): number {
   return Math.max(0, (now.getTime() - created.getTime()) / 86_400_000);
 }
 
+/* SQL-PERF-17-005: the sweep previously loaded EVERY PropertyMedia row into
+   memory per run (findMany with no where and no take) — forever-growing with
+   every upload. It now streams id-cursor batches; the id cursor is stable
+   under the moderation-status updates the sweep itself performs, so batching
+   can neither skip nor double-visit a row. Peak memory = one batch. */
+const MEDIA_RETENTION_SCAN_BATCH = 500;
+
 /** Scan every media record and apply the retention policy. Returns what was
     scanned and what was acted on, so operators/tests can see the sweep ran.
     In R2 storage mode, expired/rejected/taken-down media also has its OBJECT
@@ -58,29 +65,22 @@ function ageDays(createdAt: string, now: Date): number {
     (never thrown) so a storage outage cannot wedge the sweep. */
 export async function runMediaRetentionSweep(now = new Date()): Promise<{ scanned: number; acted: number; actedIds: string[]; objectsDeleted: number; objectDeleteFailures: number }> {
   const memoryRecords: RetentionRecord[] = listMediaUploadRecords();
-  let prismaRecords: RetentionRecord[] = [];
-  if (isPrismaPersistence()) {
-    const rows = (await prisma().propertyMedia.findMany({
-      select: { id: true, moderationStatus: true, exifStripped: true, createdAt: true, objectKey: true },
-    })) as Array<Record<string, unknown>>;
-    prismaRecords = rows.map((row) => ({
-      id: String(row.id ?? ""),
-      moderationStatus: String(row.moderationStatus ?? "PENDING") as MediaModerationStatus,
-      exifStripped: Boolean(row.exifStripped),
-      createdAt: String(row.createdAt ?? ""),
-      objectKey: row.objectKey == null ? null : String(row.objectKey),
-    }));
-  }
+  const prismaBacked = isPrismaPersistence();
 
   const acted: string[] = [];
   let objectsDeleted = 0;
   let objectDeleteFailures = 0;
-  for (const record of [...memoryRecords, ...prismaRecords]) {
+
+  /* Records from BOTH stores get the prisma-side actions whenever prisma
+     persistence is on (the id-keyed updateMany is an idempotent no-op for a
+     row that does not exist there) — preserving the original loop's
+     behavior while the read side streams in batches below. */
+  const actOnExpiringRecord = async (record: RetentionRecord, prismaActions: boolean): Promise<void> => {
     const decision = decideMediaRetention(record.moderationStatus, ageDays(record.createdAt, now));
-    if (decision.act === "retain") continue;
+    if (decision.act === "retain") return;
     acted.push(record.id);
     applyRetentionDecision(record.id, decision.act, decision.reason, decision.policyId);
-    if (isPrismaPersistence()) {
+    if (prismaActions) {
       await prisma().propertyMedia.updateMany({ where: { id: record.id }, data: { moderationStatus: "DELETED" } });
       await prisma().auditEvent.create({
         data: {
@@ -92,7 +92,7 @@ export async function runMediaRetentionSweep(now = new Date()): Promise<{ scanne
       });
       // Delete the stored object (R2) so the bytes follow the row.
       const deletion = await deleteMediaObjectBestEffort(record.objectKey ?? null);
-      if (deletion.skipped) continue;
+      if (deletion.skipped) return;
       if (deletion.ok) objectsDeleted += 1;
       else {
         objectDeleteFailures += 1;
@@ -107,9 +107,42 @@ export async function runMediaRetentionSweep(now = new Date()): Promise<{ scanne
         });
       }
     }
+  };
+
+  for (const record of memoryRecords) {
+    await actOnExpiringRecord(record, prismaBacked);
   }
 
-  return { scanned: memoryRecords.length + prismaRecords.length, acted: acted.length, actedIds: [...new Set(acted)], objectsDeleted, objectDeleteFailures };
+  let prismaScanned = 0;
+  if (prismaBacked) {
+    let cursor: string | null = null;
+    for (;;) {
+      const rows = (await prisma().propertyMedia.findMany({
+        select: { id: true, moderationStatus: true, exifStripped: true, createdAt: true, objectKey: true },
+        orderBy: { id: "asc" },
+        take: MEDIA_RETENTION_SCAN_BATCH,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      })) as Array<Record<string, unknown>>;
+      if (rows.length === 0) break;
+      for (const row of rows) {
+        prismaScanned += 1;
+        await actOnExpiringRecord(
+          {
+            id: String(row.id ?? ""),
+            moderationStatus: String(row.moderationStatus ?? "PENDING") as MediaModerationStatus,
+            exifStripped: Boolean(row.exifStripped),
+            createdAt: String(row.createdAt ?? ""),
+            objectKey: row.objectKey == null ? null : String(row.objectKey),
+          },
+          true,
+        );
+      }
+      cursor = String(rows[rows.length - 1]?.id ?? "");
+      if (rows.length < MEDIA_RETENTION_SCAN_BATCH) break;
+    }
+  }
+
+  return { scanned: memoryRecords.length + prismaScanned, acted: acted.length, actedIds: [...new Set(acted)], objectsDeleted, objectDeleteFailures };
 }
 
 /** Register the periodic sweep with the process runtime (instrumentation). */

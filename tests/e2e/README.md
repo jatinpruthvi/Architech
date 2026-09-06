@@ -16,7 +16,9 @@ node tests/e2e/auth-flows.mjs live
 
 | Suite | Covers |
 | --- | --- |
-| `public-journeys.mjs` | Public routes render; SSR is real; trailing-slash grammar; true 404s; robots/sitemap/JSON-LD/canonicals; security headers; search and listing journeys; public API contracts |
+| `public-journeys.mjs` | Public routes render; SSR is real; trailing-slash grammar; true 404s; robots/sitemap/JSON-LD/canonicals; security headers; search and listing journeys; keyword-URL 308 aliases; public API contracts |
+| `marketplace-flows.mjs` | Lead capture, saved-search walkthrough, broker draft workflow, suggest palette, observability endpoints |
+| `broker-ops-flows.mjs` | Broker channel request lifecycle (requirement → demand → publish → cancel), malformed-date refusal (BUG-R3-001 regression), broker lead-inbox reply, admin moderation decision journey — added for the 2026-09-06 E2E coverage audit |
 | `auth-flows.mjs` | Sign in, sign up, sign out, session persistence, role landing, owner/broker declaration, CSRF, throttling, privilege-escalation guards — in **both** `demo` and live `better-auth` modes |
 | `harness.mjs` | Server lifecycle, cookie jar, HTTP client, assertions, runner |
 

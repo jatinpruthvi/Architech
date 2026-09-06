@@ -199,6 +199,10 @@ function refetchLeadOrNotFound(prisma: PrismaLeadClient, id: string): Promise<Re
 async function hydrateLeadHistory(prisma: PrismaLeadClient, ids: string[]): Promise<Map<string, LeadRecord["statusHistory"]>> {
   const byLead = new Map<string, LeadRecord["statusHistory"]>();
   if (ids.length === 0) return byLead;
+  /* sql-perf: intentionally-unbounded — bounded by the CALLER's id set (the
+     capped inbox + single-row refetches), and the lookup rides the
+     [entityType, entityId] index. A total take could silently starve one
+     lead's history while others hydrate. */
   const events = await prisma.auditEvent.findMany({
     where: { entityType: "Lead", entityId: { in: ids } },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -221,6 +225,12 @@ async function refetchLeadWithHistory(prisma: PrismaLeadClient, id: string): Pro
   return { row, history: byLead.get(id) ?? [] };
 }
 
+/* Cap for the broker inbox lead list. Same precedent as
+   GOVERNANCE_LIST_PAGE_CAP (PERF-BUG-16-001): newest-first semantics are
+   preserved under the cap, and the history hydration below inherits the
+   bound (it queries audit events only for the capped id set). */
+const LEAD_INBOX_PAGE_CAP = 500;
+
 /** All leads for the broker inbox, newest-first. */
 /* One organization's lead inbox.
  *
@@ -235,6 +245,7 @@ export async function listLeadsForServer(organizationId: string): Promise<LeadRe
   const rows = await prisma.lead.findMany({
     where: { deletedAt: null, organizationId },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: LEAD_INBOX_PAGE_CAP,
     include: LEAD_LISTING_INCLUDE,
   });
   const ids = rows.map((row) => String(row.id ?? "")).filter(Boolean);

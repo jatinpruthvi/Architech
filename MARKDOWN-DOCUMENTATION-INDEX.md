@@ -26,6 +26,11 @@ Generated on 2026-08-27 from the repository Markdown tree.
 ## Product and Engineering Docs
 
 - [Phase 1 Ai Assistance](./docs/ai/phase-1-ai-assistance.md)
+- [Ai Prompt Library](./docs/ai/ai-prompt-library.md)
+- [Bug Hunt Report 2026 09 06 Round2](./docs/ai/bug-hunt-report-2026-09-06-round2.md)
+- [Bug Hunt Report 2026 09 06 Round3](./docs/ai/bug-hunt-report-2026-09-06-round3.md)
+- [Perf Bug Hunt 2026 09 06](./docs/ai/perf-bug-hunt-2026-09-06.md)
+- [Sql Perf Bug Hunt 2026 09 06](./docs/ai/sql-perf-bug-hunt-2026-09-06.md)
 - [Live Better Auth Handoff](./docs/auth/live-better-auth-handoff.md)
 - [Phase 1 Better Auth Organizations](./docs/auth/phase-1-better-auth-organizations.md)
 - [Phase 1 Moderation Queue](./docs/broker/phase-1-moderation-queue.md)
@@ -46,6 +51,7 @@ Generated on 2026-08-27 from the repository Markdown tree.
 - [Provisioning Execution Checklist](./docs/operations/provisioning-execution-checklist.md)
 - [Secrets Management](./docs/operations/secrets-management.md)
 - [Phase 1 Baseline](./docs/performance/phase-1-baseline.md)
+- [Performance Audit 2026 09 06](./docs/performance/performance-audit-2026-09-06.md)
 - [Phase 1 Batch2](./docs/phase-1-batch2.md)
 - [Phase 1 Batch3](./docs/phase-1-batch3.md)
 - [Phase 1 Batch4](./docs/phase-1-batch4.md)

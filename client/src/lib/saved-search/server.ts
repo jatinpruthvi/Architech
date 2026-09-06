@@ -69,6 +69,9 @@ export async function listSavedSearchesForServer(userId: string): Promise<SavedS
   if (!userId) return [];
   if (!isPrismaSavedSearchStorage()) return listSavedSearches(userId);
   const db = prisma();
+  /* sql-perf: intentionally-unbounded — one account's saved searches; a
+     natural per-account bound, and dropping silent rows here would hide
+     opt-ins the user asked for. */
   const rows = (await db.savedSearch.findMany({
     where: { userId },
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],

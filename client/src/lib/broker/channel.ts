@@ -264,6 +264,14 @@ export function validateChannelRequest(input: Partial<ChannelRequestInput>, sess
   const areaMin = toNumberOrNull(input.areaMinSqft);
   const areaMax = toNumberOrNull(input.areaMaxSqft);
   if (areaMin !== null && areaMax !== null && areaMin > areaMax) errors.push("areaMinSqft cannot exceed areaMaxSqft.");
+  /* BUG-R3-001: an unparseable expiresAt previously sailed through here and
+     hit `new Date(...)` in BOTH storage modes — the memory store threw
+     RangeError from .toISOString(), the prisma store threw on the DateTime
+     write; either way the broker write path returned an unhandled 500
+     instead of a 400. Validate at this shared seam so both paths converge. */
+  if (input.expiresAt != null && String(input.expiresAt).trim() !== "") {
+    if (Number.isNaN(new Date(input.expiresAt).getTime())) errors.push("expiresAt must be a valid date/time value.");
+  }
   const summary = sanitizeChannelSummary(input as ChannelRequestInput);
   if (!summary.ok) errors.push(...summary.errors);
   return errors;

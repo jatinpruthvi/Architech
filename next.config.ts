@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import type { NextConfig } from "next";
@@ -6,12 +6,20 @@ import type { NextConfig } from "next";
 /* Serve the production MapLibre build from /vendor so Turbopack does not
    inline ~1 MiB of map code into `.next/static/chunks` (the total-JS budget
    counts those chunks). Copied at config-eval so `next dev` and `next build`
-   both see the files. */
+   both see the files.
+   Performance audit 2026-09-06 F4: the path is pinned to the installed
+   maplibre-gl version (/vendor/maplibre@<version>/...) so the response can be
+   cached immutably — see the matching Cache-Control rule in headers(). */
 const maplibreRoot = dirname(createRequire(import.meta.url).resolve("maplibre-gl/package.json"));
-const maplibreVendor = join(process.cwd(), "public/vendor");
+const maplibreVersion = (JSON.parse(readFileSync(join(maplibreRoot, "package.json"), "utf8")) as { version: string }).version;
+const maplibreVendorRel = `vendor/maplibre@${maplibreVersion}`;
+const maplibreVendor = join(process.cwd(), "public", maplibreVendorRel);
 mkdirSync(maplibreVendor, { recursive: true });
 for (const file of ["maplibre-gl.mjs", "maplibre-gl-shared.mjs", "maplibre-gl-worker.mjs", "maplibre-gl.css"]) {
   copyFileSync(join(maplibreRoot, "dist", file), join(maplibreVendor, file));
+  // Self-cleanup of the legacy unversioned flat copy this block used to write.
+  const legacy = join(process.cwd(), "public/vendor", file);
+  if (existsSync(legacy)) rmSync(legacy);
 }
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -54,8 +62,10 @@ const securityHeaders = [
       "object-src 'none'",
       `frame-ancestors ${frameAncestors}`,
       `script-src ${scriptSource}`,
-      /* Fonts are self-hosted by next/font (.next/static/media), so no
-         third-party font origin is needed in the CSP. */
+      /* Fonts are self-hosted via @fontsource imports in app/layout.tsx and
+         emitted as hashed woff/woff2 under .next/static/media, so no
+         third-party font origin is needed in the CSP. (Audit F5 fix: this
+         used to credit next/font, which is not used here.) */
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
       `img-src 'self' data: blob: https://tile.openstreetmap.org${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
@@ -70,6 +80,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Match the architecture's canonical URL grammar (/buy/{city}/{locality}/)
   trailingSlash: true,
+  // Exposed to the client so MapListSync loads the version-pinned vendor URL
+  // that headers() marks as immutable (audit F4).
+  env: {
+    NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH: `/${maplibreVendorRel}`,
+  },
   // Named imports from these packages otherwise drag the whole icon/motion
   // barrel into every client route and blow the first-load JS budget.
   experimental: {
@@ -87,7 +102,12 @@ const nextConfig: NextConfig = {
   // Image pipeline. R2 mode: custom loader rewrites R2 URLs to Cloudflare
   // Image Transformations URLs (edge-side WebP/AVIF + resize), so Next's
   // optimizer is bypassed. Memory/dev mode: plain <img>/<picture> over
-  // pre-generated WebP derivatives (unoptimized, as before).
+  // pre-generated WebP derivatives (unoptimized, as before). Audit F5 note:
+  // components do not import next/image directly; they build the same
+  // transformation URLs through the shared pure module
+  // client/src/lib/media/image-loader.ts, which is also this loaderFile, so
+  // the <picture>/<img> markup path and any next/image consumer stay in
+  // agreement by construction.
   images: r2ImageDelivery
     ? {
         loader: "custom",
@@ -98,7 +118,15 @@ const nextConfig: NextConfig = {
         formats: ["image/avif", "image/webp"],
       },
   async headers() {
-    const rules = [{ source: "/:path*", headers: securityHeaders }];
+    const rules = [
+      { source: "/:path*", headers: securityHeaders },
+      // Audit F4: version-pinned MapLibre vendor files are safe to cache
+      // forever; a maplibre-gl upgrade changes the URL via maplibreVersion.
+      {
+        source: `/vendor/maplibre@${maplibreVersion}/:path*`,
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+    ];
     if (!isProduction) {
       // Turbopack dev chunk URLs are stable across edits; if a proxy or the
       // browser cache retains an old chunk, a "reload" silently re-runs stale
