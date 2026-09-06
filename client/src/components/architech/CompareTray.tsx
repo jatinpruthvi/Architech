@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCompare } from "@/contexts/CompareContext";
 import type { Property } from "@/lib/repositories";
+import { mediaDisplayUrl } from "@/lib/media/display-url";
 import Pic from "./Pic";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 
@@ -92,7 +93,7 @@ export default function CompareTray() {
           <Scale size={16} className="shrink-0 text-ember" aria-hidden="true" />
           {homes.map((p) => (
             <span key={p.id} className="flex items-center gap-2 border border-cream/20 py-1 pl-1 pr-2">
-              <span className="block h-8 w-10 overflow-hidden"><Pic name={p.image} alt="" className="h-full w-full object-cover" sizes="40px" /></span>
+              <span className="block h-8 w-10 overflow-hidden"><Pic name={p.image} src={mediaDisplayUrl(p.imageUrl, 80)} alt="" className="h-full w-full object-cover" sizes="40px" /></span>
               <span className="hidden max-w-[140px] truncate text-xs sm:block">{p.title}</span>
               <button onClick={() => toggle(p.id)} className="grid h-8 w-8 place-items-center text-cream/60 hover:text-ember" aria-label={`Remove ${p.title} from compare`}><X size={13} /></button>
             </span>
@@ -115,7 +116,7 @@ export default function CompareTray() {
                   <div />
                   {homes.map((p) => (
                     <Link key={p.id} href={`/listing/${p.id}`} className="group block pb-3">
-                      <span className="block aspect-[1.6] overflow-hidden"><Pic name={p.image} alt={p.title} className="h-full w-full object-cover" sizes="45vw" /></span>
+                      <span className="block aspect-[1.6] overflow-hidden"><Pic name={p.image} src={mediaDisplayUrl(p.imageUrl, 1200)} alt={p.title} className="h-full w-full object-cover" sizes="45vw" /></span>
                       <span className="mt-2 flex items-center gap-1 font-display text-base font-medium leading-tight group-hover:text-brick">{p.title} <ArrowUpRight size={13} className="text-brick" /></span>
                     </Link>
                   ))}

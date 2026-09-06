@@ -15,9 +15,11 @@ import {
   parseFacetState,
   serializeFacetState,
   wideningSuggestions,
+  type DerivedFacetValue,
   type FacetCounts,
   type FacetGroup,
   type FacetState,
+  type Relaxation,
 } from "./facets";
 import type { AppliedFacet, FacetProjection, SearchResponse, SearchSource } from "./search-types";
 
@@ -145,13 +147,19 @@ export function finalizeSearch(input: {
   count: number;
   meta: PaginationMeta;
   items: Property[];
-  /** Post-query/market/pincode scope, pre-facet — what counts are measured over. */
+  /** Post-query/market/pincode scope, pre-facet — what counts are measured over.
+      Empty (and unused) when `precomputed` is provided. */
   pooled: Property[];
   source: SearchSource;
   indexPlan: SearchResponse["indexPlan"];
+  /** SQL page path: facets/relaxations/widening computed over the same
+      state/groups by the same pool definitions (lib/search/sql-page-runtime.ts).
+      When present they are used verbatim — `pooled` is not consulted for
+      them; when absent they are computed from `pooled` (JS/fixture path). */
+  precomputed?: { facets: FacetCounts; relaxations: Relaxation[]; widening: DerivedFacetValue[] };
 }): SearchResponse {
   const { state, groups } = input;
-  const facets = computeFacetCounts(input.pooled, state, groups);
+  const facets = input.precomputed?.facets ?? computeFacetCounts(input.pooled, state, groups);
   const applied = appliedFacets(state, groups, facets);
   const empty = input.count === 0 && !isFacetStateEmpty(state);
   return {
@@ -170,8 +178,8 @@ export function finalizeSearch(input: {
     projection: input.projection,
     facets,
     applied,
-    relaxations: empty ? computeRelaxations(input.pooled, state, groups) : [],
-    widening: empty ? wideningSuggestions(input.pooled, state, groups) : [],
+    relaxations: input.precomputed ? input.precomputed.relaxations : empty ? computeRelaxations(input.pooled, state, groups) : [],
+    widening: input.precomputed ? input.precomputed.widening : empty ? wideningSuggestions(input.pooled, state, groups) : [],
   };
 }
 

@@ -1,5 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+/* Self-hosted fonts via Fontsource (npm) — replaces the render-blocking
+   Google Fonts link (extra external round-trips, third-party origin, no
+   subsetting guarantee). Variable faces for display/sans, static weights for
+   mono and the Devanagari fallback; woff2 with unicode-range subsetting, so
+   the browser only downloads the subsets it renders. Family names in
+   theme.css must match the Fontsource names (* Variable). */
+import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/instrument-sans";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
+import "@fontsource/noto-sans-devanagari/400.css";
+import "@fontsource/noto-sans-devanagari/500.css";
 import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
@@ -74,12 +86,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:ital,wght@0,300..700;1,300..700&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
         {/* The hero <img> is eager + high-priority, which is the preload; a
             separate <link rel="preload"> for a URL that can 404 only adds a
             console error. */}

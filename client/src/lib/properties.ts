@@ -20,6 +20,14 @@ export { FIXTURE_AS_OF_ISO, FIXTURE_AS_OF_LABEL };
 export type Property = {
   id: string; title: string; locality: string; localitySlug: string; city: string; citySlug: string; price: string; priceNum: number; pricePerSqft: string;
   meta: string; bhk: number; area: string; areaNum: number; image: string; badge: string; status: string; note: string;
+  /** Absolute media URL (e.g. the R2 public URL) when the data source
+      carries one. Renderers prefer this over the local `image` asset name
+      (resolved through the edge transform — see lib/media/display-url.ts).
+      Undefined in fixture mode, where `image` is the local asset key. */
+  imageUrl?: string;
+  /** Absolute URLs of the additional photographs (parallels `gallery`, the
+      local asset names). Undefined in fixture mode. */
+  galleryUrls?: string[];
   /** ISO `YYYY-MM-DD` date the listing's *content* last meaningfully changed.
 
       Mirrors `Listing.meaningfulUpdatedAt` in `prisma/schema.prisma` (as opposed

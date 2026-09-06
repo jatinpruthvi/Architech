@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import ListingPage from "@/pages/ListingPage";
-import { getCityBySlug, getListingStaticParams, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
+import { getCityBySlug, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
 import { comparableListings } from "@/lib/listing/comparables";
-import { getListingByIdForServer } from "@/lib/repositories/server/prisma";
+import { getListingByIdForServer, getListingStaticParamsForServer } from "@/lib/repositories/server/prisma";
 import { assetUrl, cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { socialImage } from "@/lib/seo/social";
 import { httpDecisionForListing } from "@/lib/seo/lifecycle";
@@ -14,13 +15,32 @@ import { residenceSchemaType } from "@/lib/listing-vocabulary";
 import { listingSerpDescription, listingSerpTitle } from "@/lib/seo/serp";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
-export function generateStaticParams() {
-  return getListingStaticParams();
+/* Cost-reduction-audit P0.5: `generateMetadata` and the page both resolved
+   the same listing, so every request ran the DB lookup twice. `cache` is
+   per-request, so both now share one result. */
+const getCachedListing = cache((id?: string) => getListingByIdForServer(id));
+
+/* ISR: listings change infrequently (price/availability edits). Pre-render
+   the known ids at build/deploy, then revalidate on a short interval so new
+   or updated listings become cached pages instead of paying per-request SSR.
+   Unknown ids still render on demand (dynamicParams defaults to true). */
+export const revalidate = 600;
+
+/** The listing's published photograph. Prefers the absolute media URL the
+    data source carries (R2 public URL in r2 mode) so crawlers and social
+    cards fetch the real upload; fixture mode has no such URL and falls back
+    to the local /images/* asset. */
+function publishedListingImage(property: { image: string; imageUrl?: string }): string {
+  return property.imageUrl ?? assetUrl(`/images/${property.image}.jpg`);
+}
+
+export async function generateStaticParams() {
+  return getListingStaticParamsForServer();
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const property = await getListingByIdForServer(id);
+  const property = await getCachedListing(id);
   if (!property) return { title: "Not found" };
   const metadataDecision = httpDecisionForListing(property.lifecycle, property.canonicalToListingId, { continuingValue: property.continuingSeoValue });
   // Title and description are composed against a SERP length budget: see
@@ -32,13 +52,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: listingSerpDescription(property),
     alternates: { canonical: listingUrl(property.id) },
     robots: { index: metadataDecision.indexable, follow: true },
-    openGraph: { title, url: listingUrl(property.id), images: [socialImage(property.image)] },
+    // A real upload (R2 mode) publishes the actual photograph; fixture mode
+    // keeps the measured local-asset card.
+    openGraph: { title, url: listingUrl(property.id), images: [property.imageUrl ? { url: property.imageUrl } : socialImage(property.image)] },
   };
 }
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const property = await getListingByIdForServer(id);
+  const property = await getCachedListing(id);
   if (!property) notFound();
 
   // Enforce listing-indexability per the SEO-004 lifecycle contract. A non-ACTIVE
@@ -85,7 +107,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     ...(coordinates && coordinates.length === 2 && coordinates.every(Number.isFinite)
       ? { geo: { "@type": "GeoCoordinates", latitude: coordinates[0], longitude: coordinates[1] } }
       : {}),
-    image: assetUrl(`/images/${property.image}.jpg`),
+    image: publishedListingImage(property),
     additionalProperty: [
       { "@type": "PropertyValue", name: "propertyType", value: property.subtype },
       { "@type": "PropertyValue", name: "parkingSpaces", value: property.details.parkingSpaces },
@@ -109,7 +131,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         name: property.title,
         description: property.meta,
         about: residence,
-        image: [assetUrl(`/images/${property.image}.jpg`)],
+        image: [publishedListingImage(property)],
         // Content-change date from the listing record (mirrors
         // Listing.meaningfulUpdatedAt), not the render clock — a re-crawl that
         // sees an unchanged date is a signal the page genuinely did not change.

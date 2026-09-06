@@ -17,6 +17,12 @@
  *     --report tmp/location/india-post-report.json
  *
  * Add --apply only after reviewing the dry-run report.
+ *
+ * P1.4: --states gujarat,27 imports only the requested states' rows (names
+ * or LGD codes). The raw snapshot is still validated as the complete
+ * national file; only the working set is narrowed. It cannot be combined
+ * with --replace-full-snapshot (a scoped import must never retire rows it
+ * did not import).
  */
 import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -24,6 +30,7 @@ import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { officialStateForName } from "./india-state-registry.mjs";
 import { parseOgdDate, validateOgdSnapshotManifest } from "./fetch-ogd-snapshot.mjs";
+import { filterRowsByStates, resolveStateFilter } from "./state-filter.mjs";
 
 const DEFAULT_SOURCE_KEY = "india-post-pincode-directory";
 const DEFAULT_LICENSE_NAME = "Government Open Data License - India";
@@ -371,6 +378,18 @@ export async function main(argv = process.argv.slice(2)) {
     throw new Error(`India Post snapshot has ${rejected.length} rejected rows; review them or pass --allow-rejections explicitly.`);
   }
   if (options.replaceFullSnapshot && !options.apply) throw new Error("--replace-full-snapshot requires --apply.");
+  // P1.4: the file is validated as the complete national snapshot above; only
+  // now do we narrow the working set to the requested states. A scoped import
+  // must never retire rows it did not import, so it is mutually exclusive
+  // with --replace-full-snapshot.
+  const stateCodes = resolveStateFilter(options.states);
+  if (stateCodes && options.replaceFullSnapshot) {
+    throw new Error("--states cannot be combined with --replace-full-snapshot: a state-scoped import must never retire rows it did not import.");
+  }
+  const stateFilter = stateCodes
+    ? filterRowsByStates(accepted, stateCodes, (row) => row.stateLgdCode)
+    : null;
+  const scopedRows = stateFilter ? stateFilter.kept : accepted;
   await writeJson(rejectionFile, { schemaVersion: "india-post-rejections-v1", inputFile, checksumSha256, rejected });
   await writeJson(warningFile, { schemaVersion: "india-post-quality-warnings-v1", inputFile, checksumSha256, warnings });
 
@@ -394,12 +413,24 @@ export async function main(argv = process.argv.slice(2)) {
     warningCount: warnings.length,
   };
 
-  const applied = options.apply ? await applyRows(accepted, metadata, rejectionFile, options) : null;
+  // The import (and its run provenance) reflects the SCOPED working set when
+  // --states narrowed it, while `coverage` above still describes the complete
+  // validated national file. Both appear in the report so a reader can tell
+  // "the source was whole" from "what we actually loaded".
+  const applied = options.apply ? await applyRows(scopedRows, metadata, rejectionFile, options) : null;
   const report = {
     schemaVersion: "india-post-import-report-v1",
     mode: options.apply ? "APPLY" : "DRY_RUN",
     source: { ...metadata, retrievedAt: retrievedAt.toISOString(), publishedAt: publishedAt?.toISOString() ?? null },
-    counts: { ...coverage, rejected: rejected.length, warnings: warnings.length },
+    counts: {
+      ...coverage,
+      rejected: rejected.length,
+      warnings: warnings.length,
+      imported: scopedRows.length,
+      stateFilter: stateFilter
+        ? { requested: options.states, states: [...stateCodes].sort(), acceptedBeforeFilter: coverage.accepted, dropped: stateFilter.dropped }
+        : null,
+    },
     replacementRequested: options.replaceFullSnapshot,
     rejectionReport: rejectionFile,
     qualityWarningReport: warningFile,

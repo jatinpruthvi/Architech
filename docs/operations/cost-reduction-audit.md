@@ -3,7 +3,27 @@
 **Date:** 2026-09-05 (updated for second-pass, in-depth audit)
 **Scope:** Whole repo — runtime, hosting, data, search, media, observability, CI, external calls, schedulers, and documented operational posture.
 **Method:** Reviewed **docs** (`docs/architecture`, `docs/data`, `docs/search`, `docs/observability`, `docs/operations`, `docs/performance`, `docs/media`) and **code** (`app/*`, `client/src/lib/*`, `client/src/pages/*`, `client/src/components/*`, `next.config.ts`, `prisma/*`, `scripts/*`, `.github/workflows/*`, `governance/*`).
-**Status:** Findings only. **No code changed.**
+**Status:** Findings; P0/P1 first batch implemented (see status table below).
+
+## 0. Execution status (first batch, 2026-09-05)
+
+| Item | Status | Where |
+|---|---|---|
+| P0.1 SQL search | **Done (both flags off-by-default).** Candidate narrowing (`ARCHITECH_SEARCH_SQL_NARROW=on`, FTS + trigram + ILIKE superset, fail-closed) in `lib/search/sql.ts` + `sql-narrow.ts`; **full SQL page query** (`ARCHITECH_SEARCH_SQL_PAGE=on`) in `lib/search/sql-page.ts` + `sql-page-runtime.ts` — DB-side filtering, `COUNT(*)` total, per-group facet pools, page window via `LIMIT/OFFSET`, and rehydration of only the ≤ 48 page rows through the standard Prisma include + mapper. Non-derivable predicates decline to the JS path loudly (active `fresh`; the `furnishing` group whenever projected — i.e. the desk surface — because its counts need the details/sourceSummary prose scrape). A live-Postgres parity matrix (`client/src/lib/search/sql-page-integration.test.ts`, opt-in `ARCHITECH_PARITY_DATABASE_URL`) asserts the SQL and JS paths return identical wire responses for 44 request shapes. Both flags stay `off` until the pg_trgm/FTS migrations are confirmed in the environment; the search API cache (`s-maxage=30, stale-while-revalidate=60`, P0.2) is independent of the flags. | `app/api/search/route.ts`, `client/src/lib/search/sql-narrow.ts`, `client/src/lib/search/sql-page.ts`, `client/src/lib/search/sql-page-runtime.ts` |
+| P0.2 Cache deterministic GETs | **Done.** `/api/search` → `public, s-maxage=30, stale-while-revalidate=60`; `/api/ai/compare`, `/api/ai/search-assist`, `/api/cities/[slug]/market-trends`, `/api/localities/[slug]/price-trends` → `public, s-maxage=300, stale-while-revalidate=86400` (404s stay `no-store`). | each route |
+| P0.3 Image delivery | **Done (R2 path, incl. render path).** R2 presigned signing (SigV4); the mapper carries stored absolute URLs on `Property.imageUrl`/`galleryUrls`; every photo renderer (`PropertyCard`, `ListingGallery`, `SearchQuickView`, `CompareTray`, compare page, listing JSON-LD/OG) resolves them through `mediaDisplayUrl()` → Cloudflare Image Transformations URLs when `ARCHITECH_MEDIA_STORAGE=r2`; `next/image` also gets the custom loader. Fixture mode unchanged (local `/images/*`). Note: the R2 env must be present **at build time** (CSP `img-src` + `NEXT_PUBLIC_*` inlining). See media-storage-decision phase 3. | `client/src/lib/media/display-url.ts`, `client/src/lib/repositories/mappers.ts`, the renderers, `next.config.ts` |
+| P0.4 De-dynamic render-only pages | **Done (safe set).** `/blogs`, `/list-property`, `/collections` → static; `/developers`, `/locations` → ISR `revalidate=3600`. `/compare`, `/locations/[state]` keep request-time rendering (searchParams-driven); authenticated pages untouched. | the pages |
+| P0.5 Listing page double read | **Done.** `generateMetadata` + page share one `React.cache()`-deduped lookup; ISR `revalidate=600`; `generateStaticParams` now reads DB ids in prisma mode (best-effort, fixture fallback) so DB listings become pre-rendered pages. | `app/listing/[id]/page.tsx`, `client/src/lib/repositories/server/prisma.ts` |
+| P0.6 Duplicate CI pipelines | **Done.** `quality.yml` deleted — it re-ran check + lint + test + db:validate + build that `ci.yml` already runs on the same events. | `.github/workflows/` |
+| P1.1 Broker channel fan-out | **Done.** `/api/broker/channel/dashboard` now returns the aggregates **plus** all panel lists (requests/matches/deals/notifications/requirements) in one response; `BrokerChannelPanel` fires one request instead of six. Every channel GET carries `private, max-age=15, stale-while-revalidate=30`, and the client fetches no longer force `cache: "no-store"` (which would have voided the header). Per-list fault tolerance preserved (a broken list degrades to `[]`). | `app/api/broker/channel/dashboard/route.ts`, `BrokerChannelPanel.tsx`, `BrokerChannel.tsx`, `load-panel.ts` |
+| P1.2 Per-instance schedulers | **Partially done.** New single-driver endpoint `POST /api/internal/scheduled/media-retention-sweep/` (`CRON_SECRET` bearer, fails closed) for a platform cron; set `MEDIA_RETENTION_SWEEP=off` when the cron is live. In-process behavior unchanged for single-replica dev. | `app/api/internal/scheduled/*` |
+| P1.3 Observability per-event | **Done (client-side).** Web-vitals sampled via `NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE` (prod example: 0.1; 0 disables ingest); Sentry traces lowered in prod examples (`0.05→0.01`, public `0.01→0.001`). | `WebVitalsReporter.tsx`, `.env.production.example` |
+| P1.4 Location snapshots out of the OLTP DB | **Done (fetch + import side).** (1) `fetch-ogd-snapshot.mjs --upload-to-r2` PUTs the immutable raw CSV + manifest to `location-snapshots/<resource>/<retrieval-stamp>/` in R2 (self-contained SigV4 PUT pinned to the official AWS worked example, body-hash signed so corrupted uploads are rejected); the manifest is re-stamped with the object keys and re-uploaded, so the R2 copy is self-describing and re-imports never need to trust a machine's tmp/. (2) Both importers take `--states gujarat,27` (LGD names alias-aware, or codes): the file is still validated as the complete national snapshot, then only the requested states' rows are imported — the report separates `accepted` (whole file) from `imported` + `stateFilter`. A scoped import cannot combine with `--replace-full-snapshot` (it would retire rows it never imported). Old-run retirement stays `--replace-full-snapshot` on the unscoped path. | `scripts/location/fetch-ogd-snapshot.mjs`, `scripts/location/r2-upload.mjs`, `scripts/location/state-filter.mjs`, both importers, `docs/data/india-location-operations.md` |
+| P1.5 Media object lifecycle | **Done (app-side).** Retention sweep + takedown delete the R2 object (SigV4 DELETE, idempotent), `PropertyMedia.objectKey` persisted at sign time (migration `202609050002`); failures are counted + audited, never thrown. Quota `MEDIA_MAX_IMAGES_PER_LISTING` (default 10) enforced at sign. Bucket-level R2 lifecycle rules remain an operator task. | `client/src/lib/media/*`, `prisma/migrations/202609050002_*` |
+| P1.6 Email/notification costs | **Done.** (1) Opt-in was already mandatory (`notify:true` per saved search; the gate requires `SAVED_SEARCH_ALERTS=on` + `RESEND_API_KEY` + `SAVED_SEARCH_ALERT_FROM`; anonymous searches can never be mailed). (2) **Outbox + digest:** every matched (listing, search) pair enqueues ONE idempotent `SavedSearchAlertOutbox` row (migration `202609060001`) before any send; `SAVED_SEARCH_ALERT_MODE=digest` makes publish events enqueue-only, and the new platform-cron driver `POST /api/internal/scheduled/saved-search-alert-digest/` (`CRON_SECRET` bearer, fails closed) mails **one digest per watcher per run** (capped at `SAVED_SEARCH_ALERT_DIGEST_MAX_LISTINGS`, default 10; batch-fingerprinted `Idempotency-Key` so a cron retry is a provider no-op but an over-cap backlog is never lost). (3) **Per-user quota:** `SAVED_SEARCH_ALERT_DAILY_LIMIT` (default 3, 0 = unlimited) caps per-match emails per watcher per UTC day, counted from the durable outbox so a restart cannot reset the cap; over-quota matches are recorded `SUPPRESSED`, never silently dropped. Default mode stays `per_match` (current behavior) until the cron is provisioned. | `client/src/lib/saved-search/*`, `app/api/internal/scheduled/saved-search-alert-digest/route.ts`, `prisma/migrations/202609060001_*` |
+| P1.7 External syncs driven by scheduler | **Done (ERPNext close sync + RERA refresh; media sweep already covered by P1.2's cron endpoint).** (1) ERPNext: `processPendingErpnextCloseWritesForCron()` is a cross-organization driver behind `POST /api/internal/scheduled/erpnext-close-sync/` (same fail-closed `CRON_SECRET` bearer pattern as the media sweep); the per-organization processor now claims each write with an **atomic** `updateMany` so the cron and the dashboard "Sync" button can run concurrently without double-sending; stuck `IN_FLIGHT` rows are reclaimable after 30 min; FAILED backoff (`nextRetryAt`, 15 min) unchanged; per-run caps kept (10 writes, 10 orgs). (2) RERA: `refreshStaleReraRecordsForServer(limit)` behind `POST /api/internal/scheduled/rera-refresh/` re-verifies STALE records against the configured provider and restores a record **only** when the authority confirms it (`VERIFIED → RERA_VERIFIED`); unconfirmable records stay STALE. The dashboard/admin buttons remain as manual catch-up paths (single-replica dev). | `client/src/lib/persistence/channel-store.ts`, `client/src/lib/persistence/rera-store.ts`, `app/api/internal/scheduled/erpnext-close-sync/route.ts`, `app/api/internal/scheduled/rera-refresh/route.ts` |
+
+Remaining (not started): all P2 hygiene items. (P0.1 full SQL filtering/pagination is implemented behind `ARCHITECH_SEARCH_SQL_PAGE`; its only open step is the per-environment pg_trgm/FTS migration confirmation before the flag is turned on.)
 
 ---
 
@@ -67,6 +87,32 @@ This audit covers the rest of the app beyond media.
    - or `next revalidateTag` / ISR if page-rendered.
 4. Keep a DB index on every column used for filtering/sorting (mostly present already).
 5. Add `EXPLAIN`/query-plan instrumentation behind a debug flag only (not per request).
+
+**Status (2026-09-05, second pass) — implemented, flag-gated.** The full SQL page query exists in
+`client/src/lib/search/sql-page.ts` (plan builder) + `client/src/lib/search/sql-page-runtime.ts`
+(executor) behind `ARCHITECH_SEARCH_SQL_PAGE=on`:
+
+- **Recall identity.** Every predicate is a direct column comparison with the JS path's semantics, or a
+  slug/value set the runtime precomputes in JS with the exact fixture-registry functions the JS path uses
+  (alias matching, PIN lookup, bbox containment). The free-text haystack is the true five SQL fields —
+  title, locality name, city name, the constant `"Verified partner"` developer, and the derived subtype
+  (the `Listing` table has no `projectName`/`developerName` columns; the mapper falls back to title /
+  literal). `addressLocality` is deliberately not a haystack field, matching the JS matcher.
+- **Honest counts.** Facet options, the place pool, and price/area histograms come from SQL aggregates
+  over the pool; the page path is never a truncated window (`truncated` stays `undefined`).
+- **Declines are decisions, not degradations.** Predicates that are not exactly reproducible decline the
+  SQL path (logged `search.sql_page_declined`) and the JS path serves: an ACTIVE `fresh` selection (recency
+  is parsed from a human label the prisma mapper renders as an absolute date), and the `furnishing` group
+  whenever it is projected — its facet counts need `detailsJson` with a prose fallback into
+  `sourceSummary` (the desk surface). Any SQL failure is a logged `search.sql_page_failed` fallback.
+- **Verification.** `client/src/lib/search/sql-page-integration.test.ts` is a live-Postgres parity matrix
+  (opt-in `ARCHITECH_PARITY_DATABASE_URL`; seeds 24 deterministic rows + pins the demo seed's timestamps):
+  44 request shapes × {JS path, SQL path} must return identical wire responses (JSON projection — the
+  route serializes, so the function-valued facet `match` closures are compared by behaviour, not
+  reference), plus per-scenario `indexPlan` assertions proving the SQL path actually ran.
+- **Still off by default** in every `.env*` example until the pg_trgm/FTS migrations
+  (`prisma/migrations/*_search_indexes`) are confirmed in the target environment; `X-Architech-Search-Source`
+  + the latency SLO make the active path observable once on.
 
 #### P0.2 Many deterministic GET APIs use `no-store` though they are cheap to cache
 

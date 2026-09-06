@@ -8,8 +8,15 @@ import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Pic from "./Pic";
 import { listingSlides, imageCountLabel } from "@/lib/listing/media";
+import { mediaDisplayUrl } from "@/lib/media/display-url";
 import type { Property } from "@/lib/repositories";
 import { useLang } from "@/contexts/LangContext";
+
+/** R2-mode photos render through the edge transform at the slot's width;
+    fixture photos (no srcUrl) fall through to the local /images/* assets. */
+function srcFor(slide: { srcUrl?: string }, width: number): string | undefined {
+  return mediaDisplayUrl(slide.srcUrl, width);
+}
 
 function trackSnapToIndex(el: HTMLElement): number {
   const children = Array.from(el.children) as HTMLElement[];
@@ -69,7 +76,7 @@ export function ListingGallery({ property }: { property: Property }) {
       <div className="grid gap-4 md:grid-cols-[1.45fr_0.8fr]">
         {/* Lead slide */}
         <div className="img-hover grain relative min-h-[230px] overflow-hidden bg-sand sm:min-h-[280px] md:min-h-[360px]">
-          <Pic name={slides[0].name} alt={slides[0].alt} className="absolute inset-0 h-full w-full object-cover" sizes="(max-width: 768px) 100vw, 62vw" eager />
+          <Pic name={slides[0].name} src={srcFor(slides[0], 1600)} alt={slides[0].alt} className="absolute inset-0 h-full w-full object-cover" sizes="(max-width: 768px) 100vw, 62vw" eager />
           <span className="stamp absolute left-5 top-5 z-10 rounded-full bg-paper/95 px-3 py-1.5 !text-[10px] font-semibold">{t.listing.verifiedView}</span>
           <button
             onClick={() => setLightbox(true)}
@@ -90,7 +97,7 @@ export function ListingGallery({ property }: { property: Property }) {
               className="img-hover relative block h-full min-h-[110px] overflow-hidden bg-sand sm:min-h-[135px] md:min-h-[170px]"
               aria-label={`${slide.label} — ${t.listing.gallery.openGallery}`}
             >
-              <Pic name={slide.name} alt={slide.alt} className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.025]" sizes="(max-width: 768px) 100vw, 34vw" />
+              <Pic name={slide.name} src={srcFor(slide, 800)} alt={slide.alt} className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.025]" sizes="(max-width: 768px) 100vw, 34vw" />
               <span className="stamp absolute bottom-3 left-4 z-10 rounded-full bg-paper/95 px-2.5 py-1 !text-[9px] font-semibold">{slide.label}</span>
             </button>
           ))}
@@ -110,7 +117,7 @@ export function ListingGallery({ property }: { property: Property }) {
               aria-label={`${slide.label} ${i + 1} of ${slides.length}`}
               aria-current={active === i ? "true" : undefined}
             >
-              <Pic name={slide.name} alt="" className="h-full w-full object-cover" sizes="80px" />
+              <Pic name={slide.name} src={srcFor(slide, 160)} alt="" className="h-full w-full object-cover" sizes="80px" />
             </button>
           ))}
         </div>
@@ -127,7 +134,7 @@ export function ListingGallery({ property }: { property: Property }) {
           </div>
           <div className="relative flex flex-1 items-center justify-center overflow-hidden px-16">
             <div className="img-hover relative h-full w-full">
-              <Pic name={slides[active].name} alt={slides[active].alt} className="h-full w-full object-contain" sizes="100vw" eager />
+              <Pic name={slides[active].name} src={srcFor(slides[active], 2560)} alt={slides[active].alt} className="h-full w-full object-contain" sizes="100vw" eager />
             </div>
             <button onClick={() => move(-1)} className="absolute left-3 grid h-11 w-11 touch-44 place-items-center rounded-full bg-paper/10 text-cream hover:bg-paper/20" aria-label={t.listing.gallery.prev}><ChevronLeft size={24} /></button>
             <button onClick={() => move(1)} className="absolute right-3 grid h-11 w-11 touch-44 place-items-center rounded-full bg-paper/10 text-cream hover:bg-paper/20" aria-label={t.listing.gallery.next}><ChevronRight size={24} /></button>

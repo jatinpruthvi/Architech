@@ -88,7 +88,9 @@ export type SqlNarrowPlan = {
   tokens: string[];
 };
 
-function escapeLike(value: string): string {
+/* Exported so the page-query builder (sql-page.ts) escapes LIKE parameters
+   with the exact same rules — one implementation, not two that can drift. */
+export function escapeLike(value: string): string {
   /* Tokens cannot contain % _ or \ today (the splitter removes everything
      that is not a letter, mark or number) — escape anyway so the guarantee
      does not silently depend on the token regex staying that way. */

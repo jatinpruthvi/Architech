@@ -30,7 +30,6 @@ import Reveal from "../components/architech/Reveal";
 import FilterPanel, { AppliedFacetRow } from "../components/architech/FilterSurface";
 import useTitle from "../hooks/useTitle";
 import { type MarketCategory, type MarketIntent, type SortId } from "@/lib/filters";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { useLang } from "@/contexts/LangContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SearchSuggestion } from "@/lib/search/suggestion-types";
@@ -43,6 +42,10 @@ import { rememberRecentSearch } from "@/lib/search/recent";
 
 const MapListSync = dynamic(() => import("@/components/architech/MapListSync"), { ssr: false });
 const SearchQuickView = dynamic(() => import("@/components/architech/SearchQuickView"), { ssr: false });
+/* The filter sheet wraps vaul (the gesture-drawer library). Loaded on demand
+   so the route's first-load JS stays under its performance budget — a closed
+   sheet renders nothing, so the null fallback is invisible. */
+const FilterSheet = dynamic(() => import("@/components/architech/FilterSheet"), { ssr: true, loading: () => null });
 
 export type SearchCityOption = { slug: string; name: string };
 
@@ -728,21 +731,9 @@ export default function ResultsPage({
  </section>
 
  {/* Filter sheet (below lg). The rail above lg renders the same panel. */}
- <Drawer open={filterOpen} onOpenChange={setFilterOpen}>
- <DrawerContent className="border-t-2 border-brick bg-paper">
- <DrawerHeader className="text-left">
- <DrawerTitle className="font-display text-2xl font-medium tracking-[-0.02em]">{t.search.filterHomes}</DrawerTitle>
- </DrawerHeader>
- <div className="px-4 pb-2">{panel("sheet")}</div>
- <div className="safe-bottom sticky bottom-0 border-t border-ink/12 bg-paper px-4 py-3">
- <DrawerClose asChild>
- <button className="clay-fill touch-44 w-full bg-brick py-3.5 stamp font-semibold text-cream">
- {results.length === 1 ? t.search.facet.showOneHome : t.search.facet.showHomes} · {results.length}
- </button>
- </DrawerClose>
- </div>
- </DrawerContent>
- </Drawer>
+ <FilterSheet open={filterOpen} onOpenChange={setFilterOpen} title={t.search.filterHomes} showLabel={results.length === 1 ? `${t.search.facet.showOneHome} · ${results.length}` : `${t.search.facet.showHomes} · ${results.length}`}>
+ {panel("sheet")}
+ </FilterSheet>
 
  <SearchQuickView property={selectedProperty} open={quickViewOpen} onOpenChange={setQuickViewOpen} />
  </div>

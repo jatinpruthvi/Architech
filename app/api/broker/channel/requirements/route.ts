@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   if (!isAuthorized(access)) return access.response;
   const result = await listBrokerRequirementsForServer(access.session);
   if (!result.ok) return NextResponse.json(result, { status: result.status, headers: { "Cache-Control": "no-store" } });
-  return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
+  /* Cost-audit P1.1: short private browser TTL (see dashboard route). */
+  return NextResponse.json(result, { headers: { "Cache-Control": "private, max-age=15, stale-while-revalidate=30" } });
 }
 
 export async function POST(request: Request) {

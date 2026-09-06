@@ -22,6 +22,11 @@ export type SearchResponse = {
   count: number;
   source: SearchSource;
   /* Remaining states, newest first, and what each one MEANS operationally:
+     - page:            prisma source, ARCHITECH_SEARCH_SQL_PAGE=on: the page
+                        window, total, and facet counts were computed in
+                        Postgres (lib/search/sql-page.ts); only the ≤ 48 page
+                        rows were read through the standard include + mapper.
+                        `truncated` is never set — the total is a real COUNT.
      - executed:        the SQL candidate narrowing ran; the DB read was bound
                         by FTS/trigram/ILIKE and then the unchanged JS filter
                         produced the result. Recall parity holds by the
@@ -29,6 +34,8 @@ export type SearchResponse = {
      - fallback-js:     the SQL candidate narrowing THREW this request; the
                         response was served by the JS filter over the bounded
                         scoped read and the failure was logged (never silent).
+                        (The page path also falls back here — with the same
+                        logging — when it declines or fails.)
      - ready:           prisma source, narrowing flag off: the full scoped,
                         bounded row set was read and filtered in JS.
      - deterministic-…: fixture repository everywhere (demo build). */
@@ -36,7 +43,8 @@ export type SearchResponse = {
     | "deterministic-parser-now-postgres-fts-trigram-next"
     | "postgres-fts-trigram-ready"
     | "postgres-fts-trigram-executed"
-    | "postgres-fts-trigram-fallback-js";
+    | "postgres-fts-trigram-fallback-js"
+    | "postgres-fts-trigram-page";
   /** True when the underlying read hit its row ceiling (5000), so `count` is a
       bounded total rather than the real one. Set by the server path. */
   truncated?: boolean;

@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   if (!isAuthorized(access)) return access.response;
   const result = await listChannelRequestsForServer(access.session);
   if (result.ok === false) return NextResponse.json(result, { status: (result as { status: number }).status });
-  return NextResponse.json({ ok: true, requests: result.requests, count: result.requests.length }, { headers: { "Cache-Control": "no-store" } });
+  /* Cost-audit P1.1: short private browser TTL (see dashboard route). */
+  return NextResponse.json({ ok: true, requests: result.requests, count: result.requests.length }, { headers: { "Cache-Control": "private, max-age=15, stale-while-revalidate=30" } });
 }
 
 export async function POST(request: Request) {

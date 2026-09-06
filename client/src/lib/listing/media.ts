@@ -7,9 +7,14 @@
 import type { Property } from "@/lib/repositories";
 
 export type ListingSlide = {
-  name: string;      // Pic asset key
+  name: string;      // Pic asset key (local fixture asset)
   alt: string;
   label: string;
+  /** Absolute media URL for this photograph when the data source carries one
+      (R2 public URL in r2 mode). Renderers resolve it through
+      mediaDisplayUrl (edge transform) and prefer it over the local name.
+      Editorial context shots are local assets and have no srcUrl. */
+  srcUrl?: string;
 };
 
 /* Shared context photography. These are NOT photographs of the listed home —
@@ -34,12 +39,16 @@ export function listingPhotos(property: Pick<Property, "image" | "gallery">): st
 
 /** Compose the gallery slides for a listing: every real photograph of that
     listing first (primary at the head), then shared editorial context shots,
-    each with a meaningful label. */
+    each with a meaningful label. The absolute media URLs (when present) run
+    in parallel with the local names — both derive from the same media list,
+    so slide `i` of one is the same photograph as slide `i` of the other. */
 export function listingSlides(property: Property): ListingSlide[] {
   const photos = listingPhotos(property);
+  const urls: Array<string | undefined> = [property.imageUrl, ...(property.galleryUrls ?? [])];
   const place = `${property.locality}, ${property.city}`;
   const slides: ListingSlide[] = photos.map((name, index) => ({
     name,
+    ...(urls[index] ? { srcUrl: urls[index] } : {}),
     alt: index === 0 ? `${property.title}, ${place}` : `${property.title}, ${place} — view ${index + 1}`,
     label: index === 0 ? "Primary view" : `View ${index + 1}`,
   }));
@@ -70,4 +79,10 @@ export function slideLabels(slides: ListingSlide[]): string[] {
     as the home being advertised. */
 export function secondaryImage(property: Pick<Property, "image" | "gallery">): string | null {
   return listingPhotos(property)[1] ?? null;
+}
+
+/** Absolute URL of that same second photograph (R2 mode). The card prefers
+    this over the local name when present; null keeps the name fallback. */
+export function secondaryImageUrl(property: Pick<Property, "galleryUrls">): string | null {
+  return property.galleryUrls?.[0] ?? null;
 }

@@ -407,8 +407,13 @@ export function serializeFacetState(state: FacetState): string {
    display name carried by both the fixtures and the Prisma mapper), so the
    value id survives without a second registry lookup at render time. */
 
-export function derivedLocalityValues(listings: Property[]): FacetValue[] {
-  const counts = new Map<string, { label: string; n: number }>();
+/** First-occurrence-in-list-order tally of localities — the shared core of
+ *  `derivedLocalityValues` and the single-pass count below (both must see the
+ *  same label/order semantics, so they share this instead of copying it). */
+export type LocalityTally = Map<string, { label: string; n: number }>;
+
+export function tallyLocalities(listings: Property[]): LocalityTally {
+  const counts: LocalityTally = new Map();
   for (const listing of listings) {
     const id = listing.localitySlug;
     if (!id) continue;
@@ -416,6 +421,10 @@ export function derivedLocalityValues(listings: Property[]): FacetValue[] {
     if (existing) existing.n += 1;
     else counts.set(id, { label: listing.locality || id, n: 1 });
   }
+  return counts;
+}
+
+function localityValuesFromTally(counts: LocalityTally): DerivedFacetValue[] {
   return [...counts.entries()]
     .map<DerivedFacetValue>(([id, { label, n }]) => ({
       id,
@@ -427,6 +436,10 @@ export function derivedLocalityValues(listings: Property[]): FacetValue[] {
       match: (p: Property) => p.localitySlug === id,
     }))
     .sort((a, b) => (b.count ?? 0) - (a.count ?? 0) || a.label.localeCompare(b.label));
+}
+
+export function derivedLocalityValues(listings: Property[]): FacetValue[] {
+  return localityValuesFromTally(tallyLocalities(listings));
 }
 
 /**
@@ -441,27 +454,30 @@ export function resolveValues(group: FacetGroup, listings: Property[]): DerivedF
 
 /* ---------- Predicates ---------- */
 
-/** Predicate per group, resolved once per call rather than per listing — a
+/** Per-group predicate, resolved once per call rather than per listing — a
  *  derived group resolves its option list from the pool, so resolving inside
- *  the filter callback would be O(n²) over the inventory. */
-function groupPredicates(state: FacetState, groups: FacetGroup[], listings: Property[]): Array<(listing: Property) => boolean> {
-  const predicates: Array<(listing: Property) => boolean> = [];
-  for (const group of groups) {
+ *  the filter callback would be O(n²) over the inventory. Returns ONE entry
+ *  per group (aligned with `groups`), `null` for groups that constrain
+ *  nothing — the aligned form is what the single-pass count needs. */
+function groupPredicatesFor(listings: Property[], state: FacetState, groups: FacetGroup[]): Array<((listing: Property) => boolean) | null> {
+  return groups.map((group) => {
     if (group.kind === "range") {
       const range = state.ranges[group.id];
-      if (!range || !group.range) continue;
-      predicates.push((listing) => group.range!.match(listing, range.from, range.to));
-      continue;
+      if (!range || !group.range) return null;
+      return (listing) => group.range!.match(listing, range.from, range.to);
     }
     const selected = state.multi[group.id];
-    if (!selected?.length) continue;
+    if (!selected?.length) return null;
     const values = resolveValues(group, listings);
     const matches = selected.map((id) => values.find((value) => value.id === id)?.match).filter((match): match is (p: Property) => boolean => Boolean(match));
     // A selected id with no resolvable value constrains nothing.
-    if (!matches.length) continue;
-    predicates.push((listing) => matches.some((match) => match(listing)));
-  }
-  return predicates;
+    if (!matches.length) return null;
+    return (listing) => matches.some((match) => match(listing));
+  });
+}
+
+function groupPredicates(state: FacetState, groups: FacetGroup[], listings: Property[]): Array<(listing: Property) => boolean> {
+  return groupPredicatesFor(listings, state, groups).filter((predicate): predicate is (listing: Property) => boolean => Boolean(predicate));
 }
 
 /** Listings matching every ACTIVE group; within a group the values are OR'd. */
@@ -566,36 +582,135 @@ export function buildHistogram(values: number[], range: FacetRange, cap = 20): H
 
 export function computeFacetCounts(listings: Property[], state: FacetState, groups: FacetGroup[]): FacetCounts {
   const counts: FacetCounts = {};
-  for (const group of groups) {
-    // Everything except this group, so an option's count answers: "if I click
-    // this, how many homes will I get?"
-    const pool = applyFacetStateExcluding(listings, state, groups, group.id);
+  if (!groups.length) return counts;
+
+  /* SINGLE PASS (latency): the old implementation re-filtered the whole
+     inventory once per group (to size each pool) and once per option (to
+     count it) — (groups + options) full passes over up to 5,000 listings,
+     each allocating a fresh pool array, plus a groupPredicates rebuild per
+     pass. The predicate set is listing-independent, so we evaluate each
+     group's predicate ONCE per listing and accumulate:
+       - poolTotal[g]  = listings matching every group EXCEPT g  (the honest
+                         "click this option" basis, exactly
+                         applyFacetStateExcluding's definition), and
+       - per-option counts / histogram values / the locality tally from the
+         same pool membership.
+     Pool membership, by applyFacetStateExcluding's definition: a listing is
+     in pool[g] iff it passes every active predicate OTHER THAN g's own. So,
+     with F = the set of active predicates the listing FAILS:
+       - F empty        → the listing is in EVERY pool.
+       - F = {j} (one)  → the listing is in ONLY pool[j].
+       - |F| ≥ 2        → the listing is in NO pool.
+     We detect F with an early break after the 2nd failure, then accumulate a
+     listing into exactly the pools it belongs to. Same predicate functions as
+     before, so every count is identical. */
+  /* Same classification the old loop used: only a range group WITH a range
+     def takes the histogram branch; everything else is "fixed options"
+     (a range-shaped group without a def simply has no options). */
+  const isRangeGroup = (group: FacetGroup) => group.kind === "range" && Boolean(group.range);
+  const predicates = groupPredicatesFor(listings, state, groups);
+  const groupCount = groups.length;
+  const poolTotal = new Array<number>(groupCount).fill(0);
+  const rangeValues: Array<number[] | null> = groups.map((group) => (isRangeGroup(group) ? [] : null));
+  const fixedOptions = groups.map((group) => (isRangeGroup(group) || group.derive === "localities" ? null : (group.values ?? [])));
+  const optionCounts = fixedOptions.map((options) => (options ? new Array<number>(options.length).fill(0) : null));
+  const placeIndex = groups.findIndex((group) => group.derive === "localities");
+  const placeTally: LocalityTally | null = placeIndex >= 0 ? new Map() : null;
+
+  for (const listing of listings) {
+    /* Which active predicates does this listing fail? (Early break after 2:
+       failing two or more means it is in NO pool.) */
+    let failures = 0;
+    let failingIndex = -1;
+    for (let g = 0; g < groupCount; g++) {
+      const predicate = predicates[g];
+      if (predicate && !predicate(listing)) {
+        failures += 1;
+        failingIndex = g;
+        if (failures > 1) break;
+      }
+    }
+    if (failures > 1) continue;
+    /* The pools this listing sits in: failing nothing → every pool;
+       failing exactly one active predicate j → only pool[j]. */
+    const onlyPool = failures === 1 ? failingIndex : -1;
+    for (let g = 0; g < groupCount; g++) {
+      if (onlyPool !== -1 && g !== onlyPool) continue;
+      const group = groups[g];
+      poolTotal[g] += 1;
+      if (rangeValues[g]) {
+        const range = group.range!;
+        rangeValues[g]!.push(range.unit === "sqft" ? listing.areaNum : listing.priceNum);
+        continue;
+      }
+      if (g === placeIndex) {
+        const id = listing.localitySlug;
+        if (id) {
+          const existing = placeTally!.get(id);
+          if (existing) existing.n += 1;
+          else placeTally!.set(id, { label: listing.locality || id, n: 1 });
+        }
+        continue;
+      }
+      const options = fixedOptions[g];
+      if (!options) continue;
+      const countsForGroup = optionCounts[g]!;
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].match(listing)) countsForGroup[i] += 1;
+      }
+    }
+  }
+
+  /* Assemble in group order (object key order is part of the wire shape).
+     Inline `kind === "range" && group.range` (=== isRangeGroup) so the
+     compiler narrows `group.range` for buildHistogram. */
+  for (let g = 0; g < groupCount; g++) {
+    const group = groups[g];
     if (group.kind === "range" && group.range) {
-      const range = group.range;
-      const histogram = buildHistogram(pool.map((listing) => (range.unit === "sqft" ? listing.areaNum : listing.priceNum)), range);
       counts[group.id] = {
         id: group.id,
         label: group.label,
         labelHi: group.labelHi,
         kind: "range",
-        histogram,
-        total: pool.length,
+        histogram: buildHistogram(rangeValues[g]!, group.range),
+        total: poolTotal[g],
         options: [],
       };
       continue;
     }
-    const values = resolveValues(group, pool);
+    if (group.derive === "localities") {
+      const values = localityValuesFromTally(placeTally!);
+      const selected = state.multi[group.id] ?? [];
+      counts[group.id] = {
+        id: group.id,
+        label: group.label,
+        labelHi: group.labelHi,
+        kind: group.kind,
+        total: poolTotal[g],
+        // For a locality option the "pool count" IS the tally: its match is
+        // `localitySlug === id`, so pool.filter(match).length === the tally n.
+        options: values.map((value) => ({
+          id: value.id,
+          label: value.label,
+          count: value.count ?? 0,
+          selected: selected.includes(value.id),
+        })),
+      };
+      continue;
+    }
+    const options = fixedOptions[g]!;
     const selected = state.multi[group.id] ?? [];
+    const countsForGroup = optionCounts[g]!;
     counts[group.id] = {
       id: group.id,
       label: group.label,
       labelHi: group.labelHi,
       kind: group.kind,
-      total: pool.length,
-      options: values.map((value) => ({
+      total: poolTotal[g],
+      options: options.map((value, i) => ({
         id: value.id,
         label: value.label,
-        count: pool.filter(value.match).length,
+        count: countsForGroup[i],
         selected: selected.includes(value.id),
       })),
     };
@@ -611,9 +726,42 @@ export function computeFacetCounts(listings: Property[], state: FacetState, grou
 export type Relaxation = { groupId: string; groupLabel: string; label: string; gain: number; state: FacetState };
 
 export function computeRelaxations(listings: Property[], state: FacetState, groups: FacetGroup[], cap = 3): Relaxation[] {
-  const baseline = applyFacetState(listings, state, groups).length;
+  /* (latency) Each group's gain is |pool minus that group's own constraint| −
+     baseline, and the old code earned that number with a FULL inventory pass
+     per active group plus one for the baseline. The predicates are
+     listing-independent, so ONE pass with per-listing failure counting yields
+     both numbers (same membership rule as `computeFacetCounts`):
+       - passes every active predicate          → baseline++, and the listing
+                                                  sits in every "minus" pool
+       - fails exactly one active predicate g   → only pool-minus-g
+       - fails two or more                      → sits in none
+     Same predicate functions, so every gain — and hence every relaxation
+     label, order, and state — is identical. */
+  const predicates = groupPredicatesFor(listings, state, groups);
+  let baseline = 0;
+  const poolMinus = new Array<number>(groups.length).fill(0);
+  for (const listing of listings) {
+    let failures = 0;
+    let failingIndex = -1;
+    for (let g = 0; g < groups.length; g++) {
+      const predicate = predicates[g];
+      if (predicate && !predicate(listing)) {
+        failures += 1;
+        failingIndex = g;
+        if (failures > 1) break;
+      }
+    }
+    if (failures > 1) continue;
+    if (failures === 0) {
+      baseline += 1;
+      for (let g = 0; g < groups.length; g++) poolMinus[g] += 1;
+    } else {
+      poolMinus[failingIndex] += 1;
+    }
+  }
   const relaxations: Relaxation[] = [];
-  for (const group of groups) {
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+    const group = groups[groupIndex];
     if (group.kind === "range") {
       if (!state.ranges[group.id]) continue;
       const next = { multi: state.multi, ranges: { ...state.ranges } };
@@ -622,7 +770,7 @@ export function computeRelaxations(listings: Property[], state: FacetState, grou
         groupId: group.id,
         groupLabel: group.label,
         label: `Remove ${group.label.toLowerCase()}`,
-        gain: applyFacetState(listings, next, groups).length - baseline,
+        gain: poolMinus[groupIndex] - baseline,
         state: next,
       });
       continue;
@@ -635,7 +783,7 @@ export function computeRelaxations(listings: Property[], state: FacetState, grou
       groupId: group.id,
       groupLabel: group.label,
       label: `Remove ${group.label.toLowerCase()} (${selected.length})`,
-      gain: applyFacetState(listings, next, groups).length - baseline,
+      gain: poolMinus[groupIndex] - baseline,
       state: next,
     });
   }
@@ -649,11 +797,25 @@ export function computeRelaxations(listings: Property[], state: FacetState, grou
 export function wideningSuggestions(listings: Property[], state: FacetState, groups: FacetGroup[], cap = 3): DerivedFacetValue[] {
   const placeGroup: FacetGroup = { id: "place", label: "Locality", labelHi: "इलाक़ा", kind: "multi", projection: ["consumer", "desk"], derive: "localities" };
   const active = state.multi.place ?? [];
+  /* (latency) The old body ran a FULL inventory pass per candidate locality
+     (applyFacetState with the place selection swapped in) — dozens of passes
+     over up to 5,000 rows on exactly the zero-result page. Every candidate
+     was evaluating the SAME constraint set except place, so compute that
+     base pool once, tally it by locality slug, and read each candidate's
+     count from the tally: a derived option's match is `localitySlug === id`,
+     so `base.filter(match).length` === the tally — identical counts. */
+  const base = applyFacetState(listings, state, groups.filter((group) => group.id !== "place"));
+  const baseTally = new Map<string, number>();
+  for (const listing of base) {
+    const id = listing.localitySlug;
+    if (!id) continue;
+    baseTally.set(id, (baseTally.get(id) ?? 0) + 1);
+  }
   return resolveValues(placeGroup, listings)
     .filter((value) => !active.includes(value.id))
     .map<DerivedFacetValue>((value) => ({
       ...value,
-      count: applyFacetState(listings, { multi: { ...state.multi, place: [value.id] }, ranges: state.ranges }, groups).length,
+      count: baseTally.get(value.id) ?? 0,
     }))
     .filter((value) => (value.count ?? 0) > 0)
     .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))

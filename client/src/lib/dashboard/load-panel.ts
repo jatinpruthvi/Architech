@@ -39,7 +39,13 @@ export async function loadPanel<T>(
 ): Promise<PanelOutcome<T>> {
   let response: Response;
   try {
-    response = await fetchImpl(url, { cache: "no-store", credentials: "same-origin" });
+    /* Cost-audit P1.1: do NOT force `cache: "no-store"` here — that would
+       override the endpoints' own Cache-Control (the channel panels answer
+       `private, max-age=15, stale-while-revalidate=30` so a tab switch within
+       15 s serves from the browser instead of re-hitting the DB). Endpoints
+       that must never be cached still say `no-store` server-side, so this
+       cannot over-cache user data. */
+    response = await fetchImpl(url, { credentials: "same-origin" });
   } catch {
     /* Offline, DNS failure, aborted request. We could not look. */
     return { state: "unavailable" };

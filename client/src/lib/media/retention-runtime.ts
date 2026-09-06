@@ -20,6 +20,7 @@ import "server-only";
 import { logger } from "@/lib/observability/logger";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import { deleteMediaObjectBestEffort } from "./server/lifecycle";
 import { applyRetentionDecision, listMediaUploadRecords, type MediaModerationStatus } from "./upload";
 import { decideMediaRetention } from "./retention";
 
@@ -28,6 +29,9 @@ type RetentionRecord = {
   moderationStatus: MediaModerationStatus;
   exifStripped: boolean;
   createdAt: string;
+  /** Storage object key (R2 mode, prisma rows only) — retention must delete
+      the bytes, not just the row (media-storage-decision phase 4). */
+  objectKey?: string | null;
 };
 
 type RetentionPrismaClient = ReturnType<typeof getPrismaClient> & {
@@ -47,23 +51,30 @@ function ageDays(createdAt: string, now: Date): number {
 }
 
 /** Scan every media record and apply the retention policy. Returns what was
-    scanned and what was acted on, so operators/tests can see the sweep ran. */
-export async function runMediaRetentionSweep(now = new Date()): Promise<{ scanned: number; acted: number; actedIds: string[] }> {
+    scanned and what was acted on, so operators/tests can see the sweep ran.
+    In R2 storage mode, expired/rejected/taken-down media also has its OBJECT
+    deleted from Cloudflare R2 (media-storage-decision phase 4) — the row and
+    the bytes leave together, and an object-delete failure is logged + counted
+    (never thrown) so a storage outage cannot wedge the sweep. */
+export async function runMediaRetentionSweep(now = new Date()): Promise<{ scanned: number; acted: number; actedIds: string[]; objectsDeleted: number; objectDeleteFailures: number }> {
   const memoryRecords: RetentionRecord[] = listMediaUploadRecords();
   let prismaRecords: RetentionRecord[] = [];
   if (isPrismaPersistence()) {
     const rows = (await prisma().propertyMedia.findMany({
-      select: { id: true, moderationStatus: true, exifStripped: true, createdAt: true },
+      select: { id: true, moderationStatus: true, exifStripped: true, createdAt: true, objectKey: true },
     })) as Array<Record<string, unknown>>;
     prismaRecords = rows.map((row) => ({
       id: String(row.id ?? ""),
       moderationStatus: String(row.moderationStatus ?? "PENDING") as MediaModerationStatus,
       exifStripped: Boolean(row.exifStripped),
       createdAt: String(row.createdAt ?? ""),
+      objectKey: row.objectKey == null ? null : String(row.objectKey),
     }));
   }
 
   const acted: string[] = [];
+  let objectsDeleted = 0;
+  let objectDeleteFailures = 0;
   for (const record of [...memoryRecords, ...prismaRecords]) {
     const decision = decideMediaRetention(record.moderationStatus, ageDays(record.createdAt, now));
     if (decision.act === "retain") continue;
@@ -79,10 +90,26 @@ export async function runMediaRetentionSweep(now = new Date()): Promise<{ scanne
           metadata: { act: decision.act, reason: decision.reason, policyId: decision.policyId },
         },
       });
+      // Delete the stored object (R2) so the bytes follow the row.
+      const deletion = await deleteMediaObjectBestEffort(record.objectKey ?? null);
+      if (deletion.skipped) continue;
+      if (deletion.ok) objectsDeleted += 1;
+      else {
+        objectDeleteFailures += 1;
+        logger.error({ event: "media.object_delete_failed", mediaId: record.id, error: "error" in deletion ? deletion.error : undefined }, "media object delete failed; object left for a later sweep");
+        await prisma().auditEvent.create({
+          data: {
+            action: "media.object_delete_failed",
+            entityType: "PropertyMedia",
+            entityId: record.id,
+            metadata: { error: "error" in deletion ? deletion.error : undefined, status: "status" in deletion ? deletion.status : undefined },
+          },
+        });
+      }
     }
   }
 
-  return { scanned: memoryRecords.length + prismaRecords.length, acted: acted.length, actedIds: [...new Set(acted)] };
+  return { scanned: memoryRecords.length + prismaRecords.length, acted: acted.length, actedIds: [...new Set(acted)], objectsDeleted, objectDeleteFailures };
 }
 
 /** Register the periodic sweep with the process runtime (instrumentation). */

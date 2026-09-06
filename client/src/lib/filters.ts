@@ -81,11 +81,65 @@ export function queryResidualTokens(query: string): string[] {
   return residual.split(/[^\p{L}\p{M}]+/u).filter((t) => t.length > 2);
 }
 
+/** The structured constraints hidden inside a free-text query.
+    Exported (not inlined in `matchesQuery`) because the SQL page-query path
+    (lib/search/sql-page.ts) must apply the EXACT same extractions — a second
+    copy of these regexes is how the two paths silently stop agreeing. */
+export type StructuredQuery = {
+  pincode: string | null;
+  bhk: number | null;
+  /** Max price implied by "under X cr / under X l" — null when absent. */
+  underLimit: number | null;
+};
+
+export function extractStructuredQuery(query: string): StructuredQuery {
+  const q = query.trim().toLowerCase();
+  const bhkMatch = q.match(/(\d+)\s*bhk/);
+  const underMatch = q.match(/under\s*₹?\s*([\d.]+)\s*(cr|crore|l|lakh)/);
+  let underLimit: number | null = null;
+  if (underMatch) {
+    const parsed = parseFloat(underMatch[1]);
+    if (Number.isFinite(parsed)) underLimit = underMatch[2].startsWith("l") ? parsed * 100_000 : parsed * 10_000_000;
+  }
+  return {
+    pincode: parsePincode(q),
+    bhk: bhkMatch ? Number.parseInt(bhkMatch[1], 10) : null,
+    underLimit,
+  };
+}
+
 /** Token-AND matching: "2 bhk thaltej" → bhk===2 AND text contains "thaltej".
     "under 1.5 cr" / "under 1 cr" style tokens match price. */
 export function matchesQuery<T extends QueryableProperty>(p: T, query: string): boolean {
+  return matchesPreparedQuery(p, prepareQueryMatch(query));
+}
+
+/* ---------- Request-scoped query preparation (latency) ----------
+
+   `matchesQuery` used to re-run the ENTIRE query-side work per listing:
+   structured extraction (regexes + PIN parse) and residual tokenization
+   (4 regex passes + split) depend ONLY on the query, not on the listing —
+   but a 5,000-row read paid that cost 5,000 times per request. The prepared
+   form below computes it ONCE per request; `applyQuery` builds it before the
+   filter loop. Both functions are the same tokenizers/extractors as before,
+   so the result set is byte-for-byte unchanged. */
+export type PreparedQueryMatch = {
+  hasQuery: boolean;
+  pincode: string | null;
+  bhk: number | null;
+  underLimit: number | null;
+  tokens: string[];
+};
+
+export function prepareQueryMatch(query: string): PreparedQueryMatch {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
+  if (!q) return { hasQuery: false, pincode: null, bhk: null, underLimit: null, tokens: [] };
+  const structured = extractStructuredQuery(query);
+  return { hasQuery: true, pincode: structured.pincode, bhk: structured.bhk, underLimit: structured.underLimit, tokens: queryResidualTokens(query) };
+}
+
+export function matchesPreparedQuery<T extends QueryableProperty>(p: T, prepared: PreparedQueryMatch): boolean {
+  if (!prepared.hasQuery) return true;
   const haystack = `${p.locality} ${p.title} ${p.city} ${p.project ?? ""} ${p.developer ?? ""} ${p.subtype ?? ""}`.toLowerCase();
 
   // Mixed-language locality matching: a residual token matches if it is an alias
@@ -94,28 +148,15 @@ export function matchesQuery<T extends QueryableProperty>(p: T, query: string): 
   const tokenMatchesLocality = (token: string) =>
     (slug ? localityMatchesToken(slug, token) : false) || localityNameMatchesToken(p.locality, token);
 
-  // A six-digit PIN typed anywhere in the query narrows to localities that
-  // actually serve it. Digits are stripped from the residual token pass below,
-  // so the PIN must be handled explicitly or it would silently match everything.
-  const pincode = parsePincode(q);
-  if (pincode && (!slug || !listingMatchesPincode(slug, pincode))) return false;
-
-  // BHK pattern anywhere in the query
-  const bhkMatch = q.match(/(\d+)\s*bhk/);
-  // "under X cr" / "under X crore"
-  const underMatch = q.match(/under\s*₹?\s*([\d.]+)\s*(cr|crore|l|lakh)/);
-
-  if (bhkMatch && p.bhk !== parseInt(bhkMatch[1], 10)) return false;
-  if (underMatch) {
-    const n = parseFloat(underMatch[1]);
-    const limit = underMatch[2].startsWith("l") ? n * 100_000 : n * 10_000_000;
-    if (p.priceNum >= limit) return false;
-  }
+  if (prepared.pincode && (!slug || !listingMatchesPincode(slug, prepared.pincode))) return false;
+  if (prepared.bhk !== null && p.bhk !== prepared.bhk) return false;
+  if (prepared.underLimit !== null && p.priceNum >= prepared.underLimit) return false;
   /* Same tokenizer as the SQL narrowing path — see queryResidualTokens. */
-  const tokens = queryResidualTokens(query);
-  return tokens.every((t) => haystack.includes(t) || tokenMatchesLocality(t));
+  return prepared.tokens.every((t) => haystack.includes(t) || tokenMatchesLocality(t));
 }
 
 export function applyQuery<T extends QueryableProperty>(list: T[], query: string): T[] {
-  return list.filter((p) => matchesQuery(p, query));
+  const prepared = prepareQueryMatch(query);
+  if (!prepared.hasQuery) return list; // every row matches — skip the copy the old .filter made
+  return list.filter((p) => matchesPreparedQuery(p, prepared));
 }

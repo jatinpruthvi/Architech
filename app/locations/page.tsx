@@ -4,7 +4,13 @@ import { getIndiaLocationCoverageForServer } from "@/lib/location/server/coverag
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
-export const dynamic = "force-dynamic";
+/* ISR (audit P0.4): the location coverage directory is a read-only summary of
+   sourced reference data (state/UT counts, source freshness) that changes
+   infrequently. It previously ran server code per hit under force-dynamic; it
+   now prerenders and revalidates. In fixture mode the coverage is the
+   reference-only registry (no DB at build time); in prisma mode it revalidates
+   the live counts. */
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "India location and PIN directory — Architech",
