@@ -349,7 +349,7 @@ These community entries were confirmed present in the prompts.chat ecosystem (ca
 | Prompt Generator (C.R.A.F.T.) | Basis of ARCH-13 |
 | Tech Reviewer | Evaluating a proposed new dependency (free-first rule still applies) |
 
-To fetch the live, up-to-date versions (and search the whole registry) without installing anything, the repo keeps zero-install remote MCP configs committed: `.mcp.json`, `.vscode/mcp.json`, `.cursor/mcp.json` — all pointing at `https://prompts.chat/api/mcp` with tools `search_prompts` and `get_prompt`. No dependency, no API key for public prompts.
+To fetch the live, up-to-date versions (and search the whole registry) without installing anything, add prompts.chat in your editor's *user-scoped* MCP settings as remote HTTP pointing at `https://prompts.chat/api/mcp` (see the README section "AI assistant tooling" for the exact JSON). Tools: `search_prompts` and `get_prompt`. No dependency, no API key for public prompts, and nothing MCP-related is committed to this repository.
 
 ## Section D — Guardrails for all prompts in this library
 

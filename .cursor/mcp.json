@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "prompts.chat": {
-      "type": "http",
-      "url": "https://prompts.chat/api/mcp"
-    }
-  }
-}
