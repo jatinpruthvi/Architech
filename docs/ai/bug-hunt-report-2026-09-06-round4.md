@@ -12,23 +12,23 @@
 | Severity | Found | Fixed |
 |---|---|---|
 | P0 Critical | 0 | — |
-| P1 High | 2 | 2 |
-| P2 Medium | 2 | 2 |
+| P1 High | 3 | 3 |
+| P2 Medium | 3 | 3 |
 | P3 Low | 0 | — |
 | Watchlist (not confirmed) | 4 | 0 |
 
-**All 4 confirmed bugs are fixed, each behind a failing test written first.**
+**All 6 confirmed bugs are fixed, each behind a failing test written first.**
 
-The headline finding is a **recurring defect class**: *unbounded in-process state keyed by client-controlled input*. Three of the four bugs (BUG-R4-001/002/003) are the same mistake in three different modules, each with a per-series or per-entry ring buffer that bounded the *contents* of an entry but not the *number* of entries. All three are reachable from unauthenticated public endpoints. The fourth (BUG-R4-004) is a batch-abort defect in a scheduled job that round 1 had recorded as watchlist speculation; it is now confirmed and is worse than round 1 supposed — it permanently wedges, rather than delays.
+The headline finding is a **recurring defect class**: *unbounded in-process state keyed by client-controlled input*. Three of the six bugs (BUG-R4-001/002/003) are the same mistake in three different modules, each with a per-series or per-entry ring buffer that bounded the *contents* of an entry but not the *number* of entries. All three are reachable from unauthenticated public endpoints. BUG-R4-004 is a batch-abort defect in a scheduled job that round 1 had recorded as watchlist speculation; it is now confirmed and is worse than round 1 supposed — it permanently wedges, rather than delays. A second class accounts for the last two (BUG-R4-005/006): *convert-before-validate*, where a validator checks sign and presence while the writer hands raw input to `BigInt()` — so an arbitrarily large finite value sails through validation and dies inside PostgreSQL.
 
-| Gate | Baseline (base `420b77c`) | After fixes (HEAD `0225e0e`) |
+| Gate | Baseline (base `420b77c`) | After fixes (HEAD `548baee`) |
 |---|---|---|
-| `pnpm test` | 159 files / **1725** pass, 46 skipped | 160 files / **1740** pass, 46 skipped |
+| `pnpm test` | 159 files / **1725** pass, 46 skipped | 160 files / **1754** pass, 46 skipped |
 | `pnpm check` (tsc) | clean | clean |
 | `pnpm lint` (ESLint) | exit 0 | exit 0 |
 | `pnpm db:validate` | valid (see §2) | valid |
 
-No P0. No data corruption, no authorisation bypass, no injection found. The codebase is in strong shape; every finding here is a resource-lifecycle or resilience defect, not a correctness-of-business-logic defect.
+No P0. No data corruption, no authorisation bypass, no injection found. Multi-tenant isolation was checked specifically and holds: `withOrg()` (`client/src/lib/persistence/channel-store.ts:203`) sets `app.current_org_id` as a **transaction-local** Postgres setting for row-level security, and the queries additionally carry an explicit `organizationId` predicate — defence in depth rather than a single mechanism.
 
 ---
 
@@ -167,6 +167,123 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 
 ---
 
+### BUG-R4-005 — P1 · unbounded INR amounts overflow fixed-width columns → unhandled 500
+
+| Field | Value |
+|---|---|
+| Severity | **P1** — unauthenticated 500 from a malformed public payload |
+| Class | Input validation → convert-before-validate |
+| Location | `client/src/lib/requirements.ts:249-262` (`validateRequirementInput`) and `client/src/lib/broker/channel.ts:300-312` (`validateChannelRequest`) |
+| Introduced by | Original feature; never a ceiling check |
+| Reproduction | Deterministic |
+| Fix commit | `67c9188` |
+| Status | **Fixed** — 8 failing tests first |
+
+**The bug.** `validateRequirementInput` and `validateChannelRequest` are the single validation seam shared by **both** storage modes (memory and Prisma), but neither bounds the *magnitude* of a number. `toPositiveInteger` (`requirements.ts:131`) checks `Number.isSafeInteger` + sign + `min <= max`; `toNumberOrNull` (`channel.ts:200`) checks `Number.isFinite` + sign. Nothing compares against the column that will store the value. The writers then convert raw input by hand:
+
+```js
+// client/src/lib/repositories/server/requirement-store.ts:156-173
+bhkMin: BigInt(Math.round(Number(input.bhkMin))),
+budgetMinInr: BigInt(Math.round(Number(input.budgetMinInr))),
+```
+
+JavaScript `BigInt` is arbitrary-precision, so the conversion *succeeds* at any magnitude. The failure happens one layer later, in PostgreSQL.
+
+**Why this is reachable.** `POST app/api/requirements/route.ts:35` sits deliberately **outside** `authorizeRequest` (the file comment says "a buyer who cannot sign in can still describe what they want to buy"), so it is fully unauthenticated. The payload needs only the shape check to pass.
+
+**Measured severity — from the real migration DDL, not Prisma's documented mapping:**
+
+```
+$ grep -rhn '"bhkMin"\|"areaMinSqft"\|"budgetMinInr"' prisma/migrations/*/migration.sql
+  "bhkMin" INTEGER,  "areaMinSqft" INTEGER,  "budgetMinInr" BIGINT,
+```
+
+| Payload value | Round-trips as | Column max | Ratio past max |
+|---|---|---|---|
+| `budgetMinInr: 1e30` | `1000000000000000019884624838656n` | `9223372036854775807` (bigint) | ~1.08e+11× |
+| `bhkMin: 1e30` | same | `2147483647` (integer) | ~4.66e+20× |
+| `areaMinSqft: 1e30` | same | `2147483647` (integer) | ~4.66e+20× |
+
+Postgres rejects all three as out of range. Nothing catches it, so it surfaces as an unhandled 500. The same class of bug reached a *different* route in round 1 (BUG-2026-001, commission amounts) and was fixed only there — the validators on the requirement and channel paths were never touched.
+
+**The fix.** Bound the values inside the two validators, so every storage mode is covered by one change:
+
+```ts
+/* Column ceilings … The check is explicit rather than folded into the helpers
+   so that each violation names the field that broke it. */
+const MAX_STORED_INT = 2_147_483_647;
+const MAX_INR = Number.MAX_SAFE_INTEGER;   // the money.ts MAX_SAFE_INR bound
+```
+
+`MAX_INR` is deliberately `Number.MAX_SAFE_INTEGER` rather than something larger: `client/src/lib/utils/money.ts:20` already declares `MAX_SAFE_INR = Number.MAX_SAFE_INTEGER` as the project's INR ceiling and every currency formatter respects it, so accepting an amount no formatter can render would be inconsistent. At ~9.0e15 rupees that is still ~₹90 quadrillion — roughly 1,000× India's annual GDP.
+
+**Tests (red → green).**
+
+| File | Test | Result pre-fix |
+|---|---|---|
+| `client/src/lib/requirements.test.ts` | `BUG-R4-005: rejects a budget past the BIGINT column range…` | **FAIL** (`expected { ok: true } …`) |
+| | `…rejects an area past the INTEGER column range…` | **FAIL** |
+| | `…rejects a bhk count past the INTEGER column range` | **FAIL** |
+| | `…still accepts realistic large values` | PASS throughout (no-regression pin) |
+| `client/src/lib/requirements.server.test.ts` | `BUG-R4-005: a budget past the BIGINT column range is a 400, not a database overflow` | **FAIL** |
+| | `…an area past the INTEGER column range is a 400…` | **FAIL** |
+| | `…whatever reaches Prisma is inside its column range` | PASS throughout |
+| `client/src/lib/broker/channel.test.ts` | `rejects a budget/price past the BIGINT column range…`, `…an area past the INTEGER column range…` | **3 FAIL** |
+| | `…rejects a non-integer price without NaN…`, `…still accepts realistic large values` | PASS throughout |
+
+**Verification gap, stated plainly:** there is no live PostgreSQL here, so the overflow is proved arithmetically and from the migration DDL, not by executing an `INSERT`. The tests assert the *validator* contract; the column widths are quoted from `prisma/migrations/*/migration.sql`.
+
+---
+
+### BUG-R4-006 — P2 · the same ceiling gap on the commission-split write path
+
+| Field | Value |
+|---|---|
+| Severity | **P2** — authenticated broker route, but it is the money path |
+| Class | Input validation → convert-before-validate |
+| Location | `client/src/lib/persistence/channel-store.ts:641-655` and `client/src/lib/broker/channel.ts:573-583` (`saveChannelDealSplit`) |
+| Introduced by | **BUG-2026-001's fix was incomplete** (round 1) |
+| Reproduction | Deterministic |
+| Fix commit | `548baee` |
+| Status | **Fixed** — 2 failing tests first |
+
+**The bug.** Round 1's BUG-2026-001 routed the commission split through `toNumberOrNull`, which fixed negatives and fractions — but `toNumberOrNull` is a *normaliser*, not a range check: it accepts any finite non-negative number. So the split validation still had no ceiling:
+
+```ts
+// channel-store.ts:641-655  (identical logic at channel.ts:573-583)
+const total = toNumberOrNull(input.totalCommissionInr);
+const demandShare = toNumberOrNull(input.demandBrokerShareInr);
+const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
+if (total === null || demandShare === null || supplyShare === null) return fail(400, "…");
+if (demandShare + supplyShare !== total) return fail(400, "Commission split must add up to totalCommissionInr.");
+// 1e30 passes both checks, then:
+totalCommissionInr: BigInt(total),
+```
+
+`6e29 + 4e29 === 1e30` exactly, so the sum check passes too. The columns are `"totalCommissionInr" BIGINT`, `"demandBrokerShareInr" BIGINT`, `"amountInr" BIGINT NOT NULL` (all confirmed in `prisma/migrations/*/migration.sql`), so `BigInt(1e30)` is ~1.08e+11× past the maximum.
+
+**Why it is a separate BUG-ID from R4-005.** Different module, different entry point (the authenticated deal-split route, not the public requirement route), and a different history — this one is a *regression-adjacent gap* left by a prior round's fix, which is exactly the kind of thing an audit trail needs to be able to name. The split validation is duplicated inline in **both** storage modes, so the ceiling went into both.
+
+**The fix.** `MAX_INR` is exported from `channel.ts` and checked in both twins, reusing the bound rather than inventing a second one:
+
+```ts
+if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) return fail(400, "Commission amounts are out of range.");
+```
+
+`toNumberOrNull` itself was deliberately **not** given the ceiling: it is also used for display coercion (`channel.ts:229`), where returning `null` for a large value would produce misleading errors such as `"DEMAND requires budgetMinInr, cityId."` — a complaint about *presence* for a value that is present.
+
+**Tests (red → green).**
+
+| File | Test | Result pre-fix |
+|---|---|---|
+| `client/src/lib/persistence/channel-store.test.ts` | `BUG-R4-005: rejects a commission past the BIGINT column range with 400` | **FAIL** (`expected { ok: true } …`) |
+| | `BUG-R4-005: any commission that does reach the write fits BIGINT` | PASS throughout |
+| `client/src/lib/broker/channel.test.ts` | `rejects a commission split past the BIGINT column range` | **FAIL** (`expected true to be false`) |
+
+The new tests sit beside the four pre-existing split tests written for BUG-2026-001 (`rejects negative commission`, `…fractional commission`, `rounds fractional input to whole rupees`), which all stayed green — so the ceiling did not disturb the normaliser's existing contract.
+
+---
+
 ## 4. Cleared by evidence (no defect)
 
 | Area | Method | Result |
@@ -183,6 +300,9 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 | Repo audit gates | `pnpm env:audit` | `provisioning_plan_ready_external_account_access_required` — pass |
 | Channel matching determinism | Read `channel/matching.ts` in full | `now` injected; `scoreArea` guards `target === 0`; weights sum to 100; tie-break total. No defect |
 | Other scheduled jobs (batch-abort class) | Read `retention-runtime.ts`, `alerts-runtime.ts` | Both already correct — and instructive: the media sweep paginates by **id cursor** (`orderBy: { id: "asc" }` + `cursor`), so a failing row cannot block the queue. That is the pattern BUG-R4-004 lacked |
+| Multi-tenant isolation | Traced `withOrg()` (`persistence/channel-store.ts:203`) and grepped every `findFirst`/`findUnique` in `client/src/lib/persistence` | Holds, and with two independent mechanisms: `withOrg` sets `app.current_org_id` via `set_config(..., true)` — **transaction-local**, so it cannot leak across pooled connections — and the queries additionally carry an explicit `organizationId` predicate. Zero unscoped `findUnique({ where: { id } })` calls found |
+| `proxy.ts` is the wrong filename for Next 16 middleware | Checked the installed compiler | **Not a bug.** `node_modules/next/dist/lib/constants.js:289` defines `PROXY_FILENAME = 'proxy'`, and `dist/build/utils.js:280` accepts `proxy` alongside `middleware`. The production `X-Robots-Tag: noindex, nofollow` guard in `proxy.ts:11-13` does run |
+| Sitemap / robots correctness | Read `client/src/lib/seo/sitemap.ts` in full | `parseIsoDate` pins to UTC and returns `undefined` on garbage, so a bad fixture degrades to "no `lastmod`" instead of a wrong date or the build clock; `escapeXml` covers `& < > " '`; segments are asserted exhaustive by `collectUnsegmentedPages`. No defect |
 
 ---
 
@@ -199,7 +319,7 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 
 ## 6. Phase 7 — patterns, prevention, monitoring
 
-**1. The dominant pattern: bounded contents, unbounded containers.** Three of four bugs are the identical mistake — a ring buffer, a per-key budget, or a per-row cap that limits what an entry holds while nothing limits how many entries exist. Every one of them is keyed by data that crosses the trust boundary (`body.name`, IP headers, `body.email`).
+**1. The dominant pattern: bounded contents, unbounded containers.** Three of six bugs are the identical mistake — a ring buffer, a per-key budget, or a per-row cap that limits what an entry holds while nothing limits how many entries exist. Every one of them is keyed by data that crosses the trust boundary (`body.name`, IP headers, `body.email`).
 
 *Preventive measures, cheapest first:*
 - **A shared `BoundedWindowMap` helper.** Three near-identical prune implementations now exist across `metrics-store.ts`, `request-safety.ts`, `login-throttle.ts`. Extract one (constructor takes `maxEntries` + `windowMs`; `take()`/`push()` prune at the ceiling; `.size` exposed). That is the single highest-value refactor this report recommends, and it structurally prevents the fourth instance.
@@ -208,18 +328,26 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 
 **2. "Guard the whole unit of work, not just its riskiest step."** BUG-R4-004 guarded the network call and not the writes that followed it. Rule: in any loop over persisted rows, the *entire* per-row body is the try-block. And for any queue drained by `orderBy <mutable timestamp>`, a row that fails must still advance its position, or it will block the queue forever — `retention-runtime.ts`'s id-cursor pagination is the in-repo model to copy.
 
-**3. Monitoring (Sentry alerts worth adding):**
+**3. The second pattern: convert-before-validate drift.** BUG-R4-005 and BUG-R4-006 are the same mistake in two places — a validator that checks *sign and presence* while the writer converts *raw input* by hand with `BigInt(Math.round(Number(x)))`. The conversion is arbitrary-precision in JS, so it never fails; the column does, one layer later, inside PostgreSQL. This is the third time this exact class has surfaced (round 1 BUG-2026-001 fixed the commission path only, round 3 BUG-R3-001 fixed a money field only), which makes it a pattern rather than a coincidence.
+
+*Preventive measures:*
+- **The ceiling belongs to the column, not the formatter.** Every `BigInt(`/`Math.round(Number(` in a write path should have a matching range check *in the validator it is supposed to be behind*. The repo already declares the right constants — `money.ts:20`'s `MAX_SAFE_INR` — so the fix is to reuse them, not to invent new ones.
+- **A CI source guard,** same technique as the one recommended above: fail the build if a `BigInt(` conversion appears in a persistence module whose value did not pass through a range-checked validator. `sql-query-bounds.test.ts` shows the repo already knows how to write this kind of guard.
+- **Do not "fix" the normaliser.** `toNumberOrNull` is used for display coercion as well as validation; adding a ceiling there would turn an out-of-range amount into a misleading "field is required" error. Bound in the validator, where the offending field can be named.
+
+**4. Monitoring (Sentry alerts worth adding):**
 - `metricsStoreMeta().seriesCount` — must stay ≤ 6. Any growth is an active BUG-R4-001 regression.
 - `mutationSafetyBucketCount()` and `loginThrottleBucketCount()` pinned at their ceilings — sustained saturation means either a real traffic spike or a spray.
 - Node `heapUsed` trend per replica, with restart-on-threshold: all three memory bugs present identically as a slow climb, and none of them produces an error to alert on until the OOM.
 - Alert on non-2xx from `/api/internal/scheduled/*`. Before BUG-R4-004's fix, a wedged RERA cron was invisible except as a recurring 500 nobody watched.
+- PostgreSQL `22003 numeric_value_out_of_range` at any rate. Before BUG-R4-005/006 there was no ceiling anywhere on the numeric write paths, so this error code is the exact signature of that class returning.
 
-**4. Coverage gaps closed and remaining.**
+**5. Coverage gaps closed and remaining.**
 - Closed: `rera-store.ts` had **no** tests (round 1, Phase 7 item 4) — now 4, including the batch-resilience contract.
 - Closed: `metrics-store.ts`'s "ignores unknown metric names" claim was asserted in a test name but never actually exercised — now it is.
 - Remaining: `channel/store.ts` (in-memory demo store) and `persistence/media-store.ts` still have no direct tests; the `login`/`register` route bodies are covered only via `credential-flow` tests.
 
-**5. Process note on this environment.** Two things cost avoidable time and are worth fixing in the harness: (a) `pnpm` is not on `PATH` — `corepack enable pnpm && corepack prepare pnpm@10.4.1 --activate` fixes it; (b) `node_modules` is absent on a fresh checkout, so no gate can run until `pnpm install`. Both are one-time. `pnpm db:validate` is *not* blocked (§2) once the shipped shim is installed — future rounds should not carry forward the "blocked by egress" note.
+**6. Process note on this environment.** Two things cost avoidable time and are worth fixing in the harness: (a) `pnpm` is not on `PATH` — `corepack enable pnpm && corepack prepare pnpm@10.4.1 --activate` fixes it; (b) `node_modules` is absent on a fresh checkout, so no gate can run until `pnpm install`. Both are one-time. `pnpm db:validate` is *not* blocked (§2) once the shipped shim is installed — future rounds should not carry forward the "blocked by egress" note.
 
 ---
 
@@ -231,30 +359,47 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 | BUG-R4-002 | `client/src/lib/auth/request-safety.test.ts` — `BUG-R4-002: the bucket map stays bounded…`, `…expired windows are reclaimed…` | **2 failed** (+ measured 66.4 MB heap growth / 200k requests via throwaway probe) | `9a9f240`, then `866698b` (eviction order) | 2 green, 3rd guard green throughout |
 | BUG-R4-003 | `client/src/lib/auth/login-throttle.test.ts` — `BUG-R4-003: the email bucket map stays bounded…`, `…the ip bucket map stays bounded…`, `…expired windows are reclaimed…` | **3 failed** | `e75f841` | 3 green, 4th guard green throughout |
 | BUG-R4-004 | `client/src/lib/persistence/rera-store.test.ts` (new file) — `BUG-R4-004: an upsert failure on one row must not abort the rest of the batch`, `…an audit-event failure is contained the same way` | **2 failed** (`Error: Invalid value provided. Expected Date, got Invalid Date.` propagated out of the batch) | `0225e0e` | 2 green, 2 pre-existing-behaviour pins green throughout |
+| BUG-R4-005 | `client/src/lib/requirements.test.ts` (3), `client/src/lib/requirements.server.test.ts` (2), `client/src/lib/broker/channel.test.ts` (3) — all named `BUG-R4-005: …` | **8 failed** (`expected { ok: true } to match object { ok: false, status: 400 }`) | `67c9188` | 8 green, 4 no-regression pins green throughout |
+| BUG-R4-006 | `client/src/lib/persistence/channel-store.test.ts` (1), `client/src/lib/broker/channel.test.ts` (1) | **2 failed** (`expected { ok: true } …` / `expected true to be false`) | `548baee` | 2 green, 4 BUG-2026-001 split tests green throughout |
 
 Every commit message names its BUG-ID. Every guard test is named after its BUG-ID, so `grep -rn "BUG-R4-00" client/src` enumerates the whole regression surface.
+
+**Commit order on `arena/01a0776f-architech` (oldest → newest):**
+
+```
+420b77c  base (merge of PR #62 from origin/main)
+10b88e8  fix(observability): BUG-R4-001 …
+9a9f240  fix(auth): BUG-R4-002 …
+866698b  fix(auth): BUG-R4-002 follow-up — eviction order
+e75f841  fix(auth): BUG-R4-003 …
+0225e0e  fix(rera): BUG-R4-004 …
+0289116  docs(bug-hunt): round-4 report …
+67c9188  fix(validation): BUG-R4-005 …
+548baee  fix(broker): BUG-R4-006 …
+```
 
 ---
 
 ## 8. Phase 5 — validation record
 
-| Check | Baseline `420b77c` | Final `0225e0e` |
+| Check | Baseline `420b77c` | Final `548baee` |
 |---|---|---|
-| `pnpm test` | 159 files / **1725** pass · 2 files / 46 tests skipped · 0 fail | 160 files / **1740** pass · 2 files / 46 tests skipped · 0 fail |
+| `pnpm test` | 159 files / **1725** pass · 2 files / 46 tests skipped · 0 fail | 160 files / **1754** pass · 2 files / 46 tests skipped · 0 fail |
 | `pnpm check` (`tsc --noEmit`) | clean, exit 0 | clean, exit 0 |
 | `pnpm lint` (`eslint app client/src`) | exit 0 | exit 0 |
-| `pnpm db:validate` | **valid** (via the shipped sandbox shim — see §2) | **valid** |
+| `pnpm db:validate` | **valid** (via the shipped sandbox shim — see §2) | **valid** — not re-run after `67c9188`/`548baee`: neither touched a Prisma schema or a query, only in-memory validators |
 | `pnpm location:import:test` | 28/28 | unchanged |
 | `pnpm privacy:requirements:test` | 3/3 | unchanged |
 | `pnpm env:audit` | pass | unchanged |
 
-**Test delta:** 1725 → 1740 = **+15 guard tests** (R4-001: 4 · R4-002: 3 · R4-003: 4 · R4-004: 4). No pre-existing test was modified or deleted; the +1 file is `rera-store.test.ts`.
+**Test delta:** 1725 → 1754 = **+29 guard tests** (R4-001: 4 · R4-002: 3 · R4-003: 4 · R4-004: 4 · R4-005: 12 · R4-006: 2). No pre-existing test was modified or deleted; the +1 file is `rera-store.test.ts`.
 
-**Diff:** 9 files, +456 / −39 — 5 source files, 4 test files. No migration, no schema change, no dependency change, no unrelated refactor.
+**Diff (`420b77c..HEAD`):** 18 files, +1011 / −42. Excluding the two Markdown documents: **16 files in `client/src`, +685 / −39** — of which **7 source modules** (`auth/login-throttle.ts`, `auth/request-safety.ts`, `broker/channel.ts`, `observability/metrics-store.ts`, `persistence/channel-store.ts`, `persistence/rera-store.ts`, `requirements.ts`, +231 / −37) and **9 test files** (+454 / −2). No migration, no schema change, no dependency change, no unrelated refactor.
 
-**UI-impacting verification:** none required. No fixed code path changes rendered output, routing, or public page content, so `pnpm test:a11y` / `pnpm test:ui` were not run. The RUM and login fixes are ingest-side only; the RERA fix is a background cron.
+**UI-impacting verification:** none required. No fixed code path changes rendered output, routing, or public page content, so `pnpm test:a11y` / `pnpm test:ui` were not run. The RUM and login fixes are ingest-side only; the RERA fix is a background cron; the R4-005/006 fixes narrow the set of inputs that reach the database.
 
 **End-to-end confirmation a reviewer can run in a deployed environment (not possible here — no live DB):**
 1. POST 5 000 distinct `name` values to `/api/observability/web-vitals`, then read `seriesCount` from `metricsStoreMeta()` — must be ≤ 6.
 2. Watch `heapUsed` across a burst of mutations carrying rotating `x-real-ip` — the curve must plateau at the `MAX_RATE_LIMIT_BUCKETS` ceiling instead of climbing.
 3. Force one `reraRecord.upsert` to fail (e.g. a malformed `retrievedAt`) and confirm the cron returns `ok: false` with the row named in `errors`, `refreshed` still counting the other rows, and the *next* run reaching rows beyond the failed one.
+4. **R4-005/006 — the check this sandbox cannot do:** `POST /api/requirements` with `budgetMaxInr: 1e30` must return **400**. Before the fix it returns **500** with a PostgreSQL `22003 numeric_value_out_of_range`. Same for the deal-split route with `totalCommissionInr: 1e30`. This is the single assertion in this report that is proved only arithmetically — the column widths come from `prisma/migrations/*/migration.sql`, the round-tripped values from `BigInt(Math.round(x))`, and the rejection behaviour from documented PostgreSQL semantics.
