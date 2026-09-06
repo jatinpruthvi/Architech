@@ -42,13 +42,19 @@ function pruneBuckets(now: number) {
   /* Evict down to one BELOW the ceiling: this runs immediately before the
      caller inserts a new window, so the post-insert size is what the ceiling
      actually bounds. */
+  /* Eviction walks the Map's own insertion order rather than sorting by
+     `startedAt`. The sort cost O(n log n) and ran on EVERY insert once the
+     ceiling was reached — turning the memory guard into its own
+     denial-of-service amplifier under exactly the sustained spray it exists to
+     survive. Insertion order is a good proxy for oldest-started and keeps this
+     O(excess); the cost is that re-setting an existing key keeps its position,
+     so a continuously-active client may sit near the front and lose one
+     unthrottled window when 10k windows are already live. */
   const limit = MAX_RATE_LIMIT_BUCKETS - 1;
-  if (buckets.size <= limit) return;
-  const oldestFirst = [...buckets.keys()].sort(
-    (a, b) => (buckets.get(a)?.startedAt ?? 0) - (buckets.get(b)?.startedAt ?? 0),
-  );
-  const excess = buckets.size - limit;
-  for (let index = 0; index < excess; index += 1) buckets.delete(oldestFirst[index]);
+  for (const key of buckets.keys()) {
+    if (buckets.size <= limit) break;
+    buckets.delete(key);
+  }
 }
 
 function error(status: number, code: string, message: string) {
