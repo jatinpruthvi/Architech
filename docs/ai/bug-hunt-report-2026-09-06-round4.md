@@ -15,7 +15,7 @@
 | P1 High | 3 | 3 |
 | P2 Medium | 3 | 3 |
 | P3 Low | 0 | — |
-| Watchlist (not confirmed) | 4 | 0 |
+| Watchlist (not confirmed) | 5 | 0 |
 
 **All 6 confirmed bugs are fixed, each behind a failing test written first.**
 
@@ -314,6 +314,7 @@ The new tests sit beside the four pre-existing split tests written for BUG-2026-
 | **W2** | **`comparableListings` divides by `subject.priceNum`.** If a subject listing ever had `priceNum === 0`, `deltaPct` becomes `Infinity`. The peer filter checks `listing.priceNum > 0` but not the subject's. Not reachable today: the only caller (`app/listing/[id]/page.tsx:181`) passes fixture-sourced prices, all non-zero. | `client/src/lib/listing/comparables.ts:20` | One-line defensive guard when the module next changes. **Do not invent a fallback price** — that would violate the no-invented-listing-facts constraint |
 | **W3** | **Permission-string inconsistency:** one route asks for `"channel.write"` where its siblings (`accept`, `reject`) ask for `"broker.channel.write"`. Functionally equivalent today (both granted to the same roles) but a future role split would silently diverge. | `app/api/broker/channel/matches/[id]/respond/route.ts:12` vs `roles.ts` | Cosmetic rename once product confirms the two grants are meant to be the same |
 | **W4** | **Coverage copy (Mumbai / "12 metros").** Carried forward from round 1's watchlist; round 2 re-verified the claim matches the 12 live city hubs in `liveCities`. Left untouched: a copy/product decision, and changing it would mean asserting coverage facts. | `app/buy/page.tsx:12`, `client/src/pages/Home.tsx:48` | Flag to content owner |
+| **W5** | **`validateEnvCatalog` is a dormant control.** `ALLOWED_ENV_KEYS` (48 entries) is the repo's declared allow-list of environment keys, but the only caller of `validateEnvCatalog` in the entire tree is its own unit test — nothing in `app/`, `client/src/`, `scripts/`, or `shared/` invokes it. Separately, **18** keys are read from `process.env` in code yet absent from the list, including security-relevant ones: `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION`, `DATA_GOV_IN_API_KEY`, `BROKER_CHANNEL_ERPNEXT_TOKEN`, `BROKER_CHANNEL_ERPNEXT_URL`. So the control would report false positives *and* is never consulted. Not a bug today because it gates nothing — but a reviewer reading the allow-list would reasonably assume it was enforced. | `client/src/lib/operations/hygiene.ts:93` (definition); sole reference outside it is `hygiene.test.ts` | Either wire it into `pnpm env:audit` / a CI guard and reconcile the 18 keys, or delete it. **Do not "fix" by adding the 18 keys silently** — several deserve a deliberate decision about whether they belong in a declared allow-list at all |
 
 ---
 
@@ -403,3 +404,22 @@ e75f841  fix(auth): BUG-R4-003 …
 2. Watch `heapUsed` across a burst of mutations carrying rotating `x-real-ip` — the curve must plateau at the `MAX_RATE_LIMIT_BUCKETS` ceiling instead of climbing.
 3. Force one `reraRecord.upsert` to fail (e.g. a malformed `retrievedAt`) and confirm the cron returns `ok: false` with the row named in `errors`, `refreshed` still counting the other rows, and the *next* run reaching rows beyond the failed one.
 4. **R4-005/006 — the check this sandbox cannot do:** `POST /api/requirements` with `budgetMaxInr: 1e30` must return **400**. Before the fix it returns **500** with a PostgreSQL `22003 numeric_value_out_of_range`. Same for the deal-split route with `totalCommissionInr: 1e30`. This is the single assertion in this report that is proved only arithmetically — the column widths come from `prisma/migrations/*/migration.sql`, the round-tripped values from `BigInt(Math.round(x))`, and the rejection behaviour from documented PostgreSQL semantics.
+
+---
+
+## 9. Outstanding non-blocking items
+
+Nothing below blocks merging this branch: all 6 confirmed bugs are fixed, and `pnpm test` / `check` / `lint` / `db:validate` are green at `800e558`. These are recorded so they are not lost.
+
+| # | Item | Why it is not a blocker | Suggested owner |
+|---|---|---|---|
+| N1 | **BUG-R4-005/006 are unverified against a live PostgreSQL column.** The `22003 numeric_value_out_of_range` rejection is proved from migration DDL + arithmetic, not from an executed `INSERT` (§8 item 4). | The validator contract *is* unit-tested in both storage modes; only the database's rejection is inferred, and PostgreSQL's bigint bound is not in doubt. | Run the two `curl` checks in §8 item 4 once against staging. |
+| N2 | **`pnpm test:a11y`, `test:a11y:broker`, `test:ui` not run.** | No fixed code path changes rendered output, routing, or markup. All six fixes are validator/guard/cron changes. | Routine CI. |
+| N3 | **Recommendation not implemented: shared `BoundedWindowMap`** (§6 item 1). Three near-identical prune implementations remain across `metrics-store.ts`, `request-safety.ts`, `login-throttle.ts`. | Each is now individually correct and pinned by a named guard test. The refactor prevents a *fourth* copy; it does not fix a live defect. | Follow-up refactor PR. |
+| N4 | **Recommendation not implemented: CI source guards** for unbounded module-level `Map`/`Set` and for `BigInt(` conversions that bypass a range-checked validator (§6 items 1 and 3). | Both are prevention, not remediation. The repo has a working template (`sql-query-bounds.test.ts`). | Follow-up PR; highest value is the `BigInt(` guard, since that class has now recurred three times. |
+| N5 | **Coverage gap: 54 of 177 `client/src/lib` modules have no co-located `.test.ts`.** (Counted this round: `find client/src/lib -name "*.ts" ! -name "*.test.ts"` → 177, minus those with a sibling test → 54.) | Untested ≠ broken; this round's findings came from reading code, not from coverage. Worth noting that `rera-store.ts` was on this list and did hide BUG-R4-004. | Prioritise persistence and money modules. |
+| N6 | **W5 — the dormant `validateEnvCatalog` control.** Decided separately: wire it into CI and reconcile the 18 unlisted keys, or delete it. | It currently gates nothing, so it cannot misbehave. The risk is a false sense of enforcement, not a runtime fault. | Config/infra owner. |
+| N7 | **`prisma migrate dev` / `db push` remain unusable in this sandbox** (the schema-engine shim implements only `applyMigrations` / `diagnoseMigrationHistory` / `ensureConnectionValidity` / `getDatabaseVersion`). | Moot for this branch — no migration and no schema change was made. `db:validate` is fully unblocked (§2). | Only matters for a future schema-changing PR. |
+| N8 | **No pull request opened.** The branch is pushed (`refs/heads/arena/01a0776f-architech` = `800e558`, verified by `git ls-remote`) but no PR exists. | Work is preserved and reviewable on the branch. Opening a PR is a review-workflow choice, not a code concern. | Raise when the reviewer is ready. |
+
+**Two counts in earlier drafts of this hunt were wrong and are corrected here:** the watchlist has **5** items, not 4 (W5 was analysed but never written into the deliverable), and the unlisted-`process.env`-key figure is **18**, not 10.
