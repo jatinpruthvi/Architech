@@ -38,6 +38,7 @@ Do not create production before staging passes migrations, smoke tests, restore 
 - Provision Railway Redis.
 - Create Sentry staging project.
 - Create R2 staging bucket.
+- Set the R2 env **in the build environment** (not just runtime): `ARCHITECH_MEDIA_STORAGE`, `R2_PUBLIC_BASE_URL`, and `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`. The CSP `img-src` allowlist and the `NEXT_PUBLIC_*` client inlining are computed at build time, so a runtime-only value leaves listing images blocked/undelivered.
 - Create Resend staging domain/API key.
 - Store secrets in platform secret managers only.
 - Run `pnpm db:migrate` and `pnpm db:seed` against staging.
@@ -49,11 +50,44 @@ Do not create production before staging passes migrations, smoke tests, restore 
 - Create production Vercel environment.
 - Provision production Railway PostgreSQL/PostGIS and Redis.
 - Configure Cloudflare R2/Stream production buckets.
+- Ensure the R2 env (`ARCHITECH_MEDIA_STORAGE`, `R2_PUBLIC_BASE_URL`, `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`) is present **at build time** — the CSP `img-src` and `NEXT_PUBLIC_*` inlining are build-time, so listing images will not render from a runtime-only value.
 - Configure Sentry production project and alerts.
 - Configure Resend production sender/domain.
 - Verify Google Search Console domain property.
 - Submit sitemap.
 - Run final launch gates.
+
+## Scheduled jobs and object lifecycle
+
+The app runs several recurring maintenance jobs. On a single long-lived replica
+the in-process timers (started from `instrumentation.ts`) are enough; on any
+multi-replica or serverless deployment they must be replaced by **one**
+external driver, or every replica sweeps/purges on its own. The external-driver
+columns are all driven by platform cron hitting the internal scheduled
+endpoints (cost-reduction-audit P1.2/P1.7).
+
+| Job | In-process (single replica) | External driver (recommended) |
+|---|---|---|
+| Media retention sweep (PENDING 30d / REJECTED 14d / TAKEDOWN 7d) | on by default, every `MEDIA_RETENTION_SWEEP_INTERVAL_MINUTES` (60) | platform cron → `POST /api/internal/scheduled/media-retention-sweep/` with `Authorization: Bearer $CRON_SECRET`; then set `MEDIA_RETENTION_SWEEP=off` |
+| Expired-requirement purge | not scheduled | platform cron → `pnpm privacy:requirements:purge` (see `scripts/privacy/purge-expired-requirements.mjs`) |
+| ERPNext deal-close sync | only via the dashboard "Sync" button | platform cron (every few minutes) → `POST /api/internal/scheduled/erpnext-close-sync/` with `Authorization: Bearer $CRON_SECRET`; flushes every org's due `ErpnextCloseWrite` rows (atomic claim, so the cron and the button can coexist without double-sending) |
+| RERA stale-record refresh | only via the admin refresh button | platform cron (daily) → `POST /api/internal/scheduled/rera-refresh/` with `Authorization: Bearer $CRON_SECRET`; re-verifies STALE records and restores a badge only when the configured authority confirms it |
+| Saved-search alert digest flush | n/a (publish events only enqueue when `SAVED_SEARCH_ALERT_MODE=digest`) | platform cron (daily) → `POST /api/internal/scheduled/saved-search-alert-digest/` with `Authorization: Bearer $CRON_SECRET`; groups the PENDING backlog per watcher and mails ONE digest per watcher (capped at `SAVED_SEARCH_ALERT_DIGEST_MAX_LISTINGS`, default 10). Safe in `per_match` mode too — it retries rows whose immediate send failed. |
+
+The cron endpoint fails closed: with no `CRON_SECRET` configured it returns
+503 (never an open admin surface), and the comparison is constant-time.
+
+### R2 lifecycle rules (operator task)
+
+App-side retention deletes the object it owns (`deleteObject`) when a record is
+expired, rejected or taken down, and stores the key on `PropertyMedia.objectKey`.
+Objects that never made it into the app (a signed upload the user abandoned, or
+an orphan from a crash) are still bounded by bucket-level lifecycle rules on the
+R2 bucket itself, e.g. expire `listing-drafts/*` objects older than 14 days in a
+`rejected/` or uncommitted prefix. Configure these in the Cloudflare dashboard
+(or `r2 bucket lifecycle`) for the `R2_BUCKET` bucket. Keep the raw location
+snapshots in R2 as well (see `docs/data/india-location-operations.md`), so the
+Postgres/PostGIS tables — and therefore the backup — stay small.
 
 ## Abort conditions
 

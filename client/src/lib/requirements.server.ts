@@ -36,7 +36,8 @@ type RequirementRow = {
   budgetMinInr?: bigint | number | null;
   budgetMaxInr?: bigint | number | null;
   status?: string | null;
-  city?: { slug: string } | null;
+  /* The model's city relation is `resolvedCity` — there is no `city` field
+     (selecting or including `city` fails Prisma validation). */
   resolvedCity?: { slug: string } | null;
   localities?: Array<{ locality?: { slug: string } | null; priority?: number }>;
 };
@@ -93,7 +94,7 @@ function numberOrNull(value: unknown): number | null {
 }
 
 function requirementCitySlug(row: RequirementRow, fallback = "") {
-  return row.city?.slug ?? row.resolvedCity?.slug ?? fallback;
+  return row.resolvedCity?.slug ?? fallback;
 }
 
 function requirementLocalitySlugs(row: RequirementRow) {
@@ -217,8 +218,10 @@ export async function listRequirementsForUserServer(userId: string): Promise<Req
       id: true, createdAt: true, intent: true, category: true, subtype: true,
       role: true, name: true, phoneLast4: true, consentText: true, status: true,
       propertyType: true, bhkMin: true, bhkMax: true, areaMinSqft: true, areaMaxSqft: true, budgetMinInr: true, budgetMaxInr: true, organizationId: true, idempotencyKey: true, userId: true,
+      /* Requirement's city relation is named `resolvedCity` in the schema —
+         there is no `city` field to select (selecting one threw at Prisma
+         validation and 500'd the buyer's brief list). */
       resolvedCity: { select: { slug: true } },
-      city: { select: { slug: true } },
       localities: { orderBy: { priority: "asc" }, select: { locality: { select: { slug: true } } } },
     },
   });
@@ -256,7 +259,9 @@ export async function listBrokerRequirementsForServer(session: AuthSession): Pro
   const prisma = getPrismaClient() as RequirementPrisma;
   const rows = await prisma.requirement.findMany({
     where: { organizationId: session.organization.id, deletedAt: null, status: "NEW" },
-    include: { city: { select: { slug: true } }, resolvedCity: { select: { slug: true } }, localities: { include: { locality: { select: { slug: true } } }, orderBy: { priority: "asc" } } },
+    /* No `city` include — the model's city relation is `resolvedCity`;
+       including `city` failed Prisma validation (see the buyer list above). */
+    include: { resolvedCity: { select: { slug: true } }, localities: { include: { locality: { select: { slug: true } } }, orderBy: { priority: "asc" } } },
     orderBy: { createdAt: "desc" },
     take: 100,
   });

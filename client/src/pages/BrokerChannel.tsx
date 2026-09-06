@@ -122,8 +122,9 @@ export default function BrokerChannel() {
     setLoading(true);
     try {
       const [requestsResponse, matchesResponse] = await Promise.all([
-        fetch("/api/broker/channel/requests", { cache: "no-store" }),
-        fetch("/api/broker/channel/matches", { cache: "no-store" }),
+        /* Cost-audit P1.1: honour the endpoints' private 15 s cache TTL. */
+        fetch("/api/broker/channel/requests"),
+        fetch("/api/broker/channel/matches"),
       ]);
       const requestsPayload = await requestsResponse.json();
       const matchesPayload = await matchesResponse.json();

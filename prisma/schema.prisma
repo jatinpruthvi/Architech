@@ -41,6 +41,15 @@ enum MediaModerationStatus {
   DELETED
 }
 
+/// Saved-search alert outbox state (cost-reduction-audit P1.6).
+/// PENDING = queued, not yet mailed (digest backlog); SENT = mailed (counted
+/// by the daily quota); SUPPRESSED = over the per-user daily limit, no send.
+enum AlertOutboxStatus {
+  PENDING
+  SENT
+  SUPPRESSED
+}
+
 enum PropertyType {
   APARTMENT
   ROWHOUSE
@@ -782,6 +791,11 @@ model PropertyMedia {
   listingId        String
   kind             String                @default("image")
   url              String
+  /// Storage object key (e.g. R2 `listing-drafts/<draft>/<uploadId>/<file>`).
+  /// Present for uploads signed through the storage provider, so the
+  /// retention sweep can delete the bytes — not just the row — when policy
+  /// says media is gone (docs/media/media-storage-decision.md, phase 4).
+  objectKey        String?
   alt              String?
   width            Int?
   height           Int?
@@ -1128,6 +1142,40 @@ model SavedSearch {
   @@index([cityId])
   @@index([localityId])
   @@index([sort])
+}
+
+/**
+ * Saved-search alert outbox (cost-reduction-audit P1.6).
+ *
+ * Every matched (listing, saved search) pair enqueues ONE row, idempotently
+ * keyed like the Resend send itself (`<stableId>:<savedSearchId>`). In
+ * `digest` mode rows stay PENDING until the daily platform cron groups them
+ * per watcher and mails ONE digest instead of N per-match emails; in
+ * `per_match` mode the row is the durable send log the per-user daily quota
+ * counts against and the send happens immediately.
+ *
+ * Not RLS-covered, like SavedSearch itself: the rows are buyer-owned
+ * (userId + consented email), not broker-tenant data.
+ */
+model SavedSearchAlertOutbox {
+  id             String @id @default(cuid())
+  userId         String
+  email          String
+  savedSearchId  String
+  stableId       String
+  listingTitle   String
+  listingPrice   String?
+  localitySlug   String?
+  citySlug       String?
+  idempotencyKey String @unique
+  status         AlertOutboxStatus @default(PENDING)
+  sentAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email, sentAt])
 }
 
 /**

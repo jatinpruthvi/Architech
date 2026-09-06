@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/observability/logger", () => ({ logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() } }));
 
 import { getListings } from "@/lib/repositories";
-import { collectAlertTargets, dispatchSavedSearchAlerts, savedSearchAlertGate, savedSearchMatchesListing } from "./alerts";
+import { alertDayKey, buildDigestEmail, collectAlertTargets, dispatchSavedSearchAlerts, savedSearchAlertGate, savedSearchMatchesListing } from "./alerts";
 
 const paldi = getListings().find((listing) => listing.localitySlug === "paldi")!;
 
@@ -38,23 +38,23 @@ describe("collectAlertTargets", () => {
       stableId: paldi.id,
       listing: paldi,
       rows: [
-        { id: "s1", notify: true, query: "paldi", filters: [], user: { email: "a@b.in" } },
-        { id: "s2", notify: false, query: "paldi", filters: [], user: { email: "b@b.in" } },
-        { id: "s3", notify: true, query: "whitefield", filters: [], user: { email: "c@b.in" } },
-        { id: "s4", notify: true, query: "paldi", filters: [], user: null },
-        { id: "s5", notify: true, query: "paldi", filters: [], user: { email: "  " } },
+        { id: "s1", userId: "u1", notify: true, query: "paldi", filters: [], user: { email: "a@b.in" } },
+        { id: "s2", userId: "u2", notify: false, query: "paldi", filters: [], user: { email: "b@b.in" } },
+        { id: "s3", userId: "u3", notify: true, query: "whitefield", filters: [], user: { email: "c@b.in" } },
+        { id: "s4", userId: null, notify: true, query: "paldi", filters: [], user: null },
+        { id: "s5", userId: "u5", notify: true, query: "paldi", filters: [], user: { email: "  " } },
       ],
     });
-    expect(targets).toEqual([{ savedSearchId: "s1", email: "a@b.in", idempotencyKey: `${paldi.id}:s1` }]);
+    expect(targets).toEqual([{ savedSearchId: "s1", userId: "u1", email: "a@b.in", idempotencyKey: `${paldi.id}:s1` }]);
   });
 });
 
 describe("dispatchSavedSearchAlerts", () => {
-  const gate = { enabled: true as const, apiKey: "re_test", from: "alerts@architech.in", baseUrl: "https://www.architech.in" };
+  const gate = { enabled: true as const, apiKey: "re_test", from: "alerts@architech.in", baseUrl: "https://www.architech.in", mode: "per_match" as const, dailyLimit: 3, digestMaxListings: 10 };
 
   it("sends with the Idempotency-Key the idempotent-emit contract depends on, count-first body shape, and manage link", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
-    const delivery = await dispatchSavedSearchAlerts(gate, paldi, [{ savedSearchId: "s1", email: "a@b.in", idempotencyKey: "k1" }], fetchMock as unknown as typeof fetch);
+    const delivery = await dispatchSavedSearchAlerts(gate, paldi, [{ savedSearchId: "s1", userId: "u1", email: "a@b.in", idempotencyKey: "k1" }], fetchMock as unknown as typeof fetch);
     expect(delivery).toEqual({ delivered: 1, failed: 0, skipped: 0 });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("https://api.resend.com/emails");
@@ -71,11 +71,66 @@ describe("dispatchSavedSearchAlerts", () => {
       .mockRejectedValueOnce(new Error("network down"))
       .mockResolvedValueOnce({ ok: true });
     const delivery = await dispatchSavedSearchAlerts(gate, paldi, [
-      { savedSearchId: "s1", email: "a@b.in", idempotencyKey: "k1" },
-      { savedSearchId: "s2", email: "b@b.in", idempotencyKey: "k2" },
-      { savedSearchId: "s3", email: "c@b.in", idempotencyKey: "k3" },
+      { savedSearchId: "s1", userId: "u1", email: "a@b.in", idempotencyKey: "k1" },
+      { savedSearchId: "s2", userId: "u2", email: "b@b.in", idempotencyKey: "k2" },
+      { savedSearchId: "s3", userId: "u3", email: "c@b.in", idempotencyKey: "k3" },
     ], fetchMock as unknown as typeof fetch);
     /* One bad row must not starve the rest. */
     expect(delivery).toEqual({ delivered: 1, failed: 2, skipped: 0 });
+  });
+});
+
+describe("savedSearchAlertGate — P1.6 cost controls", () => {
+  const base = { SAVED_SEARCH_ALERTS: "on", RESEND_API_KEY: "re_test", SAVED_SEARCH_ALERT_FROM: "alerts@architech.in" };
+
+  it("defaults to per_match with a finite daily limit and a digest cap", () => {
+    const gate = savedSearchAlertGate(base);
+    expect(gate).toMatchObject({ enabled: true, mode: "per_match", dailyLimit: 3, digestMaxListings: 10 });
+  });
+
+  it("honours digest mode, an explicit limit, and 0 = unlimited", () => {
+    const gate = savedSearchAlertGate({ ...base, SAVED_SEARCH_ALERT_MODE: "digest", SAVED_SEARCH_ALERT_DAILY_LIMIT: "0", SAVED_SEARCH_ALERT_DIGEST_MAX_LISTINGS: "25" });
+    expect(gate).toMatchObject({ enabled: true, mode: "digest", dailyLimit: 0, digestMaxListings: 25 });
+  });
+
+  it("falls back to per_match for an unknown mode and clamps the digest cap to >= 1", () => {
+    expect(savedSearchAlertGate({ ...base, SAVED_SEARCH_ALERT_MODE: "weekly" })).toMatchObject({ enabled: true, mode: "per_match" });
+    expect(savedSearchAlertGate({ ...base, SAVED_SEARCH_ALERT_DIGEST_MAX_LISTINGS: "0" })).toMatchObject({ enabled: true, digestMaxListings: 1 });
+    expect(savedSearchAlertGate({ ...base, SAVED_SEARCH_ALERT_DAILY_LIMIT: "banana" })).toMatchObject({ enabled: true, dailyLimit: 3 });
+  });
+});
+
+describe("alertDayKey", () => {
+  it("is a UTC calendar-day key, stable across the day", () => {
+    expect(alertDayKey(new Date("2026-09-06T00:00:00.000Z"))).toBe("2026-09-06");
+    expect(alertDayKey(new Date("2026-09-06T23:59:59.999Z"))).toBe("2026-09-06");
+    expect(alertDayKey(new Date("2026-09-07T00:00:00.000Z"))).toBe("2026-09-07");
+  });
+});
+
+describe("buildDigestEmail", () => {
+  const gate = { enabled: true as const, apiKey: "re_test", from: "alerts@architech.in", baseUrl: "https://www.architech.in", mode: "digest" as const, dailyLimit: 3, digestMaxListings: 10 };
+  const entries = [
+    { stableId: "L1", listingTitle: "Three BHK in Paldi", listingPrice: "₹1.2 Cr", localitySlug: "paldi", citySlug: "ahmedabad" },
+    { stableId: "L2", listingTitle: "Two BHK near ISB", listingPrice: null, localitySlug: "isb", citySlug: "ahmedabad" },
+  ];
+
+  it("a single entry reads exactly like the per-match email (subject, view link, consent line)", () => {
+    const { subject, text } = buildDigestEmail(gate, [entries[0]]);
+    expect(subject).toBe("New match: Three BHK in Paldi");
+    expect(text).toContain("You asked to be alerted when a home matching your saved search goes live.");
+    expect(text).toContain("Three BHK in Paldi — paldi, ₹1.2 Cr");
+    expect(text).toContain("View: https://www.architech.in/listing/L1/");
+    expect(text).toContain("Manage or turn off these alerts: https://www.architech.in/saved-searches/");
+  });
+
+  it("many entries are one numbered list in ONE email, with the manage link and consent line", () => {
+    const { subject, text } = buildDigestEmail(gate, entries);
+    expect(subject).toBe("2 new listings match your saved searches");
+    expect(text).toContain("2 new matches:");
+    expect(text).toContain("1. Three BHK in Paldi — ₹1.2 Cr, paldi, ahmedabad (listing L1)");
+    expect(text).toContain("2. Two BHK near ISB, isb, ahmedabad (listing L2)");
+    expect(text).toContain("Manage or turn off these alerts: https://www.architech.in/saved-searches/");
+    expect(text).toContain("You are receiving this because you saved these searches");
   });
 });

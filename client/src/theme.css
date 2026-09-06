@@ -54,8 +54,11 @@
   /* Fixed (theme-independent) surfaces: night-section deep sea + light-on-dark bone */
   --color-cream: var(--cream);
   --color-night: var(--night);
-  --font-display: "Space Grotesk", "Noto Sans Devanagari", system-ui, sans-serif;
-  --font-sans: "Instrument Sans", "Noto Sans Devanagari", system-ui, sans-serif;
+  /* Family names are provided by the self-hosted Fontsource faces imported
+     in app/layout.tsx (woff2 + unicode-range subsets, no third-party
+     origin — the render-blocking Google Fonts link was removed for this). */
+  --font-display: "Space Grotesk Variable", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-sans: "Instrument Sans Variable", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 

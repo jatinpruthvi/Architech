@@ -77,21 +77,20 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
 
   const loadChannel = useCallback(async () => {
     try {
-      const [dashResponse, requestResponse, matchResponse, requirementResponse, dealResponse, notificationResponse] = await Promise.all([
-        fetch("/api/broker/channel/dashboard", { cache: "no-store" }),
-        fetch("/api/broker/channel/requests", { cache: "no-store" }),
-        fetch("/api/broker/channel/matches", { cache: "no-store" }),
-        fetch("/api/broker/channel/requirements", { cache: "no-store" }),
-        fetch("/api/broker/channel/deals", { cache: "no-store" }),
-        fetch("/api/broker/channel/notifications", { cache: "no-store" }),
-      ]);
-      const [dashPayload, requestPayload, matchPayload, requirementPayload, dealPayload, notificationPayload] = await Promise.all([dashResponse.json(), requestResponse.json(), matchResponse.json(), requirementResponse.json(), dealResponse.json(), notificationResponse.json()]);
-      setDashboard(dashPayload.dashboard ?? null);
-      setRequests(Array.isArray(requestPayload.requests) ? requestPayload.requests : []);
-      setMatches(Array.isArray(matchPayload.matches) ? matchPayload.matches : []);
-      setRequirements(Array.isArray(requirementPayload.requirements) ? requirementPayload.requirements : []);
-      setDeals(Array.isArray(dealPayload.deals) ? dealPayload.deals : []);
-      setNotifications(Array.isArray(notificationPayload.notifications) ? notificationPayload.notifications : []);
+      /* Cost-audit P1.1: ONE consolidated request instead of six — the
+         dashboard endpoint returns the aggregates plus every panel list, so
+         a channel load is one serverless invocation, not six. No client-side
+         `cache: "no-store"`: the endpoint answers `private, max-age=15,
+         stale-while-revalidate=30`, so a tab switch within the TTL serves
+         from the browser instead of re-hitting the API. */
+      const response = await fetch("/api/broker/channel/dashboard");
+      const payload = await response.json();
+      setDashboard(payload?.dashboard ?? null);
+      setRequests(Array.isArray(payload?.requests) ? payload.requests : []);
+      setMatches(Array.isArray(payload?.matches) ? payload.matches : []);
+      setRequirements(Array.isArray(payload?.requirements) ? payload.requirements : []);
+      setDeals(Array.isArray(payload?.deals) ? payload.deals : []);
+      setNotifications(Array.isArray(payload?.notifications) ? payload.notifications : []);
     } catch {
       setDashboard(null);
       setRequests([]);

@@ -32,7 +32,43 @@ import type { SavedSearchState } from "./saved-search";
 /* ProcessEnv-compatible: extra keys may be present (we only read ours). */
 export type AlertEnv = Record<string, string | undefined>;
 
-export type AlertGate = { enabled: true; from: string; apiKey: string; baseUrl: string } | { enabled: false; missing: string[] };
+/**
+ * Cost controls (cost-reduction-audit P1.6):
+ *  - "per_match" (default, current behavior): one Resend email per matched
+ *    (listing, search) pair, throttled by the per-watcher daily limit.
+ *  - "digest": publish events only ENQUEUE; the daily platform cron
+ *    (/api/internal/scheduled/saved-search-alert-digest) mails ONE digest per
+ *    watcher per run instead of N per-match emails.
+ */
+export type SavedSearchAlertMode = "per_match" | "digest";
+
+export type AlertGate =
+  | {
+      enabled: true;
+      from: string;
+      apiKey: string;
+      baseUrl: string;
+      mode: SavedSearchAlertMode;
+      /** Max per-match alert emails per watcher per UTC day; 0 = unlimited. */
+      dailyLimit: number;
+      /** Max listings per digest email (digest mode); must stay >= 1. */
+      digestMaxListings: number;
+    }
+  | { enabled: false; missing: string[] };
+
+function nonNegativeInt(value: string | undefined, fallback: number): number {
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isInteger(parsed) && parsed >= 0) return parsed;
+  }
+  return fallback;
+}
+
+/** "per_match" (default) or "digest". Unknown values fall back to per_match
+    rather than silently queueing alerts that no cron will flush. */
+function alertMode(env: AlertEnv): SavedSearchAlertMode {
+  return (env.SAVED_SEARCH_ALERT_MODE ?? "").trim().toLowerCase() === "digest" ? "digest" : "per_match";
+}
 
 export function savedSearchAlertGate(env: AlertEnv = process.env): AlertGate {
   const missing: string[] = [];
@@ -45,7 +81,19 @@ export function savedSearchAlertGate(env: AlertEnv = process.env): AlertGate {
     apiKey: env.RESEND_API_KEY as string,
     from: env.SAVED_SEARCH_ALERT_FROM as string,
     baseUrl: (env.NEXT_PUBLIC_SITE_URL ?? "https://www.architech.in").replace(/\/$/, ""),
+    mode: alertMode(env),
+    dailyLimit: nonNegativeInt(env.SAVED_SEARCH_ALERT_DAILY_LIMIT, 3),
+    digestMaxListings: Math.max(1, nonNegativeInt(env.SAVED_SEARCH_ALERT_DIGEST_MAX_LISTINGS, 10)),
   };
+}
+
+/**
+ * UTC day key (e.g. "2026-09-06"). UTC — not local time — so the quota
+ * window agrees across replicas in any timezone, and the daily cron has one
+ * unambiguous "today".
+ */
+export function alertDayKey(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
 }
 
 /** The conservative match: free text via the ONE shared matcher, and every
@@ -63,8 +111,8 @@ export function savedSearchMatchesListing(search: Pick<SavedSearchState, "query"
   return true;
 }
 
-export type AlertTarget = { savedSearchId: string; email: string; idempotencyKey: string };
-export type AlertCandidateRow = { id: string; notify: boolean; query: string | null; filters: unknown; user: { email: string | null } | null };
+export type AlertTarget = { savedSearchId: string; userId: string; email: string; idempotencyKey: string };
+export type AlertCandidateRow = { id: string; userId: string | null; notify: boolean; query: string | null; filters: unknown; user: { email: string | null } | null };
 
 /** Pure target selection over pre-fetched rows — the query-side query is the
     responsibility of the caller so this stays testable without a database. */
@@ -76,17 +124,77 @@ export function collectAlertTargets(args: { stableId: string; listing: Property;
        address from an id. */
     const email = row.user?.email?.trim();
     if (!email) continue;
+    if (!row.userId) continue; /* account-bound: the outbox row names the owner */
     const contract: Pick<SavedSearchState, "query" | "filters"> = {
       query: row.query ?? "",
       filters: Array.isArray(row.filters) ? (row.filters as string[]) : [],
     };
     if (!savedSearchMatchesListing(contract, args.listing)) continue;
-    targets.push({ savedSearchId: row.id, email, idempotencyKey: `${args.stableId}:${row.id}` });
+    targets.push({ savedSearchId: row.id, userId: row.userId, email, idempotencyKey: `${args.stableId}:${row.id}` });
   }
   return targets;
 }
 
 export type AlertDelivery = { delivered: number; failed: number; skipped: number };
+
+/**
+ * One listing row inside a digest email. The digest flush enriches outbox
+ * rows into this shape; the builder stays pure so the copy is unit-testable
+ * without a database.
+ */
+export type DigestEntry = {
+  stableId: string;
+  listingTitle: string;
+  listingPrice: string | null;
+  localitySlug: string | null;
+  citySlug: string | null;
+};
+
+/**
+ * The digest email: ONE email per watcher covering up to
+ * `digestMaxListings` matches (cost-reduction-audit P1.6 — a bursty
+ * publish run must cost one send per watcher, not one per match). Same
+ * LEG-005 shape as the per-match email: "why you are getting this" first,
+ * manage link one line deep, consent sentence at the foot.
+ */
+export function buildDigestEmail(
+  gate: Extract<AlertGate, { enabled: true }>,
+  entries: DigestEntry[],
+): { subject: string; text: string } {
+  const count = entries.length;
+  /* Single-entry digests (the common retry case) read exactly like the
+     per-match email, so a watcher cannot tell the two apart. */
+  if (count === 1) {
+    const entry = entries[0];
+    /* Same line shape as the per-match email: title — locality, price. */
+    const line = [entry.listingTitle, [entry.localitySlug, entry.listingPrice].filter(Boolean).join(", ")].filter(Boolean).join(" — ");
+    const text = [
+      `You asked to be alerted when a home matching your saved search goes live.`,
+      ``,
+      line,
+      `View: ${gate.baseUrl}/listing/${entry.stableId}/`,
+      `Manage or turn off these alerts: ${gate.baseUrl}/saved-searches/`,
+      `You are receiving this because you saved this search on Architech with alerts on.`,
+    ].join("\n");
+    return { subject: `New match: ${entry.listingTitle}`, text };
+  }
+  const lines: string[] = [
+    `You asked to be alerted when homes matching your saved searches go live. ${count} new matches:`,
+    ``,
+  ];
+  entries.forEach((entry, index) => {
+    const place = [entry.localitySlug, entry.citySlug].filter(Boolean).join(", ");
+    const price = entry.listingPrice ? ` — ${entry.listingPrice}` : "";
+    lines.push(`${index + 1}. ${entry.listingTitle}${price}${place ? `, ${place}` : ""} (listing ${entry.stableId})`);
+  });
+  lines.push(
+    ``,
+    `Open each listing on Architech to view it.`,
+    `Manage or turn off these alerts: ${gate.baseUrl}/saved-searches/`,
+    `You are receiving this because you saved these searches on Architech with alerts on.`,
+  );
+  return { subject: `${count} new listings match your saved searches`, text: lines.join("\n") };
+}
 
 /** Deliver one email per target. Independently isolated per recipient: one
     bad address or provider hiccup must not starve the rest. */

@@ -11,7 +11,11 @@ export async function GET(request: Request) {
     const response = await searchListingsFromSearchParamsForServer(url.searchParams);
     return NextResponse.json(response, {
       headers: {
-        "Cache-Control": "no-store",
+        /* Cost-reduction-audit P0.2: results are a deterministic read for a
+           given parameter set, so a short shared (CDN) cache is safe — the
+           freshness sort can drift at most 30 s for repeat visitors. 404s do
+           not exist on this route (unknown cities fall back nationwide). */
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
         "X-Architech-Search-Source": response.source,
       },
     });
