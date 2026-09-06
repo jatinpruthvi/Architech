@@ -3,7 +3,7 @@
  price-first hierarchy, honest demo labels, 44px touch targets. */
 import { ArrowUpRight, BedDouble, Heart, MapPin, Ruler, Scale, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { lazyToast } from "@/lib/lazy-toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Property } from "@/lib/repositories";
 import { useSaved } from "@/contexts/SavedContext";
@@ -59,7 +59,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  const onSave = (e: React.MouseEvent) => {
  e.preventDefault(); e.stopPropagation();
  const nowSaved = toggle(property.id);
- toast(nowSaved ? t.property.savedToast : t.property.removedToast, {
+ lazyToast(nowSaved ? t.property.savedToast : t.property.removedToast, {
  description: nowSaved ? `${property.title} · ${property.price}` : undefined,
  });
  };

@@ -10,9 +10,12 @@ import { SavedProvider } from "@/contexts/SavedContext";
 import { CompareProvider, useCompare } from "@/contexts/CompareContext";
 import { CollectionsProvider } from "@/contexts/CollectionsContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
 
 const CompareTray = dynamic(() => import("@/components/architech/CompareTray"), { ssr: false });
+/* Audit F1: keep sonner out of the universal first-load shell (it rode every
+   route via the root Toaster). sonner buffers toast() calls fired before the
+   island hydrates, so UX is unchanged; CompareTray above sets the precedent. */
+const Toaster = dynamic(() => import("@/components/ui/sonner").then((m) => m.Toaster), { ssr: false });
 
 function LazyCompareTray() {
   const { compared } = useCompare();

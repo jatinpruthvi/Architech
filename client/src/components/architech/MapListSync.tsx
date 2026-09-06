@@ -10,19 +10,23 @@ import { boundsForPoints, makeListingMapPoints, makeLocalityClusters, type MapBo
 
 type MapLibreModule = typeof import("maplibre-gl");
 
+/* Version-pinned at build time by next.config (audit F4): the URL changes on
+   every maplibre-gl upgrade, so it can be served Cache-Control: immutable. */
+const MAP_VENDOR_PATH = process.env.NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH ?? "/vendor";
+
 function ensureMaplibreCss() {
   if (document.getElementById("maplibre-css")) return;
   const link = document.createElement("link");
   link.id = "maplibre-css";
   link.rel = "stylesheet";
-  link.href = "/vendor/maplibre-gl.css";
+  link.href = `${MAP_VENDOR_PATH}/maplibre-gl.css`;
   document.head.appendChild(link);
 }
 
 /** Load the production ESM build from /public/vendor (copied in next.config).
  *  A non-literal specifier keeps Turbopack from inlining MapLibre into chunks. */
 function loadMaplibre(): Promise<MapLibreModule> {
-  const spec = "/vendor/maplibre-gl.mjs";
+  const spec = `${MAP_VENDOR_PATH}/maplibre-gl.mjs`;
   return import(/* webpackIgnore: true */ /* turbopackIgnore: true */ spec) as Promise<MapLibreModule>;
 }
 

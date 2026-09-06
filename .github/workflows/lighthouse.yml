@@ -1,0 +1,62 @@
+# Performance audit 2026-09-06 (finding F6): close the Core Web Vitals
+# evidence gap after deploy. Runs the free Lighthouse CLI against a deployed
+# URL — scheduled weekly plus on-demand — and stores JSON/HTML reports as
+# artifacts. Free-first policy (free-first-design-mcp-workflow.md): Lighthouse
+# CLI in CI, no paid or duplicate wrappers.
+#
+# Setup: set repository variable LIGHTHOUSE_URL to the production origin
+# (e.g. https://app.example). Without it the job skips cleanly.
+
+name: Lighthouse audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1" # weekly, Mondays 05:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard — LIGHTHOUSE_URL repository variable
+        id: guard
+        run: |
+          if [ -z "${{ vars.LIGHTHOUSE_URL }}" ]; then
+            echo "LIGHTHOUSE_URL not set; skipping (set it to the deployed origin to enable)." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Lighthouse against key public routes
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          set -e
+          mkdir -p lighthouse
+          routes="/ /buy/ahmedabad/ /search/ /buy/ahmedabad/paldi/"
+          i=0
+          for route in $routes; do
+            i=$((i+1))
+            npx --yes lighthouse "${{ vars.LIGHTHOUSE_URL }}${route}" \
+              --chrome-flags="--headless --no-sandbox" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json --output=html \
+              --output-path="lighthouse/report-${i}" \
+              --quiet || echo "lighthouse failed for ${route} (non-fatal)"
+          done
+          echo "## Lighthouse scores (median of 1 run)" >> "$GITHUB_STEP_SUMMARY"
+          for f in lighthouse/report-*.report.json; do
+            [ -e "$f" ] || continue
+            node -e 'const r=require(process.argv[1]);const c=r.categories;console.log(`- ${r.finalDisplayedUrl}: perf ${(c.performance.score*100).toFixed(0)}, a11y ${(c.accessibility.score*100).toFixed(0)}, seo ${(c.seo.score*100).toFixed(0)}, LCP ${r.audits["largest-contentful-paint"].displayValue}, INP-lab n/a, CLS ${r.audits["cumulative-layout-shift"].displayValue}`)' "$f" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload reports
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: lighthouse/
+          retention-days: 30
