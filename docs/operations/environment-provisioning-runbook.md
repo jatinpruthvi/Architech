@@ -72,6 +72,7 @@ endpoints (cost-reduction-audit P1.2/P1.7).
 | Expired-requirement purge | not scheduled | platform cron → `pnpm privacy:requirements:purge` (see `scripts/privacy/purge-expired-requirements.mjs`) |
 | ERPNext deal-close sync | only via the dashboard "Sync" button | platform cron (every few minutes) → `POST /api/internal/scheduled/erpnext-close-sync/` with `Authorization: Bearer $CRON_SECRET`; flushes every org's due `ErpnextCloseWrite` rows (atomic claim, so the cron and the button can coexist without double-sending) |
 | RERA stale-record refresh | only via the admin refresh button | platform cron (daily) → `POST /api/internal/scheduled/rera-refresh/` with `Authorization: Bearer $CRON_SECRET`; re-verifies STALE records and restores a badge only when the configured authority confirms it |
+| Saved-search alert digest flush | n/a (publish events only enqueue when `SAVED_SEARCH_ALERT_MODE=digest`) | platform cron (daily) → `POST /api/internal/scheduled/saved-search-alert-digest/` with `Authorization: Bearer $CRON_SECRET`; groups the PENDING backlog per watcher and mails ONE digest per watcher (capped at `SAVED_SEARCH_ALERT_DIGEST_MAX_LISTINGS`, default 10). Safe in `per_match` mode too — it retries rows whose immediate send failed. |
 
 The cron endpoint fails closed: with no `CRON_SECRET` configured it returns
 503 (never an open admin surface), and the comparison is constant-time.
