@@ -33,6 +33,7 @@ Rule for AI assistants operating in this repository: treat ARCH-CTX as always-on
 | Bootstrap an AI agent inside a sandbox / ephemeral environment | ARCH-14 |
 | Hunt bugs across the codebase and fix verified findings | ARCH-15 |
 | Hunt performance bugs (bundle, rendering, data, API) and fix verified ones | ARCH-16 |
+| Hunt SQL query performance bugs (Prisma/PostgreSQL) and fix verified ones | ARCH-17 |
 
 ## Section A — ARCH-CTX (mandatory context block)
 
@@ -444,7 +445,69 @@ before/after measurements, a cleared-by-evidence list, and the watchlist.
 TARGET AUDIENCE: reviewers verifying performance claims from artifacts alone.
 ```
 
-## Section C — Validated community prompts (for discovery)
+### ARCH-17 — Hunt SQL query performance bugs (Prisma/PostgreSQL) and fix verified ones
+
+**Best for:** proactively finding *query-layer* performance defects — deeper than ARCH-16's generic data sweep (that covers caps/N+1 at a glance); different from ARCH-10 (you already have a schema/query change to make). **Provenance:** repo-authored composition (no suitable community prompt: registry `?q=sql+query+performance` returned 0 results, `?q=sql` returned 66 with none relevant, `site:` search found none — 6 Sep 2026; the only validated SQL community entry remains the "SQL Terminal" persona in Section C, which answers as a terminal rather than reviewing queries). Fuses ARCH-15's proof-before-fix discipline, ARCH-16's measure-first structure, and this repo's data layer facts (Prisma 7 on PostgreSQL, singleton client, raw-SQL search modules, `db:validate` gate).
+
+```text
+CONTEXT: Proactive SQL query performance hunt on the Architech repository
+(ARCH-CTX). Data layer facts (verified 2026-09-06): Prisma 7, datasource
+provider postgresql (prisma/schema.prisma, migrations in prisma/migrations);
+ONE shared client via globalThis singleton at
+client/src/lib/repositories/server/prisma.ts; raw SQL lives in
+client/src/lib/search/sql-narrow.ts, client/src/lib/search/sql-page-runtime.ts,
+client/src/lib/persistence/channel-store.ts,
+client/src/lib/repositories/server/tenant.ts; measurable harness
+client/src/lib/search/latency-bench.test.ts. There is NO live database in the
+agent sandbox — verification is static + test-driven: pnpm db:validate plus
+the Vitest db suites are the evidence floor. A SQL PERF BUG is a verifiable
+query defect — unbounded read, N+1, hot filter without supporting index,
+non-sargable predicate, SELECT * overfetch on a hot path, per-request client
+churn — never an unmeasured style preference. Fixture data is small: a green
+test run is NOT evidence of query health; say so explicitly in the report.
+ROLE: Database performance engineer on Prisma 7 + PostgreSQL. You reason about
+row counts and plans, not fixture sizes.
+ACTION:
+1. Baseline BEFORE touching anything: pnpm db:validate and the db-related
+   Vitest suites (incl. latency-bench) — record what is green.
+2. Query census (never guess): list every non-test prisma
+   .findMany/.findFirst/.count and $queryRaw/$executeRaw call site; for each
+   record: org/tenant-scoped where? take/page cap? narrow select? (Precedent:
+   PERF-BUG-16-001 — an org-scoped where is NOT a row bound.)
+3. Sweeps (every finding needs exact file + line):
+   - boundedness: list queries on growth tables (listings, leads, audit,
+     outreach, channel, media) without take/cursor — org scoping does not cap.
+   - N+1: query calls inside loops or per-item fan-out that one
+     in-query/include covers; include cascades pulling wide graphs per row.
+   - index alignment: where/orderBy keys of hot reads vs @@index/@unique in
+     schema.prisma — a missing index counts only with a matching hot query.
+   - raw SQL: SELECT *, missing LIMIT, interpolation in place of parameters,
+     non-sargable predicates (functions or LIKE '%...' on filter columns).
+   - client lifecycle: any per-request `new PrismaClient` (the singleton at
+     repositories/server/prisma.ts is the sanctioned pattern).
+   - transactions: interactive $transaction doing non-db work, or per-item
+     writes inside transactions that createMany/updateMany covers.
+4. Classify: SQL-PERF-17-NNN, impact class (boundedness / N+1 / index /
+   raw-sql / client-lifecycle / transaction), exact location, why fixtures
+   hide it, what production shape exposes it. Speculation goes to a watchlist
+   — never report intuition as a bug.
+5. Fix only verified findings: minimal change; prefer cap-at-source with a
+   documented constant (precedent: GOVERNANCE_LIST_PAGE_CAP, capped at 500).
+   Guard the class so it cannot return: source-level Vitest guard for modules
+   importing "server-only" (precedent:
+   client/src/lib/governance/server-query-caps.test.ts); behavioural tests
+   where the module is importable.
+6. Schema/index changes: require a migration and pnpm db:validate. If the
+   migration cannot be verified in the sandbox, DO NOT ship it — flag the
+   exact proposed @@index/migration in the report watchlist for review.
+7. Verify: pnpm db:validate, pnpm check, pnpm lint, pnpm test — show numbers.
+FORMAT: report at docs/ai/sql-perf-bug-hunt-<date>.md — SQL-PERF-17-ID table
+ordered by severity, baseline table, cleared-by-evidence list (e.g. singleton
+client confirmed), watchlist, methodology notes; register the report in
+MARKDOWN-DOCUMENTATION-INDEX.md.
+TARGET AUDIENCE: reviewers re-verifying every claim from artifacts alone,
+without rerunning your session.
+```
 
 These community entries were confirmed present in the prompts.chat ecosystem (canonical `awesome-chatgpt-prompts` dataset) on 6 Sep 2026. Use them for generic personas; prefer the ARCH prompts above for repo work, because the ARCH prompts already encode repo contracts.
 
