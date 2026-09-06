@@ -31,6 +31,7 @@ Rule for AI assistants operating in this repository: treat ARCH-CTX as always-on
 | Write docs, commit messages, or PR descriptions | ARCH-12 |
 | Create a brand-new prompt for a task not listed | ARCH-13 |
 | Bootstrap an AI agent inside a sandbox / ephemeral environment | ARCH-14 |
+| Hunt bugs across the codebase and fix verified findings | ARCH-15 |
 
 ## Section A — ARCH-CTX (mandatory context block)
 
@@ -376,6 +377,33 @@ FORMAT: Open with one line stating the retrieval path used and why; then the wor
 close with what you verified and how.
 TARGET AUDIENCE: The engineer running this sandbox session — output usable without
 further discovery work.
+```
+
+### ARCH-15 — Hunt bugs across the codebase and fix verified findings
+
+**Best for:** proactive, whole-repo bug discovery *with fixes* — distinct from ARCH-04 (you already have a failing gate/symptom) and ARCH-03 (you already have a diff). **Provenance:** community "Comprehensive Repository Analysis and Bug Fixing Framework" by `@ravidulundu` (19 upvotes — highest-rated bug-discovery prompt on prompts.chat), adapted for Architech with an 8-change adaptation log on 2026-09-06; first hunt executed the same day (3 confirmed bugs fixed). Re-confirmed via the ARCH-14 flow: repo-first hit, registry unreachable from sandbox (probe `000`), no community prompt ranking higher.
+
+```text
+CONTEXT: Run a proactive bug hunt on the Architech repository (see ARCH-CTX).
+The canonical protocol lives at docs/ai/bug-hunting-prompt-architech.md
+(Phase 1 repository assessment through Phase 7 continuous improvement) —
+execute it exactly; do not paraphrase its constraints.
+ROLE: Repository-analysis and bug-fixing expert; you prove a bug before fixing it.
+ACTION:
+1. Read the canonical protocol doc, then follow its phases in order.
+2. Work on an isolated branch/worktree; assign one BUG-ID per finding; write the
+   failing test first, apply the minimal fix, then run pnpm check, pnpm lint,
+   pnpm test (plus pnpm db:validate when the fix touches schema or queries).
+3. Never invent listing, price, availability, RERA, or locality facts;
+   unverifiable values are evidence gaps to flag, not bugs to repair by fabricating.
+4. No live database in this environment — validate Prisma statically and via tests.
+5. Speculation goes in a separate "watchlist" section; the bug table contains only
+   verifiable findings (exact file + line + reproduction).
+FORMAT: findings report at docs/ai/bug-hunt-report-<today's date>.md — BUG-ID table
+ordered by severity, executive summary, and an audit trail linking every fix to its
+BUG-ID and failing test.
+TARGET AUDIENCE: Reviewers who must be able to re-verify every claim from the report
+alone, without rerunning your session.
 ```
 
 ## Section C — Validated community prompts (for discovery)
