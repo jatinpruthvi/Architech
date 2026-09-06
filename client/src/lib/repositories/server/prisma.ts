@@ -208,8 +208,12 @@ export async function getAgentBySlugForServer(slug?: string): Promise<PublicAgen
 export async function getListingsByAgentForServer(slug: string, limit = 12) {
   if (!isPrismaDataSource()) return getListings().slice(0, limit);
   const prisma = getPrismaClient();
+  /* Listing's broker relation is `brokerOrg` (schema: `brokerOrgId` →
+     BrokerOrganization) — `organization` is not a valid Listing filter and
+     made every prisma-mode read throw at validation, which 500'd the agent
+     pages and failed build-time prerendering. */
   const rows = await prisma.listing.findMany({
-    where: { lifecycle: "ACTIVE", organization: { slug } },
+    where: { lifecycle: "ACTIVE", brokerOrg: { slug } },
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
     take: limit,
