@@ -70,13 +70,22 @@ public deployment).
 - `optimizePackageImports` for `lucide-react` + `motion` already configured.
 - Web-vitals RUM sampling live (P1.3) — field CWV data will flow once deployed.
 
-## Remaining performance work (ordered, not started)
+## Remaining performance work (ordered)
 
-1. **P0.1 (largest, server-side):** in `prisma` mode the search still loads all ACTIVE
-   listings and filters/pages in JS (`lib/search/server.ts`). Full SQL filtering +
-   pagination (`ARCHITECH_SEARCH_SQL_NARROW=on` covers candidate narrowing) is the
-   remaining step — blocked on pg_trgm migration confirmation in every prisma env.
-   This is the dominant TTFB/query cost at volume, before any edge cache.
+1. **P0.1 (largest, server-side) — implemented, flag-gated (2026-09-05):** the full
+   SQL page query now exists (`client/src/lib/search/sql-page.ts` + `sql-page-runtime.ts`,
+   behind `ARCHITECH_SEARCH_SQL_PAGE=on`; `ARCHITECH_SEARCH_SQL_NARROW=on` covers
+   candidate narrowing). DB-side filtering, pagination, and honest facet counts replace
+   the JS filter over the bounded read; only the ≤ 48 page rows are rehydrated through
+   the standard Prisma include + mapper. Non-derivable predicates (active `fresh`; the
+   `furnishing` group whenever projected, i.e. the desk surface) decline loudly to the JS
+   path. A live-Postgres parity matrix
+   (`client/src/lib/search/sql-page-integration.test.ts`, opt-in
+   `ARCHITECH_PARITY_DATABASE_URL`) proves wire-identical responses for 44 request
+   shapes. **Open step:** confirm the pg_trgm/FTS migrations in each prisma environment,
+   then set `ARCHITECH_SEARCH_SQL_PAGE=on` (and observe `X-Architech-Search-Source` +
+   the search latency SLO). This is the dominant TTFB/query cost at volume, before any
+   edge cache.
 2. **Field RUM review:** once the deployed app collects web-vitals (sampled
    `NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE`), review real LCP/INP/CLS vs the targets
    (2500/200/0.1) and re-baseline from field data, not lab estimates.

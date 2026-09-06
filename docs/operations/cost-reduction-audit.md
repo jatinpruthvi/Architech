@@ -9,7 +9,7 @@
 
 | Item | Status | Where |
 |---|---|---|
-| P0.1 SQL search | **Partially done.** The executed candidate-narrowing path (`ARCHITECH_SEARCH_SQL_NARROW=on`, FTS + trigram + ILIKE superset, fail-closed) already exists in `lib/search/sql.ts` + `sql-narrow.ts`; the search API now carries `s-maxage=30, stale-while-revalidate=60` (see P0.2). Full DB-side filtering/pagination (facet counts in SQL) is the remaining step — kept off-by-default until the pg_trgm migrations are confirmed in every prisma environment. | `app/api/search/route.ts`, `client/src/lib/search/sql-narrow.ts` |
+| P0.1 SQL search | **Done (both flags off-by-default).** Candidate narrowing (`ARCHITECH_SEARCH_SQL_NARROW=on`, FTS + trigram + ILIKE superset, fail-closed) in `lib/search/sql.ts` + `sql-narrow.ts`; **full SQL page query** (`ARCHITECH_SEARCH_SQL_PAGE=on`) in `lib/search/sql-page.ts` + `sql-page-runtime.ts` — DB-side filtering, `COUNT(*)` total, per-group facet pools, page window via `LIMIT/OFFSET`, and rehydration of only the ≤ 48 page rows through the standard Prisma include + mapper. Non-derivable predicates decline to the JS path loudly (active `fresh`; the `furnishing` group whenever projected — i.e. the desk surface — because its counts need the details/sourceSummary prose scrape). A live-Postgres parity matrix (`client/src/lib/search/sql-page-integration.test.ts`, opt-in `ARCHITECH_PARITY_DATABASE_URL`) asserts the SQL and JS paths return identical wire responses for 44 request shapes. Both flags stay `off` until the pg_trgm/FTS migrations are confirmed in the environment; the search API cache (`s-maxage=30, stale-while-revalidate=60`, P0.2) is independent of the flags. | `app/api/search/route.ts`, `client/src/lib/search/sql-narrow.ts`, `client/src/lib/search/sql-page.ts`, `client/src/lib/search/sql-page-runtime.ts` |
 | P0.2 Cache deterministic GETs | **Done.** `/api/search` → `public, s-maxage=30, stale-while-revalidate=60`; `/api/ai/compare`, `/api/ai/search-assist`, `/api/cities/[slug]/market-trends`, `/api/localities/[slug]/price-trends` → `public, s-maxage=300, stale-while-revalidate=86400` (404s stay `no-store`). | each route |
 | P0.3 Image delivery | **Done (R2 path, incl. render path).** R2 presigned signing (SigV4); the mapper carries stored absolute URLs on `Property.imageUrl`/`galleryUrls`; every photo renderer (`PropertyCard`, `ListingGallery`, `SearchQuickView`, `CompareTray`, compare page, listing JSON-LD/OG) resolves them through `mediaDisplayUrl()` → Cloudflare Image Transformations URLs when `ARCHITECH_MEDIA_STORAGE=r2`; `next/image` also gets the custom loader. Fixture mode unchanged (local `/images/*`). Note: the R2 env must be present **at build time** (CSP `img-src` + `NEXT_PUBLIC_*` inlining). See media-storage-decision phase 3. | `client/src/lib/media/display-url.ts`, `client/src/lib/repositories/mappers.ts`, the renderers, `next.config.ts` |
 | P0.4 De-dynamic render-only pages | **Done (safe set).** `/blogs`, `/list-property`, `/collections` → static; `/developers`, `/locations` → ISR `revalidate=3600`. `/compare`, `/locations/[state]` keep request-time rendering (searchParams-driven); authenticated pages untouched. | the pages |
@@ -20,7 +20,7 @@
 | P1.3 Observability per-event | **Done (client-side).** Web-vitals sampled via `NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE` (prod example: 0.1; 0 disables ingest); Sentry traces lowered in prod examples (`0.05→0.01`, public `0.01→0.001`). | `WebVitalsReporter.tsx`, `.env.production.example` |
 | P1.5 Media object lifecycle | **Done (app-side).** Retention sweep + takedown delete the R2 object (SigV4 DELETE, idempotent), `PropertyMedia.objectKey` persisted at sign time (migration `202609050002`); failures are counted + audited, never thrown. Quota `MEDIA_MAX_IMAGES_PER_LISTING` (default 10) enforced at sign. Bucket-level R2 lifecycle rules remain an operator task. | `client/src/lib/media/*`, `prisma/migrations/202609050002_*` |
 
-Remaining (not started): P0.1 full SQL filtering/pagination, P1.4 R2 location snapshots, P1.6 email digests, P1.7 scheduler for ERPNext/RERA syncs (media sweep already has its cron endpoint), all P2 hygiene items.
+Remaining (not started): P1.4 R2 location snapshots, P1.6 email digests, P1.7 scheduler for ERPNext/RERA syncs (media sweep already has its cron endpoint), all P2 hygiene items. (P0.1 full SQL filtering/pagination is implemented behind `ARCHITECH_SEARCH_SQL_PAGE`; its only open step is the per-environment pg_trgm/FTS migration confirmation before the flag is turned on.)
 
 ---
 
@@ -84,6 +84,32 @@ This audit covers the rest of the app beyond media.
    - or `next revalidateTag` / ISR if page-rendered.
 4. Keep a DB index on every column used for filtering/sorting (mostly present already).
 5. Add `EXPLAIN`/query-plan instrumentation behind a debug flag only (not per request).
+
+**Status (2026-09-05, second pass) — implemented, flag-gated.** The full SQL page query exists in
+`client/src/lib/search/sql-page.ts` (plan builder) + `client/src/lib/search/sql-page-runtime.ts`
+(executor) behind `ARCHITECH_SEARCH_SQL_PAGE=on`:
+
+- **Recall identity.** Every predicate is a direct column comparison with the JS path's semantics, or a
+  slug/value set the runtime precomputes in JS with the exact fixture-registry functions the JS path uses
+  (alias matching, PIN lookup, bbox containment). The free-text haystack is the true five SQL fields —
+  title, locality name, city name, the constant `"Verified partner"` developer, and the derived subtype
+  (the `Listing` table has no `projectName`/`developerName` columns; the mapper falls back to title /
+  literal). `addressLocality` is deliberately not a haystack field, matching the JS matcher.
+- **Honest counts.** Facet options, the place pool, and price/area histograms come from SQL aggregates
+  over the pool; the page path is never a truncated window (`truncated` stays `undefined`).
+- **Declines are decisions, not degradations.** Predicates that are not exactly reproducible decline the
+  SQL path (logged `search.sql_page_declined`) and the JS path serves: an ACTIVE `fresh` selection (recency
+  is parsed from a human label the prisma mapper renders as an absolute date), and the `furnishing` group
+  whenever it is projected — its facet counts need `detailsJson` with a prose fallback into
+  `sourceSummary` (the desk surface). Any SQL failure is a logged `search.sql_page_failed` fallback.
+- **Verification.** `client/src/lib/search/sql-page-integration.test.ts` is a live-Postgres parity matrix
+  (opt-in `ARCHITECH_PARITY_DATABASE_URL`; seeds 24 deterministic rows + pins the demo seed's timestamps):
+  44 request shapes × {JS path, SQL path} must return identical wire responses (JSON projection — the
+  route serializes, so the function-valued facet `match` closures are compared by behaviour, not
+  reference), plus per-scenario `indexPlan` assertions proving the SQL path actually ran.
+- **Still off by default** in every `.env*` example until the pg_trgm/FTS migrations
+  (`prisma/migrations/*_search_indexes`) are confirmed in the target environment; `X-Architech-Search-Source`
+  + the latency SLO make the active path observable once on.
 
 #### P0.2 Many deterministic GET APIs use `no-store` though they are cheap to cache
 

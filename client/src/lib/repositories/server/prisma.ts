@@ -59,7 +59,10 @@ export function getPrismaClient() {
   return globalThis.__architechPrisma;
 }
 
-const listingInclude = {
+/* Exported so the SQL page query (lib/search/sql-page-runtime.ts) hydrates
+   its page window with the EXACT same include as every other listing read —
+   one row shape, one mapper, zero drift. */
+export const listingInclude = {
   city: true,
   locality: true,
   media: { orderBy: { sortOrder: "asc" as const }, take: 1 },

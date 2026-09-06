@@ -8,6 +8,8 @@ Architech keeps the public indexability and live-provider boundary explicit. A l
 | `ARCHITECH_AUTH_SOURCE` | `better-auth` | Selects live session resolution. Demo auth is rejected by private route guards when `NODE_ENV=production`. |
 | `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION` | **never set in real production** | Preview/E2E escape hatch only: lets `better-auth-contract-demo` sessions call permission-gated APIs on a production build (e.g. the public concept preview, `tests/e2e/marketplace-flows.mjs`). Default-off keeps demo writes refused with 503. |
 | `ARCHITECH_DATA_SOURCE` | `prisma` | Enables durable listing and organization persistence. |
+| `ARCHITECH_SEARCH_SQL_NARROW` | `off` (opt-in `on`) | Search candidate narrowing runs in Postgres (FTS + trigram + ILIKE superset, fail-closed) instead of the JS filter over the bounded read. Off by default until the pg_trgm/FTS migrations are confirmed in the environment. |
+| `ARCHITECH_SEARCH_SQL_PAGE` | `off` (opt-in `on`) | Full SQL page query: DB-side filtering, pagination, and honest facet counts for the search API (cost audit P0.1). Implies nothing on its own — the narrowing flag is separate. Any non-portable predicate (declined) or any SQL failure loudly falls back to the JS path; the parity matrix `client/src/lib/search/sql-page-integration.test.ts` is the standing proof of equivalence. |
 | `ARCHITECH_RERA_SOURCE` | `gujarat` | Enables the approved Gujarat RERA adapter. |
 | `ARCHITECH_LEAD_STORAGE` | `prisma` | Enables durable lead storage and retention workflow. |
 | `ARCHITECH_MEDIA_STORAGE` | approved R2 mode | Enables durable media storage and lifecycle controls. |

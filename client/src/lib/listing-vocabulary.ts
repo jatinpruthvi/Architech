@@ -21,7 +21,10 @@ export type AvailabilityCode = (typeof AVAILABILITY_OPTIONS)[number]["value"];
 const PROPERTY_TYPE_CODES = new Set<PropertyTypeCode>(PROPERTY_TYPE_OPTIONS.map((option) => option.value));
 const AVAILABILITY_CODES = new Set<AvailabilityCode>(AVAILABILITY_OPTIONS.map((option) => option.value));
 
-const AVAILABILITY_ALIASES: Record<string, AvailabilityCode> = {
+/** Exported so the SQL page-query path (lib/search/sql-page.ts) can mirror
+    `normalizeAvailability`'s legacy-label mapping in a SQL CASE — the map is
+    the single source of truth, never a re-typed copy. */
+export const AVAILABILITY_ALIASES: Record<string, AvailabilityCode> = {
   "ready to move": "READY_TO_MOVE",
   ready_to_move: "READY_TO_MOVE",
   under_construction: "UNDER_CONSTRUCTION",
