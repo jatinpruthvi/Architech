@@ -92,7 +92,7 @@ export async function searchListingsForServer(request: SearchRequest = {}): Prom
   let narrowToIds: string[] | undefined;
   let sqlNarrowState: "off" | "not-required" | "executed" | "fallback" = "off";
   if (prismaMode && sqlNarrowEnabled()) {
-    const outcome = await narrowListingIdsForQuery(query);
+    const outcome = await narrowListingIdsForQuery(query, undefined, cityScoped);
     sqlNarrowState = outcome.state;
     if (outcome.state === "executed") narrowToIds = outcome.ids;
   }

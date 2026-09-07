@@ -126,11 +126,31 @@ export function escapeLike(value: string): string {
     query carries no residual tokens (structured-only queries like "3 bhk
     under 1.5 cr" narrow through the price/bhk filters the JS layer applies,
     so the SQL path adds nothing and the scoped read stands). */
-export function buildSqlNarrowPlan(rawQuery: string): SqlNarrowPlan | null {
+export function buildSqlNarrowPlan(rawQuery: string, citySlug?: string): SqlNarrowPlan | null {
   const tokens = queryResidualTokens(rawQuery);
   if (tokens.length === 0) return null;
 
   const params: string[] = [];
+
+  /* City scope pushdown (QP-19-001).
+   *
+   * The caller's read is ALREADY city-scoped — searchListingsForServer passes
+   * `citySlug` to getListingsForServer, which applies `city: { slug }` to the
+   * same Listing table. Narrowing therefore returned candidate ids for every
+   * city in the country and handed them to an `id: { in: [...] }` whose other
+   * predicate discarded every out-of-city one anyway: the work was done twice
+   * and the discarded half travelled over the wire as a literal id list.
+   *
+   * IDENTITY, not a heuristic: an id outside the scoped city cannot survive
+   * the outer read, so removing it here cannot change a single returned row.
+   * This is the one narrowing constraint that is safe to add — a LIMIT would
+   * NOT be, because the candidate set is unordered and truncating it would
+   * silently drop rows the JS filter would have kept (the superset guarantee
+   * is what makes this whole path correct). Boundedness stays where it is
+   * already honest: the outer read's ceiling.
+   */
+  const cityClause = citySlug ? `AND city."slug" = $${params.push(citySlug)}` : null;
+
   const tokenClauses = tokens.map((token) => {
     params.push(`%${escapeLike(token)}%`, token);
     const likeParam = params.length - 1;
@@ -152,6 +172,7 @@ export function buildSqlNarrowPlan(rawQuery: string): SqlNarrowPlan | null {
     'JOIN "Locality" AS locality ON locality."id" = listing."localityId"',
     'JOIN "City" AS city ON city."id" = listing."cityId"',
     `WHERE listing."lifecycle" = 'ACTIVE'`,
+    ...(cityClause ? [cityClause] : []),
     ...tokenClauses.map((clause) => `AND ${clause}`),
   ].join("\n");
 

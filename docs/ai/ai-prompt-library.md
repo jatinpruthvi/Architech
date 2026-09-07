@@ -578,6 +578,64 @@ FORMAT: findings table (URL, measured value, severity), root cause, the diff,
 then gate output. Record the retrieval path used, per Section C Step 4.
 ```
 
+### ARCH-19 — Audit emitted SQL against the indexes that actually exist
+
+**Best for:** the defect class correctness gates are structurally blind to — a predicate the query builder emits with no index able to serve it. **Different from ARCH-17**, which is a broad query-layer hunt (boundedness, N+1, client lifecycle) done by *reading* call sites; ARCH-19 is narrow and empirical: it *executes* the builders, captures the literal SQL, and diffs it against `prisma/migrations`. **Provenance:** adapted from *Database Architect Agent Role* (`@wkaandemir`, prompts.chat), retrieved 7 Sep 2026 via Path A/B after the MCP probe returned `http_code=000`. Adopted: EXPLAIN-first standard, "indexes justified by actual query patterns, no speculative indexes", per-finding rationale + testing, the Red Flags list. Dropped: its `TODO_database-architect.md` output rule (repo uses dated `docs/` reports), migration-safety tooling (gh-ost etc. — index-only additive migrations here), MongoDB/Redis guidance. First run: `docs/search/query-optimization-audit-2026-09-07.md`.
+
+```text
+CONTEXT: Query-optimization audit on Architech (ARCH-CTX). Prisma 7 +
+PostgreSQL; raw SQL builders in client/src/lib/search/{sql.ts,sql-page.ts},
+executed by {sql-narrow.ts,sql-page-runtime.ts}. THERE IS NO LIVE DATABASE in
+the sandbox (DATABASE_URL is localhost; no psql, no Postgres, no Docker), and
+`pnpm db:validate` needs blocked egress — use `pnpm db:validate:offline`.
+Fixture data is tiny, so a green test run is NOT evidence of query health: on
+fixture rows a sequential scan returns the same rows as an index scan, just
+slower. That is why this class survives tsc, lint and the whole suite.
+ROLE: Database performance engineer. You reason about access paths, not row
+counts you cannot see.
+ACTION:
+1. Do NOT read the builders and reason about them. EXECUTE them in a
+   throwaway Vitest file and capture the literal SQL string emitted for a
+   representative query (free-text, city-scoped, multi-token). Delete the
+   scratch file afterwards.
+2. Extract from that SQL every predicate whose access path depends on a
+   specific index type: `%` / similarity (needs gin_trgm_ops ONLY), leading-
+   wildcard ILIKE (btree cannot serve; gin_trgm_ops can), @@ tsquery (needs
+   GIN on the tsvector), array containment, and ordinary equality/range.
+3. Diff against reality: grep every CREATE INDEX in prisma/migrations. Report
+   a gap only where an emitted predicate has no index able to serve it.
+4. Check for indexes that EXIST BUT CANNOT APPLY — e.g. a plain array GIN
+   index cannot serve ILIKE/% on elements after unnest(), because unnest() is
+   opaque to the planner. An inapplicable index is a finding, not coverage.
+5. Look for redundant work between layers: a predicate the outer read already
+   applies that the inner query omits (scope pushdown). Fix ONLY where it is
+   an identity — the discarded rows provably could not have survived the
+   outer query. Never add a LIMIT to a candidate/superset query: it is
+   unordered, and truncation silently destroys recall.
+6. Fix: additive index-only migration with a comment per index saying which
+   emitted predicate justifies it. Exempt low-cardinality columns explicitly
+   and by name — an unexplained omission is indistinguishable from an
+   oversight. Do NOT bundle a recall-changing predicate rewrite into an
+   index migration; put it on the watchlist.
+7. Guard the CLASS: a database-free test that executes the builder, extracts
+   the index-dependent predicates, and asserts a matching CREATE INDEX exists
+   (precedent: client/src/lib/search/sql-index-coverage.test.ts). Assert the
+   extracted set is non-empty so it cannot pass vacuously.
+8. PROVE THE GUARD FAILS: delete one index statement, show the test go red,
+   restore it, confirm `git diff --stat prisma/` is clean. A gate never seen
+   failing is not known to work.
+9. Verify: npx tsc --noEmit, pnpm lint, npx vitest run (show before/after
+   counts), pnpm db:validate:offline.
+FORMAT: report at docs/search/query-optimization-audit-<date>.md — retrieval
+path table, candidate comparison with explicit rejections, adaptation log,
+findings table (ID/severity/class/location/status), a watchlist for
+reported-but-deliberately-unfixed items, an explicit "what I could not check"
+table naming the artifact that would unlock each gap (EXPLAIN ANALYZE,
+pg_stat_user_indexes, the latency bench), and the verification block. Register
+it in MARKDOWN-DOCUMENTATION-INDEX.md.
+TARGET AUDIENCE: reviewers re-verifying every claim from artifacts alone.
+```
+
 ## Section D — Guardrails for all prompts in this library
 
 1. These prompts steer assistants on **repository work only**. They must never generate or alter listing facts, prices, availability, RERA/legal text, or broker claims (`docs/ai/phase-1-ai-assistance.md` guardrails apply).

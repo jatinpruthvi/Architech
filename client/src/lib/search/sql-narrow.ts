@@ -35,13 +35,14 @@ type RawQueryable = { $queryRawUnsafe<T = unknown>(sql: string, ...params: strin
 export async function narrowListingIdsForQuery(
   query: string,
   client: RawQueryable = getPrismaClient() as unknown as RawQueryable,
+  citySlug?: string,
 ): Promise<NarrowOutcome> {
-  const plan = buildSqlNarrowPlan(query);
+  const plan = buildSqlNarrowPlan(query, citySlug);
   if (!plan) return { state: "not-required" };
   try {
     const rows = await client.$queryRawUnsafe<Array<{ id: string }>>(plan.sql, ...plan.params);
     const ids = rows.map((row) => String((row as { id: unknown }).id)).filter((id) => id.length > 0);
-    logger.info({ event: "search.sql_narrow_executed", tokens: plan.tokens.length, candidates: ids.length });
+    logger.info({ event: "search.sql_narrow_executed", tokens: plan.tokens.length, candidates: ids.length, citySlug: citySlug ?? null });
     return { state: "executed", ids, candidates: ids.length };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
