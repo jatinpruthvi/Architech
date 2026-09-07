@@ -119,6 +119,30 @@ describe("locality FAQ generation", () => {
     expect(answer).toContain("not a transaction-price index");
   });
 
+  it("asks about rent, not sale price, on a rent page", () => {
+    /* The conflation this guards against: a monthly figure described with
+       sale-price wording is how an aggregator reads Rs 22,000/month as a
+       purchase price. */
+    const entries = localityFaqEntries({ ...RICH, intent: "rent", medianPriceLabel: "₹22,000 per month" });
+    const entry = entries.find((item) => item.question.includes("average"));
+    expect(entry?.question).toBe("What is the average rent in Bopal, Ahmedabad?");
+    expect(entry?.answer).toContain("median asking rent");
+    expect(entry?.answer).not.toContain("asking price");
+  });
+
+  it("discloses what the rent median excludes", () => {
+    // Deposit and brokerage are the costs Indian renters get surprised by.
+    const answer = localityFaqEntries({ ...RICH, intent: "rent", medianPriceLabel: "₹22,000 per month" })
+      .find((item) => item.question.includes("average"))?.answer ?? "";
+    expect(answer).toContain("deposit");
+    expect(answer).toContain("brokerage");
+  });
+
+  it("defaults to buy wording when no intent is given", () => {
+    const entry = localityFaqEntries(RICH).find((item) => item.question.includes("average"));
+    expect(entry?.question).toContain("average property price");
+  });
+
   it("omits the price question when no median is derivable", () => {
     const questions = localityFaqEntries({ ...RICH, medianPriceLabel: null }).map((entry) => entry.question);
     expect(questions.some((question) => question.startsWith("What is the average"))).toBe(false);

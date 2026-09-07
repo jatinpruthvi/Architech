@@ -22,7 +22,9 @@ import { isIndexable } from "@/lib/seo/lifecycle";
 import { cityUrl, homeUrl, listingUrl, localityUrl } from "@/lib/seo/urls";
 import { intentVocabulary } from "@/lib/seo/intent";
 import { buildFaqPage, localityFaqEntries } from "@/lib/seo/faq";
+import { FaqSection } from "@/components/architech/FaqSection";
 import { localityIntel } from "@/lib/realestate/locality-intel";
+import { compactInr } from "@/lib/realestate/format-inr";
 import { socialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 import PropertyCard from "@/components/architech/PropertyCard";
@@ -77,7 +79,12 @@ export default async function RentLocalityPage({ params }: { params: Promise<{ c
     landmarks: (locality.landmarks ?? []).map(([name]) => name),
     saleCount: all.filter((l) => l.transaction !== "rent" && isIndexable(l.lifecycle ?? "ACTIVE")).length,
     rentCount: listings.length,
-    medianPriceLabel: null,
+    /* Rent median, never the sale median. `medianMonthlyRentInr` is null when
+       the rental sample is too small to publish, and passing that null simply
+       drops the question rather than printing a figure one listing wide. */
+    medianPriceLabel:
+      intel.medianMonthlyRentInr === null ? null : `${compactInr(intel.medianMonthlyRentInr)} per month`,
+    intent: "rent",
     asOfDate: intel.asOfDate,
   });
   const faq = buildFaqPage(faqEntries, localityUrl(city.slug, locality.slug, "rent"));
@@ -180,22 +187,6 @@ export default async function RentLocalityPage({ params }: { params: Promise<{ c
             </p>
           )}
 
-          {faq && (
-            <div className="mt-14 border-t border-ink/15 pt-8">
-              <h2 className="font-display text-[26px] font-medium tracking-[-0.02em] md:text-[32px]">
-                Renting in {locality.name}: common questions
-              </h2>
-              <div className="mt-6 border-t border-ink/15">
-                {faqEntries.map((entry) => (
-                  <details key={entry.question} className="group border-b border-ink/15 py-5">
-                    <summary className="cursor-pointer list-none font-display text-lg group-open:text-brick">{entry.question}</summary>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 ink-2">{entry.answer}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="mt-14 border-t border-ink/15 pt-8">
             <p className="stamp ink-3">Nearby localities</p>
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
@@ -212,6 +203,12 @@ export default async function RentLocalityPage({ params }: { params: Promise<{ c
             </p>
           </div>
         </section>
+        {faq && (
+          <FaqSection
+            entries={faqEntries}
+            heading={`Renting in ${locality.name}: common questions`}
+          />
+        )}
       </div>
     </>
   );

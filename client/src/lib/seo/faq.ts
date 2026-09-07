@@ -59,8 +59,16 @@ export type LocalityFaqFacts = {
       Zero is a legitimate answer and is stated honestly. */
   saleCount: number;
   rentCount: number;
-  /** Median asking price, already formatted, or null when not derivable. */
+  /** Median asking price, already formatted, or null when not derivable.
+      On a rent page this MUST be a monthly rent figure, never a sale price —
+      see `intent`. */
   medianPriceLabel?: string | null;
+  /** Which surface is asking. Controls price wording: a rent page must not ask
+      "what is the average property price", because the honest answer there is
+      a monthly rent and conflating the two is exactly the error that makes an
+      aggregator read ₹22,000/month as a sale price. Defaults to "buy" so
+      existing callers are unaffected. */
+  intent?: "buy" | "rent";
   /** ISO date the aggregated facts were computed. */
   asOfDate?: string;
 };
@@ -102,11 +110,18 @@ export function localityFaqEntries(facts: LocalityFaqFacts): FaqEntry[] {
   }
 
   if (facts.medianPriceLabel) {
+    const isRent = facts.intent === "rent";
     entries.push({
-      question: `What is the average property price in ${place}?`,
-      answer: `The median asking price across Architech's verified ${localityName} listings is ${facts.medianPriceLabel}${
-        facts.asOfDate ? ` (as of ${facts.asOfDate})` : ""
-      }. This is a median of asking prices on this site, not a transaction-price index, and it moves as inventory changes.`,
+      question: isRent
+        ? `What is the average rent in ${place}?`
+        : `What is the average property price in ${place}?`,
+      answer: isRent
+        ? `The median asking rent across Architech's verified ${localityName} rental listings is ${facts.medianPriceLabel}${
+            facts.asOfDate ? ` (as of ${facts.asOfDate})` : ""
+          }. This is a median of monthly asking rents on this site, not a transaction-price index, and it excludes deposit, maintenance, and brokerage.`
+        : `The median asking price across Architech's verified ${localityName} listings is ${facts.medianPriceLabel}${
+            facts.asOfDate ? ` (as of ${facts.asOfDate})` : ""
+          }. This is a median of asking prices on this site, not a transaction-price index, and it moves as inventory changes.`,
     });
   }
 

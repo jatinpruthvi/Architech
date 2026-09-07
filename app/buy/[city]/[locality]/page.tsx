@@ -11,6 +11,9 @@ import { localityIntel } from "@/lib/realestate/locality-intel";
 import { localitySerpDescription, localitySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { buildFaqPage, localityFaqEntries } from "@/lib/seo/faq";
+import { FaqSection } from "@/components/architech/FaqSection";
+import { compactInr } from "@/lib/realestate/format-inr";
 
 export function generateStaticParams() {
   return getLocalityStaticParams();
@@ -61,6 +64,29 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   const localHomes = await getListingsByLocalityForServer(locality.slug, city.slug);
   const cityHomes = await getListingsForServer({ citySlug: city.slug });
   const listings = localHomes.filter((listing) => isIndexable(listing.lifecycle ?? "ACTIVE"));
+
+  /* FAQ built from this locality's own facts, and rendered below from the same
+     array. Each generator drops out when its fact is missing, so a thin
+     locality yields too few entries and `buildFaqPage` returns null instead of
+     stamping a templated FAQ across every page. */
+  const faqEntries = localityFaqEntries({
+    localityName: locality.name,
+    cityName: city.name,
+    stateName: city.state,
+    reraAuthority: city.reraAuthority,
+    pincodes: locality.pincodes,
+    landmarks: (locality.landmarks ?? []).map(([name]) => name),
+    saleCount: listings.filter((listing) => listing.transaction !== "rent").length,
+    rentCount: listings.filter((listing) => listing.transaction === "rent").length,
+    /* `medianPriceInr` is already null unless the buy sample is large enough to
+       read as a locality summary rather than one or two asking prices, so this
+       question disappears exactly when it would have been misleading. */
+    medianPriceLabel: intel.medianPriceInr === null ? null : compactInr(intel.medianPriceInr),
+    intent: "buy",
+    asOfDate: intel.asOfDate,
+  });
+  const faq = buildFaqPage(faqEntries, localityUrl(city.slug, locality.slug));
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -117,6 +143,7 @@ export default async function Page({ params }: { params: Promise<{ city: string;
             },
           ]
         : []),
+      ...(faq ? [faq] : []),
     ],
   };
 
@@ -133,6 +160,12 @@ export default async function Page({ params }: { params: Promise<{ city: string;
         newProjects={localHomes.filter((p) => p.availability === "NEW_LAUNCH" || p.availability === "UNDER_CONSTRUCTION")}
       />
       <LocalityTrust summary={trust} />
+      {faq && (
+        <FaqSection
+          entries={faqEntries}
+          heading={`Buying in ${locality.name}: common questions`}
+        />
+      )}
     </>
   );
 }

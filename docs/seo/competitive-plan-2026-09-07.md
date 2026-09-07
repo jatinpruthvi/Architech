@@ -17,7 +17,7 @@ is what the existing gate enforces, and what everything below preserves.
 |---|---|---|---|
 | 0 | `transactionType` silent bug | `mappers.ts` read a column absent from schema *and* DB; every prisma-mode listing became "buy" | **Fixed** |
 | 1 | No rent vertical | `/rent/**` returned 404; `intent: "rent"` had zero callers | **Shipped** |
-| 2 | No `FAQPage` schema | zero matches repo-wide; real FAQ UI unmarked | **Shipped** |
+| 2 | No `FAQPage` schema | zero matches repo-wide; real FAQ UI unmarked | **Shipped — About + all locality pages, both intents** |
 | 3 | Hindi content dark | `titleHi`/`descriptionHi` exist, zero `.tsx` usages, no `hreflang` | **Deferred — see below** |
 
 ### 0. `transactionType` (bug, fixed first)
@@ -74,6 +74,30 @@ Two rules encoded in `lib/seo/faq.ts`:
 The RERA answer describes the checking policy and never asserts registration,
 consistent with the repo's no-invented-facts rule.
 
+**Coverage.** FAQ schema is live on the About page and on every publishable
+locality page in *both* intents — the buy pages are the larger prize, since 68
+of them publish against 4 rent pages today.
+
+**Price wording is intent-aware.** A rent page asks "what is the average rent",
+answers with a monthly median, and discloses that deposit, maintenance, and
+brokerage are excluded. A buy page asks about price and answers with a sale
+median. Conflating them is the error that leads an aggregator to read
+₹22,000/month as a purchase price, so the two never share wording.
+
+Both medians are sourced from fields that are already `null` unless the sample
+is large enough to read as a locality summary (`medianPriceInr`,
+`medianMonthlyRentInr`). In the current dataset both are below that floor, so
+the price question correctly does not appear on any page — the module declining
+to answer rather than publishing a figure one listing wide.
+
+**The visible-content rule is enforced by a test, not a convention.**
+`faq-visibility.test.ts` reads the actual route sources and fails any page that
+calls `buildFaqPage` without rendering the same named array, including the
+indirect case where the UI lives in a component sharing one content module. It
+was verified by deliberately deleting a render and confirming the failure. Unit
+tests on `faq.ts` cannot catch this: the real failure mode is a *page* that
+emits schema and forgets the copy.
+
 One implementation note worth keeping: the About copy lives in
 `lib/content/about-faqs.ts`, not in the client component. A plain array exported
 from a `"use client"` module and imported by a server component crosses the RSC
@@ -110,10 +134,14 @@ human-reviewed `titleHi`/`descriptionHi`, ship `hi-IN` routes and reciprocal
 
 ## Verification
 
-`tsc --noEmit` clean · lint clean · **1887 tests passing** (290 in `lib/seo/`) ·
+`tsc --noEmit` clean · lint clean · **1898 tests passing** ·
 `build:ci` succeeds · SEO smoke: 19 routes, 8 sitemaps, 2 AI index files ·
-crawl-simulation: 162 pages, no broken links, no orphans, self-canonicals hold,
+crawl-simulation: 578 pages, no broken links, no orphans, self-canonicals hold,
 depth within budget · performance budgets pass.
+
+Rendered output was checked against a production build: a locality page emits
+exactly four `Question` nodes and renders exactly those four questions, with the
+answer text present in the raw HTML for crawlers that do not run scripts.
 
 The crawl gate earned its keep here: it caught the rent hubs as orphans
 (sitemap-advertised, unreachable by link) before commit, which is why `/buy/`
