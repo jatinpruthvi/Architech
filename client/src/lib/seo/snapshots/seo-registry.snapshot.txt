@@ -448,6 +448,7 @@ report:price-index:mumbai | report | /price-index/mumbai/ | indexable | reports 
 report:price-index:noida | report | /price-index/noida/ | indexable | reports | prototype-validated | Content | weekly | 0.7 | 2026-08-26 | entities=city:noida+topic:price-index
 report:price-index:pune | report | /price-index/pune/ | indexable | reports | prototype-validated | Content | weekly | 0.7 | 2026-08-26 | entities=city:pune+topic:price-index
 report:price-index:surat | report | /price-index/surat/ | indexable | reports | prototype-validated | Content | weekly | 0.7 | 2026-08-26 | entities=city:surat+topic:price-index
+hub:rent:india | hub | /rent/ | indexable | pages | prototype-validated | SEO | daily | 0.9 | - | entities=brand:architech+country:india
 city:ahmedabad:rent | city | /rent/ahmedabad/ | indexable | cities | prototype-validated | SEO | daily | 0.85 | 2026-08-26 | entities=city:ahmedabad+state:gujarat
 locality:ahmedabad:bopal:rent | locality | /rent/ahmedabad/bopal/ | indexable | localities | prototype-validated | SEO | daily | 0.75 | 2026-08-26 | entities=city:ahmedabad+locality:bopal
 locality:ahmedabad:navrangpura:rent | locality | /rent/ahmedabad/navrangpura/ | indexable | localities | prototype-validated | SEO | daily | 0.75 | 2026-08-26 | entities=city:ahmedabad+locality:navrangpura

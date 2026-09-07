@@ -258,6 +258,41 @@ export function priceIndexSerpDescription(input: PriceIndexSerpInput): string {
   ]);
 }
 
+/* The /buy/ and /rent/ national hubs.
+ *
+ * Built through the budget helpers rather than hand-written: the hand-written
+ * rent description shipped at 162 characters and was caught truncating
+ * mid-sentence by the on-page audit. Composing from parts lets the budget drop
+ * the trailing clause instead of the renderer cutting a word in half. */
+export function rentHubSerpTitle(): string {
+  return serpTitle(["Rent property in India", "— every city we cover"]);
+}
+
+export function rentHubSerpDescription(cityNames: readonly string[]): string {
+  /* `composeSerpText` stops at the first clause that does not fit — it never
+     shortens one. So a fixed second clause is all-or-nothing, and a long one
+     is silently dropped: the first attempt used 55 of 155 characters and the
+     audit flagged the waste. `fitTail` instead picks the richest variant that
+     DOES fit, longest first — the same approach `citySerpTitle` uses. The city
+     list shrinks rather than vanishing. */
+  const lead = `Rental homes across ${cityNames.length} Indian cities.`;
+  const withNames = (count: number) =>
+    `Compare ${cityNames.slice(0, count).join(", ")} and more by locality — monthly rent, with the evidence behind every figure.`;
+  const tail = fitTail(
+    lead,
+    [
+      withNames(6),
+      withNames(4),
+      withNames(3),
+      withNames(2),
+      "Compare localities by monthly rent, with the evidence behind every figure.",
+      "Monthly rent by locality, with the evidence behind every figure.",
+    ],
+    SERP_DESCRIPTION_MAX,
+  );
+  return serpDescription(tail ? [lead, tail] : [lead]);
+}
+
 export function priceIndexHubSerpTitle(): string {
   return serpTitle(["Property price index", "— Indian cities", "— India"]);
 }

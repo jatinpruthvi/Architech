@@ -153,7 +153,7 @@ export const strings = {
     },
     footer: {
       made: "Built for India", tagline: "Find the place before you choose the address.", explore: "Explore", trust: "Trust", office: "Field office",
-      links: { buy: "Buy in India", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches", listProperty: "List your property" },
+      links: { buy: "Buy in India", rent: "Rent in India", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches", listProperty: "List your property" },
     },
     common: { skip: "Skip to content", translationNote: "", india: "India", demoData: "demo data", partialTranslation: "" },
   },
@@ -289,7 +289,7 @@ export const strings = {
       badgeDetailsCopy: "RERA बैज के लिए संपत्ति के लागू राज्य या केंद्रशासित प्रदेश प्राधिकरण से प्रमाण ज़रूरी है। किसी दूसरे राज्य की registry को fallback नहीं बनाया जाता।",
       badgeSample: "नमूना", savedToast: "आपकी शॉर्टलिस्ट में सहेजा गया", removedToast: "शॉर्टलिस्ट से हटाया गया",
     },
-    footer: { made: "भारत के लिए निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "भारत में ख़रीदें", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर", savedSearches: "सहेजी गई खोजें", listProperty: "अपनी संपत्ति सूचीबद्ध करें" } },
+    footer: { made: "भारत के लिए निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "भारत में ख़रीदें", rent: "भारत में किराए पर", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर", savedSearches: "सहेजी गई खोजें", listProperty: "अपनी संपत्ति सूचीबद्ध करें" } },
     common: { skip: "सीधे सामग्री पर जाएँ", translationNote: "आंशिक अनुवाद · संपादकीय समीक्षा जारी — संपत्ति का editorial content अभी अंग्रेज़ी में रह सकता है।", india: "भारत", demoData: "डेमो डेटा", partialTranslation: "आंशिक अनुवाद" },
   },
 } as const;

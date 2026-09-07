@@ -10,6 +10,7 @@ describe("SeoPage registry", () => {
     const expectedCount =
       1 + // home
       1 + // /buy/ hub
+      1 + // /rent/ hub — the national counterpart; buy and rent each get a root
       1 + // official India location/PIN reference hub
       getCities().length * 2 + // one hub per city, per transaction intent (buy + rent)
       getLocalities().length * 2 + // likewise: /buy/{city}/{locality}/ and /rent/{city}/{locality}/
@@ -28,8 +29,12 @@ describe("SeoPage registry", () => {
        independently which of the two may publish. */
     expect(seoPages.filter((page) => page.routeType === "locality")).toHaveLength(getLocalities().length * 2);
     expect(seoPages.filter((page) => page.routeType === "city")).toHaveLength(getCities().length * 2);
-    // buy India hub + locations India hub + agents hub + one profile per public organization
-    expect(seoPages.filter((page) => page.routeType === "hub")).toHaveLength(3 + demoDirectoryAgents().length);
+    // buy India hub + rent India hub + locations India hub + agents hub
+    // + one profile per public organization
+    expect(seoPages.filter((page) => page.routeType === "hub")).toHaveLength(4 + demoDirectoryAgents().length);
+    // Both intents have a national root; /rent/ used to 404 while /buy/ was the
+    // sitemap's highest-priority page, orphaning the whole rent branch.
+    expect(seoPages.find((page) => page.id === "hub:rent:india")?.path).toBe("/rent/");
     expect(seoPages.find((page) => page.id === "hub:locations:india")?.path).toBe("/locations/");
     expect(seoPages.filter((page) => page.routeType === "listing")).toHaveLength(getListings().length);
     expect(seoPages.filter((page) => page.routeType === "guide").length).toBe(4 + getGuides().length); // guide index + developer index + investment lens + home loan context

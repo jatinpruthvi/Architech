@@ -7,6 +7,8 @@ import {
   citySerpTitle,
   rentCitySerpDescription,
   rentCitySerpTitle,
+  rentHubSerpDescription,
+  rentHubSerpTitle,
   rentLocalitySerpDescription,
   rentLocalitySerpTitle,
 } from "./serp";
@@ -97,5 +99,50 @@ describe("titles use the space they are given", () => {
   it("picks the longest tail that fits, not the shortest", () => {
     // A short city name leaves room for the most descriptive variant.
     expect(citySerpTitle({ name: "Pune", state: "Maharashtra" })).toContain("verified context");
+  });
+});
+
+/* The national rent hub. Added after the on-page audit caught the
+   hand-written version of this description at 162 characters, truncating
+   mid-sentence — the same defect class the audit was built to find, in a page
+   written after it. Hence a budget test, not just a smoke test. */
+describe("rent hub SERP text", () => {
+  it("fits the rendered title budget once the brand suffix is appended", () => {
+    expect(rendered(rentHubSerpTitle()).length).toBeLessThanOrEqual(SERP_TITLE_MAX);
+  });
+
+  it("names the intent in the title, so it cannot be mistaken for the buy hub", () => {
+    expect(rentHubSerpTitle().toLowerCase()).toContain("rent");
+  });
+
+  it("fits the description budget for the real city list", () => {
+    const description = rentHubSerpDescription(getCities().map((city) => city.name));
+    expect(description.length).toBeLessThanOrEqual(SERP_DESCRIPTION_MAX);
+  });
+
+  it("does not truncate mid-sentence — it drops whole clauses", () => {
+    /* The actual failure mode. A budget that cuts characters produces
+       "...Gurugram, Noi"; composing from parts drops the trailing clause
+       instead, so whatever survives is a complete sentence. */
+    const description = rentHubSerpDescription(getCities().map((city) => city.name));
+    expect(description.endsWith(".")).toBe(true);
+    expect(description).not.toContain("…");
+  });
+
+  it("uses the space it has instead of dropping the whole clause", () => {
+    /* The second defect the audit caught on this page. composeSerpText stops
+       at the first clause that does not fit, so an over-long tail is silently
+       discarded and the snippet renders at a third of its budget. Asserting a
+       floor is what makes "unused SERP space" a test failure. */
+    const description = rentHubSerpDescription(getCities().map((city) => city.name));
+    expect(description.length).toBeGreaterThan(SERP_DESCRIPTION_MAX * 0.75);
+  });
+
+  it("degrades the city list rather than losing the clause entirely", () => {
+    // 60 long names cannot be listed; the fallback tail must still appear.
+    const many = Array.from({ length: 60 }, (_, i) => `Verylongcityname${i}`);
+    const description = rentHubSerpDescription(many);
+    expect(description.length).toBeLessThanOrEqual(SERP_DESCRIPTION_MAX);
+    expect(description).toContain("evidence behind every figure");
   });
 });

@@ -18,7 +18,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { getCityStaticParams, getLiveCityBySlug, getListingsByCity, getLocalities } from "@/lib/repositories";
-import { cityUrl, homeUrl } from "@/lib/seo/urls";
+import { canonicalUrl, cityUrl, homeUrl } from "@/lib/seo/urls";
 import { intentVocabulary } from "@/lib/seo/intent";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 import { rentCitySerpDescription, rentCitySerpTitle } from "@/lib/seo/serp";
@@ -82,9 +82,14 @@ export default async function RentCityHub({ params }: { params: Promise<{ city: 
       },
       {
         "@type": "BreadcrumbList",
+        /* Mirrors the VISIBLE breadcrumb exactly, including the /rent/ hub.
+           Structured data that disagrees with the rendered trail is a
+           mismatch Google can flag, and skipping the hub here would also hide
+           the parent it now links to. */
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: homeUrl() },
-          { "@type": "ListItem", position: 2, name: `Rent in ${city.name}`, item: cityUrl(city.slug, "rent") },
+          { "@type": "ListItem", position: 2, name: "Rent property in India", item: canonicalUrl("/rent/") },
+          { "@type": "ListItem", position: 3, name: `Rent in ${city.name}`, item: cityUrl(city.slug, "rent") },
         ],
       },
     ],
@@ -98,7 +103,10 @@ export default async function RentCityHub({ params }: { params: Promise<{ city: 
           <div className="container">
             <nav className="flex flex-wrap items-center gap-2 stamp ink-3" aria-label="Breadcrumb">
               <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
-              <Link href="/buy/" className="link-rail hover:text-brick">Cities</Link><span>/</span>
+              {/* The rent city page's parent is the RENT hub, not the buy hub.
+                  Pointing at /buy/ made the rent branch's breadcrumb climb into
+                  the wrong tree and left /rent/ with no inbound link at all. */}
+              <Link href="/rent/" className="link-rail hover:text-brick">Rent</Link><span>/</span>
               <span className="ink-2">Rent in {city.name}</span>
             </nav>
             <p className="kicker mt-12 text-brick">Rentals, locality by locality · {city.hindi}</p>

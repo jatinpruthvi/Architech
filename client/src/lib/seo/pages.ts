@@ -430,6 +430,35 @@ const localityPages: SeoPage[] = src.cities.flatMap((city) =>
  * This is the mechanism that keeps the rent surface from becoming 800 thin
  * doorway pages the day it ships. The routes exist for every city and
  * locality; the SITEMAP only ever advertises the ones backed by real stock. */
+/* The national rent hub — the counterpart to `buyIndiaPage`.
+ *
+ * The rent surface shipped with 12 city pages and 72 locality pages but no
+ * root, so `/rent/` 404'd while `/buy/` was the highest-priority page in the
+ * sitemap. That left the whole rent branch without the entry point that
+ * distributes authority down to it, and gave a visitor who truncates
+ * `/rent/ahmedabad/` to `/rent/` a dead end.
+ *
+ * Priority 0.9, not the buy hub's 0.95: buy is the larger market here and the
+ * two hubs should not compete as equals for the same crawl budget.
+ *
+ * Like every rent page, this one is judged on RENTAL stock — `page-gate.ts`
+ * scores `hub:rent:india` on the national rental count, so an empty rent
+ * surface withholds its own hub instead of publishing an index of nothing. */
+const rentIndiaPage: SeoPage = {
+  id: "hub:rent:india",
+  routeType: "hub",
+  path: "/rent/",
+  canonicalUrl: canonicalUrl("/rent/"),
+  primaryIntent: "Route renters to the right Indian city hub and expose national rental coverage.",
+  indexability: "indexable",
+  owner: "SEO",
+  qualityState: "prototype-validated",
+  freshnessPolicy: "Refresh whenever rental coverage opens or closes in a city.",
+  entityIds: ["brand:architech", "country:india"],
+  targetQuery: "property for rent in India",
+  sitemap: { changeFrequency: "daily", priority: 0.9 },
+};
+
 const rentCityPages: SeoPage[] = src.cities.map((city) => ({
   id: `city:${city.slug}:rent`,
   routeType: "city" as const,
@@ -524,7 +553,7 @@ const cityPriceIndexPages: SeoPage[] = src.cities.map((city) => {
   };
 });
 
-  return [homePage, agentsHubPage, ...agentProfilePages, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, locationsIndiaPage, ...cityPages, ...localityPages, ...rentCityPages, ...rentLocalityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
+  return [homePage, agentsHubPage, ...agentProfilePages, priceIndexHubPage, ...cityPriceIndexPages, buyIndiaPage, rentIndiaPage, locationsIndiaPage, ...cityPages, ...localityPages, ...rentCityPages, ...rentLocalityPages, ...listingPages, guidePage, ...guideDetailPages, requirementsPage, developersPage, investmentPage, aboutPage, contactPage, homeLoanPage, reviewPage, htmlSitemapPage, listPropertyPage];
 }
 
 /* The fixture composition. This constant is byte-for-byte the registry the

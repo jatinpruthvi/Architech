@@ -156,6 +156,17 @@ export function qualityInputFor(page: SeoPage, evidence?: PageGateEvidence): Pag
       /* City hubs are `city:{slug}` (buy) or `city:{slug}:rent`. Only the rent
          variant is intent-scoped: the buy hub predates the split and is judged
          on the whole city, exactly as before, so no existing verdict moves. */
+      /* The NATIONAL rent hub is judged on rental stock anywhere in the
+         country. Without this it would inherit the default verdict and could
+         publish an index of rent pages that the gate is simultaneously
+         withholding — a hub pointing at nothing. It publishes the moment any
+         city has rental inventory, which is the same rule one level up. */
+      if (page.id === "hub:rent:india") {
+        const rentals = (evidence?.listings ?? getListings()).filter(
+          (property: Property) => (property.transaction ?? "buy") === "rent" && isIndexable(property.lifecycle ?? "ACTIVE"),
+        ).length;
+        return { ...base, activeListings: rentals, hasUniqueData: base.hasUniqueData && rentals > 0 };
+      }
       const [prefix, citySlug, intent] = page.id.split(":");
       if (prefix !== "city" || intent !== "rent") return base;
       const rentals = activeListingsInCity(citySlug, evidence?.listings ?? getListings(), "rent");
