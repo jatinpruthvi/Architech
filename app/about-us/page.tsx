@@ -7,10 +7,10 @@ import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
-  title: "About Architech — India property discovery",
+  title: "About us — India property discovery",
   description: "Learn how Architech combines locality context across Indian cities, source trails, freshness, and privacy-aware property discovery.",
   alternates: { canonical: canonicalUrl("/about-us/") },
-  openGraph: { title: "About Architech — India property discovery", description: "A place-first, evidence-led property discovery platform for India.", url: canonicalUrl("/about-us/"), type: "website", images: [defaultSocialImage()] },
+  openGraph: { title: "About us — India property discovery", description: "A place-first, evidence-led property discovery platform for India.", url: canonicalUrl("/about-us/"), type: "website", images: [defaultSocialImage()] },
 };
 
 export default function Page() {

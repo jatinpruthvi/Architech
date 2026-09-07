@@ -21,6 +21,7 @@ import { getCityStaticParams, getLiveCityBySlug, getListingsByCity, getLocalitie
 import { cityUrl, homeUrl } from "@/lib/seo/urls";
 import { intentVocabulary } from "@/lib/seo/intent";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { rentCitySerpDescription, rentCitySerpTitle } from "@/lib/seo/serp";
 import { cityId, cityNode } from "@/lib/seo/entity-graph";
 
 const RENT = intentVocabulary("rent");
@@ -33,10 +34,17 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const { city: citySlug } = await params;
   const city = getLiveCityBySlug(citySlug);
   if (!city) return { title: "Not found" };
-  const rentals = getListingsByCity(city.slug).filter((listing) => listing.transaction === "rent");
   return {
-    title: `Property for rent in ${city.name} — ${city.state} rentals | Architech`,
-    description: `Homes and flats to rent in ${city.name}, ${city.state}. ${rentals.length} verified rental ${rentals.length === 1 ? "listing" : "listings"} with monthly rent, locality context, and ${city.reraAuthority} checks.`,
+    /* Built through the SERP helpers, not hand-written. They reserve room for
+       the " · Architech" suffix the root layout appends; the hand-written
+       string did not, and also added its own "| Architech", so this shipped as
+       a 72-character double-branded title that Google would truncate. */
+    title: rentCitySerpTitle({ name: city.name, state: city.state }),
+    description: rentCitySerpDescription({
+      name: city.name,
+      state: city.state,
+      localities: getLocalities(city.slug).map((locality) => locality.name),
+    }),
     alternates: { canonical: cityUrl(city.slug, "rent") },
   };
 }

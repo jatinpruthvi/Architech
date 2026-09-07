@@ -27,6 +27,7 @@ import { localityIntel } from "@/lib/realestate/locality-intel";
 import { compactInr } from "@/lib/realestate/format-inr";
 import { socialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { rentLocalitySerpDescription, rentLocalitySerpTitle } from "@/lib/seo/serp";
 import { cityNode, localityId } from "@/lib/seo/entity-graph";
 import PropertyCard from "@/components/architech/PropertyCard";
 
@@ -41,11 +42,12 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const city = getLiveCityBySlug(citySlug);
   const locality = city ? getLocalityBySlug(slug, city.slug) : undefined;
   if (!city || !locality) return { title: "Not found" };
-  const title = `Property for rent in ${locality.name}, ${city.name} | Architech`;
+  /* Same fix as the rent city hub: budget-aware, single brand suffix. */
+  const title = rentLocalitySerpTitle({ name: locality.name, cityName: city.name, pincodes: locality.pincodes, note: locality.note });
   const canonical = localityUrl(city.slug, locality.slug, "rent");
   return {
     title,
-    description: `Flats and homes to rent in ${locality.name}, ${city.name}. Monthly rent, ${locality.pincodes.length ? `PIN ${locality.pincodes[0]}, ` : ""}locality context, and ${city.reraAuthority} verification on every listing.`,
+    description: rentLocalitySerpDescription({ name: locality.name, cityName: city.name, pincodes: locality.pincodes, note: locality.note }),
     alternates: { canonical },
     openGraph: { title, url: canonical, images: [socialImage("locality-street")] },
   };

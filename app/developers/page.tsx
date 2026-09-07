@@ -12,10 +12,10 @@ import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Builders and projects across India — Architech",
+  title: "Builders and projects across India",
   description: "Browse Architech’s evidence-led developer and project index, with locality context, freshness signals, and source trails.",
   alternates: { canonical: `${SITE_URL}/developers/` },
-  openGraph: { title: "Builders and projects across India — Architech", url: `${SITE_URL}/developers/`, type: "website" },
+  openGraph: { title: "Builders and projects across India", url: `${SITE_URL}/developers/`, type: "website" },
 };
 
 export default async function Page() {

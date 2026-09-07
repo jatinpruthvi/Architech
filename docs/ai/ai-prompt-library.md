@@ -544,6 +544,40 @@ Some environments (e.g. CI/agent sandboxes) block egress to prompts.chat — obs
 
 **Step 4 — Record the path:** note which retrieval path was used (live MCP / site search / tag page / CSV) in whatever audit or validation record you produce — the performance audit and Section E below already follow this pattern.
 
+### ARCH-18 — Audit rendered on-page SEO (titles, descriptions, headings)
+
+**Best for:** verifying what search engines actually receive, as opposed to what
+the helpers were supposed to produce. **Provenance:** community "Claude Opus as
+SEO Auditor" (`@musatoktas`, prompts.chat *SEO* tag) fused with the on-page
+checklist from "SEO Optimization Agent Role" (`@wkaandemir`), retrieved 7 Sep
+2026 via playbook Step 2 Path A/B after the MCP probe returned `000`. Adaptation
+log and the 11 defects found on first run are recorded in
+`docs/seo/onpage-audit-2026-09-07.md`. Keyword-density and word-count rules from
+the source prompts were **deliberately dropped** — they conflict with the repo
+rule that copy states verified facts only.
+
+```text
+CONTEXT: Architech renders metadata through client/src/lib/seo/serp.ts, whose
+budgets already account for the " · Architech" suffix app/layout.tsx appends via
+its title template. scripts/seo/onpage-audit.mjs measures RENDERED html for the
+whole sitemap corpus and runs inside pnpm test:seo. Task: {describe}.
+ROLE: Technical SEO auditor. Evidence only; never generic advice.
+ACTION:
+1. Build and serve, then measure real html — never infer a title from source.
+   A helper's return value is not what ships; the layout template changes it.
+2. Report only verified issues, each with the exact URL and the measured value.
+3. Exempt noindex pages: they are excluded on purpose, and flagging them trains
+   people to ignore the audit.
+4. Decode html entities before counting (&amp; is 1 char to Google, 5 to a regex).
+5. Fix through the existing serp.ts helpers and fitTail — never hand-write a
+   title string in a route, and never let a page brand itself.
+6. Add regression cover asserting the budget holds WITH the brand suffix.
+7. Prove it: npx pnpm lint, npx vitest run, PUBLIC_INDEXING_ENABLED=true npx
+   pnpm test:seo (which runs the audit), and the crawl simulation.
+FORMAT: findings table (URL, measured value, severity), root cause, the diff,
+then gate output. Record the retrieval path used, per Section C Step 4.
+```
+
 ## Section D — Guardrails for all prompts in this library
 
 1. These prompts steer assistants on **repository work only**. They must never generate or alter listing facts, prices, availability, RERA/legal text, or broker claims (`docs/ai/phase-1-ai-assistance.md` guardrails apply).

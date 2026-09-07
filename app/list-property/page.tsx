@@ -6,10 +6,10 @@ import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 /* Static content page: no request-scoped data, so it prerenders instead of
    invoking server code on every hit (cost-reduction-audit P0.4). */
 export const metadata: Metadata = {
-  title: "List your property — Architech",
+  title: "List your property",
   description: "Put your home on the market with its source trail attached: media rights, RERA context, and a freshness stamp. Publish only what can be proven.",
   alternates: { canonical: listPropertyUrl() },
-  openGraph: { title: "List your property — Architech", url: listPropertyUrl(), type: "website" },
+  openGraph: { title: "List your property", url: listPropertyUrl(), type: "website" },
 };
 
 export default function Page() {

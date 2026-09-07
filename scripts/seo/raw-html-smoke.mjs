@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -474,6 +474,19 @@ try {
   assert(unknownSegment.status === 404, `unknown sitemap segment expected HTTP 404, received ${unknownSegment.status}`);
   console.log("✓ unknown sitemap segment returns 404");
   console.log(`SEO smoke passed for ${routeChecks.length} routes, ${sitemapChecks.length} sitemaps, and ${textFileChecks.length} AI index files.`);
+
+  /* On-page budgets across the WHOLE indexable corpus, not just the sampled
+     routes above. Reuses this server so CI does not pay for a second build.
+     This is the check that caught 11 live title/description defects that
+     typecheck, lint, and the unit suite all passed. */
+  const audit = spawnSync(process.execPath, [path.join(root, "scripts/seo/onpage-audit.mjs"), "--base", baseUrl], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: "pipe",
+  });
+  process.stdout.write(audit.stdout ?? "");
+  if (audit.stderr) process.stderr.write(audit.stderr);
+  assert(audit.status === 0, "on-page SEO audit reported errors");
 } catch (error) {
   console.error(output.trim());
   console.error(error);

@@ -5,10 +5,10 @@ import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
-  title: "Tell us what you need — Architech",
+  title: "Tell us what you need",
   description: "Share a clear property brief for buying, renting, commercial space, co-living, plots, land, or bank-auction opportunities.",
   alternates: { canonical: `${SITE_URL}/requirements/` },
-  openGraph: { title: "Tell us what you need — Architech", url: `${SITE_URL}/requirements/`, type: "website", images: [defaultSocialImage()] },
+  openGraph: { title: "Tell us what you need", url: `${SITE_URL}/requirements/`, type: "website", images: [defaultSocialImage()] },
 };
 
 export default function Page() {
