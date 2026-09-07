@@ -13,17 +13,17 @@
 |---|---|---|
 | P0 Critical | 0 | — |
 | P1 High | 3 | 3 |
-| P2 Medium | 3 | 3 |
+| P2 Medium | 4 | 4 |
 | P3 Low | 0 | — |
-| Watchlist (not confirmed) | 5 | 0 |
+| Watchlist (not confirmed) | 5 | 1 resolved (W2) |
 
-**All 6 confirmed bugs are fixed, each behind a failing test written first.**
+**All 7 confirmed bugs are fixed, each behind a failing test written first.**
 
 The headline finding is a **recurring defect class**: *unbounded in-process state keyed by client-controlled input*. Three of the six bugs (BUG-R4-001/002/003) are the same mistake in three different modules, each with a per-series or per-entry ring buffer that bounded the *contents* of an entry but not the *number* of entries. All three are reachable from unauthenticated public endpoints. BUG-R4-004 is a batch-abort defect in a scheduled job that round 1 had recorded as watchlist speculation; it is now confirmed and is worse than round 1 supposed — it permanently wedges, rather than delays. A second class accounts for the last two (BUG-R4-005/006): *convert-before-validate*, where a validator checks sign and presence while the writer hands raw input to `BigInt()` — so an arbitrarily large finite value sails through validation and dies inside PostgreSQL.
 
-| Gate | Baseline (base `420b77c`) | After fixes (HEAD `548baee`) |
+| Gate | Baseline (base `420b77c`) | After fixes (HEAD `9bb3b3d`) |
 |---|---|---|
-| `pnpm test` | 159 files / **1725** pass, 46 skipped | 160 files / **1754** pass, 46 skipped |
+| `pnpm test` | 159 files / **1725** pass, 46 skipped | 168 files / **1792** pass, 46 skipped |
 | `pnpm check` (tsc) | clean | clean |
 | `pnpm lint` (ESLint) | exit 0 | exit 0 |
 | `pnpm db:validate` | valid (see §2) | valid |
@@ -284,6 +284,39 @@ The new tests sit beside the four pre-existing split tests written for BUG-2026-
 
 ---
 
+### BUG-R4-007 — P2 · unbounded listing-stats demo store behind an unthrottled public POST
+
+| Field | Value |
+|---|---|
+| Severity | **P2** — unauthenticated memory growth; demo-mode only in production |
+| Class | Unbounded in-process state keyed by client input (4th instance) |
+| Location | `client/src/lib/analytics/listing-stats.ts:18-19` (`statsByListing`, `seenViews`) |
+| Introduced by | Original feature (P1-OBS-003) |
+| Reproduction | Deterministic |
+| Fix commit | `8f06834` |
+| Status | **Fixed** — 2 failing tests first |
+
+**How it was found.** Not by grepping — by auditing all 26 unguarded API routes one by one (§4). Nine of the 26 expose a write method; five of those call `enforceMutationSafety`. **Three did not:** `cost/ownership`, `investment/metrics`, `listings/[id]/stats`. The first two are pure calculators that touch no state. The third calls `recordListingMetric`.
+
+**The bug.** `POST app/api/listings/[id]/stats/route.ts` is unauthenticated and has no rate limiter. Behind it, two module-level containers had no ceiling on the *number* of entries, and both keys are attacker-controlled:
+
+```ts
+const statsByListing = new Map<string, ListingStats>();   // key = the [id] URL path segment
+const seenViews = new Set<string>();                      // key = `${listingId}:${sessionKey}`
+```
+
+`sessionKey` is a request-body field — and when **omitted** it defaults to a random value (`listing-stats.ts:47`), so even a client that sends an empty body grows `seenViews` on every request. Rotating either value minted permanent entries in a long-lived process.
+
+**Why the CI guard missed it.** This round's own `unbounded-state-guard.test.ts` passed on this file because `resetListingStatsForTests()` calls `.clear()` — a helper that only ever runs under vitest. A test-reset helper is not an eviction path. The guard now strips `reset*`/`*ForTests` function bodies before checking, and treats a call to an `evict*` helper as a legitimate bound. **Verified by removing the eviction and watching the guard go red on both containers**, then restoring.
+
+The 12 demo-store maps that had been passing on the same false negative (`broker/channel.ts` ×7, `governance/registry.ts` ×2, `leads/lead.ts`, `requirements.ts`, `rera/rera.ts`) are now explicitly marked `bounded-state:` — they are fixture-mode only, selected by `getPersistenceMode()` when `ARCHITECH_DATA_SOURCE !== "prisma"`, and that gating is enforced by `pnpm production:plan:audit`.
+
+**The fix.** `MAX_TRACKED_LISTINGS = 5_000`, `MAX_SEEN_VIEW_KEYS = 50_000`, insertion-order eviction (no sort, for the reason in `utils/bounded-window-map.ts`), plus `listingStatsStoreCounts()` for observability.
+
+**Tests (red → green).** `client/src/lib/analytics/listing-stats.test.ts` (new, 6 tests). Pre-fix: `expected 20000 to be less than or equal to 5000` and `expected true to be false` (a flooded idempotency key was still remembered). Both green after; the three pre-existing-behaviour pins stayed green throughout.
+
+---
+
 ## 4. Cleared by evidence (no defect)
 
 | Area | Method | Result |
@@ -300,6 +333,8 @@ The new tests sit beside the four pre-existing split tests written for BUG-2026-
 | Repo audit gates | `pnpm env:audit` | `provisioning_plan_ready_external_account_access_required` — pass |
 | Channel matching determinism | Read `channel/matching.ts` in full | `now` injected; `scoreArea` guards `target === 0`; weights sum to 100; tie-break total. No defect |
 | Other scheduled jobs (batch-abort class) | Read `retention-runtime.ts`, `alerts-runtime.ts` | Both already correct — and instructive: the media sweep paginates by **id cursor** (`orderBy: { id: "asc" }` + `cursor`), so a failing row cannot block the queue. That is the pattern BUG-R4-004 lacked |
+| **All 26 unguarded API routes** | Enumerated every `app/api/**/route.ts` lacking `authorizeRequest`/`CRON_SECRET`; recorded its exported HTTP methods and whether it mutates | 17 are read-only GETs. 9 expose a write method; 5 of those call `enforceMutationSafety` (auth login/logout/register, leads, observability errors + web-vitals). Of the 3 that did not, `cost/ownership` and `investment/metrics` are pure calculators that touch no state, and `listings/[id]/stats` **was a bug** — BUG-R4-007 |
+| **`useEffect` without a dependency array** | Balanced-argument parser over all `.ts`/`.tsx` in `client/src`, counting top-level commas in each call's argument list — shape-agnostic, so `() => {…}` and `() => setX(…)` are both covered | **51 call sites, 0 missing a dependency array.** An earlier regex-only scan in this session matched one callback shape and was not sufficient evidence; this scan is |
 | Multi-tenant isolation | Traced `withOrg()` (`persistence/channel-store.ts:203`) and grepped every `findFirst`/`findUnique` in `client/src/lib/persistence` | Holds, and with two independent mechanisms: `withOrg` sets `app.current_org_id` via `set_config(..., true)` — **transaction-local**, so it cannot leak across pooled connections — and the queries additionally carry an explicit `organizationId` predicate. Zero unscoped `findUnique({ where: { id } })` calls found |
 | `proxy.ts` is the wrong filename for Next 16 middleware | Checked the installed compiler | **Not a bug.** `node_modules/next/dist/lib/constants.js:289` defines `PROXY_FILENAME = 'proxy'`, and `dist/build/utils.js:280` accepts `proxy` alongside `middleware`. The production `X-Robots-Tag: noindex, nofollow` guard in `proxy.ts:11-13` does run |
 | Sitemap / robots correctness | Read `client/src/lib/seo/sitemap.ts` in full | `parseIsoDate` pins to UTC and returns `undefined` on garbage, so a bad fixture degrades to "no `lastmod`" instead of a wrong date or the build clock; `escapeXml` covers `& < > " '`; segments are asserted exhaustive by `collectUnsegmentedPages`. No defect |
@@ -311,7 +346,7 @@ The new tests sit beside the four pre-existing split tests written for BUG-2026-
 | ID | Item | Evidence | Proposed handling |
 |---|---|---|---|
 | **W1** | **Rate limiter fails open with no client identity.** `clientKey()` returns `null` when no `x-real-ip`/`cf-connecting-ip`/`x-forwarded-for` is present, and `enforceMutationSafety` then returns `null` (pre-fix line 137) — no throttling at all. Deliberate and documented in-code (avoids lumping NATed clients into one bucket), and Origin/Host + body-size checks still run. | `request-safety.ts:31-39,136-137` | Product/infra decision, not a bug: either require a trusted proxy in production (and fail closed behind it) or add a global per-route fallback budget. Do **not** "fix" unilaterally — failing closed would break legitimate server-to-server callers |
-| **W2** | **`comparableListings` divides by `subject.priceNum`.** If a subject listing ever had `priceNum === 0`, `deltaPct` becomes `Infinity`. The peer filter checks `listing.priceNum > 0` but not the subject's. Not reachable today: the only caller (`app/listing/[id]/page.tsx:181`) passes fixture-sourced prices, all non-zero. | `client/src/lib/listing/comparables.ts:20` | One-line defensive guard when the module next changes. **Do not invent a fallback price** — that would violate the no-invented-listing-facts constraint |
+| **W2 — RESOLVED (see below)** | **`comparableListings` divided by `subject.priceNum`.** If a subject listing ever had `priceNum === 0`, `deltaPct` becomes `Infinity`. The peer filter checks `listing.priceNum > 0` but not the subject's. Not reachable today: the only caller (`app/listing/[id]/page.tsx:181`) passes fixture-sourced prices, all non-zero. | `client/src/lib/listing/comparables.ts:20` | **Fixed in `9bb3b3d`.** Red test first: `expected Infinity to be null`. `deltaPct` is now `number \| null`, returning null for a non-positive subject price — matching the existing convention in `realestate/locality-intel.ts:32` and `market-trends.ts:40`. Zero was explicitly rejected as an invented value. `ListingPage.tsx` updated to render an em dash |
 | **W3** | **Permission-string inconsistency:** one route asks for `"channel.write"` where its siblings (`accept`, `reject`) ask for `"broker.channel.write"`. Functionally equivalent today (both granted to the same roles) but a future role split would silently diverge. | `app/api/broker/channel/matches/[id]/respond/route.ts:12` vs `roles.ts` | Cosmetic rename once product confirms the two grants are meant to be the same |
 | **W4** | **Coverage copy (Mumbai / "12 metros").** Carried forward from round 1's watchlist; round 2 re-verified the claim matches the 12 live city hubs in `liveCities`. Left untouched: a copy/product decision, and changing it would mean asserting coverage facts. | `app/buy/page.tsx:12`, `client/src/pages/Home.tsx:48` | Flag to content owner |
 | **W5** | **`validateEnvCatalog` is a dormant control.** `ALLOWED_ENV_KEYS` (48 entries) is the repo's declared allow-list of environment keys, but the only caller of `validateEnvCatalog` in the entire tree is its own unit test — nothing in `app/`, `client/src/`, `scripts/`, or `shared/` invokes it. Separately, **18** keys are read from `process.env` in code yet absent from the list, including security-relevant ones: `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION`, `DATA_GOV_IN_API_KEY`, `BROKER_CHANNEL_ERPNEXT_TOKEN`, `BROKER_CHANNEL_ERPNEXT_URL`. So the control would report false positives *and* is never consulted. Not a bug today because it gates nothing — but a reviewer reading the allow-list would reasonably assume it was enforced. | `client/src/lib/operations/hygiene.ts:93` (definition); sole reference outside it is `hygiene.test.ts` | Either wire it into `pnpm env:audit` / a CI guard and reconcile the 18 keys, or delete it. **Do not "fix" by adding the 18 keys silently** — several deserve a deliberate decision about whether they belong in a declared allow-list at all |
@@ -362,6 +397,8 @@ The new tests sit beside the four pre-existing split tests written for BUG-2026-
 | BUG-R4-004 | `client/src/lib/persistence/rera-store.test.ts` (new file) — `BUG-R4-004: an upsert failure on one row must not abort the rest of the batch`, `…an audit-event failure is contained the same way` | **2 failed** (`Error: Invalid value provided. Expected Date, got Invalid Date.` propagated out of the batch) | `0225e0e` | 2 green, 2 pre-existing-behaviour pins green throughout |
 | BUG-R4-005 | `client/src/lib/requirements.test.ts` (3), `client/src/lib/requirements.server.test.ts` (2), `client/src/lib/broker/channel.test.ts` (3) — all named `BUG-R4-005: …` | **8 failed** (`expected { ok: true } to match object { ok: false, status: 400 }`) | `67c9188` | 8 green, 4 no-regression pins green throughout |
 | BUG-R4-006 | `client/src/lib/persistence/channel-store.test.ts` (1), `client/src/lib/broker/channel.test.ts` (1) | **2 failed** (`expected { ok: true } …` / `expected true to be false`) | `548baee` | 2 green, 4 BUG-2026-001 split tests green throughout |
+| BUG-R4-007 | `client/src/lib/analytics/listing-stats.test.ts` (new, 6 tests) | **2 failed** (`expected 20000 to be less than or equal to 5000`) | `8f06834` | 6 green, 3 behaviour pins green throughout |
+| W2 (watchlist → fixed) | `client/src/lib/listing/comparables.test.ts` (new, 9 tests, repository mocked) | **2 failed** (`expected Infinity to be null`) | `9bb3b3d` | 9 green |
 
 Every commit message names its BUG-ID. Every guard test is named after its BUG-ID, so `grep -rn "BUG-R4-00" client/src` enumerates the whole regression surface.
 
@@ -377,6 +414,11 @@ e75f841  fix(auth): BUG-R4-003 …
 0289116  docs(bug-hunt): round-4 report …
 67c9188  fix(validation): BUG-R4-005 …
 548baee  fix(broker): BUG-R4-006 …
+800e558  docs(bug-hunt): round-4 report — add BUG-R4-005/006
+fb85e58  docs(bug-hunt): W5 + non-blocking backlog
+3645d47  refactor(state): N3/N4/N6 — BoundedWindowMap, CI guards, live env catalog
+8f06834  fix(analytics): BUG-R4-007 bound the listing-stats demo store
+9bb3b3d  test+fix: W2 divide-by-zero, N7 offline db:validate, module tests
 ```
 
 ---
@@ -409,17 +451,19 @@ e75f841  fix(auth): BUG-R4-003 …
 
 ## 9. Outstanding non-blocking items
 
-Nothing below blocks merging this branch: all 6 confirmed bugs are fixed, and `pnpm test` / `check` / `lint` / `db:validate` are green at `800e558`. These are recorded so they are not lost.
+Status as of `9bb3b3d`. Most of this backlog has since been closed; what remains is listed honestly.
 
-| # | Item | Why it is not a blocker | Suggested owner |
-|---|---|---|---|
-| N1 | **BUG-R4-005/006 are unverified against a live PostgreSQL column.** The `22003 numeric_value_out_of_range` rejection is proved from migration DDL + arithmetic, not from an executed `INSERT` (§8 item 4). | The validator contract *is* unit-tested in both storage modes; only the database's rejection is inferred, and PostgreSQL's bigint bound is not in doubt. | Run the two `curl` checks in §8 item 4 once against staging. |
-| N2 | **`pnpm test:a11y`, `test:a11y:broker`, `test:ui` not run.** | No fixed code path changes rendered output, routing, or markup. All six fixes are validator/guard/cron changes. | Routine CI. |
-| N3 | **Recommendation not implemented: shared `BoundedWindowMap`** (§6 item 1). Three near-identical prune implementations remain across `metrics-store.ts`, `request-safety.ts`, `login-throttle.ts`. | Each is now individually correct and pinned by a named guard test. The refactor prevents a *fourth* copy; it does not fix a live defect. | Follow-up refactor PR. |
-| N4 | **Recommendation not implemented: CI source guards** for unbounded module-level `Map`/`Set` and for `BigInt(` conversions that bypass a range-checked validator (§6 items 1 and 3). | Both are prevention, not remediation. The repo has a working template (`sql-query-bounds.test.ts`). | Follow-up PR; highest value is the `BigInt(` guard, since that class has now recurred three times. |
-| N5 | **Coverage gap: 54 of 177 `client/src/lib` modules have no co-located `.test.ts`.** (Counted this round: `find client/src/lib -name "*.ts" ! -name "*.test.ts"` → 177, minus those with a sibling test → 54.) | Untested ≠ broken; this round's findings came from reading code, not from coverage. Worth noting that `rera-store.ts` was on this list and did hide BUG-R4-004. | Prioritise persistence and money modules. |
-| N6 | **W5 — the dormant `validateEnvCatalog` control.** Decided separately: wire it into CI and reconcile the 18 unlisted keys, or delete it. | It currently gates nothing, so it cannot misbehave. The risk is a false sense of enforcement, not a runtime fault. | Config/infra owner. |
-| N7 | **`prisma migrate dev` / `db push` remain unusable in this sandbox** (the schema-engine shim implements only `applyMigrations` / `diagnoseMigrationHistory` / `ensureConnectionValidity` / `getDatabaseVersion`). | Moot for this branch — no migration and no schema change was made. `db:validate` is fully unblocked (§2). | Only matters for a future schema-changing PR. |
-| N8 | **No pull request opened.** The branch is pushed (`refs/heads/arena/01a0776f-architech` = `800e558`, verified by `git ls-remote`) but no PR exists. | Work is preserved and reviewable on the branch. Opening a PR is a review-workflow choice, not a code concern. | Raise when the reviewer is ready. |
+| # | Item | Status |
+|---|---|---|
+| N1 | **BUG-R4-005/006 unverified against a live PostgreSQL column.** | **Still open — cannot be closed here.** No PostgreSQL binary exists in this sandbox (`/usr/lib/postgresql` absent). Proven from migration DDL + arithmetic. Run the two `curl` checks in §8 item 4 against staging. |
+| N2 | **`pnpm test:a11y` / `test:a11y:broker` / `test:ui` not run.** | **Still open — blocked.** Attempted: `pnpm exec playwright install chromium` fails with `ECONNRESET` to the browser CDN. No rendered-output change in any fix, so the risk is low. |
+| N3 | **Shared `BoundedWindowMap`.** | **DONE** (`3645d47`). `client/src/lib/utils/bounded-window-map.ts`, 8 tests; `login-throttle.ts` and `request-safety.ts` refactored onto it with their existing guard tests unchanged. Note: the report earlier said "three near-identical prune implementations" — that was wrong. `metrics-store.ts` bounds via a closed 6-name allowlist, not a prune, so there were **two**. |
+| N4 | **CI source guards.** | **DONE** (`3645d47` + `8f06834`). `unbounded-state-guard.test.ts` and `bigint-range-guard.test.ts`, both following the `sql-query-bounds.test.ts` precedent. The state guard found a real gap on its second iteration — see BUG-R4-007. |
+| N5 | **Coverage gap in `client/src/lib`.** | **Partially done.** 54 modules lacked tests; `format-inr.ts` (+9) and `listing/comparables.ts` (+9) now have them, and `analytics/listing-stats.ts` gained 6. ~51 remain. **New evidence for prioritising this:** `comparableListings` cannot return a single comparable in the current fixture, because all 336 listings sit in distinct localities — no locality has two. The "comparable homes" surface is therefore unrenderable with shipped data. Flagged to the data owner; **not** fixed by inventing listings. |
+| N6 | **Dormant `validateEnvCatalog`.** | **DONE** (`3645d47`). 18 missing keys added (catalog 48 → 66, no duplicates); `env-catalog-parity.test.ts` now drives the real validator from a source scan in both directions on every CI run. |
+| N7 | **`db:validate` unusable offline.** | **DONE** (`9bb3b3d`). `scripts/sandbox/install-schema-engine-shim.mjs` + `pnpm db:validate:offline`. Verified end to end: engine removed → plain `db:validate` failed with the TLS error → the script installed the shim → `prisma validate` passed. Idempotent, and it never overwrites a real engine. |
+| N8 | **No pull request opened.** | **Still open.** The branch is pushed; opening a PR is a review-workflow decision. |
 
-**Two counts in earlier drafts of this hunt were wrong and are corrected here:** the watchlist has **5** items, not 4 (W5 was analysed but never written into the deliverable), and the unlisted-`process.env`-key figure is **18**, not 10.
+**Environment instability observed while doing this work** (relevant to anyone re-verifying): the sandbox dropped `node_modules` between turns and, on one turn, reset local git history to the base commit `420b77c` while leaving the working tree intact. Recovery was `git fetch` + `git reset --mixed <remote-sha>`. Treat the **remote branch as the source of truth**, and run install + gates in a single command.
+
+**Counts corrected during this round:** watchlist has **5** items (W5 was analysed but never written into the deliverable); unlisted `process.env` keys number **18**, not 10; and there were **two** prune implementations to extract, not three.
