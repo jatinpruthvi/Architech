@@ -97,6 +97,7 @@ Generated on 2026-09-07 from the repository Markdown tree.
 - [Phase 1 Search Api](./docs/search/phase-1-search-api.md)
 - [Phase 1 Search Suggestions Recovery](./docs/search/phase-1-search-suggestions-recovery.md)
 - [Prisma Backed Search](./docs/search/prisma-backed-search.md)
+- [Search Activation And Relevance 2026 09 07](./docs/search/search-activation-and-relevance-2026-09-07.md)
 - [Privacy Data Flow Map](./docs/security/privacy-data-flow-map.md)
 - [Security Headers](./docs/security/security-headers.md)
 - [1 Studyarena Round11 Contestant A](./docs/seo/1 studyarena-round11-contestant-a.md)

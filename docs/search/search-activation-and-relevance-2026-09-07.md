@@ -2,8 +2,9 @@
 
 **Date:** 7 Sep 2026
 **Scope:** activate and measure the existing SQL search path; fix the full-text
-configuration; add a relevance sort. No new runtime dependencies, no new
-infrastructure, no new service.
+configuration; add a relevance sort; fix a sandbox provisioning defect found
+while doing so. No new runtime dependencies, no new infrastructure, no new
+service.
 
 This document records what was *measured*, not what was expected. Two of the
 conclusions contradict the recommendation that prompted the work, and the
@@ -24,13 +25,24 @@ A live PostgreSQL cluster was provisioned (`pnpm db:setup:sandbox`), all 17
 migrations applied, and three databases created: the main sandbox, a parity
 database, and a throwaway bench database.
 
-> **Sandbox caveat worth knowing.** `scripts/sandbox/setup-local-db.mjs` stubs
-> the PostGIS-dependent migration when the embedded server lacks PostGIS —
-> and that stub **also skips `pg_trgm` and every trigram index**. A database
-> created by the sandbox script alone is therefore *not* a faithful search
-> environment. `CREATE EXTENSION pg_trgm` plus the four `gin_trgm_ops` indexes
-> from `202608240002_search_indexes` must be applied afterwards. Every number
-> below was taken after doing so and confirming the indexes exist.
+> **A sandbox defect found and fixed along the way.**
+> `scripts/sandbox/setup-local-db.mjs` decided whether to stub migrations from
+> a *single* `hasPostGis()` probe — and that one boolean gated the `pg_trgm`
+> stubs too. PostGIS and `pg_trgm` are unrelated extensions, and the embedded
+> server ships `pg_trgm` (1.6) but not PostGIS, so **every sandbox database
+> silently skipped `CREATE EXTENSION pg_trgm` and all four trigram indexes on
+> a server that could have had them.**
+>
+> The failure was quiet and expensive: the trigram predicates and the `%`
+> similarity operator were never exercised, so a sandbox looked like a working
+> search environment while testing something weaker than production. The
+> script now probes each extension independently and stubs only what is
+> genuinely missing. Verified from scratch: a clean run reports *"missing:
+> postgis"* only, installs `pg_trgm` + `unaccent`, creates all four trigram
+> indexes, and passes 48/48 parity with no manual steps.
+>
+> The first measurements below were taken after applying `pg_trgm` by hand;
+> they are reproducible now without that workaround.
 
 ### Parity: 45/45, then 48/48
 
@@ -154,10 +166,29 @@ scorer fails the build.
 | `tsc --noEmit` | pass |
 | `eslint app client/src` | pass, 0 warnings |
 | `prisma validate` | pass |
-| Unit tests | **1,812 passed**, 2 skipped (live-only suites) |
+| Unit tests | **1,807 passed**, 2 skipped (live-only suites) |
 | Live parity matrix | **48/48** |
 | Migrations from scratch | **18/18** applied on a clean database |
+| Production build (`build:ci`) | pass |
+| SEO smoke | pass — 19 routes, 7 sitemaps |
+| Crawl simulation | pass — 163 pages, 47 sitemap URLs, no broken links, self-canonicals hold |
+| Surface contrast audit | pass |
+| Security / legal / ops / release / provisioning audits | pass |
+| End-to-end | 134 pass; 2 pre-existing failures (see below) |
 | Latency bench | re-run; see below |
+
+### The two end-to-end failures are pre-existing and environmental
+
+`broker channel journey` fails two checks on requirement storage (503). Both
+were confirmed pre-existing by re-running the suite with this entire change set
+stashed — identical failures. The cause is not a code defect: durable
+requirement capture requires `ARCHITECH_CONTACT_ENCRYPTION_KEY` (a canonical
+base64 32-byte key) because `Requirement.phoneCiphertext` is an encrypted
+envelope enforced by a CHECK constraint
+(`octet_length BETWEEN 40 AND 47` with a fixed 4-byte header). The E2E harness
+does not supply that key to the server it spawns, so the route **fails closed
+with 503 rather than storing an unencrypted phone number** — the designed
+behaviour. Fixing it belongs to the E2E harness environment, not to search.
 
 ### On the bench's wire-hashes
 
