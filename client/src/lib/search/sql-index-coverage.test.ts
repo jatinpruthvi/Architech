@@ -74,7 +74,7 @@ describe("search predicates have the indexes they require", () => {
     // loudly rather than vacuously pass over an empty set.
     expect(operands.size).toBeGreaterThan(0);
 
-    const ALIAS_TO_TABLE: Record<string, string> = { locality: "Locality", city: "City", listing: "Listing" };
+    const ALIAS_TO_TABLE: Record<string, string> = { locality: "Locality", city: "City", listing: "Listing", alias: "LocalityAlias" };
     const unsupported = [...operands].filter((operand) => {
       const [alias, column] = operand.split(".");
       const table = ALIAS_TO_TABLE[alias];
@@ -120,6 +120,27 @@ describe("search predicates have the indexes they require", () => {
       }),
     );
     for (const exempt of ILIKE_EXEMPT) expect(targets).toContain(exempt);
+  });
+});
+
+describe("alias matching uses the indexable table, not the array (QP-19-004)", () => {
+  it("never reintroduces unnest() over the aliases array", () => {
+    /* unnest() is opaque to the planner, so NOTHING applied to its output
+       can use an index — not ILIKE, not `%`, regardless of what index exists
+       on the array column. Reverting to the array form would silently
+       un-index alias matching again while every correctness test stayed
+       green, which is exactly how the original defect survived. */
+    const plan = buildSqlNarrowPlan("prahladnagar")!;
+    expect(plan.sql).not.toContain("unnest(");
+    expect(plan.sql).toContain('"LocalityAlias"');
+  });
+
+  it("correlates the alias subquery to the joined locality", () => {
+    // An uncorrelated EXISTS would match a token against EVERY locality's
+    // aliases and turn the predicate into "some locality somewhere matches",
+    // which is a recall bug, not an optimization.
+    const plan = buildSqlNarrowPlan("prahladnagar")!;
+    expect(plan.sql).toContain('alias."localityId" = locality."id"');
   });
 });
 

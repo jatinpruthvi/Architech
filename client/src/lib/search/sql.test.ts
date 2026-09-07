@@ -49,7 +49,10 @@ describe("buildSqlNarrowPlan — executed candidate narrowing", () => {
     /* The fuzz alternatives ride the raw token, not the LIKE pattern. */
     expect(plan.sql).toContain('locality."name" % $2');
     expect(plan.sql).toContain('city."name" % $2');
-    expect(plan.sql).toContain('unnest(locality."aliases")');
+    /* QP-19-004: alias matching moved off `unnest(locality."aliases")` onto
+       the normalised LocalityAlias table, which is the only form an index can
+       serve. See sql-index-coverage.test.ts for the anti-regression guard. */
+    expect(plan.sql).toContain('"LocalityAlias" AS alias');
   });
 
   it("only ever selects ACTIVE listings from the real table graph", () => {

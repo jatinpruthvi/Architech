@@ -56,23 +56,37 @@ CREATE INDEX IF NOT EXISTS "Listing_note_trgm_idx"
   ON "Listing" USING GIN ("note" gin_trgm_ops);
 
 -- ---------------------------------------------------------------------------
--- WHAT THIS MIGRATION DELIBERATELY DOES NOT DO
+-- 3. LocalityAlias."normalizedName" trigram — replacing an index that could
+--    never apply (QP-19-004).
 --
--- `Locality_aliases_idx` (202609070001) is GIN over the text[] column. Its
--- migration comment claims it makes the alias match cheap "as the registry
--- grows", but the query it was written for is
+-- `Locality_aliases_idx` (202609070001) is GIN over the `aliases` text[]
+-- column. Its comment claims it makes the alias match cheap as the registry
+-- grows, but the query it was written for was
 --
 --     EXISTS (SELECT 1 FROM unnest(locality."aliases") AS alias
 --             WHERE alias ILIKE $n ESCAPE '\' OR alias % $n)
 --
--- and a plain array GIN index serves array CONTAINMENT operators (@>, &&, =
--- ANY) — it cannot serve ILIKE or `%` applied to elements after unnest(),
--- because unnest() is an opaque set-returning function to the planner. That
--- index is therefore not doing the job its comment describes.
+-- and a plain array GIN index serves array CONTAINMENT operators (@>, &&,
+-- = ANY) — it cannot serve ILIKE or `%` applied to elements after unnest(),
+-- because unnest() is an opaque set-returning function to the planner. Both
+-- alternatives were therefore unindexable and the array was scanned per row.
 --
--- The honest fix is a rewrite of the predicate (or a normalised alias table
--- with its own trigram index — LocalityAlias already exists and carries
--- normalizedName). That is a recall-affecting change to the superset
--- guarantee, so it is NOT bundled into an index-only migration; it is
--- recorded in the audit report's watchlist for review instead. Shipping an
--- index that silently does not apply is how the current gap happened.
+-- The predicate now matches the normalised LocalityAlias table instead (see
+-- lib/search/sql.ts), which this index makes sargable for the `%` operand and
+-- the leading-wildcard ILIKE alike.
+--
+-- WHY THE REWRITE IS RECALL-SAFE (it widens, never narrows): LocalityAlias is
+-- a strict superset of the legacy array. Migration 202608300002 backfilled it
+-- with a CROSS JOIN LATERAL UNNEST(locality."aliases") as type SEARCH, on top
+-- of the OFFICIAL name and the TRANSLITERATION hindiName, and prisma/seed.mjs
+-- continues to write both representations. The alternative is OR'd into a
+-- candidate SUPERSET that the unchanged JS filter then narrows, so widening
+-- the candidate pool cannot change which rows the caller returns.
+CREATE INDEX IF NOT EXISTS "LocalityAlias_normalizedName_trgm_idx"
+  ON "LocalityAlias" USING GIN ("normalizedName" gin_trgm_ops);
+
+-- `Locality_aliases_idx` is intentionally LEFT IN PLACE. It is not dead: the
+-- array column is still written by the seed and still read by the location
+-- import reconciliation, and array-containment lookups against it remain
+-- servable. Dropping it is a separate decision from fixing the search
+-- predicate, and this migration does not make it.

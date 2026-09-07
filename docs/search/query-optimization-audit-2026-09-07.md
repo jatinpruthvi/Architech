@@ -60,7 +60,7 @@ captured the literal SQL string emitted, then diffed those predicates against ev
 | QP-19-001 | High | Redundant work | `client/src/lib/search/sql.ts` — `buildSqlNarrowPlan` | **Fixed** |
 | QP-19-002 | High | Missing index | `City."name"` trigram | **Fixed** |
 | QP-19-003 | Medium | Missing index | `Listing."titleHi"`, `"descriptionHi"`, `"note"` | **Fixed** |
-| QP-19-004 | Medium | Ineffective index | `Locality_aliases_idx` | **Watchlist** (see §4) |
+| QP-19-004 | Medium | Ineffective index | `Locality_aliases_idx` / alias predicate | **Fixed** (see §4) |
 
 ### QP-19-001 — the narrow query ignored the city scope
 
@@ -120,12 +120,13 @@ by name in the guard test.
 
 ---
 
-## 4. Watchlist — reported, deliberately not fixed
+## 4. QP-19-004 — alias matching could not use an index at all
 
-**QP-19-004 — `Locality_aliases_idx` does not serve the query it was created for.**
+*Deferred in the first pass as a watchlist item, then fixed once it was confirmed the
+database is not yet live (so the migration could be corrected in place rather than stacked).*
 
 Migration `202609070001` creates `GIN ("aliases")` over the `text[]` column, commenting that
-it makes the alias match cheap as the registry grows. The query is:
+it makes the alias match cheap as the registry grows. The query was:
 
 ```sql
 EXISTS (SELECT 1 FROM unnest(locality."aliases") AS alias
@@ -134,12 +135,39 @@ EXISTS (SELECT 1 FROM unnest(locality."aliases") AS alias
 
 A plain array GIN index serves array **containment** (`@>`, `&&`, `= ANY`). It cannot serve
 `ILIKE` or `%` applied to elements *after* `unnest()`, because `unnest()` is an opaque
-set-returning function to the planner. The index is real but inapplicable.
+set-returning function to the planner. **Both** alternatives were therefore unindexable, and
+the array was scanned per row per token. The index was real but inapplicable — worse than a
+missing index, because its comment asserted coverage that did not exist.
 
-The honest fix is to rewrite the predicate against the already-existing normalised
-`LocalityAlias` table (which carries `normalizedName` and has a btree index on it) with its
-own trigram index. That changes which rows match — a recall change to the superset
-guarantee — so it does **not** belong in an index-only migration. Flagged for review.
+**Fix.** The predicate now matches the normalised `LocalityAlias` table:
+
+```sql
+EXISTS (SELECT 1 FROM "LocalityAlias" AS alias
+        WHERE alias."localityId" = locality."id"
+          AND (alias."normalizedName" ILIKE $1 ESCAPE '\'
+               OR alias."normalizedName" % $2))
+```
+
+with `LocalityAlias_normalizedName_trgm_idx` added. The correlation rides the leading column
+of the existing `(localityId, normalizedName, languageCode)` unique key.
+
+**Why this is recall-safe — it widens, never narrows.** `LocalityAlias` is a strict superset
+of the legacy array: migration `202608300002` backfilled it via
+`CROSS JOIN LATERAL UNNEST(locality."aliases")` as type `SEARCH`, *in addition to* the
+`OFFICIAL` name and the `TRANSLITERATION` `hindiName` rows, and `prisma/seed.mjs` still
+writes both representations. Crucially this alternative is **OR'd** into a candidate
+*superset* that the unchanged JS filter then narrows, so a wider candidate pool cannot change
+which rows the caller returns. That is what made the earlier "this changes recall" concern
+resolvable rather than blocking.
+
+`Locality_aliases_idx` is deliberately **left in place**: the array column is still seeded and
+still read by location-import reconciliation, and containment lookups against it remain
+servable. Dropping it is a separate decision this migration does not make.
+
+### Watchlist — still open
+
+Nothing from this audit remains unfixed. The only outstanding items are the measurements in
+§5, which need a live database.
 
 ## 5. What I could not check
 
@@ -167,8 +195,17 @@ predicate that requires a specific index type, and checks a matching `CREATE IND
 in the migrations. It needs no database. It cannot prove the planner picks the index — but
 it makes "this predicate has no index at all" impossible to merge again.
 
-**The guard was verified to fail, not just to pass.** Temporarily removing the
-`City_name_trgm_idx` statement produced:
+**Both guards were verified to fail, not just to pass.** Reverting the alias predicate to
+its `unnest(...)` form produced:
+
+```
+× never reintroduces unnest() over the aliases array
+  AssertionError: expected '...' not to contain 'unnest('
+× correlates the alias subquery to the joined locality
+  AssertionError: expected '...' to contain 'alias."localityId" = locality."id"'
+```
+
+and temporarily removing the `City_name_trgm_idx` statement produced:
 
 ```
 × every trigram (%) operand in the emitted narrow plan has a gin_trgm_ops index
@@ -185,7 +222,7 @@ The migration was then restored and `git diff --stat prisma/` confirmed clean.
 |---|---|
 | `npx tsc --noEmit` | clean |
 | `pnpm lint` | clean |
-| `npx vitest run` | **1979 passed / 49 skipped (2028)** — was 1972/49; +7 from the new guard |
+| `npx vitest run` | **1981 passed / 49 skipped (2030)** — was 1972/49; +9 from the new guard |
 | `pnpm db:validate:offline` | schema valid |
 | Guard fails on regression | verified (§6) |
 
@@ -194,6 +231,11 @@ The migration was then restored and `git diff --stat prisma/` confirmed clean.
 - `client/src/lib/search/sql.ts` — optional `citySlug` scope pushdown (QP-19-001).
 - `client/src/lib/search/sql-narrow.ts` — threads `citySlug`; logs it in telemetry.
 - `client/src/lib/search/server.ts` — passes the resolved city scope.
-- `prisma/migrations/202609070003_search_predicate_indexes/migration.sql` — four additive
-  GIN trigram indexes (QP-19-002, QP-19-003), with the QP-19-004 non-fix documented inline.
+- `prisma/migrations/202609070003_search_predicate_indexes/migration.sql` — five additive
+  GIN trigram indexes (QP-19-002, QP-19-003, QP-19-004). Amended in place rather than
+  superseded by a further migration: the database is not yet live anywhere, so no
+  environment has applied it and there is no checksum to invalidate. Once it is deployed,
+  the same change would have to be a new migration.
+- `client/src/lib/search/sql.test.ts` — the assertion pinning the old `unnest(...)` form
+  updated to the new contract.
 - `client/src/lib/search/sql-index-coverage.test.ts` — the index-coverage invariant.

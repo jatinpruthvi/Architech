@@ -162,7 +162,22 @@ export function buildSqlNarrowPlan(rawQuery: string, citySlug?: string): SqlNarr
       `  OR ${ftsMatchSql('listing."searchVector"', `$${rawParam}`)}`,
       `  OR locality."name" % $${rawParam}`,
       `  OR city."name" % $${rawParam}`,
-      `  OR EXISTS (SELECT 1 FROM unnest(locality."aliases") AS alias WHERE alias ILIKE $${likeParam} ESCAPE '\\' OR alias % $${rawParam})`,
+      /* QP-19-004: matched against the normalised LocalityAlias TABLE, not
+         `unnest(locality."aliases")`. The array form could not use an index
+         at all — unnest() is an opaque set-returning function to the planner,
+         so neither the ILIKE nor the `%` could be served and every candidate
+         search scanned the array per row. LocalityAlias."normalizedName" has
+         a real trigram index (202609070003), and the join rides the leading
+         column of the (localityId, normalizedName, languageCode) unique key.
+
+         RECALL: this WIDENS, never narrows. LocalityAlias is a superset of
+         the legacy array — migration 202608300002 backfilled it by
+         `UNNEST(locality."aliases")` as type SEARCH, on top of the OFFICIAL
+         name and TRANSLITERATION hindiName rows, and prisma/seed.mjs keeps
+         writing both. Widening is safe here because this alternative is OR'd
+         into a candidate SUPERSET that the unchanged JS filter then narrows,
+         so the returned rows cannot change. */
+      `  OR EXISTS (SELECT 1 FROM "LocalityAlias" AS alias WHERE alias."localityId" = locality."id" AND (alias."normalizedName" ILIKE $${likeParam} ESCAPE '\\' OR alias."normalizedName" % $${rawParam}))`,
       ")",
     ].join("\n");
   });
