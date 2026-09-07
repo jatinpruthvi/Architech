@@ -21,6 +21,7 @@ import { getCityStaticParams, getLiveCityBySlug, getListingsByCity, getLocalitie
 import { cityUrl, homeUrl } from "@/lib/seo/urls";
 import { intentVocabulary } from "@/lib/seo/intent";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { cityId, cityNode } from "@/lib/seo/entity-graph";
 
 const RENT = intentVocabulary("rent");
 
@@ -52,25 +53,23 @@ export default async function RentCityHub({ params }: { params: Promise<{ city: 
   const rentalLocalities = localities.filter((place) =>
     rentals.some((listing) => listing.localitySlug === place.slug),
   );
-  const [lat, lon] = city.marker.split(",");
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "City",
-        name: city.name,
-        alternateName: city.hindi,
-        geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
-        containedInPlace: { "@type": "AdministrativeArea", name: city.state },
-      },
+      /* A REFERENCE to the city defined on its buy hub -- not a second
+         description of it. The rent hub is a different page about the same
+         place; emitting its own City node here is exactly how one city becomes
+         two competing entities. Geo and containment live at the definition
+         site. */
+      cityNode({ slug: city.slug, name: city.name, state: city.state, stateSlug: city.stateSlug }),
       {
         "@type": "CollectionPage",
         name: `Property for rent in ${city.name}`,
         url: cityUrl(city.slug, "rent"),
         /* LeaseOut, not Sell — the distinction that stops an aggregator
            reading a ₹22,000 monthly figure as a sale price. */
-        about: { "@type": "Place", name: city.name },
+        about: { "@id": cityId(city.slug) },
         numberOfItems: rentals.length,
       },
       {

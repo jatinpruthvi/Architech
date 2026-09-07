@@ -11,6 +11,7 @@ import { localityIntel } from "@/lib/realestate/locality-intel";
 import { localitySerpDescription, localitySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { cityNode, localityId } from "@/lib/seo/entity-graph";
 import { buildFaqPage, localityFaqEntries } from "@/lib/seo/faq";
 import { FaqSection } from "@/components/architech/FaqSection";
 import { compactInr } from "@/lib/realestate/format-inr";
@@ -92,6 +93,10 @@ export default async function Page({ params }: { params: Promise<{ city: string;
     "@graph": [
       {
         "@type": "Place",
+        /* One id for this locality across BOTH intents: the buy and rent URLs
+           are two views of one real place, and saying so is what stops them
+           competing as separate entities. */
+        "@id": localityId(city.slug, locality.slug),
         name: `${locality.name}, ${city.name}`,
         alternateName: locality.hindi,
         dateModified: intel.asOfDate,
@@ -106,7 +111,9 @@ export default async function Page({ params }: { params: Promise<{ city: string;
           ...(locality.pincodes.length ? { postalCode: locality.pincodes[0] } : {}),
           addressCountry: "IN",
         },
-        containedInPlace: { "@type": "City", name: city.name, containedInPlace: { "@type": "AdministrativeArea", name: city.state } },
+        /* A reference, not a re-description. The city is defined on its own
+           hub; restating its properties here would create a competing copy. */
+        containedInPlace: cityNode({ slug: city.slug, name: city.name, state: city.state, stateSlug: city.stateSlug }),
         additionalProperty: [
           { "@type": "PropertyValue", name: "trustScore", value: trust.avgScore, unitText: "out of 100" },
           { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },

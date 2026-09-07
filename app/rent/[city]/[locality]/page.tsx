@@ -27,6 +27,7 @@ import { localityIntel } from "@/lib/realestate/locality-intel";
 import { compactInr } from "@/lib/realestate/format-inr";
 import { socialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { cityNode, localityId } from "@/lib/seo/entity-graph";
 import PropertyCard from "@/components/architech/PropertyCard";
 
 const RENT = intentVocabulary("rent");
@@ -94,6 +95,10 @@ export default async function RentLocalityPage({ params }: { params: Promise<{ c
     "@graph": [
       {
         "@type": "Place",
+        /* One id for this locality across BOTH intents: the buy and rent URLs
+           are two views of one real place, and saying so is what stops them
+           competing as separate entities. */
+        "@id": localityId(city.slug, locality.slug),
         name: `${locality.name}, ${city.name}`,
         alternateName: locality.hindi,
         geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
@@ -104,7 +109,9 @@ export default async function RentLocalityPage({ params }: { params: Promise<{ c
           ...(locality.pincodes.length ? { postalCode: locality.pincodes[0] } : {}),
           addressCountry: "IN",
         },
-        containedInPlace: { "@type": "City", name: city.name, containedInPlace: { "@type": "AdministrativeArea", name: city.state } },
+        /* A reference, not a re-description. The city is defined on its own
+           hub; restating its properties here would create a competing copy. */
+        containedInPlace: cityNode({ slug: city.slug, name: city.name, state: city.state, stateSlug: city.stateSlug }),
       },
       {
         "@type": "BreadcrumbList",
