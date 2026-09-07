@@ -19,14 +19,11 @@
  * existing mutation limiter behaves.
  */
 
+import { BoundedWindowMap } from "@/lib/utils/bounded-window-map";
+
 export const LOGIN_WINDOW_MS = 15 * 60_000;
 export const MAX_ATTEMPTS_PER_IP = 20;
 export const MAX_ATTEMPTS_PER_EMAIL = 8;
-
-type Bucket = { startedAt: number; count: number };
-
-const ipBuckets = new Map<string, Bucket>();
-const emailBuckets = new Map<string, Bucket>();
 
 /* BUG-R4-003: hard ceiling on live windows in EACH map.
 
@@ -42,44 +39,29 @@ const emailBuckets = new Map<string, Bucket>();
    that we drop the longest-resident windows rather than the process. */
 export const MAX_LOGIN_THROTTLE_BUCKETS = 20_000;
 
+type Bucket = { startedAt: number; count: number };
+
+/* Round-4 §6 item 1: both maps are BoundedWindowMaps, so the ceiling and the
+   eviction pass live in one shared, separately unit-tested place instead of
+   being re-implemented here. Behaviour is unchanged — same 20k ceiling, same
+   insertion-order eviction, same "prune only when a brand-new key arrives". */
+const ipBuckets = new BoundedWindowMap<Bucket>(MAX_LOGIN_THROTTLE_BUCKETS, LOGIN_WINDOW_MS);
+const emailBuckets = new BoundedWindowMap<Bucket>(MAX_LOGIN_THROTTLE_BUCKETS, LOGIN_WINDOW_MS);
+
 /** Live window count per map. Exposed for the bound's regression test. */
 export function loginThrottleBucketCount(): { ip: number; email: number } {
   return { ip: ipBuckets.size, email: emailBuckets.size };
 }
 
-/* Reclaim window slots. Expired windows are dead weight — the key is re-created
-   on that client's next attempt anyway — so they go first; only if the map is
-   still over the ceiling do we drop the longest-resident entries.
-
-   Eviction walks the Map's own insertion order rather than sorting by
-   `startedAt`: insertion order is a good proxy, and it keeps this O(excess)
-   instead of O(n log n) PER INSERT. A sort here would run on every request
-   once the ceiling is reached, turning the memory guard into its own
-   denial-of-service amplifier — precisely the condition it exists to survive.
-   Re-setting an existing key keeps its position, so a continuously-active
-   client may sit near the front; that costs it at most one unthrottled window
-   in a situation where 20k windows are already live. */
-function prune(store: Map<string, Bucket>, now: number) {
-  for (const [key, bucket] of store) {
-    if (now - bucket.startedAt >= LOGIN_WINDOW_MS) store.delete(key);
-  }
-  const limit = MAX_LOGIN_THROTTLE_BUCKETS - 1;
-  for (const key of store.keys()) {
-    if (store.size <= limit) break;
-    store.delete(key);
-  }
-}
-
 export type ThrottleDecision = { allowed: true } | { allowed: false; retryAfterSeconds: number };
 
-function take(store: Map<string, Bucket>, key: string, max: number, now: number): ThrottleDecision {
-  const current = store.get(key);
-  if (!current || now - current.startedAt >= LOGIN_WINDOW_MS) {
+function take(store: BoundedWindowMap<Bucket>, key: string, max: number, now: number): ThrottleDecision {
+  const current = store.peek(key, now);
+  if (!current) {
     /* BUG-R4-003: only a brand-new key can grow the map — an expired hit
-       overwrites its slot in place. Prune lazily, and only at the ceiling, so
-       the steady-state cost stays O(1). */
-    if (!current && store.size >= MAX_LOGIN_THROTTLE_BUCKETS - 1) prune(store, now);
-    store.set(key, { startedAt: now, count: 1 });
+       overwrites its slot in place. set() prunes lazily, and only at the
+       ceiling, so the steady-state cost stays O(1). */
+    store.set(key, { startedAt: now, count: 1 }, now);
     return { allowed: true };
   }
   if (current.count >= max) {

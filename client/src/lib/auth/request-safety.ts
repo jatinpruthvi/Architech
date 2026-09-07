@@ -1,10 +1,10 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { BoundedWindowMap } from "@/lib/utils/bounded-window-map";
 
 export const MUTATION_WINDOW_MS = 60_000;
 const MAX_MUTATIONS_PER_WINDOW = 60;
 const MAX_BODY_BYTES = 256 * 1024;
-const buckets = new Map<string, { startedAt: number; count: number }>();
 
 /* BUG-R4-002: hard ceiling on the number of live rate-limit windows.
 
@@ -24,6 +24,12 @@ const buckets = new Map<string, { startedAt: number; count: number }>();
    oldest-started windows rather than the process. */
 export const MAX_RATE_LIMIT_BUCKETS = 10_000;
 
+/* Round-4 §6 item 1: the ceiling and the eviction pass now live in one shared,
+   separately unit-tested helper instead of being re-implemented here. Behaviour
+   is unchanged — same 10k ceiling, same insertion-order eviction, same "prune
+   only when a brand-new key arrives". */
+const buckets = new BoundedWindowMap<{ startedAt: number; count: number }>(MAX_RATE_LIMIT_BUCKETS, MUTATION_WINDOW_MS);
+
 /** Number of live rate-limit windows. Exposed for the bound's regression test. */
 export function mutationSafetyBucketCount(): number {
   return buckets.size;
@@ -35,27 +41,6 @@ export function mutationSafetyBucketCount(): number {
    window than the cap allows) do we evict the oldest-started windows. Losing a
    window costs a legitimate client at most one unthrottled window, which is
    strictly better than exhausting the process. */
-function pruneBuckets(now: number) {
-  for (const [key, bucket] of buckets) {
-    if (now - bucket.startedAt >= MUTATION_WINDOW_MS) buckets.delete(key);
-  }
-  /* Evict down to one BELOW the ceiling: this runs immediately before the
-     caller inserts a new window, so the post-insert size is what the ceiling
-     actually bounds. */
-  /* Eviction walks the Map's own insertion order rather than sorting by
-     `startedAt`. The sort cost O(n log n) and ran on EVERY insert once the
-     ceiling was reached — turning the memory guard into its own
-     denial-of-service amplifier under exactly the sustained spray it exists to
-     survive. Insertion order is a good proxy for oldest-started and keeps this
-     O(excess); the cost is that re-setting an existing key keeps its position,
-     so a continuously-active client may sit near the front and lose one
-     unthrottled window when 10k windows are already live. */
-  const limit = MAX_RATE_LIMIT_BUCKETS - 1;
-  for (const key of buckets.keys()) {
-    if (buckets.size <= limit) break;
-    buckets.delete(key);
-  }
-}
 
 function error(status: number, code: string, message: string) {
   return NextResponse.json({ ok: false, error: code, errors: [message] }, {
@@ -192,13 +177,12 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
      another route's bucket, and one buggy polling client cannot 429 a page. */
   const route = new URL(request.url).pathname;
   const key = `${ip}:${route}:${request.method}`;
-  const current = buckets.get(key);
-  if (!current || now - current.startedAt >= MUTATION_WINDOW_MS) {
+  const current = buckets.peek(key, now);
+  if (!current) {
     /* BUG-R4-002: only a brand-new key can grow the map — an expired hit
-       overwrites its slot in place. Prune lazily, and only once the map is
-       actually at the ceiling, so the steady-state cost stays O(1). */
-    if (!current && buckets.size >= MAX_RATE_LIMIT_BUCKETS - 1) pruneBuckets(now);
-    buckets.set(key, { startedAt: now, count: 1 });
+       overwrites its slot in place. set() prunes lazily, and only once the map
+       is actually at the ceiling, so the steady-state cost stays O(1). */
+    buckets.set(key, { startedAt: now, count: 1 }, now);
     return null;
   }
   if (current.count >= MAX_MUTATIONS_PER_WINDOW) return error(429, "RATE_LIMITED", "Too many mutation requests. Please retry shortly.");

@@ -60,6 +60,29 @@ export const ALLOWED_ENV_KEYS = [
   "ARCHITECH_AUTHORITY_STORAGE",
   "TRUST_PROXY_HEADERS",
   "ALLOW_ORIGINLESS_MUTATIONS",
+  /* Reconciled 2026-09-07 (bug-hunt round 4, W5): these 18 keys are read from
+     process.env somewhere in app/, client/src/, shared/ or scripts/ but were
+     missing from the catalog, so validateEnvCatalog would have flagged the
+     project's own configuration as unknown. env-catalog-parity.test.ts now
+     drives this list from a source scan on every CI run. */
+  "ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION",
+  "ARCHITECH_BENCH_DATABASE_URL",
+  "ARCHITECH_DEMO_START_SIGNED_OUT",
+  "ARCHITECH_MEDIA_KINDS",
+  "ARCHITECH_PARITY_DATABASE_URL",
+  "ARCHITECH_SANDBOX_DB_NAME",
+  "ARCHITECH_SANDBOX_PG_PORT",
+  "ARCHITECH_SEARCH_SQL_PAGE",
+  "BROKER_CHANNEL_ERPNEXT_TOKEN",
+  "BROKER_CHANNEL_ERPNEXT_URL",
+  "CRAWL_BASE_URL",
+  "DATA_GOV_IN_API_KEY",
+  "MEDIA_MAX_IMAGES_PER_LISTING",
+  "NEXT_PUBLIC_ARCHITECH_MEDIA_KINDS",
+  "NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH",
+  "NEXT_PUBLIC_R2_PUBLIC_BASE_URL",
+  "NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE",
+  "SEO_REGISTRY_TTL_MS",
 ] as const;
 
 /** Risk keywords that reveal a stray secret in source or a rendered URL. */
