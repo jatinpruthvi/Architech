@@ -698,6 +698,9 @@ model ReraRecord {
   @@unique([jurisdictionSlug, registrationNumber])
   @@index([jurisdictionSlug, verificationStatus])
   @@index([state, verificationStatus])
+  // W2: the STALE refresh sweep filters on verificationStatus ALONE, ordered
+  // by updatedAt. Both indexes above have it as the SECOND column.
+  @@index([verificationStatus, updatedAt])
 }
 
 model Listing {
@@ -804,6 +807,10 @@ model Listing {
   @@index([bhk])
   @@index([meaningfulUpdatedAt])
   @@index([postalCode, lifecycle])
+  // W1: the moderation queue filters on lifecycle ALONE and drains FIFO by
+  // updatedAt. Every other lifecycle index above has it as a TRAILING column,
+  // so none of them can serve that query.
+  @@index([lifecycle, updatedAt])
 }
 
 model PropertyMedia {

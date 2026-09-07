@@ -90,3 +90,52 @@ CREATE INDEX IF NOT EXISTS "LocalityAlias_normalizedName_trgm_idx"
 -- import reconciliation, and array-containment lookups against it remain
 -- servable. Dropping it is a separate decision from fixing the search
 -- predicate, and this migration does not make it.
+
+-- ---------------------------------------------------------------------------
+-- 4. Leftmost-column indexes for two single-column filters (W1, W2).
+--
+-- Carried over from the watchlist of docs/ai/sql-perf-bug-hunt-2026-09-06.md,
+-- where both were deferred for one reason: "sandbox cannot run prisma validate
+-- (engine download TLS-blocked), and ARCH-17 step 6 forbids unverifiable
+-- migrations". That blocker is gone -- `pnpm db:validate:offline` (the
+-- schema-engine shim) validates the schema without network egress, so these
+-- are now verifiable in-sandbox and ship here.
+--
+-- Both are instances of ONE mistake: a composite index is only usable for a
+-- filter if the filtered column is the LEFTMOST one. A query filtering on a
+-- column that sits second in every existing index gets no index at all.
+--
+-- W1 -- getModerationQueueForServer (lib/persistence/broker-store.ts):
+--
+--     findMany({ where: { lifecycle: "IN_REVIEW" },
+--                orderBy: { updatedAt: "asc" }, take: 500 })
+--
+-- Listing has six lifecycle indexes -- (cityId, lifecycle), (localityId,
+-- lifecycle), (postalCode, lifecycle), (listerType, lifecycle), (brokerOrgId,
+-- lifecycle, updatedAt), (cityId, localityId, lifecycle, meaningfulUpdatedAt)
+-- -- and lifecycle is a TRAILING column in every one, so a lifecycle-only
+-- filter can use none of them. This is a sequential scan of the whole Listing
+-- table on the path brokers wait on. The existing take: 500 cap bounds MEMORY,
+-- not scan cost -- the scan still reads every row to find the matching ones.
+--
+-- updatedAt is included as the second column so the FIFO ordering is served by
+-- the same index, making the read an index scan rather than a scan plus sort.
+CREATE INDEX IF NOT EXISTS "Listing_lifecycle_updatedAt_idx"
+  ON "Listing" ("lifecycle", "updatedAt");
+
+-- W2 -- refreshStaleReraRecordsForServer (lib/persistence/rera-store.ts):
+--
+--     findMany({ where: { verificationStatus: "STALE" },
+--                orderBy: { updatedAt: "asc" }, take: 10 })
+--
+-- Both ReraRecord indexes -- (jurisdictionSlug, verificationStatus) and
+-- (state, verificationStatus) -- have verificationStatus SECOND.
+--
+-- HONEST SCOPE: the source audit called this impact "negligible at take: 10",
+-- and that assessment stands -- a small LIMIT on a small table is cheap even
+-- scanned. It ships because it is the identical defect to W1 and costs one
+-- statement, NOT because it was independently justified by measurement. As
+-- ReraRecord grows with real registry data the scan grows with it while the
+-- LIMIT does not.
+CREATE INDEX IF NOT EXISTS "ReraRecord_verificationStatus_updatedAt_idx"
+  ON "ReraRecord" ("verificationStatus", "updatedAt");

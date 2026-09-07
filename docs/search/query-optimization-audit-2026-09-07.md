@@ -239,3 +239,98 @@ The migration was then restored and `git diff --stat prisma/` confirmed clean.
 - `client/src/lib/search/sql.test.ts` — the assertion pinning the old `unnest(...)` form
   updated to the new contract.
 - `client/src/lib/search/sql-index-coverage.test.ts` — the index-coverage invariant.
+
+---
+
+## 9. Follow-up — leftmost-column index defects (W1, W2)
+
+Carried over from the watchlist of `docs/ai/sql-perf-bug-hunt-2026-09-06.md`, which deferred
+both for one stated reason:
+
+> **Not shipped:** sandbox cannot run `prisma validate` (engine download TLS-blocked), and
+> ARCH-17 step 6 forbids unverifiable migrations.
+
+That blocker is gone. `pnpm db:validate:offline` (the schema-engine shim) validates without
+network egress, and the database is not live anywhere, so the index could be appended to the
+existing unapplied migration rather than stacked behind it.
+
+### The shared defect
+
+**A composite index only serves a filter if the filtered column is the leftmost one.** Both
+findings are the same mistake, and both are dangerous precisely because the schema *looks*
+well indexed.
+
+| ID | Query | Existing indexes | Why none applied |
+|---|---|---|---|
+| W1 | `getModerationQueueForServer` — `where: { lifecycle: "IN_REVIEW" }`, `orderBy: updatedAt asc`, `take: 500` | `Listing` has **six** indexes mentioning `lifecycle` | `lifecycle` is a *trailing* column in every one |
+| W2 | `refreshStaleReraRecordsForServer` — `where: { verificationStatus: "STALE" }`, `orderBy: updatedAt asc`, `take: 10` | `[jurisdictionSlug, verificationStatus]`, `[state, verificationStatus]` | `verificationStatus` is second in both |
+
+W1 is the one that matters: it is a sequential scan of the whole `Listing` table on the path
+brokers wait on. The existing `take: 500` cap bounds **memory, not scan cost** — the scan
+still reads every row to find the matching ones.
+
+**Fix:** `@@index([lifecycle, updatedAt])` on `Listing` and
+`@@index([verificationStatus, updatedAt])` on `ReraRecord`, with `updatedAt` second so the
+FIFO ordering is served by the same index instead of requiring a separate sort.
+
+### Honest scope on W2
+
+The source audit called W2's impact "negligible at `take: 10`", and **that assessment still
+stands**. It shipped because it is the identical defect to W1 and costs one statement — not
+because measurement justified it independently. A small `LIMIT` on a small table is cheap
+even when scanned; the scan grows with the table while the `LIMIT` does not.
+
+### Census — what was checked and cleared
+
+The sweep looked for every single-column equality filter reaching Postgres, not just the two
+already known. It found four; two were the defects above, and:
+
+- `SavedSearchAlertOutbox.status` (`where: { status: "PENDING" }`, drain + count) — **already
+  correct.** `@@index([status, createdAt])` leads with `status`. Cleared, and added to the
+  guard registry so it stays that way.
+- `ChannelRequestSource.sourceListingId` initially flagged by a rough detector — **false
+  positive.** It is `@unique`, so Postgres creates a unique index that serves it; the
+  detector only looked for plain `CREATE INDEX`. Recorded because the corrected extractor now
+  handles field-level `@unique` and `@id`.
+
+### Guard
+
+`client/src/lib/db/index-leftmost-coverage.test.ts` reads `prisma/schema.prisma` and asserts
+each registered single-column filter has **some** index — plain, unique, or composite — whose
+*first* column is that field. No database required.
+
+It also guards itself: one test asserts the extractor reports `updatedAt` as **not** covered
+on `Listing` (it appears only as a trailing column). Without that, the whole file would be
+decorative, since every model has plenty of indexes *mentioning* the relevant columns.
+
+**Verified to fail, not just to pass.** Removing both new `@@index` lines produced:
+
+```
+× Listing.lifecycle has an index leading with that column
+  AssertionError: expected [ 'cityId', 'cityId', …(11) ] to include 'lifecycle'
+× ReraRecord.verificationStatus has an index leading with that column
+  AssertionError: expected [ 'jurisdictionSlug', …(3) ] to include 'verificationStatus'
+× treats a trailing column as NOT covered
+```
+
+The schema was then restored and `git diff --stat prisma/schema.prisma` confirmed clean.
+
+**Known limit:** the registry is hand-maintained, so a *newly added* single-column filter is
+not auto-discovered. Step 2 of ARCH-19 re-runs the census. The registry is asserted non-empty
+and every entry is checked to name a real model field, so it cannot rot silently.
+
+### Verification
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` | clean |
+| `pnpm lint` | clean |
+| `npx vitest run` | **1987 passed / 49 skipped (2036)** — was 1981/49; +6 from the new guard |
+| `pnpm db:validate:offline` | schema valid |
+| Guard fails on regression | verified above |
+
+### Still open
+
+Unchanged from §5: everything needing a live database (`EXPLAIN ANALYZE`,
+`pg_stat_user_indexes`, the latency bench, and the write-cost of the now-seven added
+indexes). No further static work remains from either audit's watchlist.
