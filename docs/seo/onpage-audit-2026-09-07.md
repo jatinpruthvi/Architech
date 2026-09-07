@@ -94,6 +94,28 @@ The audit runs inside the existing `raw-html-smoke` server, so CI pays for no
 extra build. With `PUBLIC_INDEXING_ENABLED` off the sitemap is legitimately
 empty and the audit skips loudly rather than failing.
 
+### Making it actually run in CI
+
+That skip behaviour hid a real gap. `.github/workflows/ci.yml` runs `pnpm
+test:seo` **without** exporting `PUBLIC_INDEXING_ENABLED`, so on CI the sitemap
+was empty, the audit skipped, and the gate would have been dead on arrival —
+green forever, checking nothing.
+
+The fix follows the precedent already set by `crawl-simulation.mjs`: the smoke
+suite's spawned server now defaults `PUBLIC_INDEXING_ENABLED` to `"true"`
+(overridable from the environment). Sitemaps and robots render live under `next
+start`, so this exposes the real publishable corpus; prerendered HTML is
+unaffected because its metadata was baked at build time, which is what keeps the
+suite's existing fixture-identity assertions intact.
+
+Verified both ways:
+
+- **Runs:** `pnpm test:seo` with no flag exported now reports
+  `524 sitemap URLs checked ... 0 errors`, where it previously printed `skipped`.
+- **Fails:** re-introducing the double-brand on `/agents/` made the suite exit
+  `1` with `✗ /agents/ — brand appears twice in title`. A gate that cannot fail
+  is not a gate, so this was confirmed rather than assumed, then reverted.
+
 ## Verification
 
 `tsc --noEmit` clean · lint clean · **1972 tests passing** · `build:ci`

@@ -408,6 +408,13 @@ const child = spawn(nextBin, ["start", "-H", "127.0.0.1", "-p", String(port)], {
        which render live under `next start`) on the same fixture corpus so a
        local prisma DB can't skew those checks either. */
     ARCHITECH_DATA_SOURCE: "",
+    /* Sitemaps and robots render LIVE under `next start`, so enabling indexing
+       here lets the on-page audit below see the real publishable corpus even
+       though CI does not export this flag. Without it the sitemap is empty,
+       the audit skips, and CI would silently never run it -- the crawl
+       simulation defaults the same way and for the same reason. Prerendered
+       HTML is unaffected: its metadata was baked at build time. */
+    PUBLIC_INDEXING_ENABLED: process.env.PUBLIC_INDEXING_ENABLED ?? "true",
   },
   stdio: ["ignore", "pipe", "pipe"],
   detached: process.platform !== "win32",
