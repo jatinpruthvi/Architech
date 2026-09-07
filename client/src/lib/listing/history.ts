@@ -31,8 +31,10 @@ export type ComparableListing = {
   areaNum?: number;
   pricePerSqft?: string;
   badge: string;
-  /** Percentage difference vs the subject listing's current price. */
-  deltaPct: number;
+  /** Percentage difference vs the subject listing's current price, or null
+      when the subject has no positive price to compare against. Nullable to
+      match realestate/locality-intel.ts and realestate/market-trends.ts. */
+  deltaPct: number | null;
 };
 
 export function sortPriceEvents(events: PriceEvent[]): PriceEvent[] {

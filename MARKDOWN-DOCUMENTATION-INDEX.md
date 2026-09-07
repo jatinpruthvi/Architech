@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context.
 
-Generated on 2026-09-06 from the repository Markdown tree.
+Generated on 2026-09-07 from the repository Markdown tree.
 
 ## Recommended Reading Order
 
