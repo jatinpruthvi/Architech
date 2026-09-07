@@ -155,6 +155,11 @@ export type ChannelResult<T> = { ok: true } & T | { ok: false; status: number; e
 
 export const BROKER_CHANNEL_TOP_MATCH_LIMIT = 10;
 const VERIFIED_STATUSES = new Set(["VERIFIED_PARTNER", "RERA_VERIFIED"]);
+/* bounded-state: FIXTURE-MODE DEMO STORE. Selected by getPersistenceMode()
+   (persistence/source.ts) only when ARCHITECH_DATA_SOURCE !== "prisma";
+   production serves these routes from persistence/*-store.ts over PostgreSQL,
+   so entry count tracks the seed fixture, not live traffic. Gating enforced by
+   `pnpm production:plan:audit`. Cleared in the round-4 hunt: by design. */
 const ORGANIZATIONS = new Map<string, { id: string; name: string; verificationStatus: string; businessPhoneE164?: string; businessPhoneMasked?: string }>();
 const REQUESTS = new Map<string, ChannelRequestRecord>();
 const MATCHES = new Map<string, ChannelMatchRecord>();
@@ -196,6 +201,12 @@ function normalizeIntent(value: string) {
 function normalizePropertyType(value: string) {
   return String(value || "APARTMENT").trim().toUpperCase().replace(/[^A-Z_]/g, "_");
 }
+
+/* BUG-R4-005: widest values the ChannelRequest columns can hold (migration
+   DDL: bhk/area INTEGER, budget/price BIGINT). The money ceiling is the
+   exact-integer bound money.ts already commits to (MAX_SAFE_INR). */
+const MAX_STORED_INT = 2_147_483_647;
+export const MAX_INR = Number.MAX_SAFE_INTEGER;
 
 export function toNumberOrNull(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
@@ -264,6 +275,21 @@ export function validateChannelRequest(input: Partial<ChannelRequestInput>, sess
   const areaMin = toNumberOrNull(input.areaMinSqft);
   const areaMax = toNumberOrNull(input.areaMaxSqft);
   if (areaMin !== null && areaMax !== null && areaMin > areaMax) errors.push("areaMinSqft cannot exceed areaMaxSqft.");
+  /* BUG-R4-005: same storage-ceiling gap the requirement path had. The
+     ChannelRequest migration declares bhk/area INTEGER (max 2147483647) and
+     budget/price BIGINT (max 9223372036854775807), but `toNumberOrNull` accepts
+     any finite non-negative number — so 1e30 passed here and reached
+     BigInt(Math.round(Number(...))) in channel-store.ts normalizeInput, which
+     succeeds in JS and then fails inside PostgreSQL as "out of range": an
+     unhandled 500 on the broker write path instead of a 400. The money ceiling
+     is the one money.ts already declares (MAX_SAFE_INR = 2^53-1). */
+  if (bhkMin !== null && bhkMin > MAX_STORED_INT) errors.push("bhkMin is out of range.");
+  if (bhkMax !== null && bhkMax > MAX_STORED_INT) errors.push("bhkMax is out of range.");
+  if (areaMin !== null && areaMin > MAX_STORED_INT) errors.push("areaMinSqft is out of range.");
+  if (areaMax !== null && areaMax > MAX_STORED_INT) errors.push("areaMaxSqft is out of range.");
+  if (budgetMin !== null && budgetMin > MAX_INR) errors.push("budgetMinInr is out of range.");
+  if (budgetMax !== null && budgetMax > MAX_INR) errors.push("budgetMaxInr is out of range.");
+  if (price !== null && price > MAX_INR) errors.push("priceInr is out of range.");
   /* BUG-R3-001: an unparseable expiresAt previously sailed through here and
      hit `new Date(...)` in BOTH storage modes — the memory store threw
      RangeError from .toISOString(), the prisma store threw on the DateTime
@@ -559,6 +585,13 @@ export function saveChannelDealSplit(dealId: string, input: { totalCommissionInr
   const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
   if (total === null || demandShare === null || supplyShare === null) return { ok: false, status: 400, errors: ["totalCommissionInr, demandBrokerShareInr, and supplyBrokerShareInr are required."] };
   if (demandShare + supplyShare !== total) return { ok: false, status: 400, errors: ["Commission split must add up to totalCommissionInr."] };
+  /* BUG-R4-005: the ceiling as well as the sign. BUG-2026-001 routed this path
+     through toNumberOrNull, which rejects negatives and fractions but accepts
+     any finite value — so a 1e30 commission passed and only failed inside
+     PostgreSQL ("totalCommissionInr" BIGINT, max 9223372036854775807). */
+  if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) {
+    return { ok: false, status: 400, errors: ["Commission amounts are out of range."] };
+  }
   deal.totalCommissionInr = total;
   deal.demandBrokerShareInr = demandShare;
   deal.supplyBrokerShareInr = supplyShare;

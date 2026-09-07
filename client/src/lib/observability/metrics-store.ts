@@ -48,12 +48,23 @@ function push(seriesId: SeriesId, value: SampleValue) {
   store.series.set(seriesId, buffer);
 }
 
+/* BUG-R4-001: the accepted series names are a CLOSED set, enforced at runtime.
+
+   `name` arrives from the request body of the unauthenticated
+   POST /api/observability/web-vitals route, so it is attacker-controlled. The
+   previous guard — `seriesId.startsWith("web_vital.")` on a string that had
+   just been built as `web_vital.${name}` — was true for every possible input,
+   so any name minted a new Map entry. The per-series ring buffer capped
+   samples at 720, but nothing capped the NUMBER of series: rotating `name`
+   grew process memory without bound. Matching against this list makes the
+   `SeriesId` union true at runtime, not just at compile time. */
+const WEB_VITAL_NAMES: readonly string[] = ["CLS", "FCP", "FID", "INP", "LCP", "TTFB"];
+
 /** Record one RUM web-vital sample (name is the web-vitals metric name). */
 export function recordWebVitalSample(name: string, value: number) {
-  const seriesId = `web_vital.${name}` as SeriesId;
-  if (seriesId.startsWith("web_vital.")) push(seriesId, value);
+  if (typeof name !== "string" || !WEB_VITAL_NAMES.includes(name)) return;
+  push(`web_vital.${name}` as SeriesId, value);
 }
-
 /** Record one search-API latency observation in milliseconds. */
 export function recordSearchApiLatency(durationMs: number) {
   push("api_search_latency_ms", durationMs);
@@ -91,7 +102,15 @@ export function snapshotSeries(seriesId: SeriesId): SeriesSnapshot {
 }
 
 export function metricsStoreMeta() {
-  return { startedAt: state().startedAt, scope: "process" as const, maxSamplesPerSeries: MAX_SAMPLES_PER_SERIES };
+  return {
+    startedAt: state().startedAt,
+    scope: "process" as const,
+    maxSamplesPerSeries: MAX_SAMPLES_PER_SERIES,
+    /* BUG-R4-001: the number of live series. The ring buffer bounds samples per
+       series, so this is the other half of the memory bound — it must stay at
+       or below the size of the closed `SeriesId` set. */
+    seriesCount: state().series.size,
+  };
 }
 
 /** Test hook: reset all buffers. Never exposed via HTTP. */

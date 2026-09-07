@@ -37,6 +37,32 @@ describe("in-process metrics store", () => {
     expect(snapshotSeries("api_search_latency_ms").sampleSize).toBeLessThanOrEqual(720);
   });
 
+  /* BUG-R4-001 (P1, security/availability): `recordWebVitalSample` built its
+     series id as `web_vital.${name}` and then "guarded" it with
+     `seriesId.startsWith("web_vital.")` — a tautology, true for ANY name. Every
+     distinct client-supplied name therefore created a brand-new Map entry. The
+     per-series ring buffer caps samples at 720, but nothing capped the NUMBER
+     of series, and POST /api/observability/web-vitals is unauthenticated. An
+     attacker rotating `name` grew process memory without bound. */
+  it("BUG-R4-001: does not create a series for an unknown metric name", () => {
+    recordWebVitalSample("EVIL_METRIC", 123);
+    expect(snapshotSeries("web_vital.EVIL_METRIC" as never).sampleSize).toBe(0);
+  });
+
+  it("BUG-R4-001: keeps the series count bounded under arbitrary-name abuse", () => {
+    for (let i = 0; i < 500; i += 1) recordWebVitalSample(`EVIL_METRIC_${i}`, 100);
+    expect(metricsStoreMeta().seriesCount).toBe(0);
+    recordWebVitalSample("LCP", 2000);
+    expect(metricsStoreMeta().seriesCount).toBe(1);
+  });
+
+  it("BUG-R4-001: still records every real web-vital name", () => {
+    for (const name of ["CLS", "FCP", "FID", "INP", "LCP", "TTFB"]) recordWebVitalSample(name, 10);
+    expect(metricsStoreMeta().seriesCount).toBe(6);
+    expect(snapshotSeries("web_vital.CLS").sampleSize).toBe(1);
+    expect(snapshotSeries("web_vital.TTFB").sampleSize).toBe(1);
+  });
+
   it("computes nearest-rank percentiles", () => {
     expect(percentile([], 95)).toBeNaN();
     expect(percentile([10], 95)).toBe(10);

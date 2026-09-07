@@ -317,7 +317,13 @@ export default function ListingPage({
                       </div>
                       <div className="text-right">
                         <p className="font-display text-base">₹{(comparable.priceNum / 10000000).toFixed(2)} Cr</p>
-                        <p className={`stamp !text-[10px] ${comparable.deltaPct >= 0 ? "" : "text-trust"}`}>{comparable.deltaPct >= 0 ? "+" : ""}{comparable.deltaPct}% vs this home</p>
+                        {/* deltaPct is null when the subject listing has no positive
+                            price to compare against — render an em dash rather than
+                            "null% vs this home". Same convention as the price-index
+                            and locality-intel surfaces. */}
+                        <p className={`stamp !text-[10px] ${comparable.deltaPct === null ? "" : comparable.deltaPct >= 0 ? "" : "text-trust"}`}>
+                          {comparable.deltaPct === null ? "—" : `${comparable.deltaPct >= 0 ? "+" : ""}${comparable.deltaPct}% vs this home`}
+                        </p>
                       </div>
                     </Link>
                   ))}

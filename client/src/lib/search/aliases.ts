@@ -39,6 +39,8 @@ const VOWEL_SIGNS: Record<string, string> = {
    the 5,000-row ceiling that is O(rows × tokens × localities) work. The
    prebuilt maps below collapse each of those to O(1) with identical
    first-wins semantics (the maps are built in registry order). */
+/* bounded-state: both maps are populated once at module load by the loop
+   below, in registry order; the registry never mutates at runtime. */
 const slugIndex = new Map<string, (typeof localities)[number]>();
 const lowerNameToSlug = new Map<string, string>();
 for (const locality of localities) {
@@ -71,6 +73,8 @@ export function normalizeLocalityToken(value: string): string {
 }
 
 /** Slug → alias set, built lazily and memoized (the registry never mutates). */
+/* bounded-state: memoized one entry per locality slug in the registry; the
+   key set is the fixture registry, never request input. */
 const aliasesBySlug = new Map<string, string[]>();
 
 /** Build the set of canonical search aliases for a locality. */

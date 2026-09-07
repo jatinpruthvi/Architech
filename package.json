@@ -24,6 +24,7 @@
     "test:perf": "pnpm build:ci && node scripts/performance/budget.mjs",
     "perf:shell": "node scripts/performance/shell-report.mjs",
     "db:validate": "prisma validate",
+    "db:validate:offline": "node scripts/sandbox/install-schema-engine-shim.mjs && prisma validate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",

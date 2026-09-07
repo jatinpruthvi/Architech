@@ -24,6 +24,7 @@ import {
   toNumberOrNull,
   transitionOwnChannelRequest,
   validateChannelRequest,
+  MAX_INR,
   type ChannelDealCloseMode,
   type ChannelDealRecord,
   type ChannelMatchRecord,
@@ -650,6 +651,10 @@ export async function saveChannelDealSplitForServer(id: string, input: { totalCo
   const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
   if (total === null || demandShare === null || supplyShare === null) return fail(400, "totalCommissionInr, demandBrokerShareInr, and supplyBrokerShareInr are required.");
   if (demandShare + supplyShare !== total) return fail(400, "Commission split must add up to totalCommissionInr.");
+  /* BUG-R4-005: same ceiling as the in-memory twin — toNumberOrNull bounds the
+     sign and the fraction, not the magnitude, and BigInt() would happily carry
+     1e30 into a BIGINT column that tops out at 9223372036854775807. */
+  if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) return fail(400, "Commission amounts are out of range.");
   const row = await withOrg(prisma(), session.organization.id, async (db) => {
     const deal = await db.channelDeal.update({ where: { id }, data: { totalCommissionInr: BigInt(total), demandBrokerShareInr: BigInt(demandShare), supplyBrokerShareInr: BigInt(supplyShare), splitAgreement: input.splitAgreement ?? { type: "negotiated", summary: "Negotiated broker-channel split." }, closeMode: input.closeMode === "SINGLE" ? "SINGLE" : "DUAL" } });
     const parsed = dealFromRow(deal);

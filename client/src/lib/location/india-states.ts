@@ -37,6 +37,8 @@ export const INDIA_STATES_AND_UTS: IndiaStateOrUt[] = snapshot.records
   .sort((left, right) => left.name.localeCompare(right.name, "en-IN"));
 
 const byCode = new Map(INDIA_STATES_AND_UTS.map((entry) => [entry.lgdCode, entry]));
+/* bounded-state: populated once at module load from the fixed
+   INDIA_STATES_AND_UTS table and its alias list; never written per request. */
 const byName = new Map<string, IndiaStateOrUt>();
 
 function normalizedStateName(value: string) {

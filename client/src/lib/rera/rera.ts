@@ -77,6 +77,11 @@ const records = new Map<string, ReraRecordSnapshot>([
   ],
 ]);
 
+/* bounded-state: FIXTURE-MODE DEMO STORE. Selected by getPersistenceMode()
+   (persistence/source.ts) only when ARCHITECH_DATA_SOURCE !== "prisma";
+   production serves these routes from persistence/*-store.ts over PostgreSQL,
+   so entry count tracks the seed fixture, not live traffic. Gating enforced by
+   `pnpm production:plan:audit`. Cleared in the round-4 hunt: by design. */
 const corrections = new Map<string, ReraCorrection>();
 
 function stableId(prefix: string, seed: string) {

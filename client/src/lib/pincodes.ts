@@ -48,6 +48,8 @@ export type PincodeMatch = {
 };
 
 /* Built once at module load: exact PIN → localities. */
+/* bounded-state: populated once at module load from the localities fixture;
+   entry count is fixed by the registry, not by traffic. */
 const byPincode = new Map<string, Locality[]>();
 for (const locality of localities) {
   for (const pincode of locality.pincodes) {

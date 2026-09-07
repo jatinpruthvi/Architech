@@ -62,6 +62,11 @@ type RequirementResult =
   | { ok: true; requirement: RequirementRecord; duplicate: boolean }
   | { ok: false; status: number; errors: string[] };
 
+/* bounded-state: FIXTURE-MODE DEMO STORE. Selected by getPersistenceMode()
+   (persistence/source.ts) only when ARCHITECH_DATA_SOURCE !== "prisma";
+   production serves these routes from persistence/*-store.ts over PostgreSQL,
+   so entry count tracks the seed fixture, not live traffic. Gating enforced by
+   `pnpm production:plan:audit`. Cleared in the round-4 hunt: by design. */
 const requirementsByKey = new Map<string, RequirementRecord>();
 
 function maskPhone(phone: string) {
@@ -128,6 +133,12 @@ function normalizedLocalitySlugs(input: Partial<RequirementInput>): string[] {
   return (input.localitySlugs ?? []).map((slug) => slug.trim()).filter(Boolean);
 }
 
+/* BUG-R4-005: the widest values the database columns behind these fields can
+   hold. INTEGER per the migration DDL; for money, the exact-integer ceiling the
+   repo already commits to in money.ts (MAX_SAFE_INR). */
+const MAX_STORED_INT = 2_147_483_647;
+const MAX_INR = Number.MAX_SAFE_INTEGER;
+
 function toPositiveInteger(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
@@ -171,6 +182,27 @@ export function validateRequirementInput(input: Partial<RequirementInput>, locat
   const areaMax = toPositiveInteger(input.areaMaxSqft);
   const budgetMin = toPositiveInteger(input.budgetMinInr);
   const budgetMax = toPositiveInteger(input.budgetMaxInr);
+  /* BUG-R4-005: ceilings taken from the STORAGE contract, not from domain
+     taste. The migration DDL declares the bhk and area columns INTEGER (max
+     2147483647) and the budget columns BIGINT (max 9223372036854775807).
+     `toPositiveInteger` accepts any finite positive number, so before this
+     check a value like 1e30 sailed through validation, was converted by
+     BigInt(Math.round(Number(...))) — which succeeds in JS at arbitrary
+     precision — and only failed inside PostgreSQL as "out of range". That
+     surfaced as an unhandled 500 on POST /api/requirements, a public endpoint,
+     where the caller should have got a 400.
+
+     For money the ceiling is the one the repo already declares in money.ts
+     (MAX_SAFE_INR = 2^53-1, ~₹9,007 crore): the largest amount that survives
+     the BigInt→number round trip exactly, and comfortably inside the column.
+     This validator is the single seam both the in-memory and Prisma paths run
+     through, so the bound holds for both. */
+  if (bhkMin !== null && bhkMin > MAX_STORED_INT) errors.push("BHK minimum is out of range.");
+  if (bhkMax !== null && bhkMax > MAX_STORED_INT) errors.push("BHK maximum is out of range.");
+  if (areaMin !== null && areaMin > MAX_STORED_INT) errors.push("Area minimum is out of range.");
+  if (areaMax !== null && areaMax > MAX_STORED_INT) errors.push("Area maximum is out of range.");
+  if (budgetMin !== null && budgetMin > MAX_INR) errors.push("Budget minimum is out of range.");
+  if (budgetMax !== null && budgetMax > MAX_INR) errors.push("Budget maximum is out of range.");
   if (bhkMin !== null && bhkMax !== null && bhkMin > bhkMax) errors.push("BHK minimum cannot exceed BHK maximum.");
   if ((areaMin === null) !== (areaMax === null)) errors.push("Enter both area minimum and maximum for matching.");
   if (areaMin !== null && areaMax !== null && areaMin > areaMax) errors.push("Area minimum cannot exceed area maximum.");
