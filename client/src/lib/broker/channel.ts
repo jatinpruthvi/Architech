@@ -155,6 +155,11 @@ export type ChannelResult<T> = { ok: true } & T | { ok: false; status: number; e
 
 export const BROKER_CHANNEL_TOP_MATCH_LIMIT = 10;
 const VERIFIED_STATUSES = new Set(["VERIFIED_PARTNER", "RERA_VERIFIED"]);
+/* bounded-state: FIXTURE-MODE DEMO STORE. Selected by getPersistenceMode()
+   (persistence/source.ts) only when ARCHITECH_DATA_SOURCE !== "prisma";
+   production serves these routes from persistence/*-store.ts over PostgreSQL,
+   so entry count tracks the seed fixture, not live traffic. Gating enforced by
+   `pnpm production:plan:audit`. Cleared in the round-4 hunt: by design. */
 const ORGANIZATIONS = new Map<string, { id: string; name: string; verificationStatus: string; businessPhoneE164?: string; businessPhoneMasked?: string }>();
 const REQUESTS = new Map<string, ChannelRequestRecord>();
 const MATCHES = new Map<string, ChannelMatchRecord>();

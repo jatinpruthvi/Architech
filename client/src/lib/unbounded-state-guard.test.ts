@@ -28,7 +28,11 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const SCAN_ROOTS = ["client/src", "app", "shared"];
 const DECL = /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*(?::[^=]+)?=\s*new (Map|Set)\s*[<(]/;
 const MARKER = /bounded-state:/;
-const MARKER_WINDOW = 500;
+/* 1200 rather than the 500 used by sql-query-bounds.test.ts: a single marker
+   documents a whole GROUP of sibling declarations (broker/channel.ts declares
+   seven demo-store Maps in a row), and one long typed declaration line is
+   enough to push the token out of a 500-char window for the ones below it. */
+const MARKER_WINDOW = 1200;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -62,6 +66,30 @@ function moduleLevelDeclarations(src: string): { name: string; line: number }[] 
   return found;
 }
 
+/** Strip the bodies of test-reset helpers (`resetXForTests`, `clearXForTests`).
+    BUG-R4-007 slipped past the first version of this guard precisely because
+    `listing-stats.ts` calls `.clear()` inside `resetListingStatsForTests` — a
+    helper that only ever runs under vitest, so it evicts nothing in
+    production. An eviction path that exists solely for tests is not a bound. */
+function stripTestResetHelpers(src: string): string {
+  const pattern = /(?:export\s+)?function\s+(?:[A-Za-z0-9_$]*ForTests|reset[A-Za-z0-9_$]*|clear[A-Za-z0-9_$]*)\s*\([^)]*\)[^{]*\{/g;
+  let out = "";
+  let cursor = 0;
+  for (const match of src.matchAll(pattern)) {
+    const bodyStart = (match.index ?? 0) + match[0].length;
+    let depth = 1;
+    let i = bodyStart;
+    while (i < src.length && depth > 0) {
+      if (src[i] === "{") depth += 1;
+      else if (src[i] === "}") depth -= 1;
+      i += 1;
+    }
+    out += src.slice(cursor, match.index ?? 0);
+    cursor = i;
+  }
+  return out + src.slice(cursor);
+}
+
 type Offender = { file: string; name: string; line: number };
 
 function scan(): Offender[] {
@@ -69,12 +97,15 @@ function scan(): Offender[] {
   for (const root of SCAN_ROOTS) {
     for (const file of walk(join(repoRoot, root))) {
       const src = readFileSync(file, "utf8");
-      const usesHelper = /\bBoundedWindowMap\b/.test(src);
+      const evictable = stripTestResetHelpers(src);
+      const usesHelper = /\bBoundedWindowMap\b/.test(evictable);
       for (const decl of moduleLevelDeclarations(src)) {
         const name = decl.name;
         // Never written at runtime => static table, size fixed by the source.
-        if (!new RegExp(`\\b${name}\\.(set|add)\\(`).test(src)) continue;
-        if (new RegExp(`\\b${name}\\.(delete|clear)\\(`).test(src)) continue;
+        if (!new RegExp(`\\b${name}\\.(set|add)\\(`).test(evictable)) continue;
+        if (new RegExp(`\\b${name}\\.(delete|clear)\\(`).test(evictable)) continue;
+        // Eviction delegated to a local helper, e.g. evictOldestEntries(statsByListing, …)
+        if (new RegExp(`\\b[A-Za-z0-9_$]*[Ee]vict[A-Za-z0-9_$]*\\(\\s*${name}\\b`).test(evictable)) continue;
         if (usesHelper) continue;
         const offset = src.split("\n").slice(0, decl.line - 1).join("\n").length;
         const window = src.slice(Math.max(0, offset - MARKER_WINDOW), offset);
