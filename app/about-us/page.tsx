@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AboutPage } from "@/pages/PublicParity";
+import { aboutFaqs } from "@/lib/content/about-faqs";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
+import { buildFaqPage } from "@/lib/seo/faq";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
@@ -12,6 +14,17 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  const jsonLd = { "@context": "https://schema.org", "@type": "AboutPage", name: "About Architech", url: canonicalUrl("/about-us/"), isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } };
+  /* The FAQ node is built from `aboutFaqs`, the same constant the component
+     renders as <details> elements. Google requires FAQ markup to describe
+     content visible on the page, so sharing one source is not a convenience —
+     it is the thing that keeps this compliant as the copy changes. */
+  const faq = buildFaqPage(aboutFaqs, canonicalUrl("/about-us/"));
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "AboutPage", name: "About Architech", url: canonicalUrl("/about-us/"), isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } },
+      ...(faq ? [faq] : []),
+    ],
+  };
   return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} /><AboutPage /></>;
 }

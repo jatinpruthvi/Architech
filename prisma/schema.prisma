@@ -50,6 +50,16 @@ enum AlertOutboxStatus {
   SUPPRESSED
 }
 
+/// Commercial intent of a listing. Kept deliberately small: BUY and RENT are
+/// separate search markets with separate URL spaces (`/buy/…` and `/rent/…`),
+/// separate price semantics (capital sum vs monthly), and separate schema.org
+/// offer shapes. Sub-flavours (lease, PG, co-living) belong in `category`,
+/// not here — splitting them at this level would fragment the URL space.
+enum TransactionType {
+  BUY
+  RENT
+}
+
 enum PropertyType {
   APARTMENT
   ROWHOUSE
@@ -715,6 +725,16 @@ model Listing {
   // BigInt, not Int: a 32-bit column caps at ₹2,147,483,647 (~₹214 crore),
   // which is reachable for commercial property and land. Read through
   // lib/money.ts at the boundary; the domain layer works in `number`.
+  // Buy vs rent. This column was READ by lib/repositories/mappers.ts long
+  // before it existed: the mapper's row type declared `transactionType?:
+  // string | null`, the field was never selected because it was never in the
+  // schema, and `undefined?.toUpperCase() === "RENT"` is false — so every
+  // listing in prisma mode silently mapped to "buy". Rental inventory was
+  // structurally unrepresentable and the failure was invisible (optional
+  // field, no type error, no runtime error, just a wrong answer).
+  // Enum rather than String: the vocabulary is closed, and a free-text column
+  // is how "RENT"/"rent"/"Rental" end up coexisting.
+  transactionType      TransactionType      @default(BUY)
   priceInr             BigInt
   priceLabel           String
   pricePerSqft         String?

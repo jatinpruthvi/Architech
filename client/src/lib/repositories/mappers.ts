@@ -237,6 +237,11 @@ export function dbListingToProperty(row: DbListingRow): Property {
     note: row.description,
     propertyType,
     availability,
+    /* Buy vs rent. `transactionType` is now a real enum column (migration
+       202609070002); before it existed this expression read an undefined
+       field and mapped EVERY prisma-mode listing to "buy". Kept tolerant of
+       case and of a null column so a legacy row degrades to "buy" — the same
+       answer the application already assumed — rather than throwing. */
     transaction: row.transactionType?.toUpperCase() === "RENT" ? "rent" : "buy",
     category,
     subtype,

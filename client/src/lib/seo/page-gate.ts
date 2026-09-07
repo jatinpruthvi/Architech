@@ -29,12 +29,35 @@ export type PageGateEvidence = {
   localities?: Locality[];
 };
 
-/** Indexable (ACTIVE) listings in one locality. */
-function activeListingsIn(citySlug: string, localitySlug: string, listings: Property[]): number {
+/** Indexable (ACTIVE) listings in one locality, for one transaction intent.
+ *
+ *  The `intent` filter is what stops the rent surface becoming a doorway farm.
+ *  A locality page is judged on the inventory IT publishes: the /rent/ page for
+ *  Bopal must be counted on Bopal's RENTAL stock, not on its sale stock. Count
+ *  them together and every rent page inherits its buy page's verdict, which
+ *  would publish a rental page with nothing to rent on it — precisely the thin
+ *  page this gate exists to withhold. */
+function activeListingsIn(
+  citySlug: string,
+  localitySlug: string,
+  listings: Property[],
+  intent?: "buy" | "rent",
+): number {
   return listings.filter(
     (property) =>
       property.citySlug === citySlug &&
       property.localitySlug === localitySlug &&
+      (!intent || (property.transaction ?? "buy") === intent) &&
+      isIndexable(property.lifecycle ?? "ACTIVE"),
+  ).length;
+}
+
+/** Indexable listings across a whole city for one intent — the hub equivalent. */
+function activeListingsInCity(citySlug: string, listings: Property[], intent?: "buy" | "rent"): number {
+  return listings.filter(
+    (property) =>
+      property.citySlug === citySlug &&
+      (!intent || (property.transaction ?? "buy") === intent) &&
       isIndexable(property.lifecycle ?? "ACTIVE"),
   ).length;
 }
@@ -76,6 +99,15 @@ function guideWordCount(guideId: string): number {
    standing product pages that merely live in that route family. */
 const STANDING_GUIDE_FAMILY_IDS = new Set(["page:developers", "page:investment", "page:home-loan"]);
 
+/** Narrow a registry id suffix to a transaction intent.
+ *
+ *  Returns undefined for anything unrecognised, which means "count every
+ *  listing" — the pre-split behaviour. A malformed id therefore degrades to
+ *  the old, more permissive verdict rather than silently withholding a page. */
+function intentOf(value?: string): "buy" | "rent" | undefined {
+  return value === "buy" || value === "rent" ? value : undefined;
+}
+
 export function pageKindFor(page: SeoPage): PageKind {
   if (page.routeType === "locality") return "locality";
   if (page.routeType === "listing") return "listing";
@@ -111,12 +143,29 @@ export function qualityInputFor(page: SeoPage, evidence?: PageGateEvidence): Pag
 
   switch (kind) {
     case "locality": {
-      const [, citySlug, localitySlug] = page.id.split(":");
+      /* `locality:{city}:{locality}:{intent}` — the intent suffix has been in
+         the id since the registry was written; it is now load-bearing. */
+      const [, citySlug, localitySlug, intent] = page.id.split(":");
       return {
         ...base,
-        activeListings: activeListingsIn(citySlug, localitySlug, evidence?.listings ?? getListings()),
+        activeListings: activeListingsIn(citySlug, localitySlug, evidence?.listings ?? getListings(), intentOf(intent)),
         hasUniqueData: localityHasUniqueData(citySlug, localitySlug, evidence),
       };
+    }
+    case "hub": {
+      /* City hubs are `city:{slug}` (buy) or `city:{slug}:rent`. Only the rent
+         variant is intent-scoped: the buy hub predates the split and is judged
+         on the whole city, exactly as before, so no existing verdict moves. */
+      const [prefix, citySlug, intent] = page.id.split(":");
+      if (prefix !== "city" || intent !== "rent") return base;
+      const rentals = activeListingsInCity(citySlug, evidence?.listings ?? getListings(), "rent");
+      /* The hub test asks for "aggregated data of its own". A /rent/ hub with
+         zero rental listings aggregates nothing of its own — it would render
+         city boilerplate under a rental heading, which is the definition of a
+         doorway page. Withholding hasUniqueData here is what keeps the rent
+         surface from shipping 12 empty hubs on day one; they publish
+         automatically as soon as real rental stock exists. */
+      return { ...base, activeListings: rentals, hasUniqueData: base.hasUniqueData && rentals > 0 };
     }
     case "listing": {
       const listingId = page.id.slice("listing:".length);
