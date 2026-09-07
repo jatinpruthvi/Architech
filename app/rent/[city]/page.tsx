@@ -106,7 +106,7 @@ export default async function RentCityHub({ params }: { params: Promise<{ city: 
               {/* The rent city page's parent is the RENT hub, not the buy hub.
                   Pointing at /buy/ made the rent branch's breadcrumb climb into
                   the wrong tree and left /rent/ with no inbound link at all. */}
-              <Link href="/rent/" className="link-rail hover:text-brick">Rent</Link><span>/</span>
+              <Link href="/rent/" className="link-rail hover:text-brick">{RENT.hubLabel}</Link><span>/</span>
               <span className="ink-2">Rent in {city.name}</span>
             </nav>
             <p className="kicker mt-12 text-brick">Rentals, locality by locality · {city.hindi}</p>

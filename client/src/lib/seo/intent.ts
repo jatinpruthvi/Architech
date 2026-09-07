@@ -35,7 +35,9 @@ export type IntentVocabulary = {
   verb: string;
   /** Sentence-case label for breadcrumbs and link text. */
   label: string;
-  /** Hub label — the /buy/ and /rent/ index pages. */
+  /** Breadcrumb label for the intent hub (/buy/, /rent/). Distinct per intent:
+      a shared "Cities" told a person mid-trail nothing about which branch they
+      were in, and read identically on both trees. */
   hubLabel: string;
   /** How price reads for this intent. Rent is a recurring monthly amount and
       must never be described with buy's capital-sum language. */
@@ -54,7 +56,7 @@ const VOCABULARY: Record<TransactionIntent, IntentVocabulary> = {
     segment: "buy",
     verb: "Buy",
     label: "Buy",
-    hubLabel: "Cities",
+    hubLabel: "Buy",
     priceNoun: "asking price",
     /* http://purl.org/goodrelations/v1#Sell — the schema.org-endorsed
        GoodRelations vocabulary for "this offer transfers ownership". */
@@ -66,7 +68,7 @@ const VOCABULARY: Record<TransactionIntent, IntentVocabulary> = {
     segment: "rent",
     verb: "Rent",
     label: "Rent",
-    hubLabel: "Cities",
+    hubLabel: "Rent",
     priceNoun: "monthly rent",
     /* LeaseOut, not Sell: the distinction a property aggregator needs to
        avoid listing a rental at its monthly figure as a sale price. */
