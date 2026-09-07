@@ -4,6 +4,7 @@ import { listingMatchesPincode, parsePincode } from "@/lib/pincodes";
 import { listingWithinBounds, parseBoundsParam } from "@/lib/map";
 import { getLocalities } from "@/lib/repositories/localities";
 import { normalizePage, normalizePageSize, paginate, type PaginationMeta } from "./pagination";
+import { rankByRelevance } from "./relevance";
 import {
   activeFacetCount,
   applyFacetState,
@@ -49,9 +50,12 @@ export type SearchRequest = {
   projection?: FacetProjection;
 };
 
-// Deliberately not widened to a "relevance" sort yet: applySort has no
-// relevance implementation, so advertising it would silently mean "fresh".
-const VALID_SORTS = new Set<SortId>(["fresh", "price-asc", "price-desc"]);
+/* "relevance" is now backed by a real implementation on BOTH paths — SQL
+   ts_rank_cd over the weighted searchVector, JS rankByRelevance over the same
+   weighted fields (lib/search/relevance.ts) — so advertising it no longer
+   silently means "fresh". Without query text it still degrades to the read
+   order, because there is genuinely nothing to rank against. */
+const VALID_SORTS = new Set<SortId>(["fresh", "price-asc", "price-desc", "relevance"]);
 
 export function normalizeSort(sort?: string | null): SortId {
   return VALID_SORTS.has(sort as SortId) ? (sort as SortId) : "fresh";
@@ -107,7 +111,11 @@ export function searchListings(request: SearchRequest = {}): SearchResponse {
   const groups = facetGroupsFor({ intent, projection });
   const state = parseFacetState(tokens.join(","), groups);
   const pooled = applyMarket(applyQuery(scoped, query), category, intent);
-  const filtered = applySort(applyFacetState(pooled, state, groups), sort);
+  const faceted = applyFacetState(pooled, state, groups);
+  /* Relevance needs the query text, which applySort (a pure filter module)
+     does not receive — so it is applied here, over the same freshest-first
+     read order that becomes its tiebreak. */
+  const filtered = sort === "relevance" ? rankByRelevance(faceted, query) : applySort(faceted, sort);
   const { items, meta } = paginate(filtered, { page, pageSize });
 
   return finalizeSearch({

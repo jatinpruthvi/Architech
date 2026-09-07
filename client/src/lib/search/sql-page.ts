@@ -37,7 +37,7 @@
 import { AVAILABILITY_ALIASES, PROPERTY_TYPE_OPTIONS, AVAILABILITY_OPTIONS, type AvailabilityCode } from "@/lib/listing-vocabulary";
 import { extractStructuredQuery, queryResidualTokens, type MarketCategory, type MarketIntent, type SortId } from "@/lib/filters";
 import type { FacetGroup, FacetState } from "./facets";
-import { escapeLike } from "./sql";
+import { escapeLike, FTS_CONFIGS } from "./sql";
 
 export type SqlStatement = { key: string; sql: string; params: unknown[] };
 
@@ -343,7 +343,7 @@ function buildPredicates(input: SqlPageInput, excludeGroup: string | null, ctx: 
 
 const whereOf = (preds: Pred[]): string => preds.map((pred) => pred.sql).join(" AND ");
 
-function orderByFor(sort: SortId): string {
+function orderByFor(sort: SortId, relevanceExpr?: string): string {
   /* Mirrors applySort() over the prisma read order (meaningfulUpdatedAt
      desc; the id tie-break makes the window deterministic where the read's
      tie order was not, and matches the JS stable sort's tie behaviour on
@@ -351,6 +351,14 @@ function orderByFor(sort: SortId): string {
      mirroring Array.prototype.sort's stability. */
   if (sort === "price-asc") return 'listing."priceInr" ASC, listing."meaningfulUpdatedAt" DESC, listing."id" ASC';
   if (sort === "price-desc") return 'listing."priceInr" DESC, listing."meaningfulUpdatedAt" DESC, listing."id" ASC';
+  /* Relevance: ts_rank_cd over the weighted searchVector, falling back to the
+     `fresh` order for equal scores — the same two-level tiebreak the JS
+     rankByRelevance uses (input order, then id), so a page boundary cannot
+     duplicate or drop a row. Without a query there is nothing to rank
+     against, so `relevance` degrades to `fresh` rather than inventing one. */
+  if (sort === "relevance" && relevanceExpr) {
+    return `${relevanceExpr} DESC, listing."meaningfulUpdatedAt" DESC, listing."id" ASC`;
+  }
   return 'listing."meaningfulUpdatedAt" DESC, listing."id" ASC';
 }
 
@@ -405,11 +413,22 @@ export function buildSqlPagePlan(input: SqlPageInput): SqlPagePlan | null {
 
   const pageStatement = (offset: number): SqlStatement => {
     const built = build(null);
+    /* The ranking expression binds the raw query text as its own parameter,
+       appended after the WHERE params so the numbering stays contiguous. Both
+       configurations are asked (see ftsMatchSql) because searchVector is a
+       union of them; ts_rank_cd's weight array is {D,C,B,A}. */
+    let relevanceExpr: string | undefined;
+    const trimmedQuery = input.query.trim();
+    if (input.sort === "relevance" && trimmedQuery) {
+      const queryParam = built.params.push(trimmedQuery);
+      const tsquery = FTS_CONFIGS.map((config) => `websearch_to_tsquery('${config}', $${queryParam})`).join(" || ");
+      relevanceExpr = `ts_rank_cd('{0.1, 0.2, 0.4, 1.0}', listing."searchVector", (${tsquery}))`;
+    }
     const limitParam = built.params.push(input.pageSize);
     const offsetParam = built.params.push(offset);
     return {
       key: "page",
-      sql: `SELECT listing."id" AS id FROM ${FROM} WHERE ${built.sql} ORDER BY ${orderByFor(input.sort)} LIMIT $${limitParam} OFFSET $${offsetParam}`,
+      sql: `SELECT listing."id" AS id FROM ${FROM} WHERE ${built.sql} ORDER BY ${orderByFor(input.sort, relevanceExpr)} LIMIT $${limitParam} OFFSET $${offsetParam}`,
       params: built.params,
     };
   };

@@ -1,5 +1,30 @@
 import { queryResidualTokens, type SortId } from "@/lib/filters";
 
+/* ---------- Text search configuration ----------
+ *
+ * `searchVector` is a UNION of two configurations (migration
+ * 202609070001_search_text_config), so a query must be asked in both to see
+ * both halves:
+ *
+ *   'english'          — stemmed, so "garden" finds "Thaltej Gardens".
+ *   'architech_simple' — simple + unaccent, so "Do Talao" (english erases the
+ *                        stopword "do"), "pāldi", and Devanagari titleHi/
+ *                        descriptionHi are all findable.
+ *
+ * Measured on a live cluster: three queries that returned zero rows under
+ * english-only now return the correct listing, with no regression on the
+ * stemmed cases. Asking only one side would silently re-lose the other half.
+ */
+export const FTS_CONFIGS = ["architech_simple", "english"] as const;
+
+/** `col @@ (websearch(simple,$n) || websearch(english,$n))` — one bound
+    parameter, both configurations. Callers pass the placeholder (e.g. `$3`)
+    so this composes with either parameter-numbering scheme in the repo. */
+export function ftsMatchSql(column: string, placeholder: string): string {
+  const alternatives = FTS_CONFIGS.map((config) => `websearch_to_tsquery('${config}', ${placeholder})`).join(" || ");
+  return `${column} @@ (${alternatives})`;
+}
+
 export type SearchSqlPlan = {
   where: string[];
   orderBy: string;
@@ -22,7 +47,7 @@ export function buildPostgresSearchPlan({ query = "", filters = [], sort = "fres
   const tokens = normalizeSearchTokens(query);
 
   if (tokens.length > 0) {
-    where.push('"Listing"."searchVector" @@ websearch_to_tsquery(\'english\', $query)');
+    where.push(ftsMatchSql('"Listing"."searchVector"', "$query"));
     where.push('("Listing"."title" % $query OR "Listing"."description" % $query OR "Listing"."addressLocality" % $query OR "Locality"."name" % $query)');
   }
 
@@ -114,7 +139,7 @@ export function buildSqlNarrowPlan(rawQuery: string): SqlNarrowPlan | null {
     return [
       "(",
       `  ${likeAlternatives}`,
-      `  OR listing."searchVector" @@ websearch_to_tsquery('english', $${rawParam})`,
+      `  OR ${ftsMatchSql('listing."searchVector"', `$${rawParam}`)}`,
       `  OR locality."name" % $${rawParam}`,
       `  OR city."name" % $${rawParam}`,
       `  OR EXISTS (SELECT 1 FROM unnest(locality."aliases") AS alias WHERE alias ILIKE $${likeParam} ESCAPE '\\' OR alias % $${rawParam})`,

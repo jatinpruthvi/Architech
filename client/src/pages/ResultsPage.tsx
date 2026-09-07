@@ -119,7 +119,11 @@ export default function ResultsPage({
  const query = params.get("q") ?? "";
  const category: MarketCategory = ["all", "residential", "commercial", "pg", "plot", "land", "auction"].includes(params.get("category") ?? "") ? (params.get("category") as MarketCategory) : "all";
  const intent: MarketIntent = params.get("intent") === "rent" ? "rent" : "buy";
- const sort = (params.get("sort") as SortId) || "fresh";
+ const rawSort = (params.get("sort") as SortId) || "fresh";
+ /* "relevance" needs query text. If the reader clears the query while that
+    sort is selected, fall back to "fresh" rather than leaving the Select bound
+    to a value its list no longer offers (which renders as an empty trigger). */
+ const sort: SortId = rawSort === "relevance" && !query.trim() ? "fresh" : rawSort;
  // City scope: a known city slug narrows every result, "all" searches India.
  const requestedCity = params.get("city") ?? "";
  const citySlug = cities.some((city) => city.slug === requestedCity) ? requestedCity : "all";
@@ -542,7 +546,12 @@ export default function ResultsPage({
  <SelectValue placeholder={t.search.sortFresh} />
  </SelectTrigger>
  <SelectContent className="rounded-none border-ink/15 bg-paper">
- <SelectItem value="fresh">{t.search.sortFresh}</SelectItem>
+                          {/* Only offered when there is query text to rank
+                              against — without it "Best match" would silently
+                              mean "Freshest first", which is a lie the sort
+                              menu should not tell. */}
+                          {query.trim() ? <SelectItem value="relevance">{t.search.sortRelevance}</SelectItem> : null}
+                          <SelectItem value="fresh">{t.search.sortFresh}</SelectItem>
  <SelectItem value="price-asc">{t.search.sortAsc}</SelectItem>
  <SelectItem value="price-desc">{t.search.sortDesc}</SelectItem>
  </SelectContent>

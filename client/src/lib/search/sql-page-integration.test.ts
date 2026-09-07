@@ -203,6 +203,16 @@ const SCENARIOS: Scenario[] = [
   { name: "fresh sort, default page", request: { sort: "fresh" } },
   { name: "price ascending, windowed", request: { sort: "price-asc", limit: 10 } },
   { name: "price descending, second page", request: { sort: "price-desc", limit: 10, page: 2 } },
+  /* Relevance sort. The SQL side orders by ts_rank_cd over the weighted
+     searchVector; the JS side by rankByRelevance over the same weighted
+     fields. These scenarios assert the two agree on the SAME database — if
+     an approximation ever diverges on real rows, this fails rather than
+     shipping two different answers to the same question. */
+  { name: "relevance sort with query", request: { q: "courtyard", sort: "relevance" } },
+  { name: "relevance sort, multi-token query", request: { q: "garden courtyard", sort: "relevance" } },
+  // No query text = nothing to rank against; BOTH paths must degrade to the
+  // read order rather than one of them inventing a ranking.
+  { name: "relevance sort without a query degrades to fresh", request: { sort: "relevance" } },
   { name: "out-of-range page clamps", request: { page: 99 } },
   { name: "page 2 of a small result", request: { limit: 5, page: 2 } },
   { name: "query + city + PIN combined", request: { q: "courtyard", city: "ahmedabad", pincode: "380007" } },
