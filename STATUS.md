@@ -16,6 +16,9 @@
 | Durable data | Not activated by default | Set Prisma and provider source modes only after migrations and readiness checks. |
 | Public indexing | Explicitly gated | Set `PUBLIC_INDEXING_ENABLED=true` only after data, source, legal, and SEO gates pass; rendered-HTML smoke passed with the gate off. |
 | External providers | Pending | R2, Gujarat RERA, Sentry, Search Console, email, and legal approvals require real accounts/secrets. |
+| AI crawler policy | Shipped, deliberate | `robots.txt` now carries per-bot rules: search/grounding crawlers (OAI-SearchBot, PerplexityBot, Google-Extended) follow the indexing gate; training crawlers (GPTBot, ClaudeBot, CCBot, …) are disallowed pending LEG-003/LEG-008. Override with `ARCHITECH_AI_CRAWLER_POLICY`. |
+| AI index files | `/llms.txt` shipped, `/llms-full.txt` gated off | The index is derived from the publishable registry, as the supplemental-only file the architecture permits. The full-text corpus needs `ARCHITECH_LLMS_FULL_ENABLED` **and** public indexing, and stays closed until inventory is verified. Evidence: [`docs/seo/ai-visibility-surfaces-2026-09-07.md`](docs/seo/ai-visibility-surfaces-2026-09-07.md). |
+| Image sitemap | Shipped | `/sitemap/images.xml` advertises listing photography for publishable dossiers only, absolute URLs, de-duplicated. Video remains unimplemented — no assets exist. |
 | SQL search path | Verified against a live cluster, still opt-in | 48/48 parity scenarios pass and the page path is ~7x faster than the JS fallback (p50 27.8 ms vs 266.6 ms). Enable with `ARCHITECH_SEARCH_SQL_PAGE=on` where the search migrations are applied. Evidence: [`docs/search/search-activation-and-relevance-2026-09-07.md`](docs/search/search-activation-and-relevance-2026-09-07.md). |
 
 ## Implemented hardening

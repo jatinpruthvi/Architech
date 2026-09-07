@@ -111,6 +111,7 @@ Generated on 2026-09-07 from the repository Markdown tree.
 - [7 Studyarena Round12 Contestant B](./docs/seo/7 studyarena-round12-contestant-b.md)
 - [8 Studyarena Round12 Contestant C](./docs/seo/8 studyarena-round12-contestant-c.md)
 - [9 Studyarena Round12 Contestant D](./docs/seo/9 studyarena-round12-contestant-d.md)
+- [Ai Visibility Surfaces 2026 09 07](./docs/seo/ai-visibility-surfaces-2026-09-07.md)
 - [Google Search Central Notes](./docs/seo/google-search-central-notes.md)
 - [Phase 1 Locality Trust](./docs/seo/phase-1-locality-trust.md)
 - [Phase 1 Trust Surface](./docs/seo/phase-1-trust-surface.md)

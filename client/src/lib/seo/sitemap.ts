@@ -17,7 +17,7 @@
    Pure and server-safe: no request, no clock, no I/O. */
 import { getPublishableSeoPages, sitemapSegmentForPage, type SeoPage, type SeoSitemapSegment } from "./pages";
 import { isPublicIndexingEnabled, type RuntimeEnvironment } from "./runtime";
-import { sitemapSegmentUrl } from "./urls";
+import { imageSitemapUrl, sitemapSegmentUrl } from "./urls";
 
 export type SitemapSegment = {
   id: SeoSitemapSegment;
@@ -86,7 +86,7 @@ export function toSitemapEntries(pages: SeoPage[]): SitemapUrlEntry[] {
 /** The index advertises each child sitemap at the newest date inside it, so
     Google can skip a child sitemap whose contents have not moved. */
 export function toSitemapIndexEntries(pages?: SeoPage[]): SitemapUrlEntry[] {
-  return SITEMAP_SEGMENTS.map((segment) => {
+  const segments = SITEMAP_SEGMENTS.map((segment) => {
     const dates = getSegmentPages(segment.id, pages)
       .map((page) => page.lastModified)
       .filter((date): date is string => Boolean(date))
@@ -96,6 +96,23 @@ export function toSitemapIndexEntries(pages?: SeoPage[]): SitemapUrlEntry[] {
       ...(dates.length ? { lastModified: dates[dates.length - 1] } : {}),
     };
   });
+
+  /* The image sitemap is appended rather than being a SITEMAP_SEGMENTS member:
+     those segments partition the SeoPage registry (every page in exactly one),
+     and media is a different unit of enumeration. Its `lastmod` is the newest
+     listing-page date, because a listing's photographs change when the
+     listing does. Omitted entirely when no listing carries a date, rather
+     than falling back to the build clock. */
+  const listingDates = getSegmentPages("listings", pages)
+    .map((page) => page.lastModified)
+    .filter((date): date is string => Boolean(date))
+    .sort();
+  segments.push({
+    loc: imageSitemapUrl(),
+    ...(listingDates.length ? { lastModified: listingDates[listingDates.length - 1] } : {}),
+  });
+
+  return segments;
 }
 
 const XML_ESCAPES: Record<string, string> = {

@@ -271,3 +271,38 @@ export function sitemapSegmentPath(segment: string) {
 export function sitemapSegmentUrl(segment: string, base?: string) {
   return assetUrl(sitemapSegmentPath(segment), base);
 }
+
+/* llms.txt / llms-full.txt.
+
+   Both are served from the ROOT with a dotted filename, which is the whole
+   point of the convention — a consumer guesses `https://host/llms.txt` and
+   there is no negotiation step. Unlike the sitemap segments these are real
+   dotted top-level routes (Next serves `app/llms.txt/route.ts` fine; the
+   dot-routing limitation only bites on *dynamic* segments), and like
+   `/sitemap.html` they must never be advertised with a trailing slash. */
+export function llmsTxtPath() {
+  return "/llms.txt";
+}
+
+export function llmsTxtUrl(base?: string) {
+  return assetUrl(llmsTxtPath(), base);
+}
+
+export function llmsFullTxtPath() {
+  return "/llms-full.txt";
+}
+
+export function llmsFullTxtUrl(base?: string) {
+  return assetUrl(llmsFullTxtPath(), base);
+}
+
+/** Image sitemap. Separate from the page segments because it uses a different
+    XML namespace (`image:`) and a different unit of enumeration — one `<url>`
+    per page, N `<image:image>` children per listing. */
+export function imageSitemapPath() {
+  return "/sitemap/images.xml";
+}
+
+export function imageSitemapUrl(base?: string) {
+  return assetUrl(imageSitemapPath(), base);
+}
