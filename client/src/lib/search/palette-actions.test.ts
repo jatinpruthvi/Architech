@@ -10,6 +10,7 @@ import type { SearchSuggestion } from "./suggestion-types";
 
 const labels: Record<string, string> = {
   "go-buy": "Explore cities",
+  "go-rent": "Rental homes",
   "go-search": "Search homes",
   "go-saved": "Saved homes",
   "go-saved-searches": "Saved searches",

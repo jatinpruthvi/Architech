@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowUpRight, Check, Calculator, Mail, MapPin, Phone, ShieldCheck, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import Reveal from "@/components/architech/Reveal";
+import { aboutFaqs } from "@/lib/content/about-faqs";
 
 function Shell({ kicker, title, children }: { kicker: string; title: React.ReactNode; children: React.ReactNode }) {
   const index = kicker.includes("Money") ? "01" : kicker.includes("Feedback") ? "02" : kicker.includes("Crawlable") ? "03" : kicker.includes("Contact") ? "04" : "05";
@@ -13,12 +14,14 @@ function Shell({ kicker, title, children }: { kicker: string; title: React.React
   return <div className="bg-paper pt-[78px] text-ink"><section className="border-b border-ink/12 bg-night py-20 text-cream md:py-28"><div className="container"><p className="kicker text-ember">{kicker}</p><h1 className="display mt-6 max-w-4xl text-[clamp(46px,8vw,96px)]">{title}</h1><div className="mt-10 flex items-end gap-4 border-t border-cream/15 pt-4"><span className="index-num text-5xl leading-none text-ember">{index}</span><span className="stamp !text-[10px] text-cream/55">{label}<br />India coverage · city-scoped evidence</span></div></div></section>{children}</div>;
 }
 
-const faqs = [
-  ["What does Architech verify?", "We keep source, freshness, and RERA context visible where available. Anything that cannot be verified remains clearly marked rather than presented as a fact."],
-  ["Can I list a property?", "Yes. Owners, agents, and builders can begin the moderated listing flow. Publication remains subject to source, consent, and review checks."],
-  ["Does Architech show reviews?", "Only real, consented, moderated feedback may be displayed. The Phase 1 preview does not seed testimonials or ratings."],
-  ["Which cities does Architech cover?", "Architech currently exposes reviewed routes for 12 Indian markets. Each city and locality goes live only when its own source and review context is available."],
-];
+/* The FAQ copy lives in `lib/content/about-faqs.ts`, NOT here.
+
+   This module is `"use client"`. A plain array exported from a client module
+   and imported by a server component crosses the RSC boundary as a client
+   reference rather than data — `aboutFaqs.filter` then throws "a.filter is not
+   a function" during prerender. Shared data must live in a module neither side
+   marks as client-only. */
+const faqs: Array<[string, string]> = aboutFaqs.map((entry) => [entry.question, entry.answer]);
 
 export function AboutPage() {
   return <Shell kicker="Coverage desk · India" title={<>A property platform built around the <em className="text-ember">place.</em></>}>
@@ -49,9 +52,9 @@ export function HomeLoanPage() {
 }
 
 const sitemapGroups = [
-  ["Discover", [["Buy homes across India", "/buy/"], ["Search all homes", "/search/"], ["Developers", "/developers/"], ["Investment context", "/investment/"]]],
+  ["Discover", [["Buy homes across India", "/buy/"], ["Rent homes across India", "/rent/"], ["Search all homes", "/search/"], ["Developers", "/developers/"], ["Investment context", "/investment/"]]],
   ["Trust & context", [["Field notes", "/guide/"], ["Requirements", "/requirements/"], ["Saved homes", "/saved/"], ["Saved searches", "/saved-searches/"]]],
-  ["Property paths", [["List a property", "/list-property/"], ["City & locality hubs", "/buy/"], ["Home loan calculator", "/home-loan/"], ["Blogs / field notes", "/blogs/"]]],
+  ["Property paths", [["List a property", "/list-property/"], ["Rental city & locality hubs", "/rent/"], ["Home loan calculator", "/home-loan/"], ["Blogs / field notes", "/blogs/"]]],
   ["Company", [["About Architech", "/about-us/"], ["Contact desk", "/contact-us/"], ["Feedback", "/review/"], ["Privacy", "/privacy/"]]],
 ] as const;
 

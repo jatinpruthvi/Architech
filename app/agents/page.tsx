@@ -6,7 +6,7 @@ import { agentUrl, agentsUrl } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
-  title: "Verified agents & partners · Architech",
+  title: "Verified agents & partners",
   description:
     "Every agent and partner organization on Architech, with its verification tier, review evidence, and live inventory — no profile exists here without one.",
   alternates: { canonical: agentsUrl() },

@@ -69,8 +69,13 @@ describe("SEO registry snapshot drift", () => {
     expect(summary).toContain("pages total=");
     /* Segment-level assertions: cheap invariants that fail even when a
        reviewable snapshot update was rubber-stamped by accident. */
-    expect(summary).toMatch(/cities: 1[2-9]\d*/); // currently 12 cities
-    expect(summary).toMatch(/localities: [5-9]\d/); // currently 72
+    /* 24 = 12 cities × 2 transaction intents (/buy/{city}/ and /rent/{city}/).
+       The lower bound is 24 rather than 12 because dropping back to one page
+       per city would mean the rent surface silently disappeared. */
+    expect(summary).toMatch(/cities: (2[4-9]|[3-9]\d|\d{3,})/);
+    /* 72 localities × 2 intents, minus the intent pages the quality gate
+       withholds for having no matching inventory. Three digits either way. */
+    expect(summary).toMatch(/localities: \d{3,}/);
   });
 
   it("every indexable page follows the URL grammar and declares an intent", () => {

@@ -35,11 +35,16 @@ export function applyFilters<T extends FilterableProperty>(list: T[], activeIds:
   return list.filter((p) => active.every((d) => d.fn(p)));
 }
 
-export type SortId = "fresh" | "price-asc" | "price-desc";
+export type SortId = "fresh" | "price-asc" | "price-desc" | "relevance";
 
 export function applySort<T extends FilterableProperty>(list: T[], sort: SortId): T[] {
   if (sort === "price-asc") return [...list].sort((a, b) => a.priceNum - b.priceNum);
   if (sort === "price-desc") return [...list].sort((a, b) => b.priceNum - a.priceNum);
+  /* "relevance" is ordered by the search layer (it needs the query text, which
+     a pure filter module does not have) — see rankByRelevance in
+     lib/search/relevance.ts. Reaching here with "relevance" means no query was
+     supplied, in which case every candidate scores equally and read order (=
+     freshest-first) is the correct, and only honest, answer. */
   return list; // "fresh" = fixture order (already freshest-first)
 }
 

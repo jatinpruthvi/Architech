@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -130,6 +130,18 @@ const sitemapChecks = [
   { route: "/sitemap/listings.xml", root: "urlset" },
   { route: "/sitemap/guides.xml", root: "urlset" },
   { route: "/sitemap/reports.xml", root: "urlset" },
+  /* The image sitemap is a static route sitting alongside `/sitemap/[segment]`.
+     Next resolves static segments first, so this check also pins that the
+     dynamic route has not swallowed `images.xml` and started 404ing it. */
+  { route: "/sitemap/images.xml", root: "urlset" },
+];
+
+/* llms.txt and llms-full.txt. Plain text, not XML, and both must answer 200
+   even when gated — a 404 reads as "no such file" and invites a retry, while
+   an explanation records a deliberate decision. */
+const textFileChecks = [
+  { route: "/llms.txt", expect: "# Architech" },
+  { route: "/llms-full.txt", expect: "# Architech" },
 ];
 
 /* The social card. OGP wants an absolute URL; a relative one is resolved
@@ -396,6 +408,13 @@ const child = spawn(nextBin, ["start", "-H", "127.0.0.1", "-p", String(port)], {
        which render live under `next start`) on the same fixture corpus so a
        local prisma DB can't skew those checks either. */
     ARCHITECH_DATA_SOURCE: "",
+    /* Sitemaps and robots render LIVE under `next start`, so enabling indexing
+       here lets the on-page audit below see the real publishable corpus even
+       though CI does not export this flag. Without it the sitemap is empty,
+       the audit skips, and CI would silently never run it -- the crawl
+       simulation defaults the same way and for the same reason. Prerendered
+       HTML is unaffected: its metadata was baked at build time. */
+    PUBLIC_INDEXING_ENABLED: process.env.PUBLIC_INDEXING_ENABLED ?? "true",
   },
   stdio: ["ignore", "pipe", "pipe"],
   detached: process.platform !== "win32",
@@ -420,6 +439,15 @@ try {
     const xml = await fetchXml(baseUrl, item.route);
     includes(xml, `<${item.root}`, item.route);
     console.log(`✓ sitemap checks passed for ${item.route}`);
+  }
+  for (const item of textFileChecks) {
+    const response = await fetch(`${baseUrl}${item.route}`, { redirect: "manual" });
+    assert(response.status === 200, `${item.route} expected HTTP 200, received ${response.status}`);
+    const contentType = response.headers.get("content-type") ?? "";
+    assert(contentType.includes("text/plain"), `${item.route} expected text/plain, received ${contentType}`);
+    const body = await response.text();
+    includes(body, item.expect, item.route);
+    console.log(`✓ AI-index checks passed for ${item.route}`);
   }
   /* Keyword URLs (contestant F §1 and §4). "2 bhk for rent in [locality]" is
      the query shape F builds on, and these slugs are how it reaches the site.
@@ -452,7 +480,20 @@ try {
   const unknownSegment = await fetch(`${baseUrl}/sitemap/not-a-segment.xml`, { redirect: "manual" });
   assert(unknownSegment.status === 404, `unknown sitemap segment expected HTTP 404, received ${unknownSegment.status}`);
   console.log("✓ unknown sitemap segment returns 404");
-  console.log(`SEO smoke passed for ${routeChecks.length} routes and ${sitemapChecks.length} sitemaps.`);
+  console.log(`SEO smoke passed for ${routeChecks.length} routes, ${sitemapChecks.length} sitemaps, and ${textFileChecks.length} AI index files.`);
+
+  /* On-page budgets across the WHOLE indexable corpus, not just the sampled
+     routes above. Reuses this server so CI does not pay for a second build.
+     This is the check that caught 11 live title/description defects that
+     typecheck, lint, and the unit suite all passed. */
+  const audit = spawnSync(process.execPath, [path.join(root, "scripts/seo/onpage-audit.mjs"), "--base", baseUrl], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: "pipe",
+  });
+  process.stdout.write(audit.stdout ?? "");
+  if (audit.stderr) process.stderr.write(audit.stderr);
+  assert(audit.status === 0, "on-page SEO audit reported errors");
 } catch (error) {
   console.error(output.trim());
   console.error(error);

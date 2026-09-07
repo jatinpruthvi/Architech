@@ -39,6 +39,7 @@ export type PaletteGroups = {
     URLs so the palette never mints a URL variant the sitemap does not know. */
 export const QUICK_ACTIONS: ReadonlyArray<{ id: string; href: string }> = [
   { id: "go-buy", href: "/buy/" },
+  { id: "go-rent", href: "/rent/" },
   { id: "go-search", href: "/search/" },
   { id: "go-saved", href: "/saved/" },
   { id: "go-saved-searches", href: "/saved-searches/" },

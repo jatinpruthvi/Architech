@@ -80,8 +80,8 @@ Same module — `findMany({ where: { brokerOrgId }, orderBy: { updatedAt: "desc"
 
 ## 7. Watchlist (speculation / deferred — explicit non-actions)
 
-- **W1 (index, migration deferred):** the moderation-queue filter `lifecycle = 'IN_REVIEW'` has no leftmost-lifecycle index on `Listing` — the cap bounds memory, not scan cost. Proposed: `@@index([lifecycle])`. **Not shipped:** sandbox cannot run `prisma validate` (engine download TLS-blocked), and ARCH-17 step 6 forbids unverifiable migrations.
-- **W2 (index, migration deferred):** `ReraRecord.verificationStatus` only appears as a 2nd column. Impact negligible at `take: 10`; revisit with volume.
+- **W1 (index) — RESOLVED 7 Sep 2026.** The moderation-queue filter `lifecycle = 'IN_REVIEW'` had no leftmost-lifecycle index on `Listing` (all six existing lifecycle indexes carry it as a *trailing* column, so none was usable); the cap bounds memory, not scan cost. Shipped as `@@index([lifecycle, updatedAt])` — `updatedAt` second so the FIFO `orderBy` is served by the same index. The original blocker ("sandbox cannot run `prisma validate`") no longer applies: `pnpm db:validate:offline` validates without egress. Guarded by `client/src/lib/db/index-leftmost-coverage.test.ts`. See `docs/search/query-optimization-audit-2026-09-07.md` §9.
+- **W2 (index) — RESOLVED 7 Sep 2026.** `ReraRecord.verificationStatus` only appeared as a 2nd column in both indexes. Shipped as `@@index([verificationStatus, updatedAt])`. The "impact negligible at `take: 10`" assessment still stands — it shipped because it is the identical defect to W1 and cost one statement, not because measurement justified it independently.
 - **W3 (product decisions):** directory pagination; publish-gate peer windowing (cap would weaken a correctness gate — marker in place); locality-registry include fan-out if coverage goes nationwide; saved-search alert platform scan (the in-code comment itself predicts this becomes the perf bug).
 - **W4 (infra):** `pnpm db:validate` is engine-download-dependent and blocked by sandbox egress after node_modules wipes. CI with warm caches is unaffected; last green locally at `686e4fc`.
 

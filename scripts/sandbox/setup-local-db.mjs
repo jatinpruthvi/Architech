@@ -17,10 +17,15 @@
  *   5. Ensures the Prisma schema-engine: tries the CLI's own download; if
  *      that fails (blocked network), installs scripts/sandbox/
  *      schema-engine-shim.cjs in its place. Then generates the client.
- *   6. Applies all migrations. If the server lacks PostGIS (the embedded
- *      build does), the two geo-dependent migrations are temporarily
- *      stubbed (geography/geometry -> TEXT, GIST/trgm indexes skipped),
- *      applied, and the original migration files are restored byte-for-byte.
+ *   6. Applies all migrations. Each extension is probed INDEPENDENTLY: if the
+ *      server lacks PostGIS (the embedded build does), the geo migration is
+ *      temporarily stubbed (geography/geometry -> TEXT, GIST indexes skipped);
+ *      if it separately lacks pg_trgm, the trigram indexes are skipped. The
+ *      original migration files are restored byte-for-byte afterwards.
+ *      NOTE: these were once gated on a single postgis probe, which meant a
+ *      server WITH pg_trgm still had its trigram indexes skipped whenever
+ *      postgis was absent — a sandbox that looked like a search environment
+ *      but silently exercised weaker predicates than production.
  *   7. Runs prisma/seed.mjs (idempotent upserts).
  *
  * Afterwards: `pnpm dev` serves the site with ARCHITECH_DATA_SOURCE=prisma.
@@ -448,7 +453,21 @@ function patchSearchIndexSql(sql) {
   return s;
 }
 
-async function hasPostGis() {
+/**
+ * Probe each extension INDEPENDENTLY.
+ *
+ * This used to be a single `hasPostGis()` whose result gated both the geo
+ * stubs and the pg_trgm stubs. postgis and pg_trgm are unrelated extensions,
+ * and the embedded server ships pg_trgm but not postgis — so the absence of
+ * postgis silently skipped `CREATE EXTENSION pg_trgm` and all four trigram
+ * indexes on a server that could have had them.
+ *
+ * The consequence was quiet and expensive: search's trigram predicates and
+ * the `%` similarity operator simply were not exercised, so a sandbox looked
+ * like a working search environment while testing something weaker than
+ * production. Probe them separately; stub only what is genuinely missing.
+ */
+async function availableExtensions() {
   const { Client } = createRequire(import.meta.url)("pg");
   const c = new Client({
     connectionString: DATABASE_URL,
@@ -457,9 +476,14 @@ async function hasPostGis() {
   try {
     await c.connect();
     const r = await c.query(
-      "SELECT 1 FROM pg_available_extensions WHERE name = 'postgis'"
+      "SELECT name FROM pg_available_extensions WHERE name IN ('postgis', 'pg_trgm', 'unaccent')"
     );
-    return r.rowCount > 0;
+    const names = new Set(r.rows.map(row => row.name));
+    return {
+      postgis: names.has("postgis"),
+      pgTrgm: names.has("pg_trgm"),
+      unaccent: names.has("unaccent"),
+    };
   } finally {
     await c.end().catch(() => {});
   }
@@ -493,24 +517,30 @@ async function verifyMigrationsApplied() {
   }
 }
 
-async function applyMigrations(postgisAvailable) {
-  if (postgisAvailable) {
+async function applyMigrations(available) {
+  const targets = [];
+  if (!available.postgis) {
+    targets.push({
+      file: "prisma/migrations/202608300002_india_location_foundation/migration.sql",
+      patch: patchLocationSql,
+    });
+  }
+  if (!available.pgTrgm) {
+    targets.push({
+      file: "prisma/migrations/202608240002_search_indexes/migration.sql",
+      patch: patchSearchIndexSql,
+    });
+  }
+
+  if (targets.length === 0) {
     log("applying migrations (unmodified) ...");
     runPrisma(["migrate", "deploy"]);
   } else {
-    log(
-      "postgis unavailable — applying migrations with temporary geo stubs ..."
-    );
-    const targets = [
-      {
-        file: "prisma/migrations/202608300002_india_location_foundation/migration.sql",
-        patch: patchLocationSql,
-      },
-      {
-        file: "prisma/migrations/202608240002_search_indexes/migration.sql",
-        patch: patchSearchIndexSql,
-      },
-    ];
+    const missing = [
+      !available.postgis && "postgis (geo columns stubbed as TEXT)",
+      !available.pgTrgm && "pg_trgm (trigram indexes skipped)",
+    ].filter(Boolean);
+    log(`applying migrations with temporary stubs — missing: ${missing.join("; ")}`);
     const originals = targets.map(t => ({
       ...t,
       original: fs.readFileSync(t.file, "utf8"),
@@ -584,7 +614,7 @@ async function main() {
   await startPostgresIfNeeded();
   await ensureDatabase();
   ensureEngine();
-  await applyMigrations(await hasPostGis());
+  await applyMigrations(await availableExtensions());
   seedDatabase();
 
   console.log("");

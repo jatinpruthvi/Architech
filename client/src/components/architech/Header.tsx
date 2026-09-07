@@ -35,6 +35,7 @@ export default function Header() {
 
   const navItems = [
     { href: "/buy/", label: t.nav.explore },
+    { href: "/rent/", label: t.nav.rent },
     { href: "/search/", label: t.nav.find },
     { href: "/guide/", label: t.nav.notes },
     { href: "/list-property/", label: t.nav.list },

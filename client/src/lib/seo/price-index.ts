@@ -22,6 +22,7 @@ import { getCities } from "@/lib/repositories";
 import { cityMarketTrends, type CityMarketTrends } from "@/lib/realestate/market-trends";
 import { priceIndexSerpDescription, priceIndexSerpTitle, priceIndexHubSerpDescription, priceIndexHubSerpTitle } from "./serp";
 import { defaultSocialImage } from "./social";
+import { cityId, orgId } from "./entity-graph";
 import { cityPriceIndexUrl, cityUrl, homeUrl, localityUrl, priceIndexUrl } from "./urls";
 
 /** SERP input read straight off the report, so the gate that withholds a
@@ -69,11 +70,16 @@ export function priceIndexJsonLd(report: CityMarketTrends) {
         "@id": `${canonical}#report`,
         headline: `${report.cityName} property price index — ${report.asOfLabel}`,
         description: priceIndexSerpDescription(serpInput(report)),
-        author: { "@type": "Organization", name: "Architech" },
+        author: { "@type": "Organization", "@id": orgId(), name: "Architech" },
+        publisher: { "@id": orgId() },
         dateModified: report.asOfDate,
         datePublished: report.asOfDate,
         mainEntityOfPage: canonical,
-        about: { "@type": "Place", name: report.cityName },
+        /* `about` points at the city ENTITY, not a same-named anonymous Place.
+           This is what makes the price index attach to the city as a property
+           of it -- the difference between an article that mentions Ahmedabad
+           and citable market data about the Ahmedabad entity. */
+        about: { "@type": "City", "@id": cityId(report.citySlug), name: report.cityName },
         isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() },
         /* The sample and the rule travel with the figure. A price index that
            does not say what it measured is not citable, which is the whole

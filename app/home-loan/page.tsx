@@ -5,10 +5,10 @@ import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
-  title: "Home loan EMI calculator — India | Architech",
+  title: "Home loan EMI calculator — India",
   description: "Use Architech’s educational home-loan EMI calculator to explore indicative principal, tenure, rate, interest, and total payable outputs.",
   alternates: { canonical: canonicalUrl("/home-loan/") },
-  openGraph: { title: "Home loan EMI calculator — India | Architech", url: canonicalUrl("/home-loan/"), type: "website", images: [defaultSocialImage()] },
+  openGraph: { title: "Home loan EMI calculator — India", url: canonicalUrl("/home-loan/"), type: "website", images: [defaultSocialImage()] },
 };
 
 export default function Page() {

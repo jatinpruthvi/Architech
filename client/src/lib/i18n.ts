@@ -5,7 +5,7 @@ export type Lang = "en" | "hi";
 
 export const strings = {
   en: {
-    nav: { explore: "Explore cities", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring", list: "List your property" },
+    nav: { explore: "Explore cities", rent: "Rent", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring", list: "List your property" },
     palette: {
       open: "Search or jump — press ⌘K",
       label: "Command palette",
@@ -17,7 +17,7 @@ export const strings = {
       empty: "No suggestions — press Enter to search exactly this.",
       close: "Close the palette",
       actions: {
-        "go-buy": "Explore cities", "go-search": "Search homes", "go-saved": "Saved homes",
+        "go-buy": "Explore cities", "go-rent": "Rental homes", "go-search": "Search homes", "go-saved": "Saved homes",
         "go-saved-searches": "Saved searches", "go-guide": "Field notes", "go-list-property": "List your property",
       } as Record<string, string>,
     },
@@ -69,7 +69,7 @@ export const strings = {
       },
       title1: "in", cityName: "India.", home: "home", homes: "homes",
       filter: "Combine", clearAll: "Clear all", sort: "Sort", sortHomes: "Sort homes",
-      sortFresh: "Freshest first", sortAsc: "Price — low to high", sortDesc: "Price — high to low",
+      sortFresh: "Freshest first", sortAsc: "Price — low to high", sortDesc: "Price — high to low", sortRelevance: "Best match",
       filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "Under ₹1.5 Cr", rera: "RERA verified", "type-apartment": "Apartment / flat", "type-villa": "Villa", "type-rowhouse": "Rowhouse", "availability-ready": "Ready to move", "availability-new": "New launch", "availability-resale": "Resale" } as Record<string, string>,
       filtersGroup: "Filters (combinable)", kicker: "Search", clearSearch: "Clear search", filtersButton: "Filters", filterHomes: "Filter homes",
       showHomes: "Show homes", map: "Map", list: "List", updating: "Updating results…", allHomes: "All homes",
@@ -153,12 +153,12 @@ export const strings = {
     },
     footer: {
       made: "Built for India", tagline: "Find the place before you choose the address.", explore: "Explore", trust: "Trust", office: "Field office",
-      links: { buy: "Buy in India", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches", listProperty: "List your property" },
+      links: { buy: "Buy in India", rent: "Rent in India", search: "Search homes", notes: "Field notes", verify: "How we verify", rera: "RERA methodology", saved: "Saved homes", savedSearches: "Saved searches", listProperty: "List your property" },
     },
     common: { skip: "Skip to content", translationNote: "", india: "India", demoData: "demo data", partialTranslation: "" },
   },
   hi: {
-    nav: { explore: "भारत के शहर देखें", find: "घर खोजें", notes: "फ़ील्ड नोट्स", saved: "सहेजे गए", start: "खोज शुरू करें", list: "अपनी संपत्ति सूचीबद्ध करें" },
+    nav: { explore: "भारत के शहर देखें", rent: "किराया", find: "घर खोजें", notes: "फ़ील्ड नोट्स", saved: "सहेजे गए", start: "खोज शुरू करें", list: "अपनी संपत्ति सूचीबद्ध करें" },
     palette: {
       open: "खोजें या सीधे जाएँ — ⌘K दबाएँ",
       label: "कमांड पैलेट",
@@ -170,7 +170,7 @@ export const strings = {
       empty: "कोई सुझाव नहीं — इसी नाम से खोजने के लिए Enter दबाएँ।",
       close: "पैलेट बंद करें",
       actions: {
-        "go-buy": "शहर देखें", "go-search": "घर खोजें", "go-saved": "सहेजे गए घर",
+        "go-buy": "शहर देखें", "go-rent": "किराए के घर", "go-search": "घर खोजें", "go-saved": "सहेजे गए घर",
         "go-saved-searches": "सहेजी गई खोजें", "go-guide": "फ़ील्ड नोट्स", "go-list-property": "अपनी संपत्ति सूचीबद्ध करें",
       } as Record<string, string>,
     },
@@ -209,7 +209,7 @@ export const strings = {
         captureCta: "यह ब्यौरा भेजें",
       },
       title1: "—", cityName: "भारत में।", home: "घर", homes: "घर", filter: "जोड़ें", clearAll: "सब हटाएँ", sort: "क्रम", sortHomes: "घरों का क्रम चुनें",
-      sortFresh: "सबसे ताज़ा पहले", sortAsc: "क़ीमत — कम से ज़्यादा", sortDesc: "क़ीमत — ज़्यादा से कम",
+      sortFresh: "सबसे ताज़ा पहले", sortAsc: "क़ीमत — कम से ज़्यादा", sortDesc: "क़ीमत — ज़्यादा से कम", sortRelevance: "सबसे मिलता-जुलता",
       filters: { "2bhk": "2 BHK", "3bhk": "3 BHK +", under15: "₹1.5 करोड़ से कम", rera: "RERA सत्यापित", "type-apartment": "फ़्लैट / अपार्टमेंट", "type-villa": "विला", "type-rowhouse": "रोहहाउस", "availability-ready": "रहने के लिए तैयार", "availability-new": "नया लॉन्च", "availability-resale": "रीसेल" } as Record<string, string>,
       filtersGroup: "फ़िल्टर (जोड़े जा सकते हैं)", kicker: "खोज", clearSearch: "खोज हटाएँ", filtersButton: "फ़िल्टर", filterHomes: "घर फ़िल्टर करें",
       showHomes: "घर दिखाएँ", map: "नक़्शा", list: "सूची", updating: "परिणाम अपडेट हो रहे हैं…", allHomes: "सभी घर",
@@ -289,7 +289,7 @@ export const strings = {
       badgeDetailsCopy: "RERA बैज के लिए संपत्ति के लागू राज्य या केंद्रशासित प्रदेश प्राधिकरण से प्रमाण ज़रूरी है। किसी दूसरे राज्य की registry को fallback नहीं बनाया जाता।",
       badgeSample: "नमूना", savedToast: "आपकी शॉर्टलिस्ट में सहेजा गया", removedToast: "शॉर्टलिस्ट से हटाया गया",
     },
-    footer: { made: "भारत के लिए निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "भारत में ख़रीदें", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर", savedSearches: "सहेजी गई खोजें", listProperty: "अपनी संपत्ति सूचीबद्ध करें" } },
+    footer: { made: "भारत के लिए निर्मित", tagline: "पता चुनने से पहले जगह को जानिए।", explore: "देखें", trust: "भरोसा", office: "फ़ील्ड कार्यालय", links: { buy: "भारत में ख़रीदें", rent: "भारत में किराए पर", search: "घर खोजें", notes: "फ़ील्ड नोट्स", verify: "हम कैसे सत्यापित करते हैं", rera: "RERA पद्धति", saved: "सहेजे गए घर", savedSearches: "सहेजी गई खोजें", listProperty: "अपनी संपत्ति सूचीबद्ध करें" } },
     common: { skip: "सीधे सामग्री पर जाएँ", translationNote: "आंशिक अनुवाद · संपादकीय समीक्षा जारी — संपत्ति का editorial content अभी अंग्रेज़ी में रह सकता है।", india: "भारत", demoData: "डेमो डेटा", partialTranslation: "आंशिक अनुवाद" },
   },
 } as const;

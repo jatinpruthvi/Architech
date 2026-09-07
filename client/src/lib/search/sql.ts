@@ -1,5 +1,30 @@
 import { queryResidualTokens, type SortId } from "@/lib/filters";
 
+/* ---------- Text search configuration ----------
+ *
+ * `searchVector` is a UNION of two configurations (migration
+ * 202609070001_search_text_config), so a query must be asked in both to see
+ * both halves:
+ *
+ *   'english'          — stemmed, so "garden" finds "Thaltej Gardens".
+ *   'architech_simple' — simple + unaccent, so "Do Talao" (english erases the
+ *                        stopword "do"), "pāldi", and Devanagari titleHi/
+ *                        descriptionHi are all findable.
+ *
+ * Measured on a live cluster: three queries that returned zero rows under
+ * english-only now return the correct listing, with no regression on the
+ * stemmed cases. Asking only one side would silently re-lose the other half.
+ */
+export const FTS_CONFIGS = ["architech_simple", "english"] as const;
+
+/** `col @@ (websearch(simple,$n) || websearch(english,$n))` — one bound
+    parameter, both configurations. Callers pass the placeholder (e.g. `$3`)
+    so this composes with either parameter-numbering scheme in the repo. */
+export function ftsMatchSql(column: string, placeholder: string): string {
+  const alternatives = FTS_CONFIGS.map((config) => `websearch_to_tsquery('${config}', ${placeholder})`).join(" || ");
+  return `${column} @@ (${alternatives})`;
+}
+
 export type SearchSqlPlan = {
   where: string[];
   orderBy: string;
@@ -22,7 +47,7 @@ export function buildPostgresSearchPlan({ query = "", filters = [], sort = "fres
   const tokens = normalizeSearchTokens(query);
 
   if (tokens.length > 0) {
-    where.push('"Listing"."searchVector" @@ websearch_to_tsquery(\'english\', $query)');
+    where.push(ftsMatchSql('"Listing"."searchVector"', "$query"));
     where.push('("Listing"."title" % $query OR "Listing"."description" % $query OR "Listing"."addressLocality" % $query OR "Locality"."name" % $query)');
   }
 
@@ -101,11 +126,31 @@ export function escapeLike(value: string): string {
     query carries no residual tokens (structured-only queries like "3 bhk
     under 1.5 cr" narrow through the price/bhk filters the JS layer applies,
     so the SQL path adds nothing and the scoped read stands). */
-export function buildSqlNarrowPlan(rawQuery: string): SqlNarrowPlan | null {
+export function buildSqlNarrowPlan(rawQuery: string, citySlug?: string): SqlNarrowPlan | null {
   const tokens = queryResidualTokens(rawQuery);
   if (tokens.length === 0) return null;
 
   const params: string[] = [];
+
+  /* City scope pushdown (QP-19-001).
+   *
+   * The caller's read is ALREADY city-scoped — searchListingsForServer passes
+   * `citySlug` to getListingsForServer, which applies `city: { slug }` to the
+   * same Listing table. Narrowing therefore returned candidate ids for every
+   * city in the country and handed them to an `id: { in: [...] }` whose other
+   * predicate discarded every out-of-city one anyway: the work was done twice
+   * and the discarded half travelled over the wire as a literal id list.
+   *
+   * IDENTITY, not a heuristic: an id outside the scoped city cannot survive
+   * the outer read, so removing it here cannot change a single returned row.
+   * This is the one narrowing constraint that is safe to add — a LIMIT would
+   * NOT be, because the candidate set is unordered and truncating it would
+   * silently drop rows the JS filter would have kept (the superset guarantee
+   * is what makes this whole path correct). Boundedness stays where it is
+   * already honest: the outer read's ceiling.
+   */
+  const cityClause = citySlug ? `AND city."slug" = $${params.push(citySlug)}` : null;
+
   const tokenClauses = tokens.map((token) => {
     params.push(`%${escapeLike(token)}%`, token);
     const likeParam = params.length - 1;
@@ -114,10 +159,25 @@ export function buildSqlNarrowPlan(rawQuery: string): SqlNarrowPlan | null {
     return [
       "(",
       `  ${likeAlternatives}`,
-      `  OR listing."searchVector" @@ websearch_to_tsquery('english', $${rawParam})`,
+      `  OR ${ftsMatchSql('listing."searchVector"', `$${rawParam}`)}`,
       `  OR locality."name" % $${rawParam}`,
       `  OR city."name" % $${rawParam}`,
-      `  OR EXISTS (SELECT 1 FROM unnest(locality."aliases") AS alias WHERE alias ILIKE $${likeParam} ESCAPE '\\' OR alias % $${rawParam})`,
+      /* QP-19-004: matched against the normalised LocalityAlias TABLE, not
+         `unnest(locality."aliases")`. The array form could not use an index
+         at all — unnest() is an opaque set-returning function to the planner,
+         so neither the ILIKE nor the `%` could be served and every candidate
+         search scanned the array per row. LocalityAlias."normalizedName" has
+         a real trigram index (202609070003), and the join rides the leading
+         column of the (localityId, normalizedName, languageCode) unique key.
+
+         RECALL: this WIDENS, never narrows. LocalityAlias is a superset of
+         the legacy array — migration 202608300002 backfilled it by
+         `UNNEST(locality."aliases")` as type SEARCH, on top of the OFFICIAL
+         name and TRANSLITERATION hindiName rows, and prisma/seed.mjs keeps
+         writing both. Widening is safe here because this alternative is OR'd
+         into a candidate SUPERSET that the unchanged JS filter then narrows,
+         so the returned rows cannot change. */
+      `  OR EXISTS (SELECT 1 FROM "LocalityAlias" AS alias WHERE alias."localityId" = locality."id" AND (alias."normalizedName" ILIKE $${likeParam} ESCAPE '\\' OR alias."normalizedName" % $${rawParam}))`,
       ")",
     ].join("\n");
   });
@@ -127,6 +187,7 @@ export function buildSqlNarrowPlan(rawQuery: string): SqlNarrowPlan | null {
     'JOIN "Locality" AS locality ON locality."id" = listing."localityId"',
     'JOIN "City" AS city ON city."id" = listing."cityId"',
     `WHERE listing."lifecycle" = 'ACTIVE'`,
+    ...(cityClause ? [cityClause] : []),
     ...tokenClauses.map((clause) => `AND ${clause}`),
   ].join("\n");
 

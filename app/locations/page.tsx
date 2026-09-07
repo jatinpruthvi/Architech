@@ -13,10 +13,13 @@ import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "India location and PIN directory — Architech",
-  description: "Browse Architech’s sourced India location registry, exact PIN coverage, India Post offices, and LGD local bodies without conflating administrative, postal, and property localities.",
+  title: "India location and PIN directory",
+  /* 155 chars: Google truncates around 155-160, and the previous 180-character
+     version lost its final clause mid-sentence in the SERP. */
+  description:
+    "Browse Architech’s sourced India location registry: exact PIN coverage, India Post offices, and LGD local bodies, never conflated with property localities.",
   alternates: { canonical: canonicalUrl("/locations/") },
-  openGraph: { title: "India location and PIN directory — Architech", url: canonicalUrl("/locations/"), type: "website" },
+  openGraph: { title: "India location and PIN directory", url: canonicalUrl("/locations/"), type: "website" },
 };
 
 const number = new Intl.NumberFormat("en-IN");

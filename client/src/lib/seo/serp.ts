@@ -258,6 +258,41 @@ export function priceIndexSerpDescription(input: PriceIndexSerpInput): string {
   ]);
 }
 
+/* The /buy/ and /rent/ national hubs.
+ *
+ * Built through the budget helpers rather than hand-written: the hand-written
+ * rent description shipped at 162 characters and was caught truncating
+ * mid-sentence by the on-page audit. Composing from parts lets the budget drop
+ * the trailing clause instead of the renderer cutting a word in half. */
+export function rentHubSerpTitle(): string {
+  return serpTitle(["Rent property in India", "— every city we cover"]);
+}
+
+export function rentHubSerpDescription(cityNames: readonly string[]): string {
+  /* `composeSerpText` stops at the first clause that does not fit — it never
+     shortens one. So a fixed second clause is all-or-nothing, and a long one
+     is silently dropped: the first attempt used 55 of 155 characters and the
+     audit flagged the waste. `fitTail` instead picks the richest variant that
+     DOES fit, longest first — the same approach `citySerpTitle` uses. The city
+     list shrinks rather than vanishing. */
+  const lead = `Rental homes across ${cityNames.length} Indian cities.`;
+  const withNames = (count: number) =>
+    `Compare ${cityNames.slice(0, count).join(", ")} and more by locality — monthly rent, with the evidence behind every figure.`;
+  const tail = fitTail(
+    lead,
+    [
+      withNames(6),
+      withNames(4),
+      withNames(3),
+      withNames(2),
+      "Compare localities by monthly rent, with the evidence behind every figure.",
+      "Monthly rent by locality, with the evidence behind every figure.",
+    ],
+    SERP_DESCRIPTION_MAX,
+  );
+  return serpDescription(tail ? [lead, tail] : [lead]);
+}
+
 export function priceIndexHubSerpTitle(): string {
   return serpTitle(["Property price index", "— Indian cities", "— India"]);
 }
@@ -278,18 +313,84 @@ export type CitySerpInput = {
 };
 
 export function citySerpTitle(input: CitySerpInput): string {
+  /* The alternatives go through `fitTail`, not straight into `serpTitle`.
+     `composeSerpText` deliberately STOPS at the first part that does not fit
+     (a trailing clause without the clause it qualifies is worse than nothing),
+     so passing three mutually-exclusive tails meant the longest one blocked
+     the shorter ones: "Buy in Ahmedabad" shipped bare at 28 characters, ~20
+     characters of SERP real estate left unused on every city hub. `fitTail`
+     picks the longest tail that actually fits. */
+  const subject = `Buy in ${input.name}`;
   return serpTitle([
-    `Buy in ${input.name}`,
-    "— localities with verified context",
-    "— localities",
-    "— homes",
+    subject,
+    fitTail(subject, [
+      "— localities with verified context",
+      "— localities & RERA context",
+      "— localities",
+      "— homes",
+    ]),
+  ]);
+}
+
+/** Rent-intent city title.
+
+    Separate from `citySerpTitle` because the query is different ("property for
+    rent in X", not "buy in X") and because rent pages must never inherit sale
+    wording. Routed through `serpTitle` so the brand suffix the root layout
+    appends is inside the 60-character budget -- hand-written titles bypassed
+    that and shipped "... | Architech · Architech" at 72 characters. */
+export function rentCitySerpTitle(input: CitySerpInput): string {
+  return serpTitle([
+    `Property for rent in ${input.name}`,
+    input.state ? `— ${input.state} rentals` : null,
+    "— rentals",
+  ]);
+}
+
+export function rentCitySerpDescription(input: CitySerpInput): string {
+  const names = input.localities?.slice(0, 4) ?? [];
+  return serpDescription([
+    `Homes to rent in ${input.name}${input.state ? `, ${input.state}` : ""}${names.length ? `: ${names.join(", ")}` : ""}.`,
+    "Compare rental stock locality by locality with verified coordinates and RERA context.",
+  ]);
+}
+
+/** Rent-intent locality title. */
+export function rentLocalitySerpTitle(input: LocalitySerpInput): string {
+  const subject = `Rent in ${input.name}, ${input.cityName}`;
+  return serpTitle([
+    subject,
+    fitTail(subject, ["— homes to rent", "— rentals"]),
+  ]);
+}
+
+export function rentLocalitySerpDescription(input: LocalitySerpInput): string {
+  const pin = input.pincodes?.[0];
+  return serpDescription([
+    `Homes to rent in ${input.name}, ${input.cityName}${pin ? ` — PIN ${pin}` : ""}.`,
+    input.note ?? null,
+    "Verified coordinates, landmarks, and rental stock only.",
   ]);
 }
 
 export function citySerpDescription(input: CitySerpInput): string {
   const names = input.localities?.slice(0, 4) ?? [];
+  const subject = `Buy in ${input.name}${input.state ? `, ${input.state}` : ""}${names.length ? `: ${names.join(", ")}` : ""}.`;
+  /* Shorter fallbacks, longest-first. `composeSerpText` stops at the first
+     part that does not fit, so a single long clause meant cities with several
+     locality names published a bare 70-character description and left ~85
+     characters of SERP space unused. `fitTail` picks the longest that fits. */
   return serpDescription([
-    `Buy in ${input.name}${input.state ? `, ${input.state}` : ""}${names.length ? `: ${names.join(", ")}` : ""}.`,
-    "Explore locality by locality with RERA context, verified coordinates, and real distances.",
+    subject,
+    fitTail(
+      subject,
+      [
+        "Explore locality by locality with RERA context, verified coordinates, and real distances.",
+        "Locality by locality, with RERA context and verified coordinates.",
+        "Locality by locality, with verified coordinates.",
+        "Verified locality context.",
+      ],
+      SERP_DESCRIPTION_MAX,
+    ),
   ]);
 }

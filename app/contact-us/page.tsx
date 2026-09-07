@@ -5,10 +5,10 @@ import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
-  title: "Contact Architech — India property desk",
+  title: "Contact us — India property desk",
   description: "Contact Architech about property discovery in any city we cover, partnerships, editorial context, or a moderated property brief.",
   alternates: { canonical: canonicalUrl("/contact-us/") },
-  openGraph: { title: "Contact Architech — India property desk", url: canonicalUrl("/contact-us/"), type: "website", images: [defaultSocialImage()] },
+  openGraph: { title: "Contact us — India property desk", url: canonicalUrl("/contact-us/"), type: "website", images: [defaultSocialImage()] },
 };
 
 export default function Page() {

@@ -28,8 +28,19 @@ describe("buildSeoPages — fixture parity", () => {
     expect(partial.filter((page) => page.id.startsWith("agent:"))).toEqual([]);
     expect(partial.filter((page) => ["city", "locality", "listing"].includes(page.routeType)).every((page) => page.path === "/buy/" || page.path.includes(cities[0].slug) || page.routeType === "listing") || true).toBe(true);
     /* city/locality pages exist only for the injected city; the national hub is static. */
-    expect(partial.filter((page) => page.routeType === "city").map((page) => page.path)).toEqual([`/buy/${cities[0].slug}/`]);
-    expect(partial.filter((page) => page.routeType === "locality").every((page) => page.path.startsWith(`/buy/${cities[0].slug}/`))).toBe(true);
+    /* Two hubs per injected city — one per transaction intent — and nothing
+       for any city that was not injected. The point of the assertion is the
+       ABSENCE of cross-wiring, so it enumerates both expected paths rather
+       than loosening to a prefix check. */
+    expect(partial.filter((page) => page.routeType === "city").map((page) => page.path).sort()).toEqual([
+      `/buy/${cities[0].slug}/`,
+      `/rent/${cities[0].slug}/`,
+    ]);
+    expect(
+      partial
+        .filter((page) => page.routeType === "locality")
+        .every((page) => page.path.startsWith(`/buy/${cities[0].slug}/`) || page.path.startsWith(`/rent/${cities[0].slug}/`)),
+    ).toBe(true);
   });
 
   it("an ACTIVE-less listing set contributes zero listing pages (NOT 'sitemap describes dead inventory')", () => {

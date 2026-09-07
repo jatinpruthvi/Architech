@@ -237,4 +237,50 @@ describe("Phase 1 Prisma schema contract", () => {
     expect(searchMigration).toContain('"Listing_searchVector_idx"');
     expect(searchMigration).toContain("gin_trgm_ops");
   });
+
+  describe("search text configuration (202609070001)", () => {
+    const textConfigMigration = readFileSync(
+      "prisma/migrations/202609070001_search_text_config/migration.sql",
+      "utf8",
+    );
+
+    it("creates the unaccent-backed, non-stemming configuration the code queries", () => {
+      /* sql.ts asks every FTS predicate in BOTH configurations. If this
+         migration ever stops shipping `architech_simple`, those queries throw
+         at runtime — fail here instead, at build time. */
+      expect(textConfigMigration).toContain("CREATE EXTENSION IF NOT EXISTS unaccent");
+      expect(textConfigMigration).toContain("CREATE TEXT SEARCH CONFIGURATION architech_simple");
+      expect(textConfigMigration).toContain("WITH unaccent, simple");
+    });
+
+    it("indexes BOTH configurations, so stemming and verbatim matching coexist", () => {
+      // english half: "garden" must keep finding "Gardens".
+      expect(textConfigMigration).toContain("to_tsvector('english', coalesce(\"title\", ''))");
+      // verbatim half: "Do Talao" / "pāldi" must stop being erased.
+      expect(textConfigMigration).toContain("to_tsvector('architech_simple', coalesce(\"title\", ''))");
+    });
+
+    it("indexes the Hindi columns, which the original vector omitted entirely", () => {
+      expect(textConfigMigration).toContain('"titleHi"');
+      expect(textConfigMigration).toContain('"descriptionHi"');
+    });
+
+    it("keeps the A/B/C/D field weights ts_rank_cd relies on", () => {
+      /* The relevance sort passes '{0.1, 0.2, 0.4, 1.0}' (D,C,B,A) to
+         ts_rank_cd. Those numbers are meaningless if the vector stops
+         setweight-ing, so assert all four labels survive alongside the index. */
+      for (const weight of ["'A'", "'B'", "'C'", "'D'"]) {
+        expect(textConfigMigration).toContain(`), ${weight})`);
+      }
+      expect(textConfigMigration).toContain('CREATE INDEX IF NOT EXISTS "Listing_searchVector_idx"');
+    });
+  });
+
+  it("keeps the code's FTS configuration list in step with the migration", async () => {
+    /* The ranking weights in sql-page.ts ({0.1,0.2,0.4,1.0} = D,C,B,A) are
+       only meaningful if the vector still uses setweight A..D, and the
+       relevance sort is only correct if both configurations are queried. */
+    const { FTS_CONFIGS } = await import("./search/sql");
+    expect([...FTS_CONFIGS]).toEqual(["architech_simple", "english"]);
+  });
 });

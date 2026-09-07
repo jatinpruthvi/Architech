@@ -14,6 +14,7 @@ import { demoBrokerSession } from "@/lib/auth/roles";
 import { residenceSchemaType } from "@/lib/listing-vocabulary";
 import { listingSerpDescription, listingSerpTitle } from "@/lib/seo/serp";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { localityRef } from "@/lib/seo/entity-graph";
 
 /* Cost-reduction-audit P0.5: `generateMetadata` and the page both resolved
    the same listing, so every request ran the DB lookup twice. `cache` is
@@ -106,6 +107,14 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     },
     ...(coordinates && coordinates.length === 2 && coordinates.every(Number.isFinite)
       ? { geo: { "@type": "GeoCoordinates", latitude: coordinates[0], longitude: coordinates[1] } }
+      : {}),
+    /* The link that turns a listing from a page mentioning "Bopal" into a
+       property located IN the Bopal entity. `addressLocality` above is a
+       string a machine must guess at; this is an unambiguous pointer to the
+       place this site defines, so every listing contributes to that locality's
+       authority instead of stranding its own copy of the name. */
+    ...(locality
+      ? { containedInPlace: localityRef(property.citySlug, property.localitySlug, locality.name) }
       : {}),
     image: publishedListingImage(property),
     additionalProperty: [

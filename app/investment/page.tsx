@@ -5,10 +5,10 @@ import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
-  title: "India investment lens — Architech",
+  title: "India investment lens",
   description: "Read property signals through locality movement, supply, documentation, and everyday context. General information, not personalized financial advice.",
   alternates: { canonical: `${SITE_URL}/investment/` },
-  openGraph: { title: "India investment lens — Architech", url: `${SITE_URL}/investment/`, type: "article", images: [defaultSocialImage()] },
+  openGraph: { title: "India investment lens", url: `${SITE_URL}/investment/`, type: "article", images: [defaultSocialImage()] },
 };
 
 export default function Page() {

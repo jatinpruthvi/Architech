@@ -20,8 +20,14 @@ export default async function BuyIndiaHub() {
      returns the same fixtures the static counts did. One batched read per
      city keeps the national hub from issuing N request-time queries. */
   const listingCountByCity = new Map<string, number>();
+  /* Rent counts drive the cross-intent link below. A city with no rental stock
+     gets no rent link, because its /rent/ hub is held back by the quality gate
+     and linking to a page the sitemap omits would strand the crawler. */
+  const rentCountByCity = new Map<string, number>();
   for (const city of getCities()) {
-    listingCountByCity.set(city.slug, (await getListingsForServer({ citySlug: city.slug })).length);
+    const all = await getListingsForServer({ citySlug: city.slug });
+    listingCountByCity.set(city.slug, all.filter((listing) => listing.transaction !== "rent").length);
+    rentCountByCity.set(city.slug, all.filter((listing) => listing.transaction === "rent").length);
   }
   const cities = getCities();
   const groups = getCitiesByState();
@@ -77,11 +83,12 @@ export default async function BuyIndiaHub() {
                 {group.cities.map((city) => {
                   const localityCount = getLocalities(city.slug).length;
                   const listingCount = listingCountByCity.get(city.slug) ?? 0;
+                  const rentCount = rentCountByCity.get(city.slug) ?? 0;
                   return (
+                    <div key={city.slug} className="border-b border-ink/15">
                     <Link
-                      key={city.slug}
                       href={`/buy/${city.slug}/`}
-                      className="group grid grid-cols-[1fr_auto] items-center gap-4 border-b border-ink/15 py-6 transition-colors hover:bg-sand/50 md:grid-cols-[1.1fr_0.9fr_auto] md:gap-8"
+                      className="group grid grid-cols-[1fr_auto] items-center gap-4 py-6 transition-colors hover:bg-sand/50 md:grid-cols-[1.1fr_0.9fr_auto] md:gap-8"
                     >
                       <div>
                         <p className="font-display text-[26px] font-medium tracking-[-0.02em] transition-transform duration-300 group-hover:translate-x-2 md:text-[34px]">
@@ -97,6 +104,16 @@ export default async function BuyIndiaHub() {
                         </span>
                       </div>
                     </Link>
+                    {/* Sibling, not nested: the rent hub needs a real inbound link
+                        or it is an orphan the crawler can only reach via sitemap. */}
+                    {rentCount > 0 && (
+                      <p className="-mt-2 pb-4">
+                        <Link href={`/rent/${city.slug}/`} className="stamp ink-3 underline-offset-4 hover:text-brick hover:underline">
+                          {rentCount} {rentCount === 1 ? "home" : "homes"} to rent in {city.name}
+                        </Link>
+                      </p>
+                    )}
+                    </div>
                   );
                 })}
               </div>

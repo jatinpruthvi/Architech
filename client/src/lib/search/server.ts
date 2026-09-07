@@ -10,6 +10,7 @@ import { narrowListingIdsForQuery, sqlNarrowEnabled } from "./sql-narrow";
 import { executeSqlPageSearch, sqlPageEnabled } from "./sql-page-runtime";
 import { isPrismaSearchSource } from "./source";
 import { normalizePage, normalizePageSize, paginate } from "./pagination";
+import { rankByRelevance } from "./relevance";
 import { applyFacetState, parseFacetState, type FacetState } from "./facets";
 import type { Property } from "@/lib/repositories";
 import {
@@ -91,7 +92,7 @@ export async function searchListingsForServer(request: SearchRequest = {}): Prom
   let narrowToIds: string[] | undefined;
   let sqlNarrowState: "off" | "not-required" | "executed" | "fallback" = "off";
   if (prismaMode && sqlNarrowEnabled()) {
-    const outcome = await narrowListingIdsForQuery(query);
+    const outcome = await narrowListingIdsForQuery(query, undefined, cityScoped);
     sqlNarrowState = outcome.state;
     if (outcome.state === "executed") narrowToIds = outcome.ids;
   }
@@ -109,7 +110,10 @@ export async function searchListingsForServer(request: SearchRequest = {}): Prom
   /* The fixture path (search.ts) sorts here; the server path had dropped the
      call, so ?sort=price-* was silently ignored on Postgres data. Restored —
      and it is the order the SQL page query's ORDER BY mirrors. */
-  const filtered = applySort(applyFacetState(pooled as Property[], state, groups), sort);
+  const faceted = applyFacetState(pooled as Property[], state, groups);
+  /* Relevance is applied here rather than in applySort because it needs the
+     query text; same ordering contract as the fixture path (search.ts). */
+  const filtered = sort === "relevance" ? rankByRelevance(faceted, query) : applySort(faceted, sort);
   const { items, meta } = paginate(filtered, { page, pageSize });
 
   /* The plan-executed truth table: `ready` means the scoped bounded read was

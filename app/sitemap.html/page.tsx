@@ -4,10 +4,10 @@ import { homeUrl, htmlSitemapUrl } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
 export const metadata: Metadata = {
-  title: "Sitemap — Architech India property discovery",
+  title: "Sitemap — India property discovery",
   description: "Crawlable HTML sitemap for Architech: discover homes across Indian cities, localities, developers, investment context, and methodology.",
   alternates: { canonical: htmlSitemapUrl() },
-  openGraph: { title: "Sitemap — Architech India property discovery", url: htmlSitemapUrl(), type: "website" },
+  openGraph: { title: "Sitemap — India property discovery", url: htmlSitemapUrl(), type: "website" },
 };
 
 export default function Page() {

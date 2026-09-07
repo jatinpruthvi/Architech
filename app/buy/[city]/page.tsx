@@ -3,11 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { getCityStaticParams, getLiveCityBySlug, getLocalities } from "@/lib/repositories";
-import { cityUrl, homeUrl } from "@/lib/seo/urls";
+import { canonicalUrl, cityUrl, homeUrl } from "@/lib/seo/urls";
+import { intentVocabulary } from "@/lib/seo/intent";
 import { cityTrustSummary } from "@/lib/trust/locality";
 import { citySerpDescription, citySerpTitle } from "@/lib/seo/serp";
 import { LocalityTrust } from "@/components/architech/LocalityTrust";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+import { cityId, localityRef, stateId } from "@/lib/seo/entity-graph";
+
+const BUY = intentVocabulary("buy");
 
 export function generateStaticParams() {
   return getCityStaticParams();
@@ -39,11 +43,29 @@ export default async function CityHub({ params }: { params: Promise<{ city: stri
     "@context": "https://schema.org",
     "@graph": [
       {
+        /* This page DEFINES the city entity. Every other surface that mentions
+           Ahmedabad -- the rent hub, 6 locality pages, ~336 listings, the price
+           report -- now references this same @id instead of describing its own
+           anonymous City node. That is what lets a search engine accumulate one
+           entity rather than reconciling hundreds of look-alikes. */
         "@type": "City",
+        "@id": cityId(city.slug),
         name: city.name,
+        url: cityUrl(city.slug),
         alternateName: city.hindi,
         geo: { "@type": "GeoCoordinates", latitude: Number(lat), longitude: Number(lon) },
-        containedInPlace: { "@type": "AdministrativeArea", name: city.state },
+        containedInPlace: {
+          "@type": "AdministrativeArea",
+          "@id": stateId(city.stateSlug),
+          name: city.state,
+          containedInPlace: { "@type": "Country", name: "India" },
+        },
+        /* The localities this city contains, as references. Explicit
+           containment is how the place hierarchy becomes traversable instead of
+           being implied by URL nesting alone. */
+        ...(localities.length
+          ? { containsPlace: localities.map((item) => localityRef(city.slug, item.slug, item.name)) }
+          : {}),
         additionalProperty: [
           { "@type": "PropertyValue", name: "trustScore", value: trust.avgScore, unitText: "out of 100" },
           { "@type": "PropertyValue", name: "trustGrade", value: trust.grade },
@@ -54,9 +76,13 @@ export default async function CityHub({ params }: { params: Promise<{ city: stri
       },
       {
         "@type": "BreadcrumbList",
+        /* Mirrors the VISIBLE breadcrumb exactly, including the /buy/ hub.
+           This previously declared 2 steps while the rendered trail showed 3,
+           so structured data and page disagreed about the parent. */
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: homeUrl() },
-          { "@type": "ListItem", position: 2, name: `Buy in ${city.name}`, item: cityUrl(city.slug) },
+          { "@type": "ListItem", position: 2, name: "Buy property in India", item: canonicalUrl("/buy/") },
+          { "@type": "ListItem", position: 3, name: `Buy in ${city.name}`, item: cityUrl(city.slug) },
         ],
       },
     ],
@@ -69,7 +95,7 @@ export default async function CityHub({ params }: { params: Promise<{ city: stri
         <div className="container">
           <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
             <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
-            <Link href="/buy/" className="link-rail hover:text-brick">Cities</Link><span>/</span>
+            <Link href="/buy/" className="link-rail hover:text-brick">{BUY.hubLabel}</Link><span>/</span>
             <span className="text-ink/80">Buy in {city.name}</span>
           </nav>
           <p className="kicker mt-12 text-brick">The city, locality by locality · {city.hindi}</p>

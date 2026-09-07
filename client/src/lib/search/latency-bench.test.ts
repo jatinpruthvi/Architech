@@ -14,6 +14,16 @@
  *      "same output" proof: a latency optimization is accepted only when the
  *      numbers improve AND every hash is unchanged.
  *
+ *      CAVEAT the hash cannot express on its own: the wire JSON includes
+ *      `queryPlan`, a DESCRIPTIVE artefact (the SQL text the plan builder
+ *      would emit), not data. Changing the plan's SQL string therefore moves
+ *      the hash for free-text scenarios while the RESULTS are byte-identical.
+ *      That happened once deliberately, in 202609070001_search_text_config,
+ *      when the FTS predicate became a two-configuration union; verified at
+ *      the time by re-hashing each response with `queryPlan` removed (all five
+ *      scenarios unchanged). If a hash moves, diff the response minus
+ *      `queryPlan` before assuming a regression.
+ *
  * Opt-in (default `pnpm test` stays green without a database):
  *
  *   ARCHITECH_BENCH_DATABASE_URL=postgresql://user:pass@host:5432/architech_bench \

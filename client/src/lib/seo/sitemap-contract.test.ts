@@ -23,9 +23,14 @@ describe("sitemap publication contracts", () => {
 
   it("places every indexable page in exactly one child sitemap", () => {
     const indexable = getIndexableSeoPages();
+    /* `getSegmentPages` enumerates the PUBLISHABLE set, so the comparison is
+       against indexable-minus-held rather than indexable. The invariant this
+       test defends is "exactly one sitemap per page, none orphaned" — not
+       "the gate holds nothing back", which the calibration guard below owns. */
     const segmented = SITEMAP_SEGMENTS.flatMap((segment) => getSegmentPages(segment.id));
-    expect(segmented).toHaveLength(indexable.length);
-    expect(new Set(segmented.map((page) => page.id)).size).toBe(indexable.length);
+    expect(segmented).toHaveLength(indexable.length - getHeldBackPages().length);
+    // No page appears in two child sitemaps: unique ids === total entries.
+    expect(new Set(segmented.map((page) => page.id)).size).toBe(segmented.length);
     expect(collectUnsegmentedPages()).toHaveLength(0);
   });
 
@@ -118,11 +123,39 @@ describe("quality gate governs publication", () => {
     }
   });
 
-  it("keeps the whole current public surface published", () => {
-    // Calibration guard: the gate is wired to block *future* thinness, not to
-    // re-litigate the pages that legitimately qualify today. If this number
-    // changes, the evidence bars moved and that is a deliberate decision.
-    expect(getHeldBackPages()).toHaveLength(0);
-    expect(getPublishableSeoPages().length).toBe(getIndexableSeoPages().length);
+  it("holds back exactly the intent pages with no matching inventory", () => {
+    /* Calibration guard. This was `toHaveLength(0)` while every locality had a
+       single page judged on its whole inventory. Splitting buy and rent into
+       separate pages (each judged on ITS OWN transaction type) legitimately
+       moved the number, and the six below are all correct holds:
+
+         - 4 rent pages for localities with sale stock but nothing to rent.
+         - 2 BUY pages (bopal, satellite) whose only listings are rentals.
+           These are the interesting ones: they were being published on the
+           strength of rental inventory before the intent filter existed, i.e.
+           a "homes for sale in Bopal" page backed by zero homes for sale.
+           The split surfaced a pre-existing thin page rather than creating one.
+
+       If this list changes, inventory moved or the evidence bar moved — either
+       way it should be a deliberate decision, not a silent drift. */
+    expect(getHeldBackPages().map((entry) => entry.page.id).sort()).toEqual([
+      "locality:ahmedabad:bopal:buy",
+      "locality:ahmedabad:navrangpura:rent",
+      "locality:ahmedabad:paldi:rent",
+      "locality:ahmedabad:prahlad-nagar:rent",
+      "locality:ahmedabad:satellite:buy",
+      "locality:ahmedabad:thaltej:rent",
+    ]);
+    expect(getPublishableSeoPages().length).toBe(getIndexableSeoPages().length - 6);
+  });
+
+  it("judges a rent page on rental stock and a buy page on sale stock", () => {
+    /* The mechanism behind the holds above. Bopal has rental inventory and no
+       sale inventory, so exactly one of its two pages may publish — proving
+       the two verdicts are computed independently rather than sharing one
+       locality-wide count. */
+    const published = new Set(getPublishableSeoPages().map((page) => page.id));
+    expect(published.has("locality:ahmedabad:bopal:rent")).toBe(true);
+    expect(published.has("locality:ahmedabad:bopal:buy")).toBe(false);
   });
 });
