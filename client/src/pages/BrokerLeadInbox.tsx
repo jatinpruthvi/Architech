@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import type { LeadRecord, LeadStatus } from "@/lib/leads/lead";
 import { leadGradeLabel, scoreLead } from "@/lib/leads/scoring";
 import useTitle from "@/hooks/useTitle";
+import EmptyState from "@/components/architech/EmptyState";
+import LoadingSkeleton from "@/components/architech/LoadingSkeleton";
+import StatusBadge from "@/components/architech/StatusBadge";
 
 type ReplyAction = Exclude<LeadStatus, "NEW" | "DELETED">;
 
@@ -18,18 +21,14 @@ const ACTION_LABELS: Record<ReplyAction, string> = {
 };
 
 function StatusPill({ status }: { status: LeadStatus }) {
-  const color = status === "NEW" ? "text-brick bg-brick/10" : status === "REPLIED" ? "text-trust bg-trust/10" : "text-ink/60 bg-sand";
-  return <span className={`stamp px-2 py-1 !text-[9px] font-semibold ${color}`}>{status.toLowerCase()}</span>;
+  const tone = status === "NEW" ? "ember" : status === "REPLIED" ? "trust" : "neutral";
+  return <StatusBadge tone={tone}>{status.toLowerCase()}</StatusBadge>;
 }
 
 function ScoreBadge({ lead }: { lead: LeadRecord }) {
   const scored = scoreLead(lead);
-  const color = scored.grade === "hot" ? "text-ember bg-ember/10" : scored.grade === "warm" ? "text-brick bg-brick/10" : "text-ink/60 bg-sand";
-  return (
-    <span className={`stamp px-2 py-1 !text-[9px] font-semibold ${color}`} title={scored.signals.join(" · ")}>
-      {leadGradeLabel(scored.grade)} · {scored.score}
-    </span>
-  );
+  const tone = scored.grade === "hot" ? "ember" : scored.grade === "warm" ? "trust" : "neutral";
+  return <StatusBadge tone={tone}><span title={scored.signals.join(" · ")}>{leadGradeLabel(scored.grade)} · {scored.score}</span></StatusBadge>;
 }
 
 export default function BrokerLeadInbox() {
@@ -94,13 +93,9 @@ export default function BrokerLeadInbox() {
           <button onClick={() => void load()} className="stamp !text-[11px] font-semibold text-brick underline underline-offset-4">Refresh</button>
         </div>
 
-        {loading && <p className="mt-8 text-sm text-ink/60">Loading enquiries…</p>}
+        {loading && <div className="mt-8 space-y-4" role="status" aria-label="Loading enquiries"><LoadingSkeleton className="h-32 w-full" /><LoadingSkeleton className="h-32 w-full" /><span className="sr-only">Loading enquiries…</span></div>}
         {!loading && leads.length === 0 && (
-          <div className="mt-10 border border-ink/15 bg-card p-10 text-center">
-            <Inbox size={28} className="mx-auto text-ink/40" />
-            <p className="mt-4 font-display text-xl font-medium">No enquiries yet</p>
-            <p className="mt-2 text-sm text-ink/60">New enquiries from the listing page will appear here with masked contact details.</p>
-          </div>
+          <div className="mt-10"><EmptyState eyebrow="Masked lead inbox" title="No enquiries yet" description="New enquiries from the listing page will appear here with masked contact details and consent history." icon={<Inbox size={28} />} /></div>
         )}
 
         <div className="mt-8 space-y-4">

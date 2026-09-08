@@ -17,6 +17,7 @@ import { SectionNav, type SectionAnchor } from "../components/architech/SectionN
 import { TrustPanel } from "../components/architech/TrustPanel";
 import { ListingGallery } from "../components/architech/ListingGallery";
 import { StickyBar } from "../components/architech/StickyBar";
+import StatusBadge from "../components/architech/StatusBadge";
 import { OwnershipCost } from "../components/architech/OwnershipCost";
 import useTitle from "../hooks/useTitle";
 import { useSaved } from "@/contexts/SavedContext";
@@ -226,6 +227,14 @@ export default function ListingPage({
         <div className="mt-6">
           <ListingGallery property={property} />
         </div>
+        <section className="mt-6 grid gap-5 border border-ink/12 bg-paper p-5 md:grid-cols-[1fr_auto] md:items-center md:p-6" aria-labelledby="verification-summary-heading">
+          <div>
+            <div className="flex flex-wrap items-center gap-2"><StatusBadge tone="trust">Source trail available</StatusBadge><StatusBadge tone="ember">Updated {property.meaningfulUpdatedAt ? formatIsoDate(property.meaningfulUpdatedAt) : "on listing"}</StatusBadge></div>
+            <h2 id="verification-summary-heading" className="mt-4 font-display text-2xl font-medium">What was checked</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/65">The page separates listing freshness from verification. Review the evidence trail below for the fields and dates recorded by the source packet; unsupported claims are not presented as verified.</p>
+          </div>
+          <a href="#highlights" className="link-rail stamp !text-[11px] font-semibold text-brick">Read the evidence trail <ArrowUpRight size={14} className="ml-1 inline" /></a>
+        </section>
       </section>
 
       <div className="container">

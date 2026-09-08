@@ -19,6 +19,8 @@ import { ArrowRight, CircleDashed, Target, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import useTitle from "@/hooks/useTitle";
+import EmptyState from "@/components/architech/EmptyState";
+import LoadingSkeleton from "@/components/architech/LoadingSkeleton";
 
 type LocalityAsk = {
   localitySlug: string;
@@ -86,12 +88,11 @@ export default function AcquisitionQueue() {
     void load();
   }, [load]);
 
-  if (loading) return <p className="container py-24 stamp ink-3">Reading the publication gates…</p>;
+  if (loading) return <div className="container space-y-4 py-24" role="status" aria-label="Loading acquisition queue"><LoadingSkeleton className="h-8 w-56" /><LoadingSkeleton className="h-20 w-full max-w-3xl" /><LoadingSkeleton className="h-48 w-full" /><span className="sr-only">Reading the publication gates…</span></div>;
   if (error || !payload) {
     return (
       <div className="container py-24">
-        <p className="stamp text-brick">Unavailable</p>
-        <p className="mt-3 max-w-lg text-sm leading-7 ink-2">{error}</p>
+        <EmptyState eyebrow="Acquisition queue" title="Queue unavailable" description={error ?? "The acquisition queue could not be loaded."} />
       </div>
     );
   }

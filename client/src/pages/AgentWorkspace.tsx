@@ -140,7 +140,7 @@ function DeskRule({ label, detail, tone = "brick" }: { label: string; detail?: s
 }
 
 function EmptyState({ title, body, action, href }: { title: string; body: string; action?: string; href?: string }) {
-  return <div className="desk-empty border border-dashed border-ink/20 bg-sand/45 p-8 md:p-10"><div className="flex items-start gap-4"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-t-full bg-brick/10 text-brick"><Archive size={19} /></span><div><p className="stamp text-brick/70">No live records · source gate</p><h3 className="mt-2 font-display text-2xl font-medium tracking-[-0.02em]">{title}</h3><p className="mt-2 max-w-xl text-sm leading-6 text-ink/60">{body}</p>{action && href ? <Link href={href} className="mt-5 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick">{action}<ArrowUpRight size={13} /></Link> : null}</div></div></div>;
+  return <div role="status" aria-live="polite" className="empty-state desk-empty border border-dashed border-ink/20 bg-sand/45 p-8 md:p-10"><div className="flex items-start gap-4"><span className="empty-state-icon grid h-11 w-11 shrink-0 place-items-center rounded-t-full bg-brick/10 text-brick"><Archive size={19} /></span><div><p className="stamp text-brick/70">No live records · source gate</p><h3 className="mt-2 font-display text-2xl font-medium tracking-[-0.02em]">{title}</h3><p className="mt-2 max-w-xl text-sm leading-6 text-ink/60">{body}</p>{action && href ? <Link href={href} className="mt-5 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick">{action}<ArrowUpRight size={13} /></Link> : null}</div></div></div>;
 }
 
 /* Two honest modes, dead inputs are not one of them (I-6):

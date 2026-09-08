@@ -102,7 +102,7 @@ export default function AccountMenu({ onDark = false }: { onDark?: boolean }) {
       </button>
 
       {open && (
-        <div role="menu" aria-label="Account" className="absolute right-0 top-[calc(100%+12px)] z-50 w-[260px] border border-ink/15 bg-card p-4 text-ink shadow-xl">
+        <div role="menu" aria-label="Account" className="account-menu-panel absolute right-0 top-[calc(100%+12px)] z-50 w-[260px] border border-ink/15 p-4 text-ink shadow-xl">
           <p className="text-[14px] font-semibold">{session.user.name}</p>
           <p className="mt-0.5 truncate text-[12px] ink-3">{session.user.email}</p>
           <p className="stamp mt-2 font-semibold text-brick">{ROLE_LABEL[session.user.role] ?? session.user.role}</p>

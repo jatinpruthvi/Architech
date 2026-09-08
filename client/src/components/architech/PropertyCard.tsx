@@ -10,6 +10,8 @@ import { useSaved } from "@/contexts/SavedContext";
 import { useCompare } from "@/contexts/CompareContext";
 import { useLang } from "@/contexts/LangContext";
 import Pic from "./Pic";
+import StatusBadge from "./StatusBadge";
+import ActionButton from "./ActionButton";
 import { secondaryImage, secondaryImageUrl } from "@/lib/listing/media";
 import { mediaDisplayUrl } from "@/lib/media/display-url";
 import { labelForFurnishing } from "@/lib/listing-details";
@@ -80,15 +82,15 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  </div>
  <div className="flex items-center justify-between p-2.5">
  <p className="text-xs font-semibold text-ink">{property.locality} · {property.bhk} BHK</p>
- <button
+ <ActionButton
  type="button"
  onClick={onSave}
  aria-pressed={saved}
  aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`}
- className={`touch-44 motion-press grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick"}`}
+ className={`touch-44 h-8 w-8 shrink-0 rounded-full ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/90 text-ink hover:bg-brick"}`}
  >
  <Heart size={14} fill={saved ? "currentColor" : "none"} />
- </button>
+ </ActionButton>
  </div>
  </Link>
  </article>
@@ -118,7 +120,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  <p className="stamp mt-1 ink-3 [font-variant-numeric:tabular-nums]">{property.pricePerSqft}</p>
  <h3 className="mt-2 font-display text-base font-medium leading-tight text-ink group-hover:text-brick">{property.title}</h3>
  <p className="stamp mt-2 flex flex-wrap gap-x-3 gap-y-1 ink-2"><span className="flex items-center gap-1"><BedDouble size={12} /> {property.meta}</span><span className="flex items-center gap-1 [font-variant-numeric:tabular-nums]"><Ruler size={12} /> {property.area}</span></p>
- <p className="mt-3 flex items-center gap-1.5 stamp text-trust"><ShieldCheck size={11} /> {property.badge}</p>
+ <StatusBadge tone="trust"><ShieldCheck size={11} /> {property.badge}</StatusBadge>
  </div>
  </div>
  </article>
@@ -149,19 +151,20 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  `opacity-0 group-hover:opacity-100`, which meant the compare
  action literally did not exist on touch — a conversion control
  hidden behind a hover affordance. */}
- <button
+ <ActionButton
+ type="button"
  onClick={onCompare}
- className={`touch-44 grid place-items-center rounded-full transition-colors duration-200 ${compared ? "bg-night text-ember" : "bg-paper/95 text-ink hover:bg-night hover:text-cream"}`}
+ className={`touch-44 rounded-full ${compared ? "bg-night text-ember" : "bg-paper/95 text-ink hover:bg-night hover:text-cream"}`}
  aria-label={compared ? `${t.property.removeCompare} ${property.title}` : `${t.property.compare} ${property.title}`} aria-pressed={compared}>
  <Scale size={15} strokeWidth={1.8} />
- </button>
- <button
+ </ActionButton>
+ <ActionButton
  type="button"
  onClick={onSave}
- className={`touch-44 motion-press grid place-items-center rounded-full transition-all duration-200 ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick"}`}
+ className={`touch-44 rounded-full ${saved ? "clay-fill bg-brick text-cream" : "bg-paper/95 text-ink hover:bg-brick"}`}
  aria-label={saved ? `${t.property.removeSaved} ${property.title}` : `${t.property.save} ${property.title}`} aria-pressed={saved}>
  <Heart size={16} strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
- </button>
+ </ActionButton>
  </div>
  </div>
  {typeof index === "number" && <span className="stamp absolute bottom-3 left-4 z-10 bg-night/80 px-2 py-1 text-cream/90">Nº {String(index + 1).padStart(2, "0")}</span>}
