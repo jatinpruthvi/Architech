@@ -127,7 +127,7 @@ This is already decided at architecture level by [`repositories-and-db-sharing-d
 | 4.2 | CSV import (day one) | Portal-dashboard exports → a small mapper → the ingestion API (`csv-import`, `imported-unknown`); gets the broker's backlog in immediately. |
 | 4.3 | Meta Instant Forms | Native `lead_syncing` configured (token, page, IG account, form mapping incl. the WhatsApp-checkbox question) + the `business_suite_core` stamping hook (source/consent/phone-E.164) per [`meta-lead-sources.md`](./meta-lead-sources.md) §1. |
 | 4.4 | Click-to-WhatsApp | Company number linked to the Meta portfolio; CTWA ad; verify inbound conversation creates the lead (`whatsapp`, `first-party-form`) and lands in the tab. |
-| 4.5 | MagicBricks push | Gateway endpoint `/ingest/magicbricks` + the verified payload mapping (contract §7); configure on the MB account; freeze the fixture on first live lead. |
+| 4.5 | MagicBricks push | Gateway endpoint `/ingest/property-portal-1` (portal ids are anonymous in code — mapping in contract §1) + the verified payload mapping (contract §7); configure on the MB account; freeze the fixture on first live lead. |
 | 4.6 | 99acres | Webhook first; pull worker if the account needs it; fixture freeze. |
 | 4.7 | Housing.com | Email-their-team activation for push; Id/secret pull worker; fixture freeze. |
 | 4.8 | (Later, horizontal) | IndiaMart, JustDial, TradeIndia, Google Ads, Sheets, email-parse — same contract, sequenced by customer demand (these matter for non-real-estate profiles). |

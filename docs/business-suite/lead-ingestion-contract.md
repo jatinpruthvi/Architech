@@ -21,11 +21,25 @@ Registry: `LEAD_SOURCES` in the module. IDs are stable, lowercase, hyphenated; t
 | `website-form` | Website Form | owned-web | digital-owned |
 | `whatsapp` | WhatsApp Inbound | messaging | digital-owned |
 | `walkin` / `referral` | Walk-in / Referral | offline | offline |
-| `magicbricks`, `99acres`, `housing`, `quikr-homes`, `commonfloor`, `roofandfloor`, `makaan` | Property portals | portal | third-party-shared |
+| `property-portal-1` … `property-portal-7` | Property portals | portal | third-party-shared |
 | `indiamart`, `justdial`, `tradeindia` | B2B aggregators | aggregator | third-party-shared |
 | `meta-ads` | Meta Lead Ads | paid-social | digital-paid |
 | `google-ads` | Google Lead Forms | search-ads | digital-paid |
 | `csv-import`, `email-parse`, `manual` | Import surfaces | import | import |
+
+**Portal ids are anonymous by design.** Shipped code (`app/`, `client/src/`) must not carry a competitor portal's brand — not in ids, not in labels, not in comments (the competitor-names guard scans every built source, comments included). Portal sources therefore carry capability ids and ordinals; the id↔portal mapping lives here in the spec, where competitive analysis may name names:
+
+| Contract id | Portal (trade name) | Integration |
+|---|---|---|
+| `property-portal-1` | MagicBricks | Phase 4.5 — push webhook |
+| `property-portal-2` | 99acres | Phase 4.6 — webhook, then pull |
+| `property-portal-3` | Housing.com | Phase 4.7 — partner push, then pull |
+| `property-portal-4` | Quikr Homes | later, on customer demand |
+| `property-portal-5` | CommonFloor | later, on customer demand |
+| `property-portal-6` | RoofandFloor | later, on customer demand |
+| `property-portal-7` | Makaan | later, on customer demand |
+
+Ordinals follow the Phase-4 integration order. Evidence prefixes use the contract id, never the brand (e.g. `property-portal-1:push:{payload-ref}`). Trade names appear only in documents and as **provisioned site data**: `business_suite_core` may set a `CRM Lead Source` record's display title to the portal's trade name when provisioning a business's site — that is Frappe-side configuration, not shipped code in this repository. Ids are frozen from the moment the first site provisions them.
 
 `subsource` (optional, ≤140 chars) qualifies within a source: the portal listing package, the campaign name, the sync source. Adding a **source id** is a contract change (`LEAD_INGESTION_CONTRACT_VERSION` bump consideration); adding a subsource is configuration.
 
@@ -96,7 +110,7 @@ Body: IngestedLeadInput (contract v1)
 5xx { ok: false, errors: string[] }                     transient — retry with backoff
 ```
 
-Rules: tokens are **per tenant + per source** (a MagicBricks token cannot write `source: 99acres`); the gateway rejects unauthenticated origins outright; 422 responses are poison-quarantined with the raw payload retained (bounded retention) for adapter fixing — they are contract breaks, not load. Burst/rate limits per token; every accept/reject is audit-logged with the evidence reference.
+Rules: tokens are **per tenant + per source** (a token minted for `property-portal-1` cannot write `source: property-portal-2`); the gateway rejects unauthenticated origins outright; 422 responses are poison-quarantined with the raw payload retained (bounded retention) for adapter fixing — they are contract breaks, not load. Burst/rate limits per token; every accept/reject is audit-logged with the evidence reference.
 
 ## 6. Frappe CRM target mapping (the writer in `business_suite_core`)
 
@@ -115,11 +129,11 @@ Rules: tokens are **per tenant + per source** (a MagicBricks token cannot write 
 
 ## 7. Per-adapter mapping tables
 
-**MagicBricks (push, verified payload):** `name`→`name.full`; `country_code`+`phone`→`mobile`; `email`; `city`; `locality`; `min_budget`/`max_budget`→budgets (INR ints); `project_name`/`project_id`; `remarks` (verbatim, e.g. *"looking for 3 BHK … for Sale in Goregaon West"* → parsed additively into `bhk`/`intent`); consent: `portal-shared`, evidence `magicbricks:push:{payload-ref}`.
+**MagicBricks (push, verified payload):** `name`→`name.full`; `country_code`+`phone`→`mobile`; `email`; `city`; `locality`; `min_budget`/`max_budget`→budgets (INR ints); `project_name`/`project_id`; `remarks` (verbatim, e.g. *"looking for 3 BHK … for Sale in Goregaon West"* → parsed additively into `bhk`/`intent`); consent: `portal-shared`, evidence `property-portal-1:push:{payload-ref}`.
 
-**99acres (webhook + pull):** webhook body and pull lead objects are frozen as fixtures on first live capture (per the drift-fixture rule); consent `portal-shared`, evidence `99acres:{webhook-id|sync-window}`.
+**99acres (webhook + pull):** webhook body and pull lead objects are frozen as fixtures on first live capture (per the drift-fixture rule); consent `portal-shared`, evidence `property-portal-2:{webhook-id|sync-window}`.
 
-**Housing.com (partner-activated push + Id/secret pull):** same treatment; consent `portal-shared`, evidence `housing:{activation-ref|sync-window}`.
+**Housing.com (partner-activated push + Id/secret pull):** same treatment; consent `portal-shared`, evidence `property-portal-3:{activation-ref|sync-window}`.
 
 **IndiaMart / JustDial / TradeIndia (pull):** lead objects frozen as fixtures on first capture; consent `aggregator-shared`, evidence `{portal}:{query-id|sync-window}`. Requirement text parses additively exactly like portal remarks.
 

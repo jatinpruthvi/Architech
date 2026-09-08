@@ -2,10 +2,10 @@
  *
  * WHY THIS MODULE EXISTS
  *
- * Leads arrive from wildly different surfaces: real-estate portals
- * (MagicBricks/99acres/Housing push or pull), B2B aggregators (IndiaMart/
- * JustDial/TradeIndia), ad lead-forms (Meta/Google), the business's own
- * website, Architech's public enquiry flow, walk-ins, CSV backlog imports and
+ * Leads arrive from wildly different surfaces: real-estate property
+ * portals (push or pull), B2B aggregators (IndiaMart/JustDial/TradeIndia),
+ * ad lead-forms (Meta/Google), the business's own website, Architech's
+ * public enquiry flow, walk-ins, CSV backlog imports and
  * email parsing. Every one of them must become the SAME internal lead before
  * it touches the CRM, because:
  *
@@ -69,13 +69,20 @@ export const LEAD_SOURCES = {
   whatsapp: { label: "WhatsApp Inbound", medium: "messaging", channelClass: "digital-owned" },
   walkin: { label: "Walk-in", medium: "offline", channelClass: "offline" },
   referral: { label: "Referral", medium: "offline", channelClass: "offline" },
-  magicbricks: { label: "MagicBricks", medium: "portal", channelClass: "third-party-shared" },
-  "99acres": { label: "99acres", medium: "portal", channelClass: "third-party-shared" },
-  housing: { label: "Housing.com", medium: "portal", channelClass: "third-party-shared" },
-  "quikr-homes": { label: "Quikr Homes", medium: "portal", channelClass: "third-party-shared" },
-  commonfloor: { label: "CommonFloor", medium: "portal", channelClass: "third-party-shared" },
-  roofandfloor: { label: "RoofandFloor", medium: "portal", channelClass: "third-party-shared" },
-  makaan: { label: "Makaan", medium: "portal", channelClass: "third-party-shared" },
+  /* Property-portal sources are deliberately anonymous here. This module
+     ships in a build, and shipped code must describe the capability, never a
+     rival portal's brand (see the competitor-names guard). The id-to-portal
+     mapping, and the trade-name display titles provisioned as site data by
+     business_suite_core, live in docs/business-suite/lead-ingestion-contract.md
+     §1. Ordinals follow the Phase-4 integration order; the ids are frozen
+     from the moment the first site provisions them. */
+  "property-portal-1": { label: "Property Portal 1", medium: "portal", channelClass: "third-party-shared" },
+  "property-portal-2": { label: "Property Portal 2", medium: "portal", channelClass: "third-party-shared" },
+  "property-portal-3": { label: "Property Portal 3", medium: "portal", channelClass: "third-party-shared" },
+  "property-portal-4": { label: "Property Portal 4", medium: "portal", channelClass: "third-party-shared" },
+  "property-portal-5": { label: "Property Portal 5", medium: "portal", channelClass: "third-party-shared" },
+  "property-portal-6": { label: "Property Portal 6", medium: "portal", channelClass: "third-party-shared" },
+  "property-portal-7": { label: "Property Portal 7", medium: "portal", channelClass: "third-party-shared" },
   indiamart: { label: "IndiaMart", medium: "aggregator", channelClass: "third-party-shared" },
   justdial: { label: "JustDial", medium: "aggregator", channelClass: "third-party-shared" },
   tradeindia: { label: "TradeIndia", medium: "aggregator", channelClass: "third-party-shared" },
