@@ -62,22 +62,25 @@ export default function Header() {
   const iconBtn = `grid h-10 w-10 place-items-center rounded-xl border transition-colors ${onDark ? "border-cream/25 text-cream/85 hover:border-ember hover:text-ember" : "border-ink/15 text-ink/70 hover:border-brick hover:text-brick"}`;
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${onDark ? "bg-transparent text-cream" : "border-b border-ink/10 bg-paper/95 text-ink backdrop-blur-xl"}`}>
-      <div className="container flex h-[78px] items-center justify-between gap-3">
+    <header suppressHydrationWarning className={`fixed inset-x-0 top-0 z-50 px-3 transition-all duration-300 md:px-5 ${onDark ? "bg-transparent text-cream" : "text-ink"}`}>
+      <div className={`container flex h-[68px] items-center justify-between gap-3 transition-all duration-300 ${onDark ? "" : "mt-3 rounded-2xl border border-ink/10 bg-paper/90 px-4 shadow-lg shadow-ink/5 backdrop-blur-xl md:px-6"}`}>
         <Link href="/" className="group flex items-center gap-3" aria-label="Architech home">
           <span className="arch-mark grid h-12 w-12 place-items-center" aria-hidden="true"><span className="arch-mark-arch" /></span>
           <span className="font-display text-[26px] font-medium tracking-[-0.04em]">Architech<span className="text-brick">.</span></span>
         </Link>
         <nav className="hidden items-center gap-9 lg:flex" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className={`link-rail stamp !text-[12px] font-medium ${onDark ? "text-cream/85" : "text-ink/75"} hover:opacity-100`}>{item.label}</Link>
-          ))}
+          {navItems.map((item) => {
+            const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            return (
+              <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`link-rail stamp !text-[12px] font-medium transition-colors ${active ? (onDark ? "text-ember" : "text-brick") : (onDark ? "text-cream/85" : "text-ink/75")} hover:opacity-100`}>{item.label}</Link>
+            );
+          })}
         </nav>
         <div className="flex items-center gap-2.5 md:gap-3">
           <button onClick={() => setLang(lang === "en" ? "hi" : "en")} className={iconBtn} aria-label={lang === "en" ? "हिन्दी में देखें" : "Switch to English"} title={lang === "en" ? "हिन्दी" : "English"}>
             <span className="flex items-center gap-1 stamp !text-[10px] font-bold"><Languages size={13} aria-hidden="true" />{lang === "en" ? "हिं" : "EN"}</span>
           </button>
-          <button onClick={toggleTheme} className={iconBtn} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-pressed={theme === "dark"}>
+          <button suppressHydrationWarning onClick={toggleTheme} className={iconBtn} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-pressed={theme === "dark"}>
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <Link href="/saved/" className={`relative hidden items-center gap-2 stamp !text-[12px] font-medium md:inline-flex ${onDark ? "text-cream/85" : "text-ink/75"} link-rail`}>
