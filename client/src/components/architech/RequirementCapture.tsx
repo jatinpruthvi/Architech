@@ -8,6 +8,7 @@ import { intentLabel, intentsForRole, isSupplyIntent } from "@/lib/requirements"
 import { useSession } from "@/contexts/SessionContext";
 import { getCities } from "@/lib/repositories/cities";
 import { getLocalities } from "@/lib/repositories/localities";
+import ActionButton from "@/components/architech/ActionButton";
 const categories: Array<{ value: RequirementCategory; label: string; subtypes: string[] }> = [
   { value: "residential", label: "Homes", subtypes: ["Flat/Apartment", "Villa"] },
   { value: "commercial", label: "Commercial", subtypes: ["Office", "Shop"] },
@@ -214,7 +215,7 @@ export default function RequirementCapture({ compact = false }: Props) {
           </div>
             {status === "success" ? (
               <div className="p-8 md:p-12">
-                <div className="grid h-12 w-12 place-items-center rounded-full bg-trust text-cream"><Check size={23} /></div>
+                <div className="success-mark grid h-12 w-12 place-items-center rounded-full bg-trust text-cream"><Check size={23} /></div>
                 <h3 className="display mt-6 text-4xl">Brief received.</h3>
                 <p className="mt-3 max-w-lg text-sm leading-7 ink-2">We have recorded your requirement with masked contact details. A verified Architech partner can follow up after review.</p>
                 <button type="button" onClick={() => setOpen(false)} className="night-fill mt-7 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Close</button>
@@ -271,7 +272,7 @@ export default function RequirementCapture({ compact = false }: Props) {
                 <label className="stamp !text-[10px] font-semibold ink-2">Mobile number<input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="+91 00000 00000" inputMode="tel" className="mt-2 h-12 w-full border border-ink/20 bg-paper px-3 text-sm text-ink placeholder:text-ink/35 focus:border-brick focus:outline-none" />{sessionPhone && form.phone === sessionPhone ? <span className="mt-1 block text-xs font-normal normal-case tracking-normal ink-3">Your verified number. Edit it if this requirement needs a different one.</span> : null}</label>
                 <label className="flex gap-3 text-xs leading-5 ink-2 md:col-span-2"><input type="checkbox" required className="mt-1 h-4 w-4 accent-[#b8472e]" defaultChecked />I agree that Architech may contact me about this requirement. Contact is masked by default and can be revoked.</label>
                 {errors.length > 0 && <p role="alert" className="border border-brick/30 bg-brick/5 p-3 text-sm text-brick md:col-span-2">{errors.join(" ")}</p>}
-                <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"><p className="stamp !text-[9px] ink-3">No payment. No public phone number. Demo routing until production partners are connected.</p><button type="submit" disabled={status === "submitting"} className="clay-fill btn-solid btn-primary border border-white/15 bg-brick px-6 py-3 stamp !text-[11px] font-semibold text-cream">{status === "submitting" ? "Saving…" : "Send my requirement"}</button></div>
+                <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row sm:items-center sm:justify-between"><p className="stamp !text-[9px] ink-3">No payment. No public phone number. Demo routing until production partners are connected.</p><ActionButton type="submit" busy={status === "submitting"} className="clay-fill btn-solid btn-primary border border-white/15 bg-brick px-6 py-3 stamp !text-[11px] font-semibold text-cream">{status === "submitting" ? "Saving…" : "Send my requirement"}</ActionButton></div>
               </form>
             )}
         </DialogContent>

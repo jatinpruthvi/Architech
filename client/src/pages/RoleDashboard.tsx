@@ -35,6 +35,7 @@ import {
 import { useSession } from "@/contexts/SessionContext";
 import { useSaved } from "@/contexts/SavedContext";
 import useTitle from "@/hooks/useTitle";
+import LoadingSkeleton from "@/components/architech/LoadingSkeleton";
 import {
   PERSONA_META,
   personasForSession,
@@ -242,8 +243,9 @@ export default function RoleDashboard() {
   if (status === "loading") {
     return (
       <div className="bg-paper pt-[78px] text-ink">
-        <div className="container flex min-h-[60vh] items-center justify-center" role="status" aria-live="polite">
-          <Loader2 size={22} className="animate-spin text-brick" aria-hidden="true" />
+        <div className="container min-h-[60vh] py-24" role="status" aria-live="polite">
+          <LoadingSkeleton className="mx-auto h-10 w-56" />
+          <LoadingSkeleton className="mx-auto mt-5 h-24 max-w-2xl" />
           <span className="sr-only">Loading your dashboard…</span>
         </div>
       </div>
@@ -303,9 +305,9 @@ export default function RoleDashboard() {
 
       <main className="container grid gap-5 py-8 md:py-12 lg:grid-cols-2">
         {loading ? (
-          <div className="lg:col-span-2 flex items-center gap-3 border border-ink/12 bg-card p-6" role="status" aria-live="polite">
-            <Loader2 size={18} className="animate-spin text-brick" aria-hidden="true" />
-            <span className="text-sm ink-2">Loading your dashboard…</span>
+          <div className="lg:col-span-2" role="status" aria-live="polite">
+            <LoadingSkeleton className="h-24 w-full" />
+            <span className="sr-only">Loading your dashboard…</span>
           </div>
         ) : null}
 

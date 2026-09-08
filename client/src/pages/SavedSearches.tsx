@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import type { SavedSearchState } from "@/lib/saved-search/saved-search";
 import { savedSearchRunUrl } from "@/lib/saved-search/urls";
 import useTitle from "@/hooks/useTitle";
+import EmptyState from "@/components/architech/EmptyState";
+import LoadingSkeleton from "@/components/architech/LoadingSkeleton";
 
 export default function SavedSearches() {
   useTitle("Saved searches");
@@ -55,15 +57,16 @@ export default function SavedSearches() {
       </section>
 
       <section className="container py-14 md:py-20">
-        {loading && <p className="text-sm text-ink/60">Loading saved searches…</p>}
+        {loading && <div className="space-y-4" role="status" aria-label="Loading saved searches"><LoadingSkeleton className="h-24 w-full" /><LoadingSkeleton className="h-24 w-full" /><span className="sr-only">Loading saved searches…</span></div>}
 
         {!loading && searches.length === 0 && (
-          <div className="border border-dashed border-ink/25 p-12 text-center">
-            <BellRing size={28} className="mx-auto text-ink/40" />
-            <p className="mt-4 font-display text-2xl font-medium">No saved searches yet</p>
-            <p className="mx-auto mt-2 max-w-[360px] text-sm leading-6 text-ink/60">Run a search, then tap “Save this search” — it will wait here and alert you when a matching home arrives.</p>
-            <Link href="/search" className="clay-fill btn-sweep motion-press mt-7 inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Search homes <Search size={15} /></Link>
-          </div>
+          <EmptyState
+            eyebrow="Saved searches"
+            title="No saved searches yet"
+            description="Run a search, then tap “Save this search” — it will wait here and alert you when a matching home arrives."
+            icon={<BellRing size={24} />}
+            action={<Link href="/search" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Search homes <Search size={15} /></Link>}
+          />
         )}
 
         {!loading && searches.length > 0 && (

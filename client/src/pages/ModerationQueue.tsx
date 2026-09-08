@@ -7,6 +7,9 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { ListingDraft, ModerationDecision } from "@/lib/broker/workflow";
 import useTitle from "@/hooks/useTitle";
+import StatusBadge from "@/components/architech/StatusBadge";
+import EmptyState from "@/components/architech/EmptyState";
+import LoadingSkeleton from "@/components/architech/LoadingSkeleton";
 
 const DECISIONS: { value: ModerationDecision; label: string }[] = [
   { value: "approve", label: "Approve" },
@@ -76,13 +79,9 @@ export default function ModerationQueue() {
           <button onClick={() => void load()} className="stamp !text-[11px] font-semibold text-brick underline underline-offset-4">Refresh</button>
         </div>
 
-        {loading && <p className="mt-8 text-sm text-ink/60">Loading the queue…</p>}
+        {loading && <div className="mt-8 space-y-4" role="status" aria-label="Loading moderation queue"><LoadingSkeleton className="h-36 w-full" /><LoadingSkeleton className="h-36 w-full" /><span className="sr-only">Loading the queue…</span></div>}
         {!loading && drafts.length === 0 && (
-          <div className="mt-10 border border-ink/15 bg-card p-10 text-center">
-            <ClipboardList size={28} className="mx-auto text-ink/40" />
-            <p className="mt-4 font-display text-xl font-medium">Queue is empty</p>
-            <p className="mt-2 text-sm text-ink/60">Submitted drafts will appear here for source-trail review before publication.</p>
-          </div>
+          <div className="mt-10"><EmptyState eyebrow="Source review gate" title="Queue is empty" description="Submitted drafts will appear here for source-trail review before publication." icon={<ClipboardList size={28} />} /></div>
         )}
 
         <div className="mt-8 space-y-5">
@@ -98,7 +97,7 @@ export default function ModerationQueue() {
                     <span>{draft.availability}</span>
                   </p>
                 </div>
-                <span className="stamp px-2 py-1 !text-[9px] font-semibold text-ember bg-ember/10">{draft.status.toLowerCase()}</span>
+                <StatusBadge tone="ember">{draft.status.toLowerCase()}</StatusBadge>
               </div>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-ink/70">{draft.description}</p>

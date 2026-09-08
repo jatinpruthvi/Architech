@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useTitle from "@/hooks/useTitle";
+import LoadingSkeleton from "@/components/architech/LoadingSkeleton";
 import { getCities } from "@/lib/repositories/cities";
 import { getLocalities } from "@/lib/repositories/localities";
 import type { ListingDraftInput } from "@/lib/broker/workflow";
@@ -328,7 +329,7 @@ export default function ListingSubmission() {
     <div className="page-transition listing-dossier bg-paper pt-[78px] text-ink">
       <section className="listing-dossier-hero border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><p className="kicker text-brick">Listing draft · moderation required</p><span className="stamp text-ink/45">SOURCE PACKET / 01 · INDIA LOCATION-SCOPED</span>{editing ? <span className="stamp font-semibold text-brick" data-testid="edit-mode-stamp">EDITING DRAFT · SAVES IN PLACE</span> : null}{editLoading ? <span className="stamp ink-3">LOADING DRAFT…</span> : null}</div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><p className="kicker text-brick">Listing draft · moderation required</p><span className="stamp text-ink/45">SOURCE PACKET / 01 · INDIA LOCATION-SCOPED</span>{editing ? <span className="stamp font-semibold text-brick" data-testid="edit-mode-stamp">EDITING DRAFT · SAVES IN PLACE</span> : null}{editLoading ? <LoadingSkeleton className="inline-block h-4 w-28 rounded-full" label="Loading draft" /> : null}</div>
           <h1 className="display mt-6 max-w-[760px] text-[clamp(40px,6vw,78px)]">Submit a home with the <em className="text-brick">source trail</em> attached.</h1>
           <p className="mt-6 max-w-[560px] text-base leading-8 text-ink/65">Capture the fields enforced by the listing contract, create a private draft, then submit the evidence packet for moderation.</p>
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-ink/12 pt-4 stamp text-ink/50"><span>01 / capture</span><span>02 / verify</span><span>03 / review</span><span>04 / publish</span></div>

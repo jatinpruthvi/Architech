@@ -84,6 +84,18 @@ export default function Home({
         {/* Ember bloom + glow sweep — keeps golden-hour lift from v2 */}
         <div className="ember-bloom -right-24 top-1/4 h-[460px] w-[460px] opacity-60 md:-right-10 md:h-[580px] md:w-[580px]" aria-hidden="true" />
         <div className="glow-sweep right-0 opacity-70" aria-hidden="true" />
+        {/* A quiet architectural anchor keeps the hero from feeling like a generic search page.
+            It is decorative only; all listing facts remain in the search and directory below. */}
+        <div className="pointer-events-none absolute right-[5%] top-[17%] hidden h-[390px] w-[255px] rotate-[4deg] overflow-hidden rounded-[1.75rem] border border-cream/25 bg-night/30 p-2 shadow-2xl shadow-black/20 lg:block">
+          <div className="relative h-full overflow-hidden rounded-[1.25rem]">
+            <Pic name="hero-ahmedabad" alt="Warm architectural street scene in Ahmedabad" className="h-full w-full object-cover opacity-80 mix-blend-screen" sizes="255px" />
+            <div className="absolute inset-0 bg-gradient-to-t from-night/90 via-transparent to-transparent" />
+            <div className="absolute bottom-5 left-5 right-5 text-left">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ember">Field note 01</p>
+              <p className="mt-2 font-display text-lg leading-tight text-cream">Find the right<br />corner of the city.</p>
+            </div>
+          </div>
+        </div>
         <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
             <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>

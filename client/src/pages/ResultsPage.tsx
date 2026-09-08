@@ -494,7 +494,7 @@ export default function ResultsPage({
 
  <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
  <div>
- <h1 className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="ink-3">in</span> <em>{activeCity ? `${activeCity.name}.` : t.search.cityName}</em></h1>
+ <h1 aria-live="polite" className="display text-[clamp(36px,5vw,68px)]">{results.length} {marketLabel} {intentLabel} <span className="ink-3">in</span> <em>{activeCity ? `${activeCity.name}.` : t.search.cityName}</em></h1>
  {pincode && (
  /* A PIN filter is stated plainly, with the places it resolved to
  and a way out, so the smaller result count is never a mystery. */
@@ -738,6 +738,17 @@ export default function ResultsPage({
  </div>
  )}
  </section>
+
+ {/* Mobile action rail keeps discovery controls within thumb reach while
+     the result list or map is scrolling. Safe-area padding is added in CSS. */}
+ <div className="mobile-discovery-rail lg:hidden" role="group" aria-label="Discovery controls">
+   <button type="button" onClick={() => setFilterOpen(true)} className="touch-44 flex-1 rounded-xl border border-ink/15 bg-paper px-4 py-3 stamp font-semibold text-ink shadow-sm">
+     <SlidersHorizontal size={14} className="mr-2 inline" /> Filters{activeCount > 0 ? ` · ${activeCount}` : ""}
+   </button>
+   <button type="button" onClick={() => setMapMode((value) => !value)} className="touch-44 flex-1 rounded-xl bg-night px-4 py-3 stamp font-semibold text-cream shadow-sm">
+     {mapMode ? <><LayoutList size={14} className="mr-2 inline" /> List</> : <><MapIcon size={14} className="mr-2 inline" /> Map</>}
+   </button>
+ </div>
 
  {/* Filter sheet (below lg). The rail above lg renders the same panel. */}
  <FilterSheet open={filterOpen} onOpenChange={setFilterOpen} title={t.search.filterHomes} showLabel={results.length === 1 ? `${t.search.facet.showOneHome} · ${results.length}` : `${t.search.facet.showHomes} · ${results.length}`}>

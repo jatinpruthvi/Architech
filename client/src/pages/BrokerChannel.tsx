@@ -12,6 +12,9 @@ import { BadgeCheck, Building2, Check, ExternalLink, Handshake, Inbox, Phone, Se
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useTitle from "@/hooks/useTitle";
+import EmptyState from "@/components/architech/EmptyState";
+import LoadingSkeleton from "@/components/architech/LoadingSkeleton";
+import StatusBadge from "@/components/architech/StatusBadge";
 
 type Offerable = {
   id: string;
@@ -235,7 +238,7 @@ export default function BrokerChannel() {
           </button>
         </div>
 
-        {loading && <p className="mt-8 text-sm ink-2">Loading the channel…</p>}
+        {loading && <div className="mt-8 space-y-4" role="status" aria-label="Loading broker channel"><LoadingSkeleton className="h-32 w-full" /><LoadingSkeleton className="h-24 w-full" /><span className="sr-only">Loading the channel…</span></div>}
 
         {!loading && tab === "matches" && (
           <MatchList matches={matches} onRespond={respond} />
@@ -263,11 +266,7 @@ export default function BrokerChannel() {
 function MatchList({ matches, onRespond }: { matches: MatchView[]; onRespond: (id: string, action: "accept" | "reject") => Promise<void> }) {
   if (matches.length === 0) {
     return (
-      <div className="mt-10 border border-ink/15 bg-card p-10 text-center">
-        <Inbox size={28} className="mx-auto ink-3" />
-        <p className="mt-4 font-display text-xl font-medium">No matches yet</p>
-        <p className="mt-2 text-sm ink-2">Post a requirement or offer a listing, and matches will appear here.</p>
-      </div>
+      <div className="mt-10"><EmptyState eyebrow="Broker channel" title="No matches yet" description="Post a requirement or offer a listing, and matches will appear here." icon={<Inbox size={28} />} /></div>
     );
   }
 
@@ -298,7 +297,7 @@ function MatchList({ matches, onRespond }: { matches: MatchView[]; onRespond: (i
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 {match.listing.verification && (
-                  <span className="stamp-sm text-trust flex items-center gap-1"><BadgeCheck size={11} /> {match.listing.verification.replace(/_/g, " ").toLowerCase()}</span>
+                  <StatusBadge tone="trust"><BadgeCheck size={11} /> {match.listing.verification.replace(/_/g, " ").toLowerCase()}</StatusBadge>
                 )}
                 <span className="stamp-sm ink-3">{match.listing.mediaCount} photo{match.listing.mediaCount === 1 ? "" : "s"}</span>
                 {/* The anchor: judge the real listing, not a retyped summary. */}
