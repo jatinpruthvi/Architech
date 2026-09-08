@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context.
 
-Generated on 2026-09-07 from the repository Markdown tree.
+Generated on 2026-09-08 from the repository Markdown tree.
 
 ## Recommended Reading Order
 
@@ -43,6 +43,7 @@ Generated on 2026-09-07 from the repository Markdown tree.
 - [Decision](./docs/broker-suite/decision.md)
 - [Erpnext Consumability Schema Constraints](./docs/broker-suite/erpnext-consumability-schema-constraints.md)
 - [Evolution Api Adoption Assessment](./docs/broker-suite/evolution-api-adoption-assessment.md)
+- [Frappe Crm Whatsapp Tab Integration](./docs/broker-suite/frappe-crm-whatsapp-tab-integration.md)
 - [Open Source Ecosystem Evaluation](./docs/broker-suite/open-source-ecosystem-evaluation.md)
 - [Repositories And Db Sharing Design](./docs/broker-suite/repositories-and-db-sharing-design.md)
 - [Studyarena Round6 Contestant A](./docs/broker-suite/studyarena-round6-contestant-a.md)
@@ -51,10 +52,16 @@ Generated on 2026-09-07 from the repository Markdown tree.
 - [Studyarena Round6 Contestant E](./docs/broker-suite/studyarena-round6-contestant-e.md)
 - [Studyarena Round6 Contestant F](./docs/broker-suite/studyarena-round6-contestant-f.md)
 - [Upstream Repo Checkout Guide](./docs/broker-suite/upstream-repo-checkout-guide.md)
+- [Waha Transport Assessment](./docs/broker-suite/waha-transport-assessment.md)
 - [Phase 1 Moderation Queue](./docs/broker/phase-1-moderation-queue.md)
+- [Feature Coverage Mapping](./docs/business-suite/feature-coverage-mapping.md)
+- [Implementation Plan](./docs/business-suite/implementation-plan.md)
+- [Lead Ingestion Contract](./docs/business-suite/lead-ingestion-contract.md)
 - [Local Company Product Blueprint](./docs/business-suite/local-company-product-blueprint.md)
+- [Meta Lead Sources](./docs/business-suite/meta-lead-sources.md)
 - [Mobile Calling Lead Workflow](./docs/business-suite/mobile-calling-lead-workflow.md)
 - [Modular Platform Selection](./docs/business-suite/modular-platform-selection.md)
+- [Real Estate Portal Lead Ingestion](./docs/business-suite/real-estate-portal-lead-ingestion.md)
 - [Role Dashboard Audit](./docs/dashboard/role-dashboard-audit.md)
 - [Second Audit Findings](./docs/dashboard/second-audit-findings.md)
 - [India Location Architecture](./docs/data/india-location-architecture.md)
@@ -63,6 +70,7 @@ Generated on 2026-09-07 from the repository Markdown tree.
 - [Phase 1 Prisma Schema](./docs/data/phase-1-prisma-schema.md)
 - [Phase 1 Saved Searches](./docs/data/phase-1-saved-searches.md)
 - [Prisma Backed Repositories](./docs/data/prisma-backed-repositories.md)
+- [DESIGN SYSTEM HARDENING](./docs/DESIGN-SYSTEM-HARDENING.md)
 - [Content System](./docs/guides/content-system.md)
 - [Phase 1 Lead Inbox](./docs/leads/phase-1-lead-inbox.md)
 - [Phase 1 Lead Workflow](./docs/leads/phase-1-lead-workflow.md)
@@ -70,6 +78,7 @@ Generated on 2026-09-07 from the repository Markdown tree.
 - [Media Storage Decision](./docs/media/media-storage-decision.md)
 - [Phase 1 Media Upload Pipeline](./docs/media/phase-1-media-upload-pipeline.md)
 - [R2 Provider Handoff](./docs/media/r2-provider-handoff.md)
+- [NEXT DESIGN SCOPE](./docs/NEXT-DESIGN-SCOPE.md)
 - [Phase 1 Error Reporting](./docs/observability/phase-1-error-reporting.md)
 - [Phase 1 Observability](./docs/observability/phase-1-observability.md)
 - [Backup Restore Cost Readiness](./docs/operations/backup-restore-cost-readiness.md)

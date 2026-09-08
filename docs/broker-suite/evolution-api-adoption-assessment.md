@@ -4,6 +4,8 @@
 **Status:** Historical source/risk evidence; v8 transport gates remain relevant, Chatwoot composition is superseded
 **Scope:** Source-level assessment of Evolution API `2.3.7`; originally evaluated alongside Architech and Chatwoot
 
+> **Status note (08 Sep 2026):** the `2.3.7` pin recommended below now has a verified ceiling: Evolution `2.4.0` ships a licensing-server activation gate before business routes plus a 30-minute heartbeat (verified in `2.4.0-rc2` source, `src/licensing/runtime.ts`), which conflicts with the self-hosted-independence baseline — there is no in-place upgrade path from the pinned version. After a full landscape survey, transport candidacy now runs gowamd (primary candidate) vs WAHA (conditional: its GOWS engine binary ships unlicensed) with this document's pinned version as fallback; see [`waha-transport-assessment.md`](./waha-transport-assessment.md). The credential, lifecycle, consent, idempotency, canary and unofficial-transport gates defined below apply to **any** transport and remain normative.
+
 > **v8 amendment (02 Sep 2026):** Chatwoot has been removed from implementation. Any Chatwoot mirror, inbox, assignment, callback, retention or mobile requirement below is evaluation history, not selected architecture. Evolution now sends through company-owned accounts and employees continue in normal WhatsApp; Frappe CRM owns lead progress. The current decision is [`decision.md`](./decision.md).
 >
 > This is a source-level architecture and adoption assessment, not a penetration test or legal opinion. It still defines the Evolution licensing, credential, lifecycle, consent, idempotency, canary and unofficial-transport gates that apply to v8.
