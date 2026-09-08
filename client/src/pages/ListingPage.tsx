@@ -81,15 +81,15 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
         </DialogHeader>
         <form onSubmit={submit} className="mt-2 space-y-4">
           <div>
-            <label htmlFor="lead-name" className="stamp !text-[10px] text-ink/60">{t.listing.name}</label>
+            <label htmlFor="lead-name" className="stamp-sm text-ink/60">{t.listing.name}</label>
             <input id="lead-name" name="name" required className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" placeholder="Kinjal Shah" />
           </div>
           <div>
-            <label htmlFor="lead-phone" className="stamp !text-[10px] text-ink/60">{t.listing.phone}</label>
+            <label htmlFor="lead-phone" className="stamp-sm text-ink/60">{t.listing.phone}</label>
             <input id="lead-phone" name="phone" required type="tel" pattern="[0-9+ -]{8,}" className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" placeholder="+91 …" />
           </div>
           <div>
-            <label htmlFor="lead-msg" className="stamp !text-[10px] text-ink/60">{t.listing.message}</label>
+            <label htmlFor="lead-msg" className="stamp-sm text-ink/60">{t.listing.message}</label>
             <textarea id="lead-msg" name="message" rows={3} className="mt-1.5 w-full border border-ink/20 bg-transparent px-4 py-3 text-sm focus:border-brick focus:outline-none" defaultValue={`I'd like to know more about "${propertyTitle}".`} />
           </div>
           <label className="flex items-start gap-3 border border-ink/15 bg-sand/50 p-3 text-xs leading-5 text-ink/65">
@@ -422,7 +422,7 @@ export default function ListingPage({
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             {/* The SHARED card, not a local copy of it. This was a hand-rolled
-                1.4-crop / `text-ink/60` lookalike — a third of the page's scroll
+                1.4-crop / ink-alpha lookalike — a third of the page's scroll
                 written in a design language the product had already moved past,
                 with no save and no compare on cards whose only job is "save one
                 of these". Reveal is dropped too: PropertyCard already owns its
