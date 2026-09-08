@@ -124,7 +124,7 @@ export default function CommandPalette({
                 onValueChange={setQuery}
                 placeholder={copy.placeholder}
                 aria-label={copy.placeholder}
-                className="w-full bg-transparent py-4 text-[15px] text-ink outline-none placeholder:text-current placeholder:opacity-50"
+                className="command-palette-input w-full bg-transparent py-4 text-[15px] text-ink outline-none placeholder:text-current placeholder:opacity-50"
               />
               {loading ? <Loader2 size={15} className="ink-3 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : null}
               <button

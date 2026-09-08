@@ -463,7 +463,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 12% 0%, rgba(255, 243, 228, 0.20), transparent 34%), linear-gradient(115deg, transparent 18%, rgba(255, 243, 228, 0.30) 38%, transparent 54%);
+  background: linear-gradient(115deg, transparent 18%, rgba(255, 243, 228, 0.13) 38%, transparent 54%);
   transform: translateX(-120%);
   transition: transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -625,6 +625,21 @@ button.btn-primary, a.btn-primary { border-radius: 9999px; }
 .action-button[aria-busy="true"]::before { display: none; }
 .btn-primary[aria-busy="true"]::before { content: ""; display: inline-block; width: 0.8em; height: 0.8em; margin-right: 0.55em; border: 1.5px solid currentColor; border-right-color: transparent; border-radius: 999px; vertical-align: -0.1em; animation: button-spin 700ms linear infinite; }
 
+/* Project-wide liquid surfaces. */
+.bg-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--paper) 88%, white), color-mix(in srgb, var(--sand) 40%, transparent));
+  border-color: color-mix(in srgb, var(--ink) 14%, transparent);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 12px 28px rgba(58, 36, 26, 0.06);
+}
+.dark .bg-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--night) 76%, transparent), color-mix(in srgb, var(--brick-deep) 20%, transparent));
+  border-color: color-mix(in srgb, var(--cream) 15%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 243, 228, 0.08), 0 14px 34px rgba(0, 0, 0, 0.16);
+}
+.bg-card:hover { border-color: color-mix(in srgb, var(--ember) 35%, var(--ink)); }
+
 /* Mobile discovery rail: elevated only while content scrolls beneath it. */
 .mobile-discovery-rail { position: fixed; z-index: 40; right: 0; bottom: 0; left: 0; display: flex; gap: 0.65rem; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); background: color-mix(in srgb, var(--paper) 92%, transparent); padding: 0.65rem max(0.75rem, env(safe-area-inset-left)) max(0.65rem, env(safe-area-inset-bottom)); backdrop-filter: blur(16px); }
 @media (prefers-reduced-motion: no-preference) { .mobile-discovery-rail { animation: rail-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; } }
@@ -636,8 +651,12 @@ button.btn-primary, a.btn-primary { border-radius: 9999px; }
 .empty-state:hover .empty-state-icon { transform: translateY(-2px) rotate(-3deg); }
 button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 
-/* Keep keyboard focus visible without changing the approved brand palette. */
+/* Keep keyboard focus visible without changing the approved brand palette.
+   The command palette owns focus with its surrounding dialog surface; a second
+   browser-style ring on the input creates the doubled orange rectangle seen in
+   the preview, so that one field deliberately uses the dialog focus treatment. */
 :where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; }
+.command-palette-input:focus-visible { outline: none; box-shadow: none; }
 
 /* Shared status and loading primitives. */
 .status-badge { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid currentColor; border-radius: 999px; padding: 0.35rem 0.6rem; }
