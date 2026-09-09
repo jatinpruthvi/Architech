@@ -72,6 +72,7 @@ Generated on 2026-09-08 from the repository Markdown tree.
 - [Prisma Backed Repositories](./docs/data/prisma-backed-repositories.md)
 - [DESIGN SYSTEM HARDENING](./docs/DESIGN-SYSTEM-HARDENING.md)
 - [Content System](./docs/guides/content-system.md)
+- [Mobile Calling Implementation Plan](./docs/leads/mobile-calling-implementation-plan.md)
 - [Phase 1 Lead Inbox](./docs/leads/phase-1-lead-inbox.md)
 - [Phase 1 Lead Workflow](./docs/leads/phase-1-lead-workflow.md)
 - [Prisma Lead Persistence](./docs/leads/prisma-lead-persistence.md)
