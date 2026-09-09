@@ -3,6 +3,7 @@
    Contact stays masked until the buyer chooses to share it; every status
    change is audited through the lead server adapter. */
 import { CheckCheck, Inbox, MessageCircle, Phone, ShieldOff, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { LeadRecord, LeadStatus } from "@/lib/leads/lead";
@@ -102,13 +103,18 @@ export default function BrokerLeadInbox() {
           {leads.map((lead) => (
             <article key={lead.id} className="border border-ink/15 bg-card p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <span className="grid h-12 w-12 place-items-center rounded-t-full bg-night font-display text-lg text-cream">{lead.name.charAt(0)}</span>
-                  <div>
-                    <p className="font-display text-lg font-medium leading-tight">{lead.name}</p>
-                    <p className="stamp mt-0.5 !text-[10px] text-ink/60">{lead.listingTitle} · {lead.listingId}</p>
-                  </div>
-                </div>
+                {/* Whole identity block is the link to the detail route, so a
+                    thumb can open the lead from anywhere in the top-left rather
+                    than hunting a small chevron. `touch-44` keeps it a real
+                    target. Reveal never happens from the list: scrolling an
+                    inbox must not write a trail of reveals nobody acted on. */}
+                <Link href={`/broker/leads/${encodeURIComponent(lead.id)}/`} className="touch-44 flex min-w-0 flex-1 items-center gap-4">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-t-full bg-night font-display text-lg text-cream" aria-hidden="true">{lead.name.charAt(0)}</span>
+                  <span className="min-w-0">
+                    <span className="block font-display text-lg font-medium leading-tight text-ink">{lead.name}</span>
+                    <span className="stamp ink-3 mt-0.5 block truncate">{lead.listingTitle} · {lead.listingId}</span>
+                  </span>
+                </Link>
                 <div className="flex items-center gap-2">
                   <ScoreBadge lead={lead} />
                   <StatusPill status={lead.status} />
@@ -129,6 +135,17 @@ export default function BrokerLeadInbox() {
               <p className="stamp mt-4 !text-[9px] text-ink/55">Consent: {lead.consentText}</p>
 
               <div className="mt-5 flex flex-wrap gap-3 border-t border-ink/12 pt-5">
+                {/* Primary action on mobile: the broker's whole job from an
+                    inbox row is to call. It routes to the detail surface, which
+                    owns the reveal gate, the plan check and the post-call
+                    result sheet — deliberately NOT a `tel:` link here, because
+                    the number is not in this payload and must not be. */}
+                <Link
+                  href={`/broker/leads/${encodeURIComponent(lead.id)}/`}
+                  className="btn-sweep btn-solid touch-44 inline-flex items-center gap-2 bg-brick px-4 py-2 stamp font-semibold text-cream"
+                >
+                  <Phone size={13} aria-hidden="true" /> Call
+                </Link>
                 {(["ACKNOWLEDGED", "REPLIED", "CLOSED"] as ReplyAction[]).map((action) => (
                   <button
                     key={action}

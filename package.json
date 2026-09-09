@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "lint": "eslint app client/src --max-warnings 200",
     "audit:contrast": "node scripts/audit-surface-contrast.mjs",
+    "audit:mobile": "node scripts/audit/mobile-audit.mjs",
     "test": "vitest run",
     "format": "prettier --write .",
     "test:seo": "node scripts/seo/run-seo-suite.mjs",
