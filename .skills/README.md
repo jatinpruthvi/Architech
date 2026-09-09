@@ -16,6 +16,7 @@ Originals are kept at `/tmp/skills-originals/` on this machine for future re-syn
 | `impeccable/` | https://github.com/pbakaus/impeccable | `skill/`, README, LICENSE, NOTICE |
 | `motion-design-skill/` | https://github.com/lottiefiles/motion-design-skill | `skills/`, README, LICENSE |
 | `skills/` | https://github.com/emilkowalski/skills | `skills/`, README, LICENSE |
+| `superpowers/` | https://github.com/obra/superpowers | `skills/`, README, LICENSE |
 | `taste-skill/` | https://github.com/Leonxlnx/taste-skill | `skills/`, README, LICENSE |
 | `threejs-skills/` | https://github.com/cloudai-x/threejs-skills | `skills/`, README |
 | `ui-ux-pro-max-skill/` | https://github.com/nextlevelbuilder/ui-ux-pro-max-skill | `.claude/`, `.claude-plugin/` |
