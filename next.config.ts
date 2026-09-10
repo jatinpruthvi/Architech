@@ -90,12 +90,12 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "motion"],
   },
-  // Sandbox live-preview domains changed from *.e2b.app to *.manus.computer.
-  // Wildcards only — exact sandbox hostnames rotate and listing them here
-  // silently breaks the next preview.
+  // Sandbox live-preview domains can contain a port/workspace prefix plus a
+  // region label (for example, 3000-<workspace>.sg2.manus.computer), so the
+  // recursive wildcard is required; a single-label wildcard does not match.
   allowedDevOrigins: [
-    "*.e2b.app",
-    "*.manus.computer",
+    "**.e2b.app",
+    "**.manus.computer",
     "localhost",
     "127.0.0.1",
   ],

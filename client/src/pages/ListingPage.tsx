@@ -57,6 +57,7 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
           message: String(form.get("message") ?? ""),
           mode: "MASKED",
           consentText: t.listing.consentText,
+          consentClass: "first-party-form",
           idempotencyKey: crypto.randomUUID?.() ?? `${propertyId}-${Date.now()}`,
         }),
       });

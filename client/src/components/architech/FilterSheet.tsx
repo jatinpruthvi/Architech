@@ -26,11 +26,11 @@ export default function FilterSheet({
 }) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="border-t-2 border-brick bg-paper">
+      <DrawerContent className="border-t-2 border-brick bg-paper max-h-[70vh] flex flex-col">
         <DrawerHeader className="text-left">
           <DrawerTitle className="font-display text-2xl font-medium tracking-[-0.02em]">{title}</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 pb-2">{children}</div>
+        <div className="px-4 pb-2 flex-1 min-h-0 overflow-hidden">{children}</div>
         <div className="safe-bottom sticky bottom-0 border-t border-ink/12 bg-paper px-4 py-3">
           <DrawerClose asChild>
             <button className="clay-fill touch-44 w-full bg-brick py-3.5 stamp font-semibold text-cream">{showLabel}</button>

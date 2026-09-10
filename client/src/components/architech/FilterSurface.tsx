@@ -81,7 +81,7 @@ export default function FilterPanel({ groups, state, counts, lang, onChange, onC
  };
 
  return (
- <div className={layout === "rail" ? "flex h-full min-h-0 flex-col" : "flex flex-col"}>
+ <div className={layout === "rail" ? "flex h-full min-h-0 flex-col" : "flex h-full min-h-0 max-h-[70vh] flex-col overflow-hidden"}>
  <div className="flex items-center justify-between gap-3 border-b border-ink/12 pb-3">
  <p className="facet-group-title">{labels.title}</p>
  {activeCount > 0 && (
@@ -92,7 +92,7 @@ export default function FilterPanel({ groups, state, counts, lang, onChange, onC
  </div>
  <p className="facet-hint pt-3">{labels.hint}</p>
 
- <div className={layout === "rail" ? "min-h-0 flex-1 overflow-y-auto" : ""}>
+ <div className={layout === "rail" ? "min-h-0 flex-1 overflow-y-auto" : "min-h-0 flex-1 overflow-y-auto"}>
  {groups.map((group) => {
  const counted = counts[group.id];
  if (!counted) return null;
@@ -126,7 +126,7 @@ export default function FilterPanel({ groups, state, counts, lang, onChange, onC
  />
  ) : (
  ( <> {counted.options.length === 0 && <p className="facet-hint mt-3">{labels.localityNone}</p>}
- <ul className="mt-3 space-y-2" role="list" aria-label={label(group, lang)}>
+ <ul className="mt-3 max-h-48 overflow-y-auto space-y-2" role="list" aria-label={label(group, lang)}>
  {counted.options.map((option) => {
  const dead = option.count === 0 && !option.selected;
  return (

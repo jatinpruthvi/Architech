@@ -32,8 +32,6 @@ export type PrototypeLead = {
   consentText: string;
   consentClass: "first-party-form" | "portal-shared";
   phoneMasked: string;
-  /** Stand-in for the decrypted ciphertext. Real code gets this only from the
-      reveal endpoint, never in a list payload. */
   phoneE164: string;
   createdAt: string;
   score: number;

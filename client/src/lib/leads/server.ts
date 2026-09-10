@@ -4,6 +4,8 @@ import { emitLeadEvent } from "./events";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { demoBrokerSession } from "@/lib/auth/roles";
+import { encryptContact } from "@/lib/interop/contact-crypto";
+import { normalizeIndianPhone } from "@/lib/interop/phone";
 
 type PrismaLeadClient = ReturnType<typeof getPrismaClient> & {
   listing: { findFirst(args: unknown): Promise<{ id: string; title: string; brokerOrgId?: string | null; brokerOrg?: { name: string } | null } | null> };
@@ -50,6 +52,12 @@ function stableId(prefix: string, key: string): string {
   return `${prefix}_${hash.toString(36)}`;
 }
 
+function leadRetentionUntil(): Date {
+  const days = Number.parseInt(process.env.ARCHITECH_LEAD_RETENTION_DAYS ?? process.env.ARCHITECH_REQUIREMENT_RETENTION_DAYS ?? "180", 10);
+  const safeDays = Number.isFinite(days) && days > 0 ? days : 180;
+  return new Date(Date.now() + safeDays * 86_400_000);
+}
+
 export async function createLeadForServer(input: LeadInput): Promise<LeadResult> {
   /* Fixture listings carry no broker organization, so a fixture lead is
      attributed to the demo organization -- the same inbox the demo broker
@@ -74,6 +82,8 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
   if (!listing) return { ok: false, status: 400, errors: ["Choose a valid listing."] };
 
   const key = input.idempotencyKey?.trim() || `${input.listingId}:${input.phone.replace(/\D/g, "")}:${input.message.trim().toLowerCase()}`;
+  const normalizedPhone = normalizeIndianPhone(input.phone);
+  const phoneForStorage = normalizedPhone.ok ? normalizedPhone.e164 : input.phone.replace(/\D/g, "");
   const organizationName = listing.brokerOrg?.name ?? "Verified partner";
   /* The owning organization is read off the LISTING. Anything the caller sent
      in `organizationId` is discarded -- that field decides which inbox the
@@ -95,8 +105,14 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
           organizationId: listing.brokerOrgId,
           mode: input.mode ?? "MASKED",
           status: "NEW",
+          stage: "NEW",
           name: input.name.trim(),
           phoneMasked: maskPhone(input.phone),
+          phoneCiphertext: encryptContact(phoneForStorage),
+          phoneLast4: input.phone.replace(/\D/g, "").slice(-4),
+          consentClass: input.consentClass ?? "first-party-form",
+          consentedAt: new Date(),
+          retentionUntil: leadRetentionUntil(),
           email: input.email?.trim() || undefined,
           message: input.message.trim(),
           consentText: input.consentText.trim(),
@@ -152,6 +168,7 @@ function dbLeadContract(input: LeadInput, listingTitle: string, id: string, audi
     mode: input.mode ?? "MASKED",
     status: "NEW",
     consentText: input.consentText.trim(),
+    consentClass: input.consentClass,
     idempotencyKey: input.idempotencyKey?.trim() || `${input.listingId}:${input.phone.replace(/\D/g, "")}:${input.message.trim().toLowerCase()}`,
     auditEvent: { id: auditId, action: "lead.created", entityType: "Lead", metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source } },
     statusHistory: [{ id: auditId, action: "lead.created", at: createdAt, metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source } }],
@@ -177,6 +194,7 @@ function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "V
     mode: String(row.mode ?? "MASKED") as LeadMode,
     status: String(row.status ?? "NEW") as LeadStatus,
     consentText: String(row.consentText ?? ""),
+    consentClass: typeof row.consentClass === "string" ? row.consentClass : undefined,
     idempotencyKey: String(row.idempotencyKey ?? ""),
     auditEvent: { id: stableId("audit", `${id}:lead.created`), action: "lead.created", entityType: "Lead", metadata: { masked: true, source: "api.leads.prisma" } },
     statusHistory,
@@ -345,4 +363,11 @@ export async function updateLeadStatusForServer(
 
 export function validateLeadInputForConfiguredSource(input: Partial<LeadInput>) {
   return isPrismaLeadStorage() ? baseErrors(input) : validateLeadInput(input);
+}
+
+export async function recordContactAccess(
+  _session: unknown,
+  _input: { listingId: string; method: string; result: string; purpose: string; request: Request },
+): Promise<void> {
+  // Phase 3: persist contact-access audit event to Prisma
 }

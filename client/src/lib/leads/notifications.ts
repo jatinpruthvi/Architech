@@ -52,7 +52,7 @@ export function buildLeadNotification(args: { leadId: string; listingId: string;
       `Listing: ${args.listingTitle} (${args.listingId})`,
       `Lead reference: ${args.leadId}`,
       ``,
-      `The buyer's details stay masked in the desk until you act on them: ${args.baseUrl}/broker/dashboard/?section=inquiry`,
+      `The buyer's details stay masked in the desk until you act on them: ${args.baseUrl}/broker/leads/${encodeURIComponent(args.leadId)}/`,
       ``,
       "You are receiving this because this listing carries your organization in Architech and lead notifications are on.",
     ].join("\n"),
