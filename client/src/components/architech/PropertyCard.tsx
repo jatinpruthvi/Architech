@@ -193,7 +193,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  listing. Three cells reading "—" look like an empty product; no row
  at all reads as a listing that simply has no amenity list yet. */}
  {hasSpecFacts && (
- <div className="mt-4 grid grid-cols-3 gap-2 border-t border-ink/12 pt-3">
+ <div className="mt-4 grid grid-cols-2 gap-2 border-t border-ink/12 pt-3 sm:grid-cols-3">
  <span className="flex min-w-0 flex-col gap-1">
  <span className="block stamp ink-3">Baths</span>
  <strong className="block text-sm font-semibold text-ink [font-variant-numeric:tabular-nums]">{property.details.bathrooms}</strong>

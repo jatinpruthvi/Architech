@@ -35,6 +35,7 @@ function ScoreBadge({ lead }: { lead: LeadRecord }) {
 export default function BrokerLeadInbox() {
   useTitle("Lead inbox");
   const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [metrics, setMetrics] = useState<{ overdue: number; outcomes: Record<string, number>; lostReasons: Record<string, number> } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -50,6 +51,7 @@ export default function BrokerLeadInbox() {
 
   useEffect(() => {
     void load();
+    fetch("/api/broker/leads/metrics", { cache: "no-store" }).then((response) => response.json()).then((payload) => { if (payload.ok) setMetrics(payload.metrics); }).catch(() => undefined);
   }, [load]);
 
   const advance = async (id: string, status: ReplyAction) => {
@@ -94,6 +96,7 @@ export default function BrokerLeadInbox() {
           <button onClick={() => void load()} className="stamp !text-[11px] font-semibold text-brick underline underline-offset-4">Refresh</button>
         </div>
 
+        {metrics && <div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="border border-ember/25 bg-ember/8 p-4"><p className="stamp ink-3">Overdue follow-ups</p><p className="mt-2 font-display text-3xl">{metrics.overdue}</p></div><div className="border border-ink/12 bg-card p-4"><p className="stamp ink-3">Calls logged</p><p className="mt-2 font-display text-3xl">{Object.values(metrics.outcomes).reduce((sum, value) => sum + value, 0)}</p></div><div className="border border-ink/12 bg-card p-4"><p className="stamp ink-3">Lost reasons</p><p className="mt-2 font-display text-3xl">{Object.values(metrics.lostReasons).reduce((sum, value) => sum + value, 0)}</p></div></div>}
         {loading && <div className="mt-8 space-y-4" role="status" aria-label="Loading enquiries"><LoadingSkeleton className="h-32 w-full" /><LoadingSkeleton className="h-32 w-full" /><span className="sr-only">Loading enquiries…</span></div>}
         {!loading && leads.length === 0 && (
           <div className="mt-10"><EmptyState eyebrow="Masked lead inbox" title="No enquiries yet" description="New enquiries from the listing page will appear here with masked contact details and consent history." icon={<Inbox size={28} />} /></div>

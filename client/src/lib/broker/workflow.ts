@@ -4,6 +4,7 @@ import type { PropertyDetails } from "@/lib/listing-details";
 import { isAvailabilityCode, isPropertyTypeCode, type AvailabilityCode, type PropertyTypeCode } from "@/lib/listing-vocabulary";
 import { isValidPincode, listingMatchesPincode } from "@/lib/pincodes";
 import { normalizeListerType, type ListerType } from "@/lib/listing/lister-type";
+import { ADDRESS_VISIBILITIES, CONTACT_VISIBILITIES, LISTING_VISIBILITIES, type AddressVisibility, type ContactVisibility, type ListingVisibility } from "@/lib/auth/access";
 
 export type BrokerProfileInput = {
   organizationName: string;
@@ -38,6 +39,10 @@ export type ListingDraftInput = {
      answer is the one that must be right. Still a declaration, not a
      verified fact — see lib/listing/lister-type.ts. */
   listerType?: ListerType;
+  visibility?: ListingVisibility;
+  addressVisibility?: AddressVisibility;
+  contactVisibility?: ContactVisibility;
+  brokerShareNote?: string;
   details?: PropertyDetails;
 };
 
@@ -104,6 +109,9 @@ export function validateListingDraft(input: Partial<ListingDraftInput>, session:
      existed, but a PRESENT value must be a reviewed code — silently coercing
      junk to OWNER would publish an attribution the broker never chose. */
   if (input.listerType !== undefined && !normalizeListerType(input.listerType)) errors.push("Choose whether this listing is by the owner or by a broker.");
+  if (input.visibility !== undefined && !LISTING_VISIBILITIES.includes(input.visibility)) errors.push("Choose a valid listing visibility policy.");
+  if (input.addressVisibility !== undefined && !ADDRESS_VISIBILITIES.includes(input.addressVisibility)) errors.push("Choose a valid address visibility policy.");
+  if (input.contactVisibility !== undefined && !CONTACT_VISIBILITIES.includes(input.contactVisibility)) errors.push("Choose a valid contact visibility policy.");
   return errors;
 }
 

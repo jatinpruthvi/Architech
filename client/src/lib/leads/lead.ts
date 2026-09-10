@@ -2,6 +2,8 @@ import { getListingById } from "@/lib/repositories";
 
 export type LeadMode = "MASKED" | "DIRECT_CONSENTED";
 export type LeadStatus = "NEW" | "ACKNOWLEDGED" | "REPLIED" | "CLOSED" | "DELETED";
+export const LEAD_CONSENT_CLASSES = ["first-party-form", "portal-shared", "aggregator-shared"] as const;
+export type LeadConsentClass = (typeof LEAD_CONSENT_CLASSES)[number];
 
 export type LeadStatusEvent = {
   id: string;
@@ -23,6 +25,7 @@ export type LeadInput = {
   message: string;
   mode?: LeadMode;
   consentText: string;
+  consentClass?: LeadConsentClass;
   idempotencyKey?: string;
 };
 
@@ -41,6 +44,7 @@ export type LeadRecord = {
   mode: LeadMode;
   status: LeadStatus;
   consentText: string;
+  consentClass?: string;
   idempotencyKey: string;
   auditEvent: {
     id: string;
@@ -56,6 +60,15 @@ export type LeadRecord = {
   createdAt: string;
 };
 
+export type LeadDetailRecord = LeadRecord & {
+  stage: string;
+  callAttempts: number;
+  maxAttempts: number;
+  suppressed: boolean;
+  nextActionAt: string | null;
+  callHistory: Array<{ outcome: string; stageBefore: string; stageAfter: string; nextActionAt: string | null; note: string | null; createdAt: string }>;
+};
+
 export type LeadResult =
   | { ok: true; lead: LeadRecord; duplicate: boolean }
   | { ok: false; status: number; errors: string[] };
@@ -66,6 +79,7 @@ export type LeadResult =
    so entry count tracks the seed fixture, not live traffic. Gating enforced by
    `pnpm production:plan:audit`. Cleared in the round-4 hunt: by design. */
 const leadsByKey = new Map<string, LeadRecord>();
+const contactByLeadId = new Map<string, string>();
 
 export function maskPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -88,6 +102,7 @@ export function validateLeadInput(input: Partial<LeadInput>): string[] {
   if (!input.consentText || input.consentText.trim().length < 12) errors.push("Consent text is required.");
   if (input.email && !/^\S+@\S+\.\S+$/.test(input.email)) errors.push("Email must be valid when provided.");
   if (input.mode && input.mode !== "MASKED" && input.mode !== "DIRECT_CONSENTED") errors.push("Lead mode is invalid.");
+  if (input.consentClass && !LEAD_CONSENT_CLASSES.includes(input.consentClass as LeadConsentClass)) errors.push("Consent class is invalid.");
   return errors;
 }
 
@@ -114,6 +129,7 @@ export function createLead(input: LeadInput): LeadResult {
     mode: input.mode ?? "MASKED",
     status: "NEW",
     consentText: input.consentText.trim(),
+    consentClass: input.consentClass,
     idempotencyKey: key,
     auditEvent: {
       id: stableId("audit", `${key}:lead.created`),
@@ -128,6 +144,7 @@ export function createLead(input: LeadInput): LeadResult {
   };
 
   leadsByKey.set(key, lead);
+  contactByLeadId.set(lead.id, input.phone);
   return { ok: true, lead, duplicate: false };
 }
 
@@ -187,6 +204,11 @@ export function findLeadForOrganization(id: string, organizationId: string): Lea
   return lead && lead.organizationId === organizationId ? lead : null;
 }
 
+export function getFixtureLeadContact(id: string): string | null {
+  return contactByLeadId.get(id) ?? null;
+}
+
 export function resetLeadStoreForTests() {
   leadsByKey.clear();
+  contactByLeadId.clear();
 }

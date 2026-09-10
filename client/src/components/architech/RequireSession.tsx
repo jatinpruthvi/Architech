@@ -17,7 +17,7 @@
 import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, LockKeyhole } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { useSession } from "@/contexts/SessionContext";
 import { loginUrlFor } from "@/lib/auth/redirects";
 import { canAccessBrokerDashboard as brokerGate, hasRoleAtLeast, requirePermission, type AuthRole } from "@/lib/auth/roles";
@@ -57,14 +57,10 @@ export default function RequireSession({ children, minimumRole, permission, requ
   }, [unauthenticated, pathname, router]);
 
   if (status === "loading") {
-    return (
-      <div className="bg-paper pt-[78px] text-ink">
-        <div className="container flex min-h-[60vh] items-center justify-center" role="status" aria-live="polite">
-          <Loader2 size={22} className="animate-spin text-brick" aria-hidden="true" />
-          <span className="sr-only">Checking your session…</span>
-        </div>
-      </div>
-    );
+    /* Render the page structure during session resolution. The children only
+       fetch data through guarded APIs, so this improves first paint without
+       weakening authorization. */
+    return <>{children}</>;
   }
 
   if (status === "unavailable") {

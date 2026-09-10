@@ -88,6 +88,58 @@ enum ListerType {
   BROKER
 }
 
+enum ListingVisibility {
+  PUBLIC
+  OWNER_DIRECT
+  BROKER_SHAREABLE
+  PRIVATE
+}
+
+enum AddressVisibility {
+  LOCALITY_ONLY
+  REQUEST_AFTER_LEAD
+  APPOINTMENT_ONLY
+  PUBLIC_EXACT
+}
+
+enum ContactVisibility {
+  RELAY_ONLY
+  REQUEST_APPROVAL
+  PUBLIC_BUSINESS
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAUSED
+  EXPIRED
+  CANCELLED
+}
+
+enum AccessEventResult {
+  REQUESTED
+  ALLOWED
+  DENIED
+  PROVIDER_FAILED
+  REVOKED
+}
+
+enum DisclosureRequestStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum CollaborationRequestStatus {
+  REQUESTED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
 enum LeadMode {
   MASKED
   DIRECT_CONSENTED
@@ -614,6 +666,7 @@ model BrokerOrganization {
   users    BrokerUser[]
   listings Listing[]
   leads                Lead[]
+  callLogs             LeadCallLog[]
   requirements         Requirement[]
   channelRequests      ChannelRequest[]
   channelRequestSources ChannelRequestSource[]
@@ -625,6 +678,14 @@ model BrokerOrganization {
   channelNotifications ChannelNotification[]
   audits               AuditEvent[]
   outbox               InteropOutbox[]
+  subscriptions       MarketplaceSubscription[]
+  usageLedger         UsageLedger[]
+  contactAccessEvents ContactAccessEvent[]
+  addressRequests     AddressDisclosureRequest[] @relation("AddressRequesterOrganization")
+  collaborationRequestsFrom BrokerCollaborationRequest[] @relation("CollaborationRequesterOrg")
+  collaborationRequestsTo BrokerCollaborationRequest[] @relation("CollaborationRecipientOrg")
+  reports             ListingReport[]
+  reviewedListings    ListingVerification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -649,7 +710,16 @@ model User {
   leads             Lead[]
   requirements      Requirement[]
   savedSearches     SavedSearch[]
-  audits            AuditEvent[]
+  audits           AuditEvent[]
+  subscriptions   MarketplaceSubscription[]
+  usageLedger     UsageLedger[]
+  contactAccessEvents ContactAccessEvent[]
+  addressRequests AddressDisclosureRequest[] @relation("AddressRequester")
+  approvedAddressRequests AddressDisclosureRequest[] @relation("AddressApprover")
+  collaborationRequests BrokerCollaborationRequest[] @relation("CollaborationRequester")
+  decidedCollaborationRequests BrokerCollaborationRequest[] @relation("CollaborationDecider")
+  reports         ListingReport[]
+  reviewedListings ListingVerification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -718,6 +788,10 @@ model Listing {
   descriptionHi     String?
   note              String?
   lifecycle         ListingLifecycle   @default(DRAFT)
+  visibility        ListingVisibility  @default(PUBLIC)
+  addressVisibility AddressVisibility  @default(LOCALITY_ONLY)
+  contactVisibility ContactVisibility  @default(RELAY_ONLY)
+  brokerShareNote   String?            @db.VarChar(500)
   /// Attribution shown to buyers. Defaults from the lister's account
   /// declaration but is overridable per listing.
   listerType        ListerType         @default(OWNER)
@@ -793,6 +867,11 @@ model Listing {
   leads                 Lead[]
   audits                AuditEvent[]
   channelRequestSources ChannelRequestSource[]
+  verificationRecords ListingVerification[]
+  contactAccessEvents ContactAccessEvent[]
+  addressRequests AddressDisclosureRequest[]
+  collaborationRequests BrokerCollaborationRequest[]
+  reports ListingReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -800,6 +879,8 @@ model Listing {
   @@index([cityId, lifecycle])
   @@index([cityId, localityId, lifecycle, meaningfulUpdatedAt])
   @@index([brokerOrgId, lifecycle, updatedAt])
+  @@index([visibility, lifecycle, meaningfulUpdatedAt])
+  @@index([addressVisibility, lifecycle])
   @@index([listerType, lifecycle])
   @@index([localityId, lifecycle])
   @@index([verification])
@@ -811,6 +892,188 @@ model Listing {
   // updatedAt. Every other lifecycle index above has it as a TRAILING column,
   // so none of them can serve that query.
   @@index([lifecycle, updatedAt])
+}
+
+model ListingVerification {
+  id             String             @id @default(cuid())
+  listingId      String
+  organizationId String?
+  reviewedById   String?
+  type           String             @db.VarChar(40)
+  status         VerificationStatus @default(DEMO)
+  evidenceRef    String?            @db.VarChar(500)
+  expiresAt      DateTime?
+  reviewedAt     DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  reviewedBy   User?               @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([listingId, status])
+  @@index([organizationId, status])
+}
+
+model MarketplacePlan {
+  id          String   @id @default(cuid())
+  code        String   @unique @db.VarChar(40)
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  monthlyCredits Int    @default(0)
+  teamSeats   Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entitlements MarketplacePlanEntitlement[]
+  subscriptions MarketplaceSubscription[]
+}
+
+model MarketplacePlanEntitlement {
+  id       String @id @default(cuid())
+  planId   String
+  key      String @db.VarChar(64)
+  limit    Int?
+  metadata Json?
+
+  plan MarketplacePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, key])
+}
+
+model MarketplaceSubscription {
+  id             String             @id @default(cuid())
+  planId         String
+  userId         String?
+  organizationId String?
+  status         SubscriptionStatus @default(TRIAL)
+  provider       String?            @db.VarChar(40)
+  providerRef    String?            @db.VarChar(140)
+  startsAt       DateTime           @default(now())
+  expiresAt      DateTime?
+  renewsAt       DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  plan         MarketplacePlan    @relation(fields: [planId], references: [id], onDelete: Restrict)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  usageLedger  UsageLedger[]
+
+  @@index([userId, status, expiresAt])
+  @@index([organizationId, status, expiresAt])
+}
+
+model UsageLedger {
+  id             String   @id @default(cuid())
+  userId         String?
+  organizationId String?
+  subscriptionId String?
+  key            String   @db.VarChar(64)
+  delta          Int
+  idempotencyKey String   @unique @db.VarChar(140)
+  reason         String?  @db.VarChar(140)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  user         User?                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization BrokerOrganization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscription MarketplaceSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, key, createdAt])
+  @@index([userId, key, createdAt])
+}
+
+model ContactAccessEvent {
+  id             String            @id @default(cuid())
+  listingId      String
+  requesterId    String?
+  organizationId String?
+  method         String            @db.VarChar(40)
+  entitlementKey String?           @db.VarChar(64)
+  purpose        String?           @db.VarChar(200)
+  result         AccessEventResult
+  creditsDelta   Int               @default(0)
+  ipHash         String?           @db.VarChar(128)
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+
+  listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  requester    User?               @relation(fields: [requesterId], references: [id], onDelete: SetNull)
+  organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([listingId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([requesterId, createdAt])
+}
+
+model AddressDisclosureRequest {
+  id             String                  @id @default(cuid())
+  listingId      String
+  requesterId    String?
+  organizationId String?
+  purpose        String                  @db.VarChar(200)
+  status         DisclosureRequestStatus @default(REQUESTED)
+  approvedById   String?
+  sharedMode     String?                 @db.VarChar(32)
+  expiresAt      DateTime?
+  decidedAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  requester    User?               @relation("AddressRequester", fields: [requesterId], references: [id], onDelete: SetNull)
+  organization BrokerOrganization? @relation("AddressRequesterOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
+  approvedBy   User?               @relation("AddressApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([listingId, status, createdAt])
+  @@index([requesterId, status, expiresAt])
+}
+
+model BrokerCollaborationRequest {
+  id               String                     @id @default(cuid())
+  listingId        String
+  requesterId      String?
+  requesterOrgId   String?
+  recipientOrgId   String?
+  status           CollaborationRequestStatus @default(REQUESTED)
+  terms            String?                    @db.VarChar(500)
+  decidedById      String?
+  decidedAt        DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  requester    User?               @relation("CollaborationRequester", fields: [requesterId], references: [id], onDelete: SetNull)
+  requesterOrg BrokerOrganization? @relation("CollaborationRequesterOrg", fields: [requesterOrgId], references: [id], onDelete: SetNull)
+  recipientOrg BrokerOrganization? @relation("CollaborationRecipientOrg", fields: [recipientOrgId], references: [id], onDelete: SetNull)
+  decidedBy    User?               @relation("CollaborationDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([listingId, status, createdAt])
+  @@index([requesterOrgId, status])
+  @@index([recipientOrgId, status])
+}
+
+model ListingReport {
+  id             String   @id @default(cuid())
+  listingId      String
+  reporterId     String?
+  organizationId String?
+  category       String   @db.VarChar(48)
+  details        String?  @db.VarChar(1000)
+  status         String   @default("OPEN") @db.VarChar(24)
+  createdAt      DateTime @default(now())
+  resolvedAt     DateTime?
+
+  listing      Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reporter     User?               @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([listingId, status, createdAt])
+  @@index([organizationId, status, createdAt])
 }
 
 model PropertyMedia {
@@ -849,8 +1112,16 @@ model Lead {
   organizationId String?
   mode           LeadMode   @default(MASKED)
   status         LeadStatus @default(NEW)
+  stage          String     @default("NEW") @db.VarChar(32)
   name           String
   phoneMasked    String?
+  phoneCiphertext Bytes?
+  phoneLast4      String?    @db.VarChar(4)
+  consentClass    String?    @db.VarChar(32)
+  consentedAt     DateTime   @default(now())
+  retentionUntil  DateTime?
+  callSuppressedAt DateTime?
+  callAttempts    Int        @default(0)
   email          String?
   message        String
   consentText    String
@@ -876,6 +1147,7 @@ model Lead {
   user         User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   audits       AuditEvent[]
+  callLogs     LeadCallLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -883,8 +1155,29 @@ model Lead {
   @@index([listingId, status])
   @@index([organizationId, status])
   @@index([createdAt])
+  @@index([retentionUntil, deletedAt])
   /// A Frappe key is only unique within one brokerage's site.
   @@unique([organizationId, frappeCrmLeadId])
+}
+
+model LeadCallLog {
+  id             String   @id @default(cuid())
+  leadId         String
+  actorUserId    String?
+  organizationId String?
+  outcome        String   @db.VarChar(32)
+  note           String?  @db.VarChar(500)
+  lostReason     String?  @db.VarChar(500)
+  stageBefore    String   @db.VarChar(32)
+  stageAfter     String   @db.VarChar(32)
+  nextActionAt   DateTime?
+  createdAt      DateTime @default(now())
+
+  lead           Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  organization   BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, createdAt])
+  @@index([organizationId, nextActionAt])
 }
 
 model Requirement {

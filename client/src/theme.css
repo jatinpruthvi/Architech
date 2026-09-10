@@ -649,6 +649,7 @@ button.btn-primary, a.btn-primary { border-radius: 9999px; }
 .mobile-discovery-rail { position: fixed; z-index: 40; right: 0; bottom: 0; left: 0; display: flex; gap: 0.65rem; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); background: color-mix(in srgb, var(--paper) 92%, transparent); padding: 0.65rem max(0.75rem, env(safe-area-inset-left)) max(0.65rem, env(safe-area-inset-bottom)); backdrop-filter: blur(16px); }
 @media (prefers-reduced-motion: no-preference) { .mobile-discovery-rail { animation: rail-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; } }
 @keyframes rail-in { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+body:has(.mobile-discovery-rail) footer { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
 
 /* Shared status and loading primitives. */
 .empty-state { transition: border-color var(--dur-2) ease, background-color var(--dur-2) ease; }

@@ -24,7 +24,7 @@ describe("buildLeadNotification — PII-free by construction", () => {
 
   it("points at the masked desk, carries no buyer data fields at all", () => {
     expect(content.subject).toContain("garden courtyard");
-    expect(content.text).toContain("/broker/dashboard/?section=inquiry");
+    expect(content.text).toContain("/broker/leads/lead_x1/");
     /* The buyer's identity must never ride the notification channel: assert
        the builder structurally cannot leak it by sending bait through every
        field it accepts and checking none surfaces unmasked. */

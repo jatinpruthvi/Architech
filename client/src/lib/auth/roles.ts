@@ -81,6 +81,12 @@ export const demoBrokerSession: AuthSession = {
     "saved-search.write",
     "channel.read",
     "channel.write",
+    "broker.inventory.read",
+    "broker.inventory.write",
+    "broker.plan.read",
+    "listing.contact.write",
+    "listing.address.write",
+    "listing.report.write",
   ],
   source: "better-auth-contract-demo",
 };
@@ -112,6 +118,12 @@ const ROLE_PERMISSIONS_SOURCE: string[] = [
   "saved-search.write",
   "channel.read",
   "channel.write",
+  "broker.inventory.read",
+  "broker.inventory.write",
+  "broker.plan.read",
+  "listing.contact.write",
+  "listing.address.write",
+  "listing.report.write",
 ];
 
 const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
@@ -132,6 +144,12 @@ const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
        verification, not on the individual's seniority. */
     "channel.read",
     "channel.write",
+    "broker.inventory.read",
+    "broker.inventory.write",
+    "broker.plan.read",
+    "listing.contact.write",
+    "listing.address.write",
+    "listing.report.write",
   ],
   BROKER_ADMIN: [...ROLE_PERMISSIONS_SOURCE],
   MODERATOR: [
