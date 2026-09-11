@@ -10,7 +10,7 @@ Phase 1 is now a validated prototype foundation. This plan defines how to move f
 The machine-readable plan is:
 
 ```text
-governance/release/production-enablement-plan.json
+config/governance/release/production-enablement-plan.json
 ```
 
 Required environments:

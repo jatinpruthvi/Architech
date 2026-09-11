@@ -2,7 +2,7 @@
 
 **Author:** Manus AI  
 **Audit date:** 25 August 2026  
-**Repository revision reviewed:** `a77e526` — `feat(governance/order): authority registry + API, media-attach audit hardening (#30)`
+**Repository revision reviewed:** `a77e526` — `feat(config/governance/order): authority registry + API, media-attach audit hardening (#30)`
 
 ## Executive assessment
 
@@ -93,7 +93,7 @@ The root layout loads Google Fonts from [`app/layout.tsx`](../app/layout.tsx). F
 
 ### 10. Rewrite the README around the current reality
 
-The README simultaneously says that the repository is “the architecture source, not the application source code” and that it contains the working Next.js application ([`README.md`](../README.md), lines 7–11). That contradiction will mislead both human engineers and AI coding systems. Replace it with a clear split: the repository is the **architecture, governance, and reference implementation**; the `app/`, `client/`, `prisma/`, `seo/`, and `governance/` directories are named sources of truth for their respective concerns.
+The README simultaneously says that the repository is “the architecture source, not the application source code” and that it contains the working Next.js application ([`README.md`](../README.md), lines 7–11). That contradiction will mislead both human engineers and AI coding systems. Replace it with a clear split: the repository is the **architecture, governance, and reference implementation**; the `app/`, `client/`, `prisma/`, `seo/`, and `config/governance/` directories are named sources of truth for their respective concerns.
 
 The README should also reconcile the approved hosting table with the current free-first strategy, identify which integrations are mocked or fallback-backed, and state the exact production activation gates. Historical documents such as [`IMPROVEMENT-REVIEW-2.md`](../IMPROVEMENT-REVIEW-2.md) still describe the earlier Vite/wouter era and should be marked as historical or moved under `history/` so they are not mistaken for current work instructions.
 

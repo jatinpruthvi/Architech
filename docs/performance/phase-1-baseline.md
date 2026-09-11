@@ -9,7 +9,7 @@
 Budgets live in:
 
 ```text
-performance/budgets.json
+config/performance/budgets.json
 ```
 
 Current automated gates:

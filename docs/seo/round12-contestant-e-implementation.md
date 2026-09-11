@@ -163,7 +163,7 @@ noindexed and excluded, 0 unsegmented pages.*
   threshold, and now additionally keeps the gated price index out of the
   index.
 - **LCP under 1.5s on locality pages** — **not adopted as a target.** The
-  repo pins `lcpMs: 2500` in `performance/budgets.json`, which is Google's
+  repo pins `lcpMs: 2500` in `config/performance/budgets.json`, which is Google's
   published "good" threshold and what the SLO alerts on. Lowering the number
   in a config file does not make a page faster, and 1.5s cannot be verified
   in CI. What *is* enforced on locality routes is the HTML byte budget —

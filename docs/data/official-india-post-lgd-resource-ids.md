@@ -43,7 +43,7 @@ The implementation is prepared, but no nationwide bulk file has been acquired or
 ### Already implemented
 
 - Official 36-entry LGD State/UT registry:
-  - `data/location/official/lgd-state-ut-2026-08-30.json`
+  - `config/data/location/official/lgd-state-ut-2026-08-30.json`
   - 28 states and 8 Union Territories
   - SHA-256: `7e1f421512b11b92696364d1ce3508f5da050bd81c1f0f0a9d24b3eaf94d3aa9`
 - Controlled OGD downloader:

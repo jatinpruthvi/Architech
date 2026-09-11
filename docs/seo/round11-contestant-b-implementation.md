@@ -64,7 +64,7 @@ Canonicalising page 2 → page 1 tells Google pages 2..N are duplicates of page 
 
 1. `/search/` is `noindex,follow`, and `Disallow: /search/` in `robots.txt`. The canonical has no indexing effect, and Google cannot crawl the deeper pages anyway.
 2. Making the canonical request-accurate requires `generateMetadata({ searchParams })`, which converts the route from prerendered to dynamic.
-3. That conversion breaks `performance/budgets.json`, which asserts a prerendered HTML artifact at `.next/server/app/search.html`. Re-baselining a performance budget to fix a canonical that is inert on a `noindex` page is a bad trade.
+3. That conversion breaks `config/performance/budgets.json`, which asserts a prerendered HTML artifact at `.next/server/app/search.html`. Re-baselining a performance budget to fix a canonical that is inert on a `noindex` page is a bad trade.
 
 **Trigger to revisit:** the moment `evaluateFacetGate()` qualifies a combination, that facet becomes a real indexable route with pagination — and it must use `facetCanonicalUrl()`. The helper is tested and ready so that work is a wiring change, not a design decision.
 
@@ -119,7 +119,7 @@ What the data blocks need before they can ship:
 | Recommendation | Treatment |
 |---|---|
 | SSR/SSG, not client-side rendering | **Already implemented.** Every public route prerenders; a raw-HTML smoke suite protects it. |
-| LCP < 2.5s, INP < 200ms, CLS < 0.1 | **Already implemented** as route budgets and Core Web Vitals targets in `performance/budgets.json`. |
+| LCP < 2.5s, INP < 200ms, CLS < 0.1 | **Already implemented** as route budgets and Core Web Vitals targets in `config/performance/budgets.json`. |
 | Hero AVIF/WebP, `fetchpriority="high"`, no lazy-loading on it, dimensions set | **Already implemented.** |
 | Sitemap index split by type with accurate `lastmod`, referenced in robots.txt | **Already implemented — file 1.** `/sitemap.xml` is an index over `pages` / `cities` / `localities` / `listings` / `guides`, `lastmod` sourced from entity data, referenced from `robots.txt`. |
 | Expired listings: keep URL, mark "Sold", show alternatives; never mass-404; never redirect all to the locality page; `410` only when there is nothing to say | **Already implemented.** `client/src/lib/seo/lifecycle.ts` maps each state to 200 / 301 / 404 / 410 — `SOLD` stays 200 but `noindex`, `DUPLICATE` 301s to the canonical listing, `EXPIRED`/`REMOVED` 410, and `continuingSeoValue` keeps a valuable expired page visible with alternatives. There is no blanket redirect-to-locality. |

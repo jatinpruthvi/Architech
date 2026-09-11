@@ -4,7 +4,7 @@
 
 Architech is the architecture and implementation-planning repository for a premium India-wide real-estate discovery platform. It defines the product, user experience, technical stack, page-authority model, Google-first SEO system, AI-search readiness, broker operations, RERA verification, media pipeline, security posture, localization strategy, infrastructure, testing, and three-phase delivery plan.
 
-This repository is the **normative architecture, governance package, and working reference implementation**. The architecture and governance documents define the contracts; the Next.js application under `app/`, `client/`, `prisma/`, `seo/`, and `governance/` demonstrates those contracts and is the active implementation surface.
+This repository is the **normative architecture, governance package, and working reference implementation**. The architecture and governance documents define the contracts; the Next.js application under `app/`, `client/`, `prisma/`, and `scripts/`, together with the operational contracts in `config/`, demonstrates those contracts and is the active implementation surface.
 
 ## 🚧 Live prototype (August 2026) — now on Next.js 16
 
@@ -80,7 +80,7 @@ Engineering teams and AI coding systems should use the normative documents as th
 Use the following document as the primary implementation reference:
 
 ```text
-architecture/normative/final-three-phase-architecture.md
+docs/architecture/normative/final-three-phase-architecture.md
 ```
 
 It combines the complete SEO-integrated architecture with the detailed Phase 1, Phase 2, and Phase 3 execution plan. The document preserves all approved capabilities. Phase boundaries control implementation and activation order; they do not authorize deleting capabilities from the architecture.
@@ -88,7 +88,7 @@ It combines the complete SEO-integrated architecture with the detailed Phase 1, 
 The latest Google-first off-page authority strategy is documented separately in:
 
 ```text
-seo/authority/off-page-authority-google-first-appendix.md
+docs/seo/authority/off-page-authority-google-first-appendix.md
 ```
 
 The previous archive index is preserved in:
@@ -103,11 +103,11 @@ The active pick-one-item Phase 1 execution tracker is maintained in:
 PHASE-1-IMPLEMENTATION-PLAN.md
 ```
 
-The current implementation and activation state is summarized in [`STATUS.md`](STATUS.md), and production indexability/provider gates are documented in [`docs/runtime-activation-gates.md`](docs/runtime-activation-gates.md).
+The current implementation and activation state is summarized in [`STATUS.md`(docs/planning/STATUS.md), and production indexability/provider gates are documented in [`docs/runtime-activation-gates.md`](docs/runtime-activation-gates.md).
 
 ### Required reading order
 
-For implementation, read `README.md`, then `governance/feedback/FEEDBACK-REVIEW.md`, `architecture/normative/final-three-phase-architecture.md`, `governance/contracts/REQUIREMENTS.md`, `governance/contracts/DOMAIN-CONTRACTS.md`, `governance/contracts/IMPLEMENTATION-MATRIX.md`, `governance/decisions/DECISION-LOG.md`, and `governance/legal/LEGAL-GATES.md`. Historical version files are for context only and are not independent specifications.
+For implementation, read `README.md`, then `config/governance/feedback/FEEDBACK-REVIEW.md`, `docs/architecture/normative/final-three-phase-architecture.md`, `config/governance/contracts/REQUIREMENTS.md`, `config/governance/contracts/DOMAIN-CONTRACTS.md`, `config/governance/contracts/IMPLEMENTATION-MATRIX.md`, `config/governance/decisions/DECISION-LOG.md`, and `config/governance/legal/LEGAL-GATES.md`. Historical version files are for context only and are not independent specifications.
 
 The normative architecture uses stable requirement IDs, decision IDs, contract invariants, work IDs, acceptance evidence, and reversal triggers. A feature can be architecturally anticipated in Phase 1 while remaining disabled until its contract, implementation, validation, legal, cost, or performance gates pass.
 
@@ -264,18 +264,18 @@ The India privacy posture includes notice, purpose limitation, consent and withd
 
 | File | Authority and purpose |
 |---|---|
-| `governance/feedback/FEEDBACK-REVIEW.md` | Accepted/rejected governance suggestions and resolved contradictions. |
-| `governance/contracts/REQUIREMENTS.md` | Stable requirement IDs, owners, status, and acceptance evidence. |
-| `governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts and invariants. |
-| `governance/contracts/IMPLEMENTATION-MATRIX.md` | Work IDs, owners, dependencies, planning estimates, entry/exit criteria, and evidence. |
-| `governance/decisions/DECISION-LOG.md` | Stable decisions, rationale, affected requirements/work, evidence, and reversal triggers. |
-| `governance/legal/LEGAL-GATES.md` | Legal and compliance approvals required before public enablement. |
-| `governance/decisions/SUPERSESSION-MANIFEST.md` | Normative versus historical document status and reading order. |
+| `config/governance/feedback/FEEDBACK-REVIEW.md` | Accepted/rejected governance suggestions and resolved contradictions. |
+| `config/governance/contracts/REQUIREMENTS.md` | Stable requirement IDs, owners, status, and acceptance evidence. |
+| `config/governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts and invariants. |
+| `config/governance/contracts/IMPLEMENTATION-MATRIX.md` | Work IDs, owners, dependencies, planning estimates, entry/exit criteria, and evidence. |
+| `config/governance/decisions/DECISION-LOG.md` | Stable decisions, rationale, affected requirements/work, evidence, and reversal triggers. |
+| `config/governance/legal/LEGAL-GATES.md` | Legal and compliance approvals required before public enablement. |
+| `config/governance/decisions/SUPERSESSION-MANIFEST.md` | Normative versus historical document status and reading order. |
 | `ARCHIVE_INDEX.md` | Historical archive index. |
 
 ## How an AI coding system should use this repository
 
-An AI coding system must read `architecture/normative/final-three-phase-architecture.md` before writing production code; treat the canonical entity model, route grammar, `SeoPage` registry, page-authority hierarchy, and server-rendering contract as foundational; preserve approved capabilities through interfaces, feature flags, dynamic imports, benchmarks, and fallbacks; never invent property, price, availability, or RERA facts; use real `<a href>` links for public pages; keep public content server-first; maintain localization fields; run SEO, accessibility, security, performance, and mobile tests; avoid manipulative link tactics; and document any changed architecture decision.
+An AI coding system must read `docs/architecture/normative/final-three-phase-architecture.md` before writing production code; treat the canonical entity model, route grammar, `SeoPage` registry, page-authority hierarchy, and server-rendering contract as foundational; preserve approved capabilities through interfaces, feature flags, dynamic imports, benchmarks, and fallbacks; never invent property, price, availability, or RERA facts; use real `<a href>` links for public pages; keep public content server-first; maintain localization fields; run SEO, accessibility, security, performance, and mobile tests; avoid manipulative link tactics; and document any changed architecture decision.
 
 ## AI assistant tooling (prompt library)
 
@@ -316,24 +316,24 @@ Reload your editor and approve the server to get the `search_prompts` and `get_p
 
 | File | Use |
 |---|---|
-| `architecture/normative/final-three-phase-architecture.md` | Current implementation source of truth. |
-| `seo/authority/off-page-authority-google-first-appendix.md` | Google-first authority, digital PR, and compliant link-earning strategy. |
+| `docs/architecture/normative/final-three-phase-architecture.md` | Current implementation source of truth. |
+| `docs/seo/authority/off-page-authority-google-first-appendix.md` | Google-first authority, digital PR, and compliant link-earning strategy. |
 | `history/recommendations/recommendation-v1.md` through `history/recommendations/recommendation-v8.md` | Historical versioned recommendations. |
 | `planning/three-phase-execution-appendix.md` | Standalone Phase 1/2/3 execution details. |
 | `history/reviews/v7-feedback-decision-report.md` | General feedback decisions for v7. |
-| `seo/execution/v8-seo-feedback-decision-report.md` | SEO feedback decisions for v8. |
+| `docs/seo/execution/v8-seo-feedback-decision-report.md` | SEO feedback decisions for v8. |
 | `history/appendices/v7-accepted-feedback-appendix.md` | Accepted v7 feedback implementation updates. |
 | `history/appendices/v8-accepted-seo-appendix.md` | Accepted v8 SEO implementation updates. |
 | `history/reviews/final-technical-stack-review.md` | Initial technical-stack and UI-first review. |
 | `ARCHIVE_INDEX.md` | Historical archive index. |
-| `governance/feedback/FEEDBACK-REVIEW.md` | Governance feedback decisions and contradiction resolution. |
-| `governance/contracts/REQUIREMENTS.md` | Stable requirement registry. |
-| `governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts. |
-| `governance/contracts/IMPLEMENTATION-MATRIX.md` | Workstream and acceptance matrix. |
-| `governance/decisions/DECISION-LOG.md` | Stable architecture decisions. |
-| `governance/legal/LEGAL-GATES.md` | Legal/compliance release gates. |
-| `governance/decisions/SUPERSESSION-MANIFEST.md` | Normative and historical document status. |
-| `governance/CHANGELOG.md` | Version evolution and governance update history. |
+| `config/governance/feedback/FEEDBACK-REVIEW.md` | Governance feedback decisions and contradiction resolution. |
+| `config/governance/contracts/REQUIREMENTS.md` | Stable requirement registry. |
+| `config/governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts. |
+| `config/governance/contracts/IMPLEMENTATION-MATRIX.md` | Workstream and acceptance matrix. |
+| `config/governance/decisions/DECISION-LOG.md` | Stable architecture decisions. |
+| `config/governance/legal/LEGAL-GATES.md` | Legal/compliance release gates. |
+| `config/governance/decisions/SUPERSESSION-MANIFEST.md` | Normative and historical document status. |
+| `config/governance/CHANGELOG.md` | Version evolution and governance update history. |
 
 ## Definition of done
 

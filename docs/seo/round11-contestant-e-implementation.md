@@ -109,7 +109,7 @@ E is correct that the local pack is where a genuinely local site can beat a nati
 
 **Decision: Already implemented.**
 
-Static/SSG rendering for every public route, WebP/AVIF, lazy-loading below the fold, an eager high-priority hero, explicit image dimensions, and per-route JavaScript budgets in `performance/budgets.json` with Core Web Vitals targets (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1).
+Static/SSG rendering for every public route, WebP/AVIF, lazy-loading below the fold, an eager high-priority hero, explicit image dimensions, and per-route JavaScript budgets in `config/performance/budgets.json` with Core Web Vitals targets (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1).
 
 ## §8 — Freshness signal
 

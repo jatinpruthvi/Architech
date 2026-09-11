@@ -32,7 +32,7 @@ This document operationalizes the Google-first SEO foundation. It does not requi
 Config:
 
 ```text
-seo/monitoring/search-console.config.json
+config/seo/search-console.config.json
 ```
 
 Audit command:

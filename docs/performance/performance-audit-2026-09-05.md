@@ -2,7 +2,7 @@
 
 **Scope:** whole app — client bundles, render path, server TTFB, images, fonts, API payloads, budgets.
 **Trigger:** "check is there any performance related changes that we have to do."
-**Gate of record:** `pnpm test:perf` (build + `performance/budgets.json`).
+**Gate of record:** `pnpm test:perf` (build + `config/performance/budgets.json`).
 
 ## What was found and fixed
 
