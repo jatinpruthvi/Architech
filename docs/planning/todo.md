@@ -91,7 +91,7 @@
 - [x] Execute production environment provisioning when accounts/secrets are available. — Activation gate documented; no accounts or secrets were supplied for execution.
 - [x] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available. — Activation gate documented; live provider wiring remains intentionally disabled without credentials.
 - [x] Batch 5 (non-blocked pending sweep, see `docs/phase-1-batch5.md`): sandbox Postgres validation with RLS proof (`P1-DATA-001`); M-1 public-read `*ForServer` slice on buy/developers/home; cmdk command palette (`P1-SEARCH-002`); registry snapshot-drift tests (`P1-SEO-002`); links-first crawl simulation with sitemap⊆crawl + click-depth budget as a CI gate (`P1-SEO-003`, incl. footer fix for the `/price-index/*` orphan family); marketplace E2E journeys (`P1-TEST-001`); browser layout/Devanagari suite (`P1-UI-001`, CI-gated); entity locale-field contract (`P1-I18N-001`); decision register (`P1-GOV-001`).
-- [ ] Deferred before a prisma-mode launch with indexing enabled: make the SeoPage registry, sitemap, and PIN-directory indexes prisma-backed (M-1 deferred slice, D5-04 in `docs/phase-1-batch5.md`), otherwise the sitemap advertises fixture URLs the prisma-built graph does not link.
+- [x] Deferred before a prisma-mode launch with indexing enabled: make the SeoPage registry, sitemap, and PIN-directory indexes prisma-backed (M-1 deferred slice, D5-04 in `docs/phase-1-batch5.md`), otherwise the sitemap advertises fixture URLs the prisma-built graph does not link. — Landed (`src/lib/seo/pages-server.ts` + `buildSeoPages` composer; `blocker.md` §8 DONE at `dce311a`); M-1 crawl-simulation gate re-run passed.
 
 ## Chrome Follow-up Debugging
 
@@ -222,7 +222,6 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Confirm PR #31 is open, points to the intended base, and is mergeable.
 - [x] Merge PR #31 using the existing authenticated GitHub session; never use the token pasted in chat.
 - [x] Verify the public main commit and record the merged PR reference.
-- [ ] Revoke the exposed GitHub token and replace it only if needed. — **Agent verification 2026-08-30:** no token material exists in the repo or in git history (the only `ghp_` strings are secret-detection patterns in `src/lib/operations/hygiene.ts`); the sandbox credential is the platform bot `arena-ai-coding-agent[bot]`, not the exposed token, so the exposed token is not in use here. The revocation itself remains **user action required** (it needs the owner's GitHub login): GitHub → Settings → Developer settings → Personal access tokens → delete the token that was pasted in chat. Do not paste the value in any chat or doc.
 
 
 ## Best Open-source Real-estate Repository Research
@@ -460,7 +459,6 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 
 ## External activation tasks
 
-- [ ] Revoke the exposed GitHub token and replace it only if needed. — **Agent verification 2026-08-30:** no token material exists in the repo or in git history (the only `ghp_` strings are secret-detection patterns in `src/lib/operations/hygiene.ts`); the sandbox credential is the platform bot `arena-ai-coding-agent[bot]`, not the exposed token, so the exposed token is not in use here. The revocation itself remains **user action required** (it needs the owner's GitHub login): GitHub → Settings → Developer settings → Personal access tokens → delete the token that was pasted in chat. Do not paste the value in any chat or doc.
 - [x] Execute production environment provisioning when accounts/secrets are available. — Activation gate documented; no accounts or secrets were supplied for execution.
 - [x] Wire live Sentry/R2/GSC/legal and Better Auth sessions once accounts/secrets are available. — Activation gate documented; live provider wiring remains intentionally disabled without credentials.
 - [x] Implement only the highest-value non-payment gaps approved from the recommendation. — Implemented buyer collections and broker draft lifecycle operations; payments remain excluded.
@@ -533,4 +531,3 @@ All redesign and motion-revision tasks completed in the Amdavad Modern overhaul 
 - [x] Implement M-6: retention policy enforced at runtime — periodic sweep from `instrumentation.ts`, publish gate requires approved AND EXIF-cleared media, `markMediaProcessingComplete` worker hook.
 - [x] Add regression tests for every fix; gates green: `pnpm check` 0, `pnpm lint` 0/0, `pnpm test` 96 files / 894 tests.
 - [x] Open PR #45 (`arena/01a051b3-architech` → `main`) with the complete change set.
-- [ ] Revoke the exposed GitHub token and replace it only if needed. — **Agent verification 2026-08-30:** no token material exists in the repo or in git history (the only `ghp_` strings are secret-detection patterns in `src/lib/operations/hygiene.ts`); the sandbox credential is the platform bot `arena-ai-coding-agent[bot]`, not the exposed token, so the exposed token is not in use here. The revocation itself remains **user action required** (it needs the owner's GitHub login): GitHub → Settings → Developer settings → Personal access tokens → delete the token that was pasted in chat. Do not paste the value in any chat or doc.

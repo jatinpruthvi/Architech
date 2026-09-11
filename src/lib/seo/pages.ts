@@ -4,7 +4,7 @@ import { cityMarketTrends } from "@/lib/realestate/market-trends";
 import { demoDirectoryAgents, isAgentIndexable, type PublicAgentOrganization } from "@/lib/agent/directory";
 import { evaluateSeoPageQuality, type PageGateEvidence } from "./page-gate";
 import type { PageQualityDecision } from "./page-quality";
-import { isIndexable } from "./lifecycle";
+import { isIndexable, type ListingLifecycle } from "./lifecycle";
 import { listingTargetQuery } from "./query-targeting";
 import { agentPath, agentsPath, agentUrl, agentsUrl, canonicalUrl, cityPath, cityUrl, developersPath, developersUrl, guidePath, guideUrl, homePath, homeUrl, htmlSitemapPath, htmlSitemapUrl, investmentPath, investmentUrl, listPropertyPath, listPropertyUrl, listingPath, listingUrl, localityPath, localityUrl, priceIndexPath, priceIndexUrl, cityPriceIndexPath, cityPriceIndexUrl, requirementsPath, requirementsUrl } from "./urls";
 
@@ -50,6 +50,10 @@ export type SeoPage = {
       carries no date (a standing page with no dated source) omits `lastmod`
       entirely rather than inventing one. */
   lastModified?: string;
+  /** Listing lifecycle at composition time (listing pages only). The sitemap
+      reads this to prune lifecycle-expired URLs (P1-SEO-003) as a last line of
+      defence behind the indexability gate. */
+  lifecycle?: ListingLifecycle;
   sitemap: {
     changeFrequency: SeoChangeFrequency;
     priority: number;
@@ -503,6 +507,9 @@ const listingPages: SeoPage[] = src.listings.map((property) => ({
   // Only ACTIVE listings are indexable; SOLD context stays viewable but noindexed,
   // and non-public states are excluded entirely (SEO-003/SEO-004).
   indexability: isIndexable(property.lifecycle ?? "ACTIVE") ? "indexable" : "noindex",
+  // Carried so the sitemap can prune lifecycle-expired URLs even if the
+  // indexability gate above is ever regressed (P1-SEO-003 pruning rule).
+  lifecycle: property.lifecycle ?? "ACTIVE",
   owner: "SEO",
   qualityState: "needs-production-data",
   freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",

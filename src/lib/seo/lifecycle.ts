@@ -60,6 +60,17 @@ export function isIndexable(lifecycle: ListingLifecycle): boolean {
   return behaviorForLifecycle(lifecycle).indexable;
 }
 
+/** Sitemap action for a lifecycle (P1-SEO-003 pruning rule).
+
+    Only ACTIVE listings are submitted. Every other state resolves to a
+    404/410/301 (DRAFT, IN_REVIEW, EXPIRED, REMOVED, DUPLICATE, ARCHIVED) or a
+    noindex context page (SOLD), so advertising its URL in a sitemap is a
+    promise Google cannot corroborate. The sitemap prunes them all, even if an
+    upstream filter let one through. */
+export function sitemapActionForLifecycle(lifecycle: ListingLifecycle): "keep" | "prune" {
+  return lifecycle === "ACTIVE" ? "keep" : "prune";
+}
+
 /** Robust parse from a possibly unknown lifecycle string. A listing with no
     lifecycle recorded is treated as ACTIVE (the default for live inventory). */
 export function parseLifecycle(value?: string | null): ListingLifecycle | "UNKNOWN" {

@@ -88,6 +88,10 @@ export function localityAliases(localitySlug: string): string[] {
   names.add(normalizeLocalityToken(locality.hindi));
   // Latin renderings of the Devanagari name.
   names.add(normalizeLocalityToken(locality.hindi).replace(/ /g, ""));
+  // The English name without spaces ("prahladnagar"): a search box receives the
+  // concatenated form far more often than the two-word one, and a residual
+  // token must still match the locality it names (P1-SEARCH-001).
+  names.add(normalizeLocalityToken(locality.name).replace(/ /g, ""));
   const aliases = [...names].filter(Boolean);
   aliasesBySlug.set(localitySlug, aliases);
   return aliases;

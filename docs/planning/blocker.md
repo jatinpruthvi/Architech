@@ -8,10 +8,6 @@ Cross-references: workstream IDs (`P1-…`) per `PHASE-1-IMPLEMENTATION-PLAN.md`
 
 ---
 
-## 0. Do today — owner-only action
-
-- [ ] **Revoke the exposed GitHub personal access token.** A token value was pasted in chat earlier. Verified 2026-08-30: no token material in the repo or git history; the sandbox pushes as `arena-ai-coding-agent[bot]`, so the exposed token is in use nowhere here. **Still revoke it:** GitHub → Settings → Developer settings → Personal access tokens → delete. Never paste token values in chat, tickets, or docs again.
-
 ## 1. Legal & privacy gates (LEG-001…LEG-009)
 
 Canonical table with owners, evidence requirements, and release procedure: [`ops/config/governance/legal/LEGAL-GATES.md`](./ops/config/governance/legal/LEGAL-GATES.md). All nine are **pending approval** (`docs/release/phase-1-release-report.md`). A rejected/expired gate disables the feature or sends it to its safe fallback — the code paths already honor this.
@@ -121,14 +117,13 @@ Schedule tours, digital offer submission/negotiation, e-signature, escrow/earnes
 
 ## Go-live sequence, in order
 
-1. §0 token revocation (owner, today)
-2. §1 legal gates approved per scope (indexing stays OFF until the applicable LEGs are signed)
-3. §3 infrastructure — deploy target fixed (I-10), DB verified, backups drilled, secrets inventoried
-4. §4 auth go-live on live env
-5. §2 official location data acquired/imported/audited — `location:coverage:audit` exits 0
-6. §5 data cutover — M-1 slice first, then the prisma flip, then indexed crawl = 0 problems
-7. §8 engineering gates cleared on the release branch
-8. §6 providers wired one by one, each verified by its audit (`security:audit`, `ops:audit`, `release:audit`, `provisioning:audit`, `seo:gsc:audit`)
-9. §7 WhatsApp channel activated separately, with its launch proof
-10. §10 processes staffed, device benchmark passed
-11. **FINAL:** `PUBLIC_INDEXING_ENABLED=true`, then the full gate set — `check`, `lint`, `test`, `db:validate`, `build`, `test:seo`, `test:e2e:only`, crawl simulation — green on the exact production build
+1. §1 legal gates approved per scope (indexing stays OFF until the applicable LEGs are signed)
+2. §3 infrastructure — deploy target fixed (I-10), DB verified, backups drilled, secrets inventoried
+3. §4 auth go-live on live env
+4. §2 official location data acquired/imported/audited — `location:coverage:audit` exits 0
+5. §5 data cutover — M-1 slice first, then the prisma flip, then indexed crawl = 0 problems
+6. §8 engineering gates cleared on the release branch
+7. §6 providers wired one by one, each verified by its audit (`security:audit`, `ops:audit`, `release:audit`, `provisioning:audit`, `seo:gsc:audit`)
+8. §7 WhatsApp channel activated separately, with its launch proof
+9. §10 processes staffed, device benchmark passed
+10. **FINAL:** `PUBLIC_INDEXING_ENABLED=true`, then the full gate set — `check`, `lint`, `test`, `db:validate`, `build`, `test:seo`, `test:e2e:only`, crawl simulation — green on the exact production build
