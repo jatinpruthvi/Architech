@@ -232,6 +232,7 @@ Generated on 2026-09-11 from the repository Markdown tree.
 - [2026 09 11 Repository Restructure](../docs/superpowers/plans/2026-09-11-repository-restructure.md)
 - [2026 09 10 Broker Calling Completion Design](../docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md)
 - [2026 09 10 Repo Restructure Src Layout Design](../docs/superpowers/specs/2026-09-10-repo-restructure-src-layout-design.md)
+- [2026 09 11 Pwa Installability Design](../docs/superpowers/specs/2026-09-11-pwa-installability-design.md)
 - [2026 09 11 Repository Restructure Design](../docs/superpowers/specs/2026-09-11-repository-restructure-design.md)
 
 ## Historical Recommendations and Reviews
