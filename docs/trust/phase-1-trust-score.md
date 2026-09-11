@@ -8,8 +8,8 @@ A listing's trustworthiness is now a single auditable signal rather than a hand-
 ## Files
 
 ```text
-client/src/lib/trust/score.ts
-client/src/lib/trust/score.test.ts
+src/lib/trust/score.ts
+src/lib/trust/score.test.ts
 ```
 
 ## Signals & weights
@@ -53,7 +53,7 @@ Active disputes and stale flags are penalties, not merely missing signals — a 
 ## Validation
 
 ```bash
-pnpm exec vitest run client/src/lib/trust/score.test.ts
+pnpm exec vitest run src/lib/trust/score.test.ts
 ```
 
 Covers: full-verification `HIGH`, missing-signal `MEDIUM`, dispute penalty → `LOW`, stale penalty exact score, demo badge mapping, and label stability (6 signals).

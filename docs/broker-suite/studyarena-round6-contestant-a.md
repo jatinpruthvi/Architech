@@ -112,7 +112,7 @@ Brokers install the **official Chatwoot app** and log into their brokerage's Cha
 
 ## Watch-list (the things that will bite you)
 
-1. **DPDP erasure:** `Requirement.phoneCiphertext` purge must now also delete the Chatwoot contact. Add Chatwoot to `scripts/privacy/purge-expired-requirements.mjs` before go-live.
+1. **DPDP erasure:** `Requirement.phoneCiphertext` purge must now also delete the Chatwoot contact. Add Chatwoot to `ops/scripts/privacy/purge-expired-requirements.mjs` before go-live.
 2. **One sync direction per field.** Chatwoot label → Twenty stage for "hot"; Twenty → Chatwoot for everything else. Two-way sync of the same field is how CRM integrations rot.
 3. **Tenancy mapping:** one Chatwoot **account** per broker, mirroring one Twenty **workspace** per broker. Provision both in the same broker-onboarding flow (§12.2 #3).
 4. **Masked leads in Chatwoot:** never create a Chatwoot contact with a real identifier for `MASKED` leads, and train brokers that "Call" only exists for consented leads — the button simply won't be there otherwise.

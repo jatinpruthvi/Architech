@@ -56,7 +56,7 @@ Measured across the 438 prerendered routes:
 - **419 of 438 descriptions exceeded 155** — worst, 229
 - Nothing was checking. The smoke suite asserted a `<title>` element *existed*, which is not the same as it being readable.
 
-**Change.** `client/src/lib/seo/serp.ts` makes the budget a measured property
+**Change.** `src/lib/seo/serp.ts` makes the budget a measured property
 rather than a convention. Two layers:
 
 - `composeSerp*` builds the string from **priority-ordered parts**, appending
@@ -102,7 +102,7 @@ and a human rewrites the copy, rather than shipping an ellipsis into Google's
 results. A guarantee that cannot fail is decoration; this is the test that
 keeps the guarantee honest.
 
-**Enforced on served HTML too.** `scripts/seo/raw-html-smoke.mjs` now checks
+**Enforced on served HTML too.** `ops/scripts/seo/raw-html-smoke.mjs` now checks
 title and description length, and rejects any ellipsis, for every route it
 visits. Builder-level tests can miss the brand suffix the layout appends; this
 runs against the string Google actually receives. It caught four static pages
@@ -133,7 +133,7 @@ truncated:
 **§3 · The indexation gate — already implemented, and it matches C exactly.**
 
 C's threshold is "≥6 live listings *or* ≥1 verified transaction *or* ≥300 words
-of unique local data, everything else `noindex, follow`". `client/src/lib/seo/page-quality.ts`
+of unique local data, everything else `noindex, follow`". `src/lib/seo/page-quality.ts`
 already encodes that as the `programmatic` evidence bar:
 
 ```
@@ -157,7 +157,7 @@ warning about fake freshness stamps is precisely what the round-11 work
 removed.
 
 **§8 · Data journalism — built in file 7.** C's example is a "Pune Rental Yield
-Report Q3 2026" with a downloadable dataset. `client/src/lib/realestate/market-trends.ts`
+Report Q3 2026" with a downloadable dataset. `src/lib/realestate/market-trends.ts`
 is the city-level equivalent, served at `/api/cities/:slug/market-trends`, with
 methodology, limitations, per-row sample sizes and an explicit `publishable`
 verdict. Pitching journalists is external work; the asset and its gate are code.
@@ -175,7 +175,7 @@ bites; moving it above the hero on the page is a design change.
 ## Not implementable in code
 
 **§1 · Society and project pages.** C wants 3,000 of them. There is no
-`Project` model in `prisma/schema.prisma` and no society-level data of any
+`Project` model in `db/schema.prisma` and no society-level data of any
 kind. The round-12 register keeps this at *Adapt*: pages only when verified
 project identity, RERA records, current inventory and distinct editorial value
 exist. 3,000 empty pages is index bloat, which is the failure mode C's own §3
@@ -206,7 +206,7 @@ The gate is built and tested; it stays shut until Search Console says
 otherwise.
 
 **Crawlable pagination.** C's kill list names "infinite-scroll listings with no
-crawlable pagination". Measured: `client/src/lib/search/pagination.ts` exists
+crawlable pagination". Measured: `src/lib/search/pagination.ts` exists
 with a 24-item page size used by the API, but there is **no pager UI** — the
 rendered `/search/` HTML contains zero `page=` links, and everything past the
 first page is reachable only by interaction. Search is `noindex, follow`, and
@@ -219,14 +219,14 @@ Building a visible pager is a product decision.
 
 | File | Change |
 |---|---|
-| `client/src/lib/seo/serp.ts` | New — SERP budget, priority composition, truncation backstop, per-surface builders |
-| `client/src/lib/seo/serp.test.ts` | New — 18 tests, including the no-truncation gate |
-| `scripts/seo/raw-html-smoke.mjs` | Title and description length + no-ellipsis checks on served HTML |
+| `src/lib/seo/serp.ts` | New — SERP budget, priority composition, truncation backstop, per-surface builders |
+| `src/lib/seo/serp.test.ts` | New — 18 tests, including the no-truncation gate |
+| `ops/scripts/seo/raw-html-smoke.mjs` | Title and description length + no-ellipsis checks on served HTML |
 | `app/listing/[id]/page.tsx` | Title and description composed against the budget |
 | `app/buy/[city]/[locality]/page.tsx` | Same, with the median gated on sample size |
 | `app/buy/[city]/page.tsx` | Same |
 | `app/buy/page.tsx`, `app/review/page.tsx`, `app/collections/page.tsx`, `app/list-property/page.tsx`, `app/layout.tsx` | Over-budget static copy shortened |
-| `client/src/lib/repositories/guides.ts` | Two guide titles shortened to fit |
+| `src/lib/repositories/guides.ts` | Two guide titles shortened to fit |
 
 ## Open items
 

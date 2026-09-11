@@ -16,14 +16,14 @@ Filesystem routing. Each folder is a URL segment; `page.tsx` renders it,
 
 ## Rules
 
-- Pages are thin: heavy logic belongs in `client/src/lib/`, UI in `client/src/components/`.
+- Pages are thin: heavy logic belongs in `src/lib/`, UI in `src/components/`.
 - Public crawlability is gated by `PUBLIC_INDEXING_ENABLED` + `proxy.ts` — do not bypass.
 - Metadata/structured data per route follows the SEO contracts in
-  `config/governance/contracts/` and `docs/seo/`.
+  `ops/config/governance/contracts/` and `docs/seo/`.
 - Root-level `layout.tsx`, `error.tsx`, `global-error.tsx`, `not-found.tsx`,
   `template.tsx`, `robots.ts` are conventional Next.js files.
 
 ## See also
 
-Root `AGENTS.md` for commands and locked files; `client/AGENTS.md` for the code
+Root `AGENTS.md` for commands and locked files; `../AGENTS.md` for the code
 these routes compose.

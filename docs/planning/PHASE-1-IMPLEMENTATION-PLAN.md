@@ -7,8 +7,8 @@
 
 This tracker is derived from:
 
-- `config/governance/contracts/IMPLEMENTATION-MATRIX.md`
-- `config/governance/contracts/REQUIREMENTS.md`
+- `ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md`
+- `ops/config/governance/contracts/REQUIREMENTS.md`
 - `docs/architecture/normative/final-three-phase-architecture.md`
 - Current merged implementation through PR #2: Next.js 16 migration, dark mode, Hindi foundation, and SSR/SEO prototype foundation.
 
@@ -22,7 +22,7 @@ This tracker is derived from:
 | `in-progress` | Being implemented now. |
 | `prototype` | Implemented only for the current demo/prototype, not production-grade. |
 | `partial` | Some production-relevant parts exist, but acceptance criteria are incomplete. |
-| `implemented` | Code/config/docs exist. |
+| `implemented` | Code/ops/config/docs exist. |
 | `validated` | Required tests/evidence pass. |
 | `enabled` | Approved for public/production exposure. |
 | `blocked` | Waiting on access, account, legal, product, or platform decision. |
@@ -94,7 +94,7 @@ pnpm test
 pnpm build
 ```
 
-For docs-only changes, TypeScript/build validation is optional unless package/config/source files changed.
+For docs-only changes, TypeScript/build validation is optional unless package/ops/config/source files changed.
 
 ---
 
@@ -105,8 +105,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | Order | Item | Workstream IDs | Status | Why next |
 |---:|---|---|---|---|
 | 1 | Add this Phase 1 tracker | P1-GOV-001 | implemented | Creates the working control board. |
-| 2 | Central canonical URL builder | P1-SEO-001, SEO-001 | validated | Central helper added in `client/src/lib/seo/urls.ts`; used by metadata, JSON-LD, sitemap, and robots. |
-| 3 | Formal `SeoPage` registry | P1-SEO-001, SEO-002, SEO-003 | validated | Registry added in `client/src/lib/seo/pages.ts`; sitemap is registry-driven. |
+| 2 | Central canonical URL builder | P1-SEO-001, SEO-001 | validated | Central helper added in `src/lib/seo/urls.ts`; used by metadata, JSON-LD, sitemap, and robots. |
+| 3 | Formal `SeoPage` registry | P1-SEO-001, SEO-002, SEO-003 | validated | Registry added in `src/lib/seo/pages.ts`; sitemap is registry-driven. |
 | 4 | No-JavaScript SEO tests | UX-001, SEO-006, P1-TEST-001 | validated | `pnpm test:seo` builds, starts Next, and verifies raw HTML facts for key public pages. |
 | 5 | Accessibility automation | P1-UI-001, P1-TEST-001 | validated | Playwright + axe smoke tests cover main routes on desktop/mobile and keyboard checks. |
 | 6 | Complete Hindi UI foundation | P1-I18N-001, UX-004 | validated | Hindi dictionary expanded across search, saved, locality, listing, cards, CTAs, and trust UI. |
@@ -131,9 +131,9 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
-| P1-DATA-003 | India-wide city registry and multi-city place hierarchy | validated | City registry, city-keyed localities, `/buy/`, `/buy/[city]/`, `/buy/[city]/[locality]/` routes, registry-driven SEO pages/sitemap, search city scope, generated seed mirror, and coverage/drift tests exist. Validation: `pnpm check`, `pnpm lint`, `pnpm test` (320 passed), `pnpm build:ci`, `node scripts/seo/raw-html-smoke.mjs` (14 routes). | Replace generated demo inventory with verified per-city sources; add per-city editorial guides and locality intelligence. |
-| P1-SEARCH-004 | Query understanding and ranked suggestions | validated | Deterministic query grammar (`parse-query.ts`), ranked matching with bounded typo tolerance (`text-match.ts`), inventory-derived popular/trending/placeholder suggestions, city-scoped suggest API, PIN suggestions, structured search actions, per-device recent searches. Validation: `pnpm check`, `pnpm lint`, `pnpm test` (392 passed), `pnpm build:ci`, `node scripts/seo/raw-html-smoke.mjs` (14 routes). | Learn ranking from real query logs once traffic exists; connect semantic/vector recall behind the Phase 2 activation gate without letting it gatekeep the deterministic path. |
-| P1-DATA-004 | PIN-code addressable places (many-to-many PIN ↔ locality) | validated | `City.pincodePrefixes` and `Locality.pincodes` in the registry and Prisma schema, migration `202608270001_pincode_registry` (GIN index on `Locality.pincodes`, indexed `Listing.postalCode`), `client/src/lib/pincodes.ts` layered resolver, `?pincode=` plus six-digit `?q=` token in search, PIN facts and `postalCode` JSON-LD on locality/listing pages, generated seed mirror carries PINs. Validation: `pnpm check`, `pnpm lint`, `pnpm test` (349 passed), `pnpm build:ci`, `node scripts/seo/raw-html-smoke.mjs` (14 routes). | Reconcile PIN data against an authoritative India Post source with a retrieval date before public enablement (LEG-001 style provenance). |
+| P1-DATA-003 | India-wide city registry and multi-city place hierarchy | validated | City registry, city-keyed localities, `/buy/`, `/buy/[city]/`, `/buy/[city]/[locality]/` routes, registry-driven SEO pages/sitemap, search city scope, generated seed mirror, and coverage/drift tests exist. Validation: `pnpm check`, `pnpm lint`, `pnpm test` (320 passed), `pnpm build:ci`, `node ops/scripts/seo/raw-html-smoke.mjs` (14 routes). | Replace generated demo inventory with verified per-city sources; add per-city editorial guides and locality intelligence. |
+| P1-SEARCH-004 | Query understanding and ranked suggestions | validated | Deterministic query grammar (`parse-query.ts`), ranked matching with bounded typo tolerance (`text-match.ts`), inventory-derived popular/trending/placeholder suggestions, city-scoped suggest API, PIN suggestions, structured search actions, per-device recent searches. Validation: `pnpm check`, `pnpm lint`, `pnpm test` (392 passed), `pnpm build:ci`, `node ops/scripts/seo/raw-html-smoke.mjs` (14 routes). | Learn ranking from real query logs once traffic exists; connect semantic/vector recall behind the Phase 2 activation gate without letting it gatekeep the deterministic path. |
+| P1-DATA-004 | PIN-code addressable places (many-to-many PIN ↔ locality) | validated | `City.pincodePrefixes` and `Locality.pincodes` in the registry and Prisma schema, migration `202608270001_pincode_registry` (GIN index on `Locality.pincodes`, indexed `Listing.postalCode`), `src/lib/pincodes.ts` layered resolver, `?pincode=` plus six-digit `?q=` token in search, PIN facts and `postalCode` JSON-LD on locality/listing pages, generated seed mirror carries PINs. Validation: `pnpm check`, `pnpm lint`, `pnpm test` (349 passed), `pnpm build:ci`, `node ops/scripts/seo/raw-html-smoke.mjs` (14 routes). | Reconcile PIN data against an authoritative India Post source with a retrieval date before public enablement (LEG-001 style provenance). |
 | P1-DATA-001 | Prisma/PostgreSQL/PostGIS domain schema | validated | Sandbox PostgreSQL/PostGIS validation completed 2026-09-04/05: 14/14 migrations deploy clean (two real migration fixes landed), seed loads (12 cities / 72 localities / 5 listings / 1 org), RLS proof 29/29, FTS live (I-7), and public pages (home, buy, developers, listing dossiers, localities) read through the server adapter in prisma mode — crawler-verified (147 pages, 0 problems). | Switch production runtime to a provisioned database (external provisioning gate). |
 | P1-DATA-002 | Audit, provenance, lifecycle, deletion, retention model | partial | Lead API now creates idempotent lead records with consent text, masked phone, and audit-event metadata; Prisma schema has Lead/AuditEvent models. | Persist audit/deletion/retention workflows in PostgreSQL after DB provisioning and legal gate records. |
 
@@ -151,7 +151,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 |---|---|---|---|---|
 | P1-SEO-001 | Canonical URL builder and `SeoPage` registry | validated | Central canonical URL builder plus formal `SeoPage` registry and tests exist; sitemap is registry-driven. | Continue expanding registry when production data, lifecycle states, and guide routes are added. |
 | P1-SEO-002 | Server-rendered public templates and metadata/JSON-LD | partial | Next.js SSR/SSG routes, metadata, Place/Residence/Breadcrumb JSON-LD, repository-fed route params, and raw HTML SEO smoke tests exist. | Snapshot drift tests and production entity snapshots. |
-| P1-SEO-003 | Links, facets, pagination, lifecycle, sitemaps, robots | validated | Lifecycle 301/404/410 rules, faceted indexability gate, and pagination policy shipped earlier; links-first crawl simulation (`scripts/seo/crawl-simulation.mjs`) now gates CI: sitemap ⊆ crawl, self-canonical per indexable page, click-depth ≤ 4. Fixture+indexed run: 494 pages crawled, 446 sitemap URLs, 0 problems. It caught and now guards the layout-canonical defect, prisma listing 404s, and the /price-index orphan family (closed via footer link). | sitemap pruning rules for lifecycle-expired URLs (deferred, documented in the lifecycle module). |
+| P1-SEO-003 | Links, facets, pagination, lifecycle, sitemaps, robots | validated | Lifecycle 301/404/410 rules, faceted indexability gate, and pagination policy shipped earlier; links-first crawl simulation (`ops/scripts/seo/crawl-simulation.mjs`) now gates CI: sitemap ⊆ crawl, self-canonical per indexable page, click-depth ≤ 4. Fixture+indexed run: 494 pages crawled, 446 sitemap URLs, 0 problems. It caught and now guards the layout-canonical defect, prisma listing 404s, and the /price-index orphan family (closed via footer link). | sitemap pruning rules for lifecycle-expired URLs (deferred, documented in the lifecycle module). |
 | P1-SEO-004 | Google Search Console ingestion and SEO alerting | partial | Search Console setup docs, config audit, sitemap submission workflow, URL inspection samples, threshold helpers, alert tests, and CI audit exist. | Add live Search Console API ingestion after production domain verification and credential provisioning. |
 | P1-CONT-001 | Focused city/locality/RERA/buying/renting guides | partial | Structured guide repository, RERA/locality/city guide routes, Article JSON-LD, author/reviewer/source/freshness fields, noindex editorial-review handling, and docs exist. | Database-backed guide CMS, editorial approval workflow, and published/indexable content release. |
 
@@ -160,7 +160,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 | Work ID | Deliverable | Current status | Evidence now | Remaining acceptance |
 |---|---|---|---|---|
 | P1-SEARCH-001 | PostgreSQL FTS, aliases, trigram, filters, deterministic parser | partial | Backend `/api/search` contract, fixture-backed search service, deterministic parser/filter tests, and PostgreSQL FTS/trigram migration SQL exist. | Switch search service to live PostgreSQL, add aliases/transliteration, DB-backed golden-query accuracy, and latency tests after database provisioning. |
-| P1-SEARCH-002 | cmdk and optional LLM adapter contract | validated | cmdk command palette shipped (`client/src/components/architech/CommandPalette*.tsx`) on the suggest engine + palette action registry; optional AI adapter contract with cost/latency telemetry exists (`client/src/lib/ai/adapter.ts`). Design-token ratchet passes (semantic tokens only). Browser journeys cover palette open/search/navigate on desktop+mobile (`tests/ui/visual-i18n.spec.ts`). | — |
+| P1-SEARCH-002 | cmdk and optional LLM adapter contract | validated | cmdk command palette shipped (`src/components/architech/CommandPalette*.tsx`) on the suggest engine + palette action registry; optional AI adapter contract with cost/latency telemetry exists (`src/lib/ai/adapter.ts`). Design-token ratchet passes (semantic tokens only). Browser journeys cover palette open/search/navigate on desktop+mobile (`tests/ui/visual-i18n.spec.ts`). | — |
 | P1-MAP-001 | MapLibre/deck.gl contracts, clusters, list fallback, benchmark harness | partial | Search results now use a lazy-loaded MapLibre map with listing pins, locality cluster chips, selected listing sync, search-this-area UI, and no-WebGL/list fallback. | Add deck.gl layers and Redmi-class device benchmark before broader rollout. |
 
 ## Media, trust, auth, broker operations
@@ -193,7 +193,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Implementation tasks
 
-- Create `client/src/lib/seo/urls.ts` or `app/lib/seo/urls.ts`.
+- Create `src/lib/seo/urls.ts` or `app/lib/seo/urls.ts`.
 - Add `SITE_URL` normalization from `NEXT_PUBLIC_SITE_URL`.
 - Add route builders:
   - `homeUrl()`
@@ -213,8 +213,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Evidence
 
-- Added `client/src/lib/seo/urls.ts`.
-- Added `client/src/lib/seo/urls.test.ts`.
+- Added `src/lib/seo/urls.ts`.
+- Added `src/lib/seo/urls.test.ts`.
 - Replaced route-level hardcoded canonical URL construction in metadata, sitemap, robots, and JSON-LD.
 - Validation: `pnpm check`, `pnpm lint`, `pnpm test` (19 passed), `pnpm build`.
 
@@ -250,8 +250,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Evidence
 
-- Added `client/src/lib/seo/pages.ts` with `SeoPage` type, ownership, intent, indexability, quality state, freshness policy, entity IDs, and sitemap policy.
-- Added `client/src/lib/seo/pages.test.ts`.
+- Added `src/lib/seo/pages.ts` with `SeoPage` type, ownership, intent, indexability, quality state, freshness policy, entity IDs, and sitemap policy.
+- Added `src/lib/seo/pages.test.ts`.
 - Updated `app/sitemap.ts` to generate from `getIndexableSeoPages()`.
 - Validation: `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
@@ -281,7 +281,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Evidence
 
-- Added `scripts/seo/raw-html-smoke.mjs`.
+- Added `ops/scripts/seo/raw-html-smoke.mjs`.
 - Added `pnpm test:seo` script.
 - Updated CI to run lint and no-JavaScript SEO smoke tests.
 - The SEO smoke test builds production Next.js, starts `next start`, fetches raw HTML, and verifies titles, canonicals, JSON-LD, crawlable links/breadcrumbs, locality facts, and listing price/locality facts.
@@ -343,9 +343,9 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Evidence
 
-- Expanded `client/src/lib/i18n.ts` for search, saved, locality, listing, property cards, trust labels, dialogs, map copy, and common translation status.
+- Expanded `src/lib/i18n.ts` for search, saved, locality, listing, property cards, trust labels, dialogs, map copy, and common translation status.
 - Updated major pages/components to consume the expanded dictionary: `ResultsPage`, `Saved`, `CityPage`, `ListingPage`, `PropertyCard`, and homepage stats/CTA labels.
-- Added `client/src/lib/i18n.test.ts` to verify English/Hindi dictionary shape parity, major Hindi surface coverage, and partial-translation disclosure.
+- Added `src/lib/i18n.test.ts` to verify English/Hindi dictionary shape parity, major Hindi surface coverage, and partial-translation disclosure.
 - Hindi remains a reviewed UI foundation only; property editorial prose and full SEO alternates are intentionally not marked as equivalent Hindi pages yet.
 - Validation: `pnpm check`, `pnpm lint`, `pnpm test` (27 passed), `pnpm build`, `pnpm test:a11y`, `pnpm test:seo`.
 
@@ -401,8 +401,8 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Evidence
 
-- Added `config/performance/budgets.json` with Phase 1 budgets for route first-load JS, gzip JS, HTML, static chunks, image assets, and Core Web Vitals targets.
-- Added `scripts/performance/budget.mjs`.
+- Added `ops/config/performance/budgets.json` with Phase 1 budgets for route first-load JS, gzip JS, HTML, static chunks, image assets, and Core Web Vitals targets.
+- Added `ops/scripts/performance/budget.mjs`.
 - Added `docs/performance/phase-1-baseline.md`.
 - Added `pnpm test:perf`.
 - Updated CI to run the performance budget gate.
@@ -433,12 +433,12 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 ### Evidence
 
 - Added Prisma 7 dependencies and `prisma.config.ts`.
-- Added `prisma/schema.prisma` for City, Locality, Listing, PropertyMedia, BrokerOrganization, User, BrokerUser, ReraRecord, Lead, AuditEvent, and SavedSearch.
+- Added `db/schema.prisma` for City, Locality, Listing, PropertyMedia, BrokerOrganization, User, BrokerUser, ReraRecord, Lead, AuditEvent, and SavedSearch.
 - Added lifecycle/status enums for listing lifecycle, verification, translation, media moderation, property type, user role, lead mode, and lead status.
-- Added initial migration: `prisma/migrations/202608240001_phase1_domain_schema/migration.sql`.
-- Added representative Ahmedabad seed script: `prisma/seed.mjs`.
+- Added initial migration: `db/migrations/202608240001_phase1_domain_schema/migration.sql`.
+- Added representative Ahmedabad seed script: `db/seed.mjs`.
 - Added docs: `docs/data/phase-1-prisma-schema.md`.
-- Added schema contract tests: `client/src/lib/db-schema.test.ts`.
+- Added schema contract tests: `src/lib/db-schema.test.ts`.
 - Added scripts: `pnpm db:validate`, `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed`.
 - Updated CI to run `pnpm db:validate`.
 - Validation: `pnpm db:validate`, `pnpm db:generate`, `pnpm check`, `pnpm lint`, `pnpm test` (30 passed), `pnpm build`, `pnpm test:perf`, `pnpm storybook:smoke`, `pnpm test:seo`, `pnpm test:a11y` (14 passed).
@@ -471,7 +471,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Evidence
 
-- Added repository facade modules under `client/src/lib/repositories/` for listings, localities, and guides.
+- Added repository facade modules under `src/lib/repositories/` for listings, localities, and guides.
 - Updated App Router pages, SEO registry, client pages, Storybook stories, compare tray, and property card type imports to consume repository functions instead of importing fixture arrays directly.
 - Added repository tests covering lookup helpers, static params, guide fixtures, and a static guard that blocks direct fixture imports from app/pages/architech components.
 - Validation: `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`.

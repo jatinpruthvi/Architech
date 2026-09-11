@@ -4,7 +4,7 @@
 **Status:** Decisions D1/D3/D5 resolved; calling UX prototyped and reviewed in §11. D2 (legal) and D4 (calling-hours values) remain open and gate Phase 2.
 **Scope:** (a) make the site, and specifically the broker surfaces, properly mobile-compatible; (b) make calling a lead a one-thumb action for a broker on a phone.
 **Normative parent:** [`docs/business-suite/mobile-calling-lead-workflow.md`](../business-suite/mobile-calling-lead-workflow.md) — "Final v8 mobile workflow after end-to-end review; **implementation not started**". This document is the plan for implementing it on the Architech side.
-**Measurement tool:** `scripts/audit/mobile-audit.mjs` (`pnpm audit:mobile`) — the numbers below are its output against a live `pnpm dev`, not estimates.
+**Measurement tool:** `ops/scripts/audit/mobile-audit.mjs` (`pnpm audit:mobile`) — the numbers below are its output against a live `pnpm dev`, not estimates.
 
 ---
 
@@ -48,7 +48,7 @@ Baseline is green: **181 test files, 2029 tests passing** (`pnpm test`).
 | Capability | Where | Note |
 |---|---|---|
 | Correct viewport meta | `app/layout.tsx:58` + Next 16 defaults | Renders `width=device-width, initial-scale=1`. Verified in HTML and against `node_modules/next/dist/lib/metadata/default-metadata.js:23` — the `themeColor`-only export *merges* with the default, it does not replace it. **Not a gap.** |
-| Mobile nav | `client/src/components/architech/Header.tsx:94-103` | Hamburger, `lg:hidden` panel, focus ref on first link. |
+| Mobile nav | `src/components/architech/Header.tsx:94-103` | Hamburger, `lg:hidden` panel, focus ref on first link. |
 | Safe-area insets | `theme.css:817-818`, `:649` | `.safe-bottom`, `.safe-bottom-lg`, `.mobile-discovery-rail` all use `env(safe-area-inset-*)`. |
 | Touch target utility | `theme.css:573` | `.touch-44 { min-height:44px; min-width:44px }` — already applied in `StickyBar` and the lead inbox action row. |
 | Scrollable tables | `AgentWorkspace.tsx:185`, `AcquisitionQueue.tsx:154,200` | `overflow-x-auto` + `min-w-[760px]` — correct pattern, **0 overflow findings**. |
@@ -78,7 +78,7 @@ Responsive prefixes are in real use: **389 `md:`, 89 `lg:`, 77 `sm:`, 6 `xl:`** 
 This is the crux, and it is deliberate rather than an oversight.
 
 ```prisma
-// prisma/schema.prisma:845
+// db/schema.prisma:845
 model Lead {
   mode        LeadMode   @default(MASKED)   // MASKED | DIRECT_CONSENTED
   phoneMasked String?                       // <-- the only phone column
@@ -87,7 +87,7 @@ model Lead {
 }
 ```
 
-`client/src/lib/leads/lead.ts:118` writes `phoneMasked: maskPhone(input.phone)` and never persists `input.phone`. `LeadRecord` (the API contract, `lead.ts:31-56`) carries `phoneMasked` and no callable field. The inbox headline states the intent: *"Reach buyers without **burning their number**"* (`BrokerLeadInbox.tsx:88`).
+`src/lib/leads/lead.ts:118` writes `phoneMasked: maskPhone(input.phone)` and never persists `input.phone`. `LeadRecord` (the API contract, `lead.ts:31-56`) carries `phoneMasked` and no callable field. The inbox headline states the intent: *"Reach buyers without **burning their number**"* (`BrokerLeadInbox.tsx:88`).
 
 So `tel:` cannot be added at the view layer. Either the retention model changes, or calling is impossible.
 
@@ -102,14 +102,14 @@ The plan does not need to invent a privacy posture — three existing artefacts 
 **(b) A production-shaped encryption precedent exists.** `Requirement` already stores a callable number safely:
 
 ```prisma
-// prisma/schema.prisma:914
+// db/schema.prisma:914
 phoneCiphertext Bytes
 phoneLast4      String @db.VarChar(4)
 ```
 
-…via versioned AES-256-GCM in `client/src/lib/requirements.server.ts:69-77` (`ARQ1` magic + 12-byte IV + auth tag + ciphertext), keyed by `ARCHITECH_CONTACT_ENCRYPTION_KEY`, validated as canonical base64 of exactly 32 bytes (`:55-64`). `ARCHITECH_CONTACT_ENCRYPTION_KEY` is already in `.env.example:17` and already in the ops hygiene allowlist (`client/src/lib/operations/hygiene.ts:17`). **No new secret, no new crypto, no new dependency.**
+…via versioned AES-256-GCM in `src/lib/requirements.server.ts:69-77` (`ARQ1` magic + 12-byte IV + auth tag + ciphertext), keyed by `ARCHITECH_CONTACT_ENCRYPTION_KEY`, validated as canonical base64 of exactly 32 bytes (`:55-64`). `ARCHITECH_CONTACT_ENCRYPTION_KEY` is already in `.env.example:17` and already in the ops hygiene allowlist (`src/lib/operations/hygiene.ts:17`). **No new secret, no new crypto, no new dependency.**
 
-**(c) The consent predicate already exists and is tested.** `client/src/lib/interop/lead-ingestion.ts:143-190` defines `CONSENT_CLASSES` with `humanFirstTouch: true` for **all seven** classes, while `automatedWhatsAppFirstTouch` is `false` for `portal-shared` and `aggregator-shared`:
+**(c) The consent predicate already exists and is tested.** `src/lib/interop/lead-ingestion.ts:143-190` defines `CONSENT_CLASSES` with `humanFirstTouch: true` for **all seven** classes, while `automatedWhatsAppFirstTouch` is `false` for `portal-shared` and `aggregator-shared`:
 
 | consentClass | humanFirstTouch | automatedWhatsApp | retention |
 |---|---|---|---|
@@ -133,7 +133,7 @@ phoneLast4      String @db.VarChar(4)
 
 ### 3.3 The reveal pattern has a working in-repo precedent
 
-`client/src/lib/channel/publish.ts:180-227` already implements gated contact reveal for the broker channel, and it is tested (`publish.test.ts:200`):
+`src/lib/channel/publish.ts:180-227` already implements gated contact reveal for the broker channel, and it is tested (`publish.test.ts:200`):
 
 ```ts
 export type CounterpartyContact = {
@@ -167,7 +167,7 @@ The comment at `:18-22` explains the gate: *"the counterparty's business number 
 
 The answer to D3 changes the gate from a pure privacy check into a **commercial entitlement**, and that has consequences worth stating before build:
 
-- **A new plan/subscription model is required.** There is none today: `grep "^model " prisma/schema.prisma | grep -i "plan\|subscri\|entitle\|billing\|tier"` returns nothing, and no `subscription`/`entitlement` module exists in `client/src/lib`. The nearest precedent is `BrokerOrganization.verificationStatus`, which gates the channel's contact reveal — a status enum on the organization, not a purchasable plan. `BrokerPlanStatus = NONE | TRIAL | ACTIVE | EXPIRED` is the proposed contract.
+- **A new plan/subscription model is required.** There is none today: `grep "^model " db/schema.prisma | grep -i "plan\|subscri\|entitle\|billing\|tier"` returns nothing, and no `subscription`/`entitlement` module exists in `src/lib`. The nearest precedent is `BrokerOrganization.verificationStatus`, which gates the channel's contact reveal — a status enum on the organization, not a purchasable plan. `BrokerPlanStatus = NONE | TRIAL | ACTIVE | EXPIRED` is the proposed contract.
 - **`EXPIRED` must not destroy data.** A broker who lapses stops *revealing*; leads they already legitimately collected are not deleted. Suppression and retention stay governed by consent class and the purge schedule, never by billing state.
 - **`TRIAL` reveals.** The point of a trial is to feel the product; a trial that cannot dial is not a trial.
 - **The gate order matters.** Ownership and permission are checked *before* plan status, so a broker who does not own a lead is told that — not sold an upgrade that would not help. This also avoids leaking which leads exist. Pinned by `calling.test.ts`.
@@ -234,7 +234,7 @@ Ciphertext is nullable: **existing leads have no recoverable number** and must d
 
 ### 5.2 Reveal gate (server-only)
 
-New `client/src/lib/leads/contact.ts`, deliberately shaped like `publish.ts`'s `counterpartyContact()`:
+New `src/lib/leads/contact.ts`, deliberately shaped like `publish.ts`'s `counterpartyContact()`:
 
 ```ts
 export type LeadContact = {
@@ -247,7 +247,7 @@ export type LeadContact = {
 };
 ```
 
-Implemented as `decideReveal()` in `client/src/lib/leads/calling.ts`. The order of checks is the contract — ownership and permission first, then the plan, then per-lead facts — and is pinned by `calling.test.ts` so a reorder cannot silently turn an access failure into a sales prompt.
+Implemented as `decideReveal()` in `src/lib/leads/calling.ts`. The order of checks is the contract — ownership and permission first, then the plan, then per-lead facts — and is pinned by `calling.test.ts` so a reorder cannot silently turn an access failure into a sales prompt.
 
 Reuses `normalizeIndianPhone`, `telLink`, `waMeLink` from `@/lib/interop/phone` (E.164 canonical, already load-bearing for ERPNext exact-match identity per that file's header comment) and `consentPermissionsFor` from `@/lib/interop/lead-ingestion`. **The UI never computes a gate** — it renders `blockedReason`.
 
@@ -260,7 +260,7 @@ Reuses `normalizeIndianPhone`, `telLink`, `waMeLink` from `@/lib/interop/phone` 
 | `POST /api/broker/leads/[id]/calls` | NEW. Records the self-reported outcome, increments `callAttempts`, applies the §3 outcome→stage mapping, sets `callSuppressedAt` on `wrong-number`/`not-interested`, requires `nextActionAt` for no-answer/busy and a lost reason for not-interested. |
 | `GET /api/broker/leads/[id]` | NEW. Single lead for the detail route, org-scoped. |
 
-All three must implement **both** stores behind the existing `isPrismaLeadStorage()` branch (`client/src/lib/leads/source.ts:11`), because `.env.example` defaults to `fixture`/`memory`. Skipping the fixture path would leave the feature untestable locally and break `tests/e2e`.
+All three must implement **both** stores behind the existing `isPrismaLeadStorage()` branch (`src/lib/leads/source.ts:11`), because `.env.example` defaults to `fixture`/`memory`. Skipping the fixture path would leave the feature untestable locally and break `tests/e2e`.
 
 ### 5.4 Mobile UX
 
@@ -305,12 +305,12 @@ These are enforced by existing automated checks and will fail CI if ignored.
 
 | Guard | Mechanism | Consequence for this plan |
 |---|---|---|
-| **Design-token ratchet** | `client/src/lib/ui/design-token-discipline.test.ts` + `design-token-baseline.json` | `BrokerLeadInbox.tsx` is locked at `{alphaText:14, microText:5, nanoText:5}`, `AgentWorkspace.tsx` at `{38,18,4}`. Counts **may only go down**. New mobile UI must use the `.ink-2`/`.ink-3` semantic tokens (`theme.css:1143-1144`, per-theme values at `:1148`/`:1160`) — **not** `text-ink/60`, and **not** `!text-[9px]`. Rewriting the inbox is a chance to pay debt down; re-lock with `node client/src/lib/ui/design-token-baseline.cjs --write` only after it decreases. |
-| **Bundle budget** | `config/performance/budgets.json` — default 240 KB gzip first-load | The call sheet, drawer, and any new icons must be **dynamically imported**, exactly as `FilterSheet.tsx:2-9` documents. Do not add a phone-formatting library; `interop/phone.ts` is deliberately dependency-free and its header explains why libphonenumber was rejected. |
+| **Design-token ratchet** | `src/lib/ui/design-token-discipline.test.ts` + `design-token-baseline.json` | `BrokerLeadInbox.tsx` is locked at `{alphaText:14, microText:5, nanoText:5}`, `AgentWorkspace.tsx` at `{38,18,4}`. Counts **may only go down**. New mobile UI must use the `.ink-2`/`.ink-3` semantic tokens (`theme.css:1143-1144`, per-theme values at `:1148`/`:1160`) — **not** `text-ink/60`, and **not** `!text-[9px]`. Rewriting the inbox is a chance to pay debt down; re-lock with `node src/lib/ui/design-token-baseline.cjs --write` only after it decreases. |
+| **Bundle budget** | `ops/config/performance/budgets.json` — default 240 KB gzip first-load | The call sheet, drawer, and any new icons must be **dynamically imported**, exactly as `FilterSheet.tsx:2-9` documents. Do not add a phone-formatting library; `interop/phone.ts` is deliberately dependency-free and its header explains why libphonenumber was rejected. |
 | **Org scoping** | `assertLeadBelongsToOrg`, `listActiveLeads(organizationId)` mandatory arg | `lead.ts:158-166` makes an unscoped call a **compile error** on purpose — a past bug leaked every broker's pipeline to every other broker. Every new query keeps this. |
 | **No invented telephony evidence** | workflow doc §2 | `LeadCallLog` has no `duration`, no `connected`, no `recordingUrl`. Outcome is self-reported. A test should assert the columns do not exist. |
 | **Free-first baseline** | `docs/broker-suite/decision.md:248` | No Twilio/Exotel/SMS SaaS. `tel:` only. |
-| **Secrets hygiene** | `client/src/lib/operations/hygiene.ts`, `pnpm secrets:audit` | Reuse `ARCHITECH_CONTACT_ENCRYPTION_KEY`; new vars must be added to `.env.example` **and** the hygiene allowlist, or the audit fails. |
+| **Secrets hygiene** | `src/lib/operations/hygiene.ts`, `pnpm secrets:audit` | Reuse `ARCHITECH_CONTACT_ENCRYPTION_KEY`; new vars must be added to `.env.example` **and** the hygiene allowlist, or the audit fails. |
 | **Production activation gates** | `pnpm production:plan:audit` | New env vars and any fixture-only path must be declared, per the `bounded-state` comment at `lead.ts:57-62`. |
 
 ---
@@ -320,7 +320,7 @@ These are enforced by existing automated checks and will fail CI if ignored.
 Each phase is independently shippable and leaves `pnpm quality` green.
 
 ### Phase 0 — Measurement harness (½ day)
-- [x] `scripts/audit/mobile-audit.mjs` + `pnpm audit:mobile` (written; produced §2)
+- [x] `ops/scripts/audit/mobile-audit.mjs` + `pnpm audit:mobile` (written; produced §2)
 - [x] Add a `package.json` entry alongside `audit:contrast`
 - [ ] **BLOCKED in sandbox** — add overflow + tap-target assertions to `tests/a11y-broker` under the existing `chromium-mobile` / Pixel 5 project (M5). No browser binary available and Playwright's download is network-blocked; author for CI.
 - [x] Record the baseline table in this doc so regressions are diffs, not opinions
@@ -338,7 +338,7 @@ Each phase is independently shippable and leaves `pnpm quality` green.
 - [ ] Extract `requirements.server.ts`'s AES-GCM envelope into a shared `lib/interop/contact-crypto.ts` (one implementation, two callers — do **not** copy-paste the cipher)
 - [ ] Write ciphertext on lead creation in **both** stores
 - [ ] Structured `consentClass` capture on the enquiry form + reviewed copy
-- [ ] Purge: extend `scripts/privacy/purge-expired-requirements.mjs` posture to leads — ciphertext deleted at retention expiry, tombstone kept
+- [ ] Purge: extend `ops/scripts/privacy/purge-expired-requirements.mjs` posture to leads — ciphertext deleted at retention expiry, tombstone kept
 - **Exit:** round-trip test (encrypt → decrypt → `telLink`), erasure drill, `pnpm db:validate`.
 
 ### Phase 3 — Gated reveal + Call from SIM (2–3 days) *(needs D3, D4)*
@@ -418,14 +418,14 @@ Built so the calling ergonomics can be felt on a phone **before** committing to 
 
 | Artefact | Path | Disposition |
 |---|---|---|
-| Calling domain logic — outcomes, stages, §3 mapping, reveal gate, IST calling hours | `client/src/lib/leads/calling.ts` | **Ships.** Pure and server-safe; Phase 3 moves `decideReveal` behind the reveal endpoint. |
-| Tests for the above (20) | `client/src/lib/leads/calling.test.ts` | **Ships.** |
-| Prototype fixtures — 5 leads covering hot / follow-up-due / attempt-limit / suppressed / not-stored | `client/src/lib/leads/calling-prototype-data.ts` | **Delete** when Phases 2–3 land. |
-| Post-call result sheet (vaul drawer, dynamically imported) | `client/src/components/broker/CallResultSheet.tsx` | **Ships.** |
-| Lead detail surface + thumb-anchored call bar | `client/src/pages/BrokerLeadDetail.tsx` | **Ships**, minus the prototype control panel. |
+| Calling domain logic — outcomes, stages, §3 mapping, reveal gate, IST calling hours | `src/lib/leads/calling.ts` | **Ships.** Pure and server-safe; Phase 3 moves `decideReveal` behind the reveal endpoint. |
+| Tests for the above (20) | `src/lib/leads/calling.test.ts` | **Ships.** |
+| Prototype fixtures — 5 leads covering hot / follow-up-due / attempt-limit / suppressed / not-stored | `src/lib/leads/calling-prototype-data.ts` | **Delete** when Phases 2–3 land. |
+| Post-call result sheet (vaul drawer, dynamically imported) | `src/components/broker/CallResultSheet.tsx` | **Ships.** |
+| Lead detail surface + thumb-anchored call bar | `src/pages/BrokerLeadDetail.tsx` | **Ships**, minus the prototype control panel. |
 | Route `/broker/leads/[id]/` | `app/broker/leads/[id]/page.tsx` | **Ships.** Fixes M4. |
-| Inbox row → detail link + primary Call action | `client/src/pages/BrokerLeadInbox.tsx` | **Ships.** |
-| Measurement harness, `pnpm audit:mobile` | `scripts/audit/mobile-audit.mjs` | **Ships.** Produced §2. |
+| Inbox row → detail link + primary Call action | `src/pages/BrokerLeadInbox.tsx` | **Ships.** |
+| Measurement harness, `pnpm audit:mobile` | `ops/scripts/audit/mobile-audit.mjs` | **Ships.** Produced §2. |
 
 Verified: `tsc --noEmit` clean; `eslint` clean on every new/changed file; **2052 tests pass** (baseline was 2029); the design-token ratchet passes with the new files at **zero** debt — no `text-ink/NN`, no `!text-[10px]`, no `!text-[9px]`, using `.ink-2`/`.ink-3`/`.stamp` instead. The `clay-fill` dark-mode contract and the env-catalog allow-list are both satisfied.
 
@@ -441,7 +441,7 @@ These are sandbox limits, not design problems. Each is marked rather than papere
 | Blocked | Why | Unblocks where |
 |---|---|---|
 | **Real-viewport verification** | No Chromium/Firefox binary present and `playwright install chromium` fails — the download is network-blocked. So overflow, tap-target size and the actual rendered layout at 360 px are **not** empirically confirmed; §2 rests on static CSS-rule analysis of served HTML. | CI, via the existing `chromium-mobile` / `devices["Pixel 5"]` project in `playwright.a11y.broker.config.ts`. Phase 0 adds the overflow + tap-target assertions. |
-| **Measuring authenticated broker surfaces** | `scripts/audit/mobile-audit.mjs` reads served HTML, and every `/broker/*` route serves only the `RequireSession` shell — 88 elements, "Checking your session…". The new detail page therefore reports 88 too, so the audit **cannot yet see the very surface it exists to check**. | Either the M1 fix (server-render the page structure, which makes the content appear in HTML and become measurable) or a session-aware audit mode that authenticates first. M1 is the better answer: it fixes the user-facing problem and the measurement blind spot at once. |
+| **Measuring authenticated broker surfaces** | `ops/scripts/audit/mobile-audit.mjs` reads served HTML, and every `/broker/*` route serves only the `RequireSession` shell — 88 elements, "Checking your session…". The new detail page therefore reports 88 too, so the audit **cannot yet see the very surface it exists to check**. | Either the M1 fix (server-render the page structure, which makes the content appear in HTML and become measurable) or a session-aware audit mode that authenticates first. M1 is the better answer: it fixes the user-facing problem and the measurement blind spot at once. |
 | **Actual dialing** | No telephony in a sandbox, and `tel:` behaviour — iOS vs Android, dual-SIM prompt selection, returning to the tab — needs a physical handset. | Device testing per parent doc §7 step 9 (Android, iPhone, dual-SIM). |
 | **Phase 2 onward** | Gated on D2 (legal/DPDP review of consent copy) and D4 (calling-hours and attempt-limit values). | Legal review; D4 has provisional defaults already implemented. |
 | **Plan/subscription model** | Does not exist anywhere in the schema (§4 D3 expanded). The prototype takes plan status from local state. | A modelling decision that precedes Phase 3; interacts with `non-payment-functionality-audit.md`. |

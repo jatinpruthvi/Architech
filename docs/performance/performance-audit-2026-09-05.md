@@ -2,7 +2,7 @@
 
 **Scope:** whole app — client bundles, render path, server TTFB, images, fonts, API payloads, budgets.
 **Trigger:** "check is there any performance related changes that we have to do."
-**Gate of record:** `pnpm test:perf` (build + `config/performance/budgets.json`).
+**Gate of record:** `pnpm test:perf` (build + `ops/config/performance/budgets.json`).
 
 ## What was found and fixed
 
@@ -15,7 +15,7 @@
   was the only *static* consumer of `vaul` (the gesture-drawer library). `CompareTray`
   and `SearchQuickView` were already dynamic imports, so the whole drawer stack
   (~11.2 KiB gzip / ~37.8 KiB raw) sat in the route's first load for a UI that only
-  renders after a tap. Extracted to `client/src/components/architech/FilterSheet.tsx`
+  renders after a tap. Extracted to `src/components/architech/FilterSheet.tsx`
   loaded via `next/dynamic` (footer built inside the sheet — `DrawerClose` must live in
   the Drawer's context, and importing just that primitive would drag `vaul` back).
 - **After:** 233,914 B gzip → **11,086 B headroom** restored. Budgets unchanged.
@@ -73,14 +73,14 @@ public deployment).
 ## Remaining performance work (ordered)
 
 1. **P0.1 (largest, server-side) — implemented, flag-gated (2026-09-05):** the full
-   SQL page query now exists (`client/src/lib/search/sql-page.ts` + `sql-page-runtime.ts`,
+   SQL page query now exists (`src/lib/search/sql-page.ts` + `sql-page-runtime.ts`,
    behind `ARCHITECH_SEARCH_SQL_PAGE=on`; `ARCHITECH_SEARCH_SQL_NARROW=on` covers
    candidate narrowing). DB-side filtering, pagination, and honest facet counts replace
    the JS filter over the bounded read; only the ≤ 48 page rows are rehydrated through
    the standard Prisma include + mapper. Non-derivable predicates (active `fresh`; the
    `furnishing` group whenever projected, i.e. the desk surface) decline loudly to the JS
    path. A live-Postgres parity matrix
-   (`client/src/lib/search/sql-page-integration.test.ts`, opt-in
+   (`src/lib/search/sql-page-integration.test.ts`, opt-in
    `ARCHITECH_PARITY_DATABASE_URL`) proves wire-identical responses for 44 request
    shapes. **Open step:** confirm the pg_trgm/FTS migrations in each prisma environment,
    then set `ARCHITECH_SEARCH_SQL_PAGE=on` (and observe `X-Architech-Search-Source` +

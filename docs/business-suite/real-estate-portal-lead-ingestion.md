@@ -58,7 +58,7 @@ Portal dashboards export leads (Excel/CSV). Frappe's native **Data Import** cove
 
 ## 2. Normalization — where Architech's registry earns its keep
 
-> **Normative contract:** the internal lead schema, source taxonomy and consent-provenance model described here are specified and implemented in [`lead-ingestion-contract.md`](./lead-ingestion-contract.md) with the TypeScript reference at `client/src/lib/interop/lead-ingestion.ts` (tested). Adapters build against that contract; the tables below are the portal-specific translations.
+> **Normative contract:** the internal lead schema, source taxonomy and consent-provenance model described here are specified and implemented in [`lead-ingestion-contract.md`](./lead-ingestion-contract.md) with the TypeScript reference at `src/lib/interop/lead-ingestion.ts` (tested). Adapters build against that contract; the tables below are the portal-specific translations.
 
 A portal lead is already the domain we model. The normalize step maps portal fields onto the **same vocabulary the platform uses everywhere else**:
 

@@ -16,7 +16,7 @@
 
 - **Broker draft lifecycle** is now end-to-end: create draft in the browser → submit for review → appears in the moderation queue → moderated to ACTIVE. All backed by the existing memory/prisma adapters.
 - **Saved searches** re-run the exact stored query + filters + sort and are delete-managed; `urls.test.ts` locks the canonical run URL. The route is not indexable and is excluded from the sitemap (SEO-003).
-- **Performance** re-baseline: total-static-JS cap 2.0 → 2.1 MiB, documented in `docs/performance/phase-1-baseline.md` and `config/performance/budgets.json`, to accommodate the two added authenticated page surfaces. Per-route first-load and Core Web Vitals targets are unchanged.
+- **Performance** re-baseline: total-static-JS cap 2.0 → 2.1 MiB, documented in `docs/performance/phase-1-baseline.md` and `ops/config/performance/budgets.json`, to accommodate the two added authenticated page surfaces. Per-route first-load and Core Web Vitals targets are unchanged.
 
 ## Validation
 

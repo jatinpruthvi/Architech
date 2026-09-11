@@ -8,13 +8,13 @@ A buyer can now save a search and be alerted when matching inventory arrives. Th
 ## Files
 
 ```text
-client/src/lib/saved-search/source.ts        (storage source switch)
-client/src/lib/saved-search/saved-search.ts  (domain + memory store)
-client/src/lib/saved-search/server.ts        (prisma write-through adapter)
-client/src/lib/saved-search/saved-search.test.ts
+src/lib/saved-search/source.ts        (storage source switch)
+src/lib/saved-search/saved-search.ts  (domain + memory store)
+src/lib/saved-search/server.ts        (prisma write-through adapter)
+src/lib/saved-search/saved-search.test.ts
 app/api/saved-searches/route.ts              (GET list, POST create)
 app/api/saved-searches/[id]/route.ts         (DELETE)
-client/src/pages/ResultsPage.tsx             (wired "Save this search")
+src/pages/ResultsPage.tsx             (wired "Save this search")
 ```
 
 ## Design rules
@@ -33,7 +33,7 @@ client/src/pages/ResultsPage.tsx             (wired "Save this search")
 ## Validation
 
 ```bash
-pnpm exec vitest run client/src/lib/saved-search/saved-search.test.ts
+pnpm exec vitest run src/lib/saved-search/saved-search.test.ts
 pnpm check
 pnpm lint
 pnpm build

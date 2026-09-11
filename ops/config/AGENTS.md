@@ -1,4 +1,4 @@
-# config/ — Machine-readable operational contracts
+# ops/config/ — Machine-readable operational contracts
 
 Everything here is **read by scripts and tests** (not by humans first). Moving or
 renaming anything in this tree requires updating its consumers — see the consumer
@@ -8,16 +8,16 @@ map below. Human documentation lives in `docs/`.
 
 | Path | What | Read by |
 |---|---|---|
-| `governance/environments/` | Environment matrices | `scripts/operations/environment-audit.mjs`, `provisioning-smoke.mjs`, `client/src/lib/operations/environment.test.ts` |
-| `governance/secrets/` | Secret inventory (names, never values) | `scripts/operations/secrets-audit.mjs`, provisioning smoke + tests |
-| `governance/operations/` | Operational readiness config | `scripts/operations/readiness-audit.mjs` + test |
-| `governance/release/` | Release evidence, enablement plan | `scripts/release/*` + `client/src/lib/release/*.test.ts` |
-| `governance/legal/gates/` | Legal publication gates (evidence paths verified on disk) | `scripts/security/legal-gate-audit.mjs` |
+| `governance/environments/` | Environment matrices | `ops/scripts/operations/environment-audit.mjs`, `provisioning-smoke.mjs`, `src/lib/operations/environment.test.ts` |
+| `governance/secrets/` | Secret inventory (names, never values) | `ops/scripts/operations/secrets-audit.mjs`, provisioning smoke + tests |
+| `governance/operations/` | Operational readiness config | `ops/scripts/operations/readiness-audit.mjs` + test |
+| `governance/release/` | Release evidence, enablement plan | `ops/scripts/release/*` + `src/lib/release/*.test.ts` |
+| `governance/legal/gates/` | Legal publication gates (evidence paths verified on disk) | `ops/scripts/security/legal-gate-audit.mjs` |
 | `governance/contracts/` | Domain contracts, requirements, implementation matrix | humans + doc tooling |
 | `governance/decisions/`, `feedback/`, `CHANGELOG.md` | Governance process records | humans |
-| `data/location/` | LGD / India Post reference snapshots | `client/src/lib/location/india-states.ts` (relative import!), `client/src/lib/interop/`, `scripts/location/*` |
-| `performance/budgets.json` | JS/CSS/perf budgets | `scripts/performance/budget.mjs`, `pnpm test:perf` |
-| `seo/search-console.config.json` | GSC audit config | `scripts/seo/search-console-audit.mjs` |
+| `data/location/` | LGD / India Post reference snapshots | `src/lib/location/india-states.ts` (relative import!), `src/lib/interop/`, `ops/scripts/location/*` |
+| `performance/budgets.json` | JS/CSS/perf budgets | `ops/scripts/performance/budget.mjs`, `pnpm test:perf` |
+| `seo/search-console.config.json` | GSC audit config | `ops/scripts/seo/search-console-audit.mjs` |
 
 ## Rules
 
@@ -28,4 +28,4 @@ map below. Human documentation lives in `docs/`.
 
 ## See also
 
-Root `AGENTS.md`; `scripts/AGENTS.md` for the audit tooling.
+Root `AGENTS.md`; `../scripts/AGENTS.md` for the audit tooling.

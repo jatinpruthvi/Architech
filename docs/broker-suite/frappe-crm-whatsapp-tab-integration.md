@@ -162,7 +162,7 @@ That last row is the property that makes the tab compose with v8's "normal Whats
 
 ### 5.5 Number hygiene
 
-Leads created from Architech's purpose-minimised lead event must carry `mobile_no` in **E.164** (`+91…`) so CRM's `parse_phone_number`/`are_same_phone_number` matching (default region IN) resolves threads deterministically. This is the same normalisation contract as Architech's `client/src/lib/interop/phone.ts`; the Architech lead-event adapter should enforce it at projection time.
+Leads created from Architech's purpose-minimised lead event must carry `mobile_no` in **E.164** (`+91…`) so CRM's `parse_phone_number`/`are_same_phone_number` matching (default region IN) resolves threads deterministically. This is the same normalisation contract as Architech's `src/lib/interop/phone.ts`; the Architech lead-event adapter should enforce it at projection time.
 
 ## 6. Interaction with the immediate-dispatch flow (v8 §7)
 

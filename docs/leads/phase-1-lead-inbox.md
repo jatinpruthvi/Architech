@@ -8,9 +8,9 @@ The lead contract now surfaces to the broker side: enquiries land in a masked in
 ## Files
 
 ```text
-client/src/lib/leads/lead.ts         (listLeads, updateLeadStatus, statusHistory)
-client/src/lib/leads/server.ts       (listLeadsForServer, updateLeadStatusForServer)
-client/src/pages/BrokerLeadInbox.tsx
+src/lib/leads/lead.ts         (listLeads, updateLeadStatus, statusHistory)
+src/lib/leads/server.ts       (listLeadsForServer, updateLeadStatusForServer)
+src/pages/BrokerLeadInbox.tsx
 app/broker/leads/page.tsx
 app/api/broker/leads/route.ts        (GET list)
 app/api/broker/leads/[id]/reply/route.ts  (POST status change)
@@ -33,7 +33,7 @@ app/api/broker/leads/[id]/reply/route.ts  (POST status change)
 ```bash
 pnpm check
 pnpm lint
-pnpm exec vitest run client/src/lib/leads/lead.test.ts
+pnpm exec vitest run src/lib/leads/lead.test.ts
 ```
 
 The lead unit suite covers idempotent masked creation, phone masking, list ordering, status advancement with audit history, and 404 on unknown lead.

@@ -18,7 +18,7 @@ If unset, the lead API follows `ARCHITECH_DATA_SOURCE`:
 ## Server adapter
 
 ```text
-client/src/lib/leads/server.ts
+src/lib/leads/server.ts
 ```
 
 The server adapter:

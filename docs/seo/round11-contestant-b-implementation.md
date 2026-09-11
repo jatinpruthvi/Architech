@@ -32,7 +32,7 @@ Architech routes `/buy/{city}/` → `/buy/{city}/{locality}/` → `/listing/{id}
 
 ### 1a. "Index a facet only if it has ≥5 live listings AND real search volume" — **Implemented**
 
-This was the single largest gap. `client/src/lib/seo/facets.ts` was a stub: it hardcoded `maxCombinationSizeForIndexing: -1` and `evaluateFacetIndexability()` accepted `query`, `filters` and `sort` and then deliberately ignored all three to return `"rejected"`. The rule existed as a comment, not as logic.
+This was the single largest gap. `src/lib/seo/facets.ts` was a stub: it hardcoded `maxCombinationSizeForIndexing: -1` and `evaluateFacetIndexability()` accepted `query`, `filters` and `sort` and then deliberately ignored all three to return `"rejected"`. The rule existed as a comment, not as logic.
 
 It is now a real, evaluable gate. A facet qualifies only when it clears **every** bar:
 
@@ -56,7 +56,7 @@ The legacy `(query, filters, sort)` signatures are preserved and still reject un
 
 Canonicalising page 2 → page 1 tells Google pages 2..N are duplicates of page 1, so anything discovered only on a deeper page is dropped. That is a real and commonly-missed failure.
 
-`paginatedCanonicalUrl(path, page)` in `client/src/lib/seo/urls.ts` encodes the correct rule: page 1 → the clean URL, page N → itself with `?page=N`. It is exposed to facet pages as `facetCanonicalUrl()` so a qualified facet gets a correct self-canonical by construction. It is covered by tests for the boundary cases (page 0, negative, `NaN`, fractional pages).
+`paginatedCanonicalUrl(path, page)` in `src/lib/seo/urls.ts` encodes the correct rule: page 1 → the clean URL, page N → itself with `?page=N`. It is exposed to facet pages as `facetCanonicalUrl()` so a qualified facet gets a correct self-canonical by construction. It is covered by tests for the boundary cases (page 0, negative, `NaN`, fractional pages).
 
 ### 1c. `/search/` keeps its static canonical — **Adapt, deliberately not changed**
 
@@ -64,7 +64,7 @@ Canonicalising page 2 → page 1 tells Google pages 2..N are duplicates of page 
 
 1. `/search/` is `noindex,follow`, and `Disallow: /search/` in `robots.txt`. The canonical has no indexing effect, and Google cannot crawl the deeper pages anyway.
 2. Making the canonical request-accurate requires `generateMetadata({ searchParams })`, which converts the route from prerendered to dynamic.
-3. That conversion breaks `config/performance/budgets.json`, which asserts a prerendered HTML artifact at `.next/server/app/search.html`. Re-baselining a performance budget to fix a canonical that is inert on a `noindex` page is a bad trade.
+3. That conversion breaks `ops/config/performance/budgets.json`, which asserts a prerendered HTML artifact at `.next/server/app/search.html`. Re-baselining a performance budget to fix a canonical that is inert on a `noindex` page is a bad trade.
 
 **Trigger to revisit:** the moment `evaluateFacetGate()` qualifies a combination, that facet becomes a real indexable route with pagination — and it must use `facetCanonicalUrl()`. The helper is tested and ready so that work is a wiring change, not a design decision.
 
@@ -74,7 +74,7 @@ Canonicalising page 2 → page 1 tells Google pages 2..N are duplicates of page 
 
 **Decision: Gated. This is a data dependency, not a code gap.**
 
-The document wants per-society pages with RERA numbers, 8-quarter price/sq ft trend tables, actual sold prices with month, rental yield, named distances in minutes, resident reviews, floor plans and a video tour. There is no `Project` model in `prisma/schema.prisma` (models are City, Locality, BrokerOrganization, User, BrokerUser, ReraRecord, Listing, PropertyMedia, Lead, SavedSearch, AuditEvent).
+The document wants per-society pages with RERA numbers, 8-quarter price/sq ft trend tables, actual sold prices with month, rental yield, named distances in minutes, resident reviews, floor plans and a video tour. There is no `Project` model in `db/schema.prisma` (models are City, Locality, BrokerOrganization, User, BrokerUser, ReraRecord, Listing, PropertyMedia, Lead, SavedSearch, AuditEvent).
 
 Building the routes before the data would produce exactly what §7 warns against — thin, near-identical pages. The round-11 register is explicit: add project pages "only when verified inventory and unique local evidence support them; do not mass-create empty society pages."
 
@@ -119,10 +119,10 @@ What the data blocks need before they can ship:
 | Recommendation | Treatment |
 |---|---|
 | SSR/SSG, not client-side rendering | **Already implemented.** Every public route prerenders; a raw-HTML smoke suite protects it. |
-| LCP < 2.5s, INP < 200ms, CLS < 0.1 | **Already implemented** as route budgets and Core Web Vitals targets in `config/performance/budgets.json`. |
+| LCP < 2.5s, INP < 200ms, CLS < 0.1 | **Already implemented** as route budgets and Core Web Vitals targets in `ops/config/performance/budgets.json`. |
 | Hero AVIF/WebP, `fetchpriority="high"`, no lazy-loading on it, dimensions set | **Already implemented.** |
 | Sitemap index split by type with accurate `lastmod`, referenced in robots.txt | **Already implemented — file 1.** `/sitemap.xml` is an index over `pages` / `cities` / `localities` / `listings` / `guides`, `lastmod` sourced from entity data, referenced from `robots.txt`. |
-| Expired listings: keep URL, mark "Sold", show alternatives; never mass-404; never redirect all to the locality page; `410` only when there is nothing to say | **Already implemented.** `client/src/lib/seo/lifecycle.ts` maps each state to 200 / 301 / 404 / 410 — `SOLD` stays 200 but `noindex`, `DUPLICATE` 301s to the canonical listing, `EXPIRED`/`REMOVED` 410, and `continuingSeoValue` keeps a valuable expired page visible with alternatives. There is no blanket redirect-to-locality. |
+| Expired listings: keep URL, mark "Sold", show alternatives; never mass-404; never redirect all to the locality page; `410` only when there is nothing to say | **Already implemented.** `src/lib/seo/lifecycle.ts` maps each state to 200 / 301 / 404 / 410 — `SOLD` stays 200 but `noindex`, `DUPLICATE` 301s to the canonical listing, `EXPIRED`/`REMOVED` 410, and `continuingSeoValue` keeps a valuable expired page visible with alternatives. There is no blanket redirect-to-locality. |
 | Monthly log-file / crawl-stats review | **Gated** on server log and Search Console access. Until then, coverage is monitored through the route registry, segmented sitemaps and the Search Console audit script. |
 
 ---
@@ -151,7 +151,7 @@ Editorial and listing-verification policies, data sources, a correction path, pr
 
 **Decision: All six already rejected by the existing registers.**
 
-Doorway pages ("property in <every pincode>"), 500 near-identical locality pages, fake reviews in schema, hidden keyword-stuffed footers, bulk guest-post buying, and exact-match anchor spam are each recorded as unacceptable in `docs/seo/seo-recommendation-decision-register.md` and `docs/seo/study-arena-round12-decision-register.md`. The quality gate in `client/src/lib/seo/page-quality.ts` enforces the thin-page prohibition in code.
+Doorway pages ("property in <every pincode>"), 500 near-identical locality pages, fake reviews in schema, hidden keyword-stuffed footers, bulk guest-post buying, and exact-match anchor spam are each recorded as unacceptable in `docs/seo/seo-recommendation-decision-register.md` and `docs/seo/study-arena-round12-decision-register.md`. The quality gate in `src/lib/seo/page-quality.ts` enforces the thin-page prohibition in code.
 
 Notably, the document's warning — "mass-generated thin locality pages are the #1 way new property sites get flattened" — is the same risk that makes its own 300-project-page quota unsafe. The quota is rejected; the depth-first instinct behind it is kept.
 
@@ -161,11 +161,11 @@ Notably, the document's warning — "mass-generated thin locality pages are the 
 
 | Change | File(s) |
 |---|---|
-| Real qualified facet gate (≥5 listings, unique content, evidenced demand, stable URL, parent link) | `client/src/lib/seo/facets.ts` |
-| Self-canonical pagination helper, exposed to facet pages | `client/src/lib/seo/urls.ts`, `client/src/lib/seo/facets.ts` |
+| Real qualified facet gate (≥5 listings, unique content, evidenced demand, stable URL, parent link) | `src/lib/seo/facets.ts` |
+| Self-canonical pagination helper, exposed to facet pages | `src/lib/seo/urls.ts`, `src/lib/seo/facets.ts` |
 | `ItemList` on locality pages (ACTIVE listings only) | `app/buy/[city]/[locality]/page.tsx` |
 | `floorSize` gains machine-readable `unitCode: "FTK"` | `app/listing/[id]/page.tsx` |
-| Tests: facet gate (13) and pagination canonical (4) | `client/src/lib/seo/facets.test.ts` |
+| Tests: facet gate (13) and pagination canonical (4) | `src/lib/seo/facets.test.ts` |
 
 ## Verification
 

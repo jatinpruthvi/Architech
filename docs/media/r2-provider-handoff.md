@@ -29,8 +29,8 @@ R2_PUBLIC_BASE_URL=
 ## Provider abstraction
 
 ```text
-client/src/lib/media/provider.ts
-client/src/lib/media/server/upload.ts
+src/lib/media/provider.ts
+src/lib/media/server/upload.ts
 ```
 
 Implemented providers:
@@ -39,7 +39,7 @@ Implemented providers:
 - `R2MediaStorageProvider`
 
 The R2 provider signs **real** SigV4 presigned PUT URLs (dependency-free
-implementation in `client/src/lib/media/sigv4.ts`, pinned to the AWS IAM
+implementation in `src/lib/media/sigv4.ts`, pinned to the AWS IAM
 worked example in `sigv4.test.ts`) and deletes objects through a
 header-signed DELETE (`deleteObject`). No placeholder signed URL remains.
 The images-only gate and the per-listing upload quota

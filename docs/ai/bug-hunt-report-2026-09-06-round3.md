@@ -11,7 +11,7 @@
 
 | BUG-ID | Severity | Category | File | Status |
 |---|---|---|---|---|
-| **BUG-R3-001** | P2 | Edge case / input validation (crash on write path) | `client/src/lib/broker/channel.ts` (+ prisma twin `client/src/lib/persistence/channel-store.ts`) | **FIXED + failing-test-first guard** |
+| **BUG-R3-001** | P2 | Edge case / input validation (crash on write path) | `src/lib/broker/channel.ts` (+ prisma twin `src/lib/persistence/channel-store.ts`) | **FIXED + failing-test-first guard** |
 
 **Total: 1 confirmed bug, 1 fix shipped, 5 areas cleared by evidence (§4), 3 watchlist items (§5).**
 Top risk before the fix: any broker-channel create request with a malformed `expiresAt` produced an **unhandled 500** on a business-critical write path — in *both* storage modes (memory threw `RangeError: Invalid time value` from `.toISOString()`; Prisma mode threw on the DateTime write). Verified end-to-end by a test that reproduced the exact thrown error message before the fix existed.
@@ -23,7 +23,7 @@ Top risk before the fix: any broker-channel create request with a malformed `exp
 - **Reproduction (exact):** `createChannelRequest({ ...validDemand, expiresAt: "not-a-date" }, org)` → **throws `RangeError: Invalid time value`** (proven by the failing test's error output). Prisma path: `normalizeInput` builds `new Date(input.expiresAt)` → Invalid Date → `channelRequest.create` throws a DateTime validation error → 500. The route (`app/api/broker/channel/requests/route.ts`) parses JSON safely BUT delegates payload validation downstream — the crash happens after.
 - **Root cause:** conversion-before-validation seam. `validateChannelRequest` (the single seam both storage modes run through) checked type/city/intent/propertyType/budgets/bhk/area but never `expiresAt`; conversion (`new Date`) happened downstream in each mode. The analogous split-amount crash had already been fixed at its seam (in-code comment at channel-store.ts:646) — this create path pre-dated that lesson.
 - **Fix (minimal, at the shared seam):** `validateChannelRequest` now rejects unparseable `expiresAt` values with `expiresAt must be a valid date/time value.` → both modes return **400**; empty/absent values still fall back to the +30-day default; well-formed values unchanged (guarded by the second new test).
-- **Guard:** 2 new tests in `client/src/lib/broker/channel.test.ts` — (1) garbage `expiresAt` must not throw and must return 400 with the field named; (2) well-formed ISO date still accepted. Test (1) failed first with the exact `RangeError` above (red→green evidence).
+- **Guard:** 2 new tests in `src/lib/broker/channel.test.ts` — (1) garbage `expiresAt` must not throw and must return 400 with the field named; (2) well-formed ISO date still accepted. Test (1) failed first with the exact `RangeError` above (red→green evidence).
 - **Audit trail:** commit on this branch references BUG-R3-001; failing test = `BUG-R3-001: channel request expiresAt validation` describe block.
 
 ## Cleared by evidence (no defect)

@@ -174,7 +174,7 @@ than an application-level check is what makes concurrent retries safe.
 
 ## 2. Existing bug found in our own schema
 
-`prisma/schema.prisma:601`:
+`db/schema.prisma:601`:
 
 ```prisma
 priceInr             Int

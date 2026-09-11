@@ -6,7 +6,7 @@ exploring", and the disabled "Sign & attach media" chip.
 
 ## Root cause: unlayered CSS silently disabling utilities
 
-`client/src/index.css` carried `a { color: inherit; text-decoration: none; }`
+`src/index.css` carried `a { color: inherit; text-decoration: none; }`
 outside any cascade layer. Tailwind v4 emits every utility inside
 `@layer utilities`, and an unlayered declaration outranks any layered rule no
 matter its specificity, so **every `text-*` utility on an anchor was dropped**.
@@ -63,7 +63,7 @@ unavailable. The hover sweep is suppressed while disabled.
 
 ## Guards
 
-`client/src/lib/ui/surface-contrast.test.ts` recomputes the contrast budget from
+`src/lib/ui/surface-contrast.test.ts` recomputes the contrast budget from
 the palette, asserts the anchor reset stays layered, and fails if any solid clay
 control is missing `clay-fill` or if a solid action reintroduces an opacity
 fade. Verified to fail on a deliberate violation, not just pass vacuously.

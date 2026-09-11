@@ -27,12 +27,12 @@ This document operationalizes the Google-first SEO foundation. It does not requi
 
 6. Save the first baseline snapshot after discovery.
 
-## Local config/audit
+## Local ops/config/audit
 
 Config:
 
 ```text
-config/seo/search-console.config.json
+ops/config/seo/search-console.config.json
 ```
 
 Audit command:
@@ -58,7 +58,7 @@ Until Search Console API credentials are provisioned:
 2. Check sitemap status.
 3. Export Pages/Indexing summary.
 4. Export Performance summary.
-5. Compare with previous baseline using thresholds from `client/src/lib/seo/monitoring.ts`.
+5. Compare with previous baseline using thresholds from `src/lib/seo/monitoring.ts`.
 6. File remediation issues for canonical, robots, lifecycle, content-quality, or crawl-depth problems.
 
 ## API handoff

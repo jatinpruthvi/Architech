@@ -37,7 +37,7 @@ Names are attributes, not identifiers. `LocalityAlias` stores language, script, 
 
 ## Schema implemented in this repository
 
-`prisma/schema.prisma` and migration `202608300002_india_location_foundation` add:
+`db/schema.prisma` and migration `202608300002_india_location_foundation` add:
 
 - `LocationSource` and `LocationImportRun` for license/provenance and reproducible imports;
 - hierarchical, versionable `AdministrativeArea` with PostGIS centroid/boundary;
@@ -82,7 +82,7 @@ The API accepts `citySlug` and `localitySlugs`, never display labels. In Prisma 
 
 ### Coordinates and DIGIPIN
 
-`client/src/lib/location/digipin.ts` is a local implementation of the Department of Posts reference algorithm. It avoids a third-party geocoder call and has a published reference-vector test.
+`src/lib/location/digipin.ts` is a local implementation of the Department of Posts reference algorithm. It avoids a third-party geocoder call and has a published reference-vector test.
 
 Use DIGIPIN only when Architech already has a legitimate coordinate. Store both the coordinate and precision/provenance because DIGIPIN is derived and its scheme may version. Exact coordinates and full DIGIPIN must be private for occupied homes. Public pages should normally show a reviewed locality centroid or coarse/street approximation; never expose a deterministic 4 m cell while claiming the exact address is private.
 
@@ -106,9 +106,9 @@ Third-party PIN polygon repositories can help QA or bootstrap a review queue, bu
 
 The controlled pipeline is documented in [`india-location-operations.md`](./india-location-operations.md). It has three fail-closed stages:
 
-1. `scripts/location/fetch-ogd-snapshot.mjs` downloads every page from one of two allowlisted OGD resource IDs, detects source changes during pagination, and writes the exact CSV plus a SHA-256/provenance manifest;
-2. `scripts/location/import-india-post.mjs` validates and imports official postal-code/post-office evidence; and
-3. `scripts/location/import-lgd-local-bodies.mjs` validates and imports official LGD local-body identities and `AdministrativeAreaPostalCode` associations.
+1. `ops/scripts/location/fetch-ogd-snapshot.mjs` downloads every page from one of two allowlisted OGD resource IDs, detects source changes during pagination, and writes the exact CSV plus a SHA-256/provenance manifest;
+2. `ops/scripts/location/import-india-post.mjs` validates and imports official postal-code/post-office evidence; and
+3. `ops/scripts/location/import-lgd-local-bodies.mjs` validates and imports official LGD local-body identities and `AdministrativeAreaPostalCode` associations.
 
 ```bash
 # Fetch current national snapshots (requires an independently authorized secret).

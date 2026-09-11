@@ -87,7 +87,7 @@ Consequences:
 
 `aldinokemal/go-whatsapp-web-multidevice` pins `go.mau.fi/whatsmeow v0.0.0-20260904121843` — a snapshot of whatsmeow from the same week as this survey. Since the 2026 protocol tightening (tctoken lifecycle, 463 reachout-timelock handling) was fixed in whatsmeow itself (see WAHA issues #2050/#2166, fixed in GOWS by porting whatsmeow's work), gowamd rides those fixes directly — no other server tracks the protocol this closely. It is MIT throughout, a single Go binary (the same resource class as GOWS), manages multiple devices (`GetDeviceManager`, per-`device_id` routes, per-device Chatwoot webhooks if ever needed), exposes basic auth, webhooks with a shared secret, and has a documented 49KB README.
 
-Its hardening gaps for our discipline (all config-level, verified in `src/config/settings.go`):
+Its hardening gaps for our discipline (all config-level, verified in `src/ops/config/settings.go`):
 1. **The web UI auto-downloads at runtime** from GitHub releases (`AppUIAutoUpdate = true`, optional `AppUIAssetSHA256` pin) — a supply-chain hole under v8's immutable-digest rule. Disable or pin+mirror.
 2. **MCP endpoint is enabled by default** (`McpEnabled = true`) — disable.
 3. **Media auto-download is on by default** (`WhatsappAutoDownloadMedia = true`) — a privacy/retention violation for our consent model; disable.

@@ -20,12 +20,12 @@
 
 ### BUG-R2-001 — `NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH` used in code but undocumented
 
-- **Files:** introduced by the F4 performance fix (`next.config.ts` `env` injection; consumed in `client/src/components/architech/MapListSync.tsx`). Missing from `.env.example` and `docs/runtime-activation-gates.md`.
-- **Evidence / reproduction:** `grep -rhoE "NEXT_PUBLIC_[A-Z_]+" client/src app next.config.ts | sort -u` minus tokens in `.env.example` → exactly `NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH`. New guard test failed pre-fix: `pnpm vitest run client/src/lib/env-docs-parity.test.ts` → 1 failed (undocumented-var direction).
+- **Files:** introduced by the F4 performance fix (`next.config.ts` `env` injection; consumed in `src/components/architech/MapListSync.tsx`). Missing from `.env.example` and `docs/runtime-activation-gates.md`.
+- **Evidence / reproduction:** `grep -rhoE "NEXT_PUBLIC_[A-Z_]+" src app next.config.ts | sort -u` minus tokens in `.env.example` → exactly `NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH`. New guard test failed pre-fix: `pnpm vitest run src/lib/env-docs-parity.test.ts` → 1 failed (undocumented-var direction).
 - **Root cause:** the F4 change added a build-time-injected public env var without updating the operator-facing env inventory, breaking the repo's documented-env contract.
-- **Impact:** operators read `.env.example`/gates as the source of truth for public vars; an undocumented auto-injected var also makes debugging vendor-URL issues harder. Classification P3 (config/docs; no runtime failure).
+- **Impact:** operators read `.env.example`/gates as the source of truth for public vars; an undocumented auto-injected var also makes debugging vendor-URL issues harder. Classification P3 (ops/config/docs; no runtime failure).
 - **Fix (failing test first, minimal):**
-  1. Guard added (both directions): `client/src/lib/env-docs-parity.test.ts` — every `NEXT_PUBLIC_*` referenced in `app/`, `client/src/`, `next.config.ts` must be documented in `.env.example`, and every documented token must be referenced (no stale rows).
+  1. Guard added (both directions): `src/lib/env-docs-parity.test.ts` — every `NEXT_PUBLIC_*` referenced in `app/`, `src/`, `next.config.ts` must be documented in `.env.example`, and every documented token must be referenced (no stale rows).
   2. `.env.example` — token documented as **auto-injected, do-not-set**.
   3. `docs/runtime-activation-gates.md` — row added noting auto-injection at build (config `env` wins over any shell value).
 - **Verification:** guard test 2/2 green post-fix; full suite 157 files / 1719 tests pass; `pnpm check` clean; `pnpm lint` exit 0.
@@ -39,7 +39,7 @@
 | Raw SQL | grep `$queryRaw`/`$executeRaw(Unsafe)` | Only parameterized `set_config(...)` calls with `$1` placeholders; no string interpolation |
 | Unguarded JSON bodies | sample of 27 `request.json()` handlers (e.g. broker lead reply) | Defensive `.catch(() => ({}))` parsing; shape-probe M-3 pattern observed |
 | Invented coverage/facts | traced "12 metros" metadata claim → `liveCities` (12 × `status: "live"`) → `getCityStaticParams` | Claim matches shipped product (12 live city hubs + 12 price-index pages) — **not** a bug |
-| Hardcoded prices/RERA/city in components | grep `₹`, `Mumbai`, `RERA` in `client/src/components` | Only scale-labeled budget-presets UI constants; Mumbai occurrences are legitimate live-city coverage |
+| Hardcoded prices/RERA/city in components | grep `₹`, `Mumbai`, `RERA` in `src/components` | Only scale-labeled budget-presets UI constants; Mumbai occurrences are legitimate live-city coverage |
 | Fire-and-forget async | grep `void (` in `app/api` | None |
 | Test baseline | `pnpm test` | 156 files / 1717 tests pass (pre-fix baseline) |
 | Type/lint/db gates | `pnpm check`, `pnpm lint`, `pnpm db:validate` | All clean |

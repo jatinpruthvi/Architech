@@ -6,7 +6,7 @@ root except `README.md` and `AGENTS.md`.
 ## Find things fast
 
 1. `MARKDOWN-DOCUMENTATION-INDEX.md` (this folder) — generated index of every
-   markdown file, categorized. Regenerate with `node scripts/generate-md-index.mjs`
+   markdown file, categorized. Regenerate with `node ops/scripts/generate-md-index.mjs`
    after adding/moving docs.
 2. Root `AGENTS.md` routing table — task → folder.
 
@@ -32,7 +32,7 @@ root except `README.md` and `AGENTS.md`.
 
 ## Rules
 
-- Machine-readable contracts are NOT here — they live in `config/`.
+- Machine-readable contracts are NOT here — they live in `ops/config/`.
 - New doc → pick the matching category above; add the date in the name for
   point-in-time material (`YYYY-MM-DD-topic.md`).
 - Link to sibling docs with repo-relative paths from the repo root.

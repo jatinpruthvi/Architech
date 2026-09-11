@@ -67,7 +67,7 @@ In r2 mode the resized variants are served on demand by Cloudflare Image Transfo
 ## Validation
 
 ```bash
-pnpm test -- client/src/lib/media/upload.test.ts
+pnpm test -- src/lib/media/upload.test.ts
 pnpm check
 pnpm lint
 pnpm test

@@ -27,31 +27,31 @@ The source document is a strong, Google-aligned plan. Most of its substance was 
 
 The document proposes `/buy/…`, `/rent/…`, `/projects/…`, `/builders/…`, `/localities/…`, `/guides/…`.
 
-Architech routes `/buy/` → `/buy/{city}/` → `/buy/{city}/{locality}/`, with `/guide/…` and `/listing/{id}/` alongside. Rent is carried as a query dimension (`?intent=`, parsed by `client/src/lib/search/parse-query.ts`) rather than as a parallel URL tree.
+Architech routes `/buy/` → `/buy/{city}/` → `/buy/{city}/{locality}/`, with `/guide/…` and `/listing/{id}/` alongside. Rent is carried as a query dimension (`?intent=`, parsed by `src/lib/search/parse-query.ts`) rather than as a parallel URL tree.
 
 **Why rent is not a URL segment:** creating `/rent/{city}/{locality}/` duplicates the same inventory under a second canonical path. Google would then choose between two near-identical pages instead of consolidating signal on one. Splitting intent into URLs is only justified once there is genuinely distinct rent content (deposit norms, lease terms, furnishing stock, rental yield) — at which point it becomes a content decision, not a routing one.
 
-The document's own rule is honoured: **do keyword research before defining URLs**, and create indexable pages only where there is enough useful information or active listings. The city/locality hierarchy is registry-driven, so adding a market is one edit in `client/src/lib/cities.ts`.
+The document's own rule is honoured: **do keyword research before defining URLs**, and create indexable pages only where there is enough useful information or active listings. The city/locality hierarchy is registry-driven, so adding a market is one edit in `src/lib/cities.ts`.
 
 ## §2 — Make every locality page genuinely better
 
 **Decision: Already implemented; quality gate retained.**
 
-Locality pages render live listings, aggregated price facts (`client/src/lib/realestate/locality-intel.ts`), a visible "based on N listings · updated on {date}" line, a source trail, RERA coverage, trust score, commute stops, and PIN codes.
+Locality pages render live listings, aggregated price facts (`src/lib/realestate/locality-intel.ts`), a visible "based on N listings · updated on {date}" line, a source trail, RERA coverage, trust score, commute stops, and PIN codes.
 
-The prohibition on "thousands of pages containing only swapped place names" is enforced by `client/src/lib/seo/page-quality.ts`: a page needs editorial approval, a stable canonical, a parent link, distinct data, methodology, source/update metadata, and a minimum evidence threshold before it can be indexed. Failing pages stay useful to users but are `noindex,follow` and excluded from sitemaps.
+The prohibition on "thousands of pages containing only swapped place names" is enforced by `src/lib/seo/page-quality.ts`: a page needs editorial approval, a stable canonical, a parent link, distinct data, methodology, source/update metadata, and a minimum evidence threshold before it can be indexed. Failing pages stay useful to users but are `noindex,follow` and excluded from sitemaps.
 
 ## §3 — Make listings trustworthy and indexable
 
 **Decision: Already implemented; one accuracy bug fixed.**
 
-Stable listing URLs and the full lifecycle matrix (200 / 301 / 404 / 410) already exist in `client/src/lib/seo/lifecycle.ts`, with `DUPLICATE → 301 canonical` and `EXPIRED → 410` (or 200-`noindex` where a page has verified continuing value).
+Stable listing URLs and the full lifecycle matrix (200 / 301 / 404 / 410) already exist in `src/lib/seo/lifecycle.ts`, with `DUPLICATE → 301 canonical` and `EXPIRED → 410` (or 200-`noindex` where a page has verified continuing value).
 
 | Sub-recommendation | Treatment |
 |---|---|
-| Permanent descriptive URL `/property/2-bhk-apartment-whitefield-prestige-lakeside-18425/` | **Adapt.** Architech keeps stable IDs (`/listing/{id}/`). Rewriting ~336 canonical URLs would discard existing Search Console history and canonicity for a cosmetic gain. `Listing.slug` and `Listing.stableId` already exist in `prisma/schema.prisma` for a future descriptive-slug rollout done behind 301s. |
-| RERA number with official verification link | **Conditional.** The provenance and correction workflow exists (`client/src/lib/rera/`); emitting a *verified* link requires the official state source and correct entity matching. |
-| Original photos, floor plan, geotagged captions | **Conditional.** Media rights, moderation, EXIF and takedown contracts are the gate (`client/src/lib/media/`). |
+| Permanent descriptive URL `/property/2-bhk-apartment-whitefield-prestige-lakeside-18425/` | **Adapt.** Architech keeps stable IDs (`/listing/{id}/`). Rewriting ~336 canonical URLs would discard existing Search Console history and canonicity for a cosmetic gain. `Listing.slug` and `Listing.stableId` already exist in `db/schema.prisma` for a future descriptive-slug rollout done behind 301s. |
+| RERA number with official verification link | **Conditional.** The provenance and correction workflow exists (`src/lib/rera/`); emitting a *verified* link requires the official state source and correct entity matching. |
+| Original photos, floor plan, geotagged captions | **Conditional.** Media rights, moderation, EXIF and takedown contracts are the gate (`src/lib/media/`). |
 | Last verified date, availability status, similar nearby properties | **Already implemented** (trust score, lifecycle status, `getRelatedListings` city-scoped). |
 | Possession / listing dates | **Implemented** — see `dateModified` below. |
 
@@ -59,7 +59,7 @@ Stable listing URLs and the full lifecycle matrix (200 / 301 / 404 / 410) alread
 
 **Decision: Already implemented.**
 
-`client/src/lib/seo/facets.ts` rejects every query + filter + sort + page combination for indexing in Phase 1. `app/robots.ts` disallows `/search/` and `/saved/`. The document's warning is explicitly encoded: arbitrary facets are `noindex`, and legitimate locality/BHK pages are **not** canonicalised up to a broad city page.
+`src/lib/seo/facets.ts` rejects every query + filter + sort + page combination for indexing in Phase 1. `app/robots.ts` disallows `/search/` and `/saved/`. The document's warning is explicitly encoded: arbitrary facets are `noindex`, and legitimate locality/BHK pages are **not** canonicalised up to a broad city page.
 
 ## §5 — Get technical SEO right from launch
 
@@ -83,7 +83,7 @@ Already in place: SSR/SSG for every public page, self-referencing canonicals, br
 
 Why it matters: a flat sitemap makes Search Console report one blended coverage number, so a locality-fact problem hides inside a healthy average. Segmentation reports each content type separately, so a drop in indexed locality pages is visible the day it happens.
 
-Implementation: `client/src/lib/seo/sitemap.ts` (segment registry, XML rendering, segmentation), `app/sitemap.xml/route.ts` (index), `app/sitemap/[segment]/route.ts` (children). `app/sitemap.ts` was removed: Next's `MetadataRoute.Sitemap` type can only describe `<urlset>` entries, so an index has to be a route handler.
+Implementation: `src/lib/seo/sitemap.ts` (segment registry, XML rendering, segmentation), `app/sitemap.xml/route.ts` (index), `app/sitemap/[segment]/route.ts` (children). `app/sitemap.ts` was removed: Next's `MetadataRoute.Sitemap` type can only describe `<urlset>` entries, so an index has to be a route handler.
 
 Two routing details worth recording, both verified against Next 16:
 
@@ -102,7 +102,7 @@ Two routing details worth recording, both verified against Next 16:
 | Guides | `Guide.updatedAt` |
 | Standing pages | **none** — `lastmod` is omitted rather than invented |
 
-This required a new contract field. `client/src/lib/properties.ts` now declares `meaningfulUpdatedAt?: string`, mirroring `Listing.meaningfulUpdatedAt` in `prisma/schema.prisma` — deliberately *not* `Listing.updatedAt`, which Prisma bumps on every write including a moderation touch. A content-change date and a row-write date are different facts.
+This required a new contract field. `src/lib/properties.ts` now declares `meaningfulUpdatedAt?: string`, mirroring `Listing.meaningfulUpdatedAt` in `db/schema.prisma` — deliberately *not* `Listing.updatedAt`, which Prisma bumps on every write including a moderation touch. A content-change date and a row-write date are different facts.
 
 All fixture dates derive from a single exported constant `FIXTURE_AS_OF_ISO` (`2026-08-26`), so listing freshness, locality facts and sitemap `lastmod` can never disagree, and no date-carrying surface reads the wall clock. The generator picks the visible label and the machine-readable date from one table entry, so "Updated 2 days ago" and `2026-08-24` cannot drift apart.
 
@@ -141,7 +141,7 @@ Every `lastmod` is a plain `YYYY-MM-DD` calendar date — never a clock timestam
 
 **Decision: Implemented as governance; publication is gated.**
 
-The authority and outreach contracts exist (`client/src/lib/config/governance/authority.ts`, `docs/seo/authority/off-page-authority-google-first-appendix.md`), including methodology disclosure and outreach provenance. Creating the linkable assets the document lists (locality price reports, rent-vs-buy and stamp-duty calculators, metro-impact reports, RERA trackers) requires verified source data first.
+The authority and outreach contracts exist (`src/lib/ops/config/governance/authority.ts`, `docs/seo/authority/off-page-authority-google-first-appendix.md`), including methodology disclosure and outreach provenance. Creating the linkable assets the document lists (locality price reports, rent-vs-buy and stamp-duty calculators, metro-impact reports, RERA trackers) requires verified source data first.
 
 **Rejected outright:** paid link packages, private blog networks, comment spam, expired-domain tricks, and fake reviews. These are recorded as unacceptable in both existing registers.
 
@@ -175,16 +175,16 @@ Tracked: indexed valuable pages (not total indexed pages), non-branded impressio
 
 | Change | File(s) |
 |---|---|
-| Sitemap index + 5 segmented child sitemaps | `app/sitemap.xml/route.ts`, `app/sitemap/[segment]/route.ts`, `client/src/lib/seo/sitemap.ts` (new); `app/sitemap.ts` removed |
-| Deterministic `lastmod` from entity data | `client/src/lib/seo/pages.ts`, `client/src/lib/seo/sitemap.ts` |
-| `meaningfulUpdatedAt` content-date contract | `client/src/lib/properties.ts`, `client/src/lib/property-generator.ts` |
-| Single fixture as-of constant | `client/src/lib/properties.ts`, `client/src/lib/realestate/locality-intel.ts` |
-| Sitemap URL helpers (`sitemapIndexUrl`, `sitemapSegmentUrl`) | `client/src/lib/seo/urls.ts`, `app/robots.ts`, `client/src/lib/seo/monitoring.ts` |
+| Sitemap index + 5 segmented child sitemaps | `app/sitemap.xml/route.ts`, `app/sitemap/[segment]/route.ts`, `src/lib/seo/sitemap.ts` (new); `app/sitemap.ts` removed |
+| Deterministic `lastmod` from entity data | `src/lib/seo/pages.ts`, `src/lib/seo/sitemap.ts` |
+| `meaningfulUpdatedAt` content-date contract | `src/lib/properties.ts`, `src/lib/property-generator.ts` |
+| Single fixture as-of constant | `src/lib/properties.ts`, `src/lib/realestate/locality-intel.ts` |
+| Sitemap URL helpers (`sitemapIndexUrl`, `sitemapSegmentUrl`) | `src/lib/seo/urls.ts`, `app/robots.ts`, `src/lib/seo/monitoring.ts` |
 | Listing breadcrumb resolved per city | `app/listing/[id]/page.tsx` |
 | `dateModified` on listing JSON-LD | `app/listing/[id]/page.tsx` |
-| Publish artifact copies all sitemaps | `scripts/materialize-static-publish.mjs` |
-| Tests: segmentation, `lastmod` discipline, indexing gate | `client/src/lib/seo/sitemap-contract.test.ts` (rewritten), `client/src/lib/seo/urls.test.ts` |
-| CI smoke coverage for 6 sitemap endpoints | `scripts/seo/raw-html-smoke.mjs` |
+| Publish artifact copies all sitemaps | `ops/scripts/materialize-static-publish.mjs` |
+| Tests: segmentation, `lastmod` discipline, indexing gate | `src/lib/seo/sitemap-contract.test.ts` (rewritten), `src/lib/seo/urls.test.ts` |
+| CI smoke coverage for 6 sitemap endpoints | `ops/scripts/seo/raw-html-smoke.mjs` |
 
 ## Verification
 

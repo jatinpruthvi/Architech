@@ -33,7 +33,7 @@
 - No `<link rel="preload">` for the hero image → slower LCP (P1)
 - `lang="en"` only — no `lang` switching strategy for Hindi content (P2)
 
-### 2.2 Images (`client/public/images/`) — 🟡
+### 2.2 Images (`public/images/`) — 🟡
 **Good:** bespoke, on-brand, all referenced, lazy-loaded below the fold.
 **Improve:**
 - 2.0 MB total JPEG; 4 files >300 KB. Convert to **WebP/AVIF** (~60-70% smaller) with `<picture>` fallback (P1)
@@ -119,7 +119,7 @@
 - `todo.md` items are all unchecked but mostly done — update or archive (P2)
 - `ideas.md` documents the *old* theme as chosen — append the Amdavad Modern decision record (P2)
 - `free-first-design-mcp-workflow.md` — fold in the 2026 MCP revision we discussed (P2)
-- Leftover `client/public/__manus__/` debug folder — delete (P0, 1 min)
+- Leftover `public/__manus__/` debug folder — delete (P0, 1 min)
 
 ### 2.14 SEO (known, structural) — 🔴
 Everything the repo's own architecture mandates is impossible in a Vite SPA: SSR HTML, per-route metadata, JSON-LD, sitemaps, robots, canonical URLs, lifecycle status codes. **The real fix is the planned Next.js migration**; until then: per-route titles/meta via a head manager, `robots.txt`, and honest 404s are the best available patches (P1 patches, P0 migration when ready).

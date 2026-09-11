@@ -7,16 +7,16 @@
 
 | # | Workstream | Module | Integration | Tests |
 |---|---|---|---|---|
-| 1 | P1-I18N-001, P1-SEARCH-001 | `client/src/lib/search/aliases.ts` | wired into `matchesQuery` (filters) | `aliases.test.ts` |
-| 2 | P1-SEARCH-002 | `client/src/lib/ai/adapter.ts` | contract + deterministic fallback | `adapter.test.ts` |
-| 3 | P1-AUTH-001 | `client/src/lib/auth/live-session.ts` | server-only cookie resolution | `live-session.test.ts` |
-| 4 | P1-SEO-003, P1-SEO-004 | `client/src/lib/seo/lifecycle.ts` | listing `page.tsx` (404/410/301) + `seo/pages.ts` indexability | `lifecycle.test.ts` |
-| 5 | P1-CONT-001 | `client/src/lib/content/review.ts` | guide publishability gate + CI test | `review.test.ts` |
-| 6 | P1-OBS-001 | `client/src/lib/observability/slo.ts` + `trace.ts` | `/api/observability/slo` route | `slo.test.ts` |
-| 7 | P1-MEDIA-001, P1-DATA-002 | `client/src/lib/media/retention.ts` | media pipeline contract | `retention.test.ts` |
-| 8 | P1-SEO-004 | `client/src/lib/seo/gsc.ts` | provider-abstracted GSC ingestion | `gsc.test.ts` |
-| 9 | P1-OFF-001 | `client/src/lib/config/governance/authority.ts` | outreach/disclosure governance | `authority.test.ts` |
-| 10 | P1-PLAT-001 | `client/src/lib/operations/hygiene.ts` | secret/remote-env/rollback checks | `hygiene.test.ts` |
+| 1 | P1-I18N-001, P1-SEARCH-001 | `src/lib/search/aliases.ts` | wired into `matchesQuery` (filters) | `aliases.test.ts` |
+| 2 | P1-SEARCH-002 | `src/lib/ai/adapter.ts` | contract + deterministic fallback | `adapter.test.ts` |
+| 3 | P1-AUTH-001 | `src/lib/auth/live-session.ts` | server-only cookie resolution | `live-session.test.ts` |
+| 4 | P1-SEO-003, P1-SEO-004 | `src/lib/seo/lifecycle.ts` | listing `page.tsx` (404/410/301) + `seo/pages.ts` indexability | `lifecycle.test.ts` |
+| 5 | P1-CONT-001 | `src/lib/content/review.ts` | guide publishability gate + CI test | `review.test.ts` |
+| 6 | P1-OBS-001 | `src/lib/observability/slo.ts` + `trace.ts` | `/api/observability/slo` route | `slo.test.ts` |
+| 7 | P1-MEDIA-001, P1-DATA-002 | `src/lib/media/retention.ts` | media pipeline contract | `retention.test.ts` |
+| 8 | P1-SEO-004 | `src/lib/seo/gsc.ts` | provider-abstracted GSC ingestion | `gsc.test.ts` |
+| 9 | P1-OFF-001 | `src/lib/ops/config/governance/authority.ts` | outreach/disclosure governance | `authority.test.ts` |
+| 10 | P1-PLAT-001 | `src/lib/operations/hygiene.ts` | secret/remote-env/rollback checks | `hygiene.test.ts` |
 
 ## Industrial practices applied
 

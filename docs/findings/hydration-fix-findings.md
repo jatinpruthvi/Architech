@@ -6,7 +6,7 @@ The attached React warning showed two categories of differences on the homepage.
 
 ## Fix
 
-Removed the hidden `TabsContent` children and unused `TabsContent` import from `client/src/pages/Home.tsx`. The visible buy/rent `Tabs`, controlled intent state, query input, keyboard suggestions, navigation, and accessible combobox/search semantics remain unchanged. Added the restored managed preview hostname to `next.config.ts` `allowedDevOrigins` and restarted the dev server to prevent cross-origin dev-resource warnings in the browser.
+Removed the hidden `TabsContent` children and unused `TabsContent` import from `src/pages/Home.tsx`. The visible buy/rent `Tabs`, controlled intent state, query input, keyboard suggestions, navigation, and accessible combobox/search semantics remain unchanged. Added the restored managed preview hostname to `next.config.ts` `allowedDevOrigins` and restarted the dev server to prevent cross-origin dev-resource warnings in the browser.
 
 ## Verification
 

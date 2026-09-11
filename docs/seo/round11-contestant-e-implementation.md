@@ -76,7 +76,7 @@ E proposes `/flats-for-sale/[locality]/[bhk]/[budget-range]/` generated for micr
 
 The scale trick is also the direct route to the scaled-content-abuse outcome. File 3 wired the quality gate that governs exactly this: a generated page lands in the `programmatic` kind and must clear the strict bar (≥6 live listings, a verified transaction, or ≥300 words of unique copy), plus approval, canonical, parent link, distinct data, methodology and source metadata. `/flats-for-sale/{locality}/{bhk}/{budget}/` is precisely the shape that bar exists to test.
 
-On BHK and budget as URL segments specifically: Architech treats them as **query dimensions**, parsed by `client/src/lib/search/parse-query.ts`, for the same reason rent is not a URL segment (file 1). Each additional URL dimension multiplies the page count combinatorially; BHK × budget × locality across 72 localities is thousands of pages, nearly all of them thin.
+On BHK and budget as URL segments specifically: Architech treats them as **query dimensions**, parsed by `src/lib/search/parse-query.ts`, for the same reason rent is not a URL segment (file 1). Each additional URL dimension multiplies the page count combinatorially; BHK × budget × locality across 72 localities is thousands of pages, nearly all of them thin.
 
 ## §3 — Win the long-tail ("Baner vs Wakad", "[society] review", "is Wagholi safe")
 
@@ -109,7 +109,7 @@ E is correct that the local pack is where a genuinely local site can beat a nati
 
 **Decision: Already implemented.**
 
-Static/SSG rendering for every public route, WebP/AVIF, lazy-loading below the fold, an eager high-priority hero, explicit image dimensions, and per-route JavaScript budgets in `config/performance/budgets.json` with Core Web Vitals targets (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1).
+Static/SSG rendering for every public route, WebP/AVIF, lazy-loading below the fold, an eager high-priority hero, explicit image dimensions, and per-route JavaScript budgets in `ops/config/performance/budgets.json` with Core Web Vitals targets (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1).
 
 ## §8 — Freshness signal
 
@@ -128,7 +128,7 @@ That is sound advice for a *syndicator* — a site republishing other people's i
 Architech solves the same underlying problem (duplicate listings) the opposite way, and the round-11 register records this decision:
 
 - one canonical page per property/unit;
-- duplicate broker submissions consolidated onto it — `DUPLICATE` → `301` to the canonical listing id, backed by `Listing.canonicalToListingId` in `prisma/schema.prisma`;
+- duplicate broker submissions consolidated onto it — `DUPLICATE` → `301` to the canonical listing id, backed by `Listing.canonicalToListingId` in `db/schema.prisma`;
 - where consolidation is not possible, the duplicate is marked non-indexable.
 
 The outcome E wants — no duplicate-content dilution — is achieved without ceding the canonical.
@@ -151,8 +151,8 @@ That is a working cluster. The supporting pages E lists (schools, transport, pro
 
 | Change | File(s) |
 |---|---|
-| Review markup asserts the genuine-reviews invariant itself | `client/src/lib/agent/profile.ts` |
-| Tests: zero-count rating, sample-only sets, genuine-rating path | `client/src/lib/agent/profile.test.ts` |
+| Review markup asserts the genuine-reviews invariant itself | `src/lib/agent/profile.ts` |
+| Tests: zero-count rating, sample-only sets, genuine-rating path | `src/lib/agent/profile.test.ts` |
 
 ## Verification
 

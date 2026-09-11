@@ -132,14 +132,14 @@ The saffron voice is carried by concrete interface behaviour, not just tokens:
 
 ## Files touched
 
-- `client/src/theme.css` — the core: tokens (incl. `--gold`), warm saffron-night dark theme
+- `src/theme.css` — the core: tokens (incl. `--gold`), warm saffron-night dark theme
   + deep-saffron light action, typography, contour/registration linework, motion primitives
   (ember-bloom, glow-sweep, golden-hour-in, search-spring-in, segment-glow, pin-pulse,
   card-warm-hover), stamps, tints.
-- `client/src/contexts/ThemeContext.tsx` — made the product **night-first** (dark is the
+- `src/contexts/ThemeContext.tsx` — made the product **night-first** (dark is the
   default landing state; a stored light choice still wins; system light no longer triggers
   day mode on a fresh visit).
-- `client/src/pages/Home.tsx` — hero: warm dusk scrim + saffron bloom + light sweep +
+- `src/pages/Home.tsx` — hero: warm dusk scrim + saffron bloom + light sweep +
   golden-hour figure in + search spring-in; segmented Buy / Rent / New projects pill with
   glowing active tab; wired `.contour-field` (city index) and `.survey-corner` (evidence).
   **Hero search simplified & readable:** the hero carried four stacked control rows
@@ -163,22 +163,22 @@ The saffron voice is carried by concrete interface behaviour, not just tokens:
   1584×672, registered in `IMAGE_INTRINSIC_SIZES`, with `.jpg` / `.webp` / `-800.webp`
   derivatives. `hero-ahmedabad` is retained for `og:image` / `twitter:image` (the social
   preview still uses the strong architecture shot).
-- `client/src/lib/media/intrinsic-sizes.ts` — registered `hero-glow` (1584×672).
-- `client/src/components/architech/PropertyCard.tsx` — soft `1.5rem` geometry, solid saffron
+- `src/lib/media/intrinsic-sizes.ts` — registered `hero-glow` (1584×672).
+- `src/components/architech/PropertyCard.tsx` — soft `1.5rem` geometry, solid saffron
   CTA pill (+cream text), warm ember map pin, golden freshness stamp, `.card-warm-hover`.
-- `client/src/components/architech/MarketDirectory.tsx` — readability pass: developer-index
+- `src/components/architech/MarketDirectory.tsx` — readability pass: developer-index
   detail and project-rail stamps raised from 9–10px to 12px.
-- `client/src/lib/i18n.ts` — added `hero.newProjects` (en + hi).
+- `src/lib/i18n.ts` — added `hero.newProjects` (en + hi).
 - `app/layout.tsx` — Space Grotesk + Instrument Sans fonts, `theme-color #180b05`.
-- `client/src/components/architech/Footer.tsx` — brand line → saffron-survey voice.
+- `src/components/architech/Footer.tsx` — brand line → saffron-survey voice.
 - `app/global-error.tsx`, `public/favicon.svg`, `public/manifest.webmanifest`,
   `public/icon-192.png`, `public/icon-512.png`, `public/icon-512-maskable.png`.
-- `client/src/lib/ui/design-token-discipline.test.ts` — updated ink-ramp + "small mono
+- `src/lib/ui/design-token-discipline.test.ts` — updated ink-ramp + "small mono
   labels" fixtures to the live warm saffron tokens (`#2f160b`/`#e0c298`/`#c9a87a`).
 
 ## Guardrails kept green
 
 - `pnpm check` (tsc) — clean
-- `pnpm lint` (app + client/src) — clean
-- `client/src` vitest suite — 930 passed
+- `pnpm lint` (app + src) — clean
+- `src` vitest suite — 930 passed
 - `lib/ui` ratchets (design-token, surface-contrast, field-focus) — 159 passed

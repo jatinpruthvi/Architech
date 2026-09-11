@@ -37,7 +37,7 @@ What was kept, and what was deliberately dropped:
    them would have made the site worse.
 4. **Automated it instead of answering it once.** The prompt produces a report;
    a report goes stale the next deploy. The checks it prescribes now live in
-   `scripts/seo/onpage-audit.mjs`, wired into `pnpm test:seo`.
+   `ops/scripts/seo/onpage-audit.mjs`, wired into `pnpm test:seo`.
 5. **Added a rule the prompt lacks:** duplicate-title detection across the
    corpus (cannibalisation), which matters on a 524-page programmatic site.
 6. **Skips `noindex` pages by design** — flagging pages we deliberately exclude
@@ -85,7 +85,7 @@ existing, proven mechanism to the three call sites that skipped it.
 onpage-audit: 524 sitemap URLs checked (0 noindex skipped), 0 errors, 0 warnings
 ```
 
-Regression cover in `client/src/lib/seo/serp-budget.test.ts`: titles must fit
+Regression cover in `src/lib/seo/serp-budget.test.ts`: titles must fit
 60 characters **with** the appended brand suffix, must not brand themselves,
 rent copy must never inherit sale wording, and every real city hub must earn a
 qualifying tail clause.

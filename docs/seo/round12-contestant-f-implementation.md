@@ -60,7 +60,7 @@ search — a confident wrong result set is worse than an empty one.
 
 **Not built: building/society pages.** F wants one page per building with
 floor plans, RERA status and commute times. There is no `Project` model in
-`prisma/schema.prisma`; this has been deferred since file 8 and stays
+`db/schema.prisma`; this has been deferred since file 8 and stays
 deferred. 72 locality pages carry the hyperlocal load in the meantime.
 
 **Named gap: no rent surface.** `cityUrl()`/`localityUrl()` accept an
@@ -159,8 +159,8 @@ notes; nothing to change.
 
 | File | Purpose |
 | --- | --- |
-| `client/src/lib/search/keyword-slug.ts` | One resolver for keyword URLs, built on `parseSearchQuery`. |
-| `client/src/lib/seo/organization.ts` | The `Organization` node, with the address and coordinates the site already publishes. |
+| `src/lib/search/keyword-slug.ts` | One resolver for keyword URLs, built on `parseSearchQuery`. |
+| `src/lib/seo/organization.ts` | The `Organization` node, with the address and coordinates the site already publishes. |
 
 **Changed**
 
@@ -169,7 +169,7 @@ notes; nothing to change.
 | `app/property/[...segments]/page.tsx` | Was: two hardcoded city names, everything defaulting to Ahmedabad. Now: registry-backed resolution, permanent redirect. |
 | `app/property-search/[...slug]/page.tsx` | Was: ten hardcoded localities. Now: the same resolver, permanent redirect. |
 | `app/layout.tsx` | `Organization` node from the new module. |
-| `scripts/seo/raw-html-smoke.mjs` | Five assertions on the keyword routes: permanence, correct city, no guessed city. |
+| `ops/scripts/seo/raw-html-smoke.mjs` | Five assertions on the keyword routes: permanence, correct city, no guessed city. |
 
 **Tests** — `keyword-slug.test.ts` (9), `organization.test.ts` (7).
 
@@ -216,6 +216,6 @@ a wrong `city=`.
 ## Note for launch
 
 Public indexing is gated: `robots.ts` disallows everything in production
-unless `PUBLIC_INDEXING_ENABLED=true` (`client/src/lib/seo/runtime.ts`). Every
+unless `PUBLIC_INDEXING_ENABLED=true` (`src/lib/seo/runtime.ts`). Every
 count in this record is a count of pages *ready* to be indexed, not of pages
 currently in Google's index.

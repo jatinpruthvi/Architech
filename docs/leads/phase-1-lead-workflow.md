@@ -37,9 +37,9 @@ Response includes:
 
 ## Current implementation
 
-- `client/src/lib/leads/lead.ts` validates lead input, masks phone numbers, creates idempotent lead records, and attaches audit metadata.
+- `src/lib/leads/lead.ts` validates lead input, masks phone numbers, creates idempotent lead records, and attaches audit metadata.
 - `app/api/leads/route.ts` exposes the POST endpoint.
-- `client/src/pages/ListingPage.tsx` submits the dialog to the API and requires explicit consent.
+- `src/pages/ListingPage.tsx` submits the dialog to the API and requires explicit consent.
 
 ## Database handoff
 
@@ -54,7 +54,7 @@ The Prisma schema already contains `Lead` and `AuditEvent`. Once `DATABASE_URL` 
 ## Validation
 
 ```bash
-pnpm test -- client/src/lib/leads/lead.test.ts
+pnpm test -- src/lib/leads/lead.test.ts
 pnpm check
 pnpm lint
 pnpm test

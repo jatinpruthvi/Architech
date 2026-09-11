@@ -1,7 +1,7 @@
 # Performance Audit — 2026-09-06
 
 **Scope:** production build artifacts + static code analysis of the Architech web app (Next.js 16.3.2, Turbopack).
-**Method:** the repo's own gate (`pnpm build:ci` + `scripts/performance/budget.mjs`, the same check CI runs) plus manual bundle/HTML/config inspection, executed with the *Performance Tuning Specialist* workflow: **Profile → Deep Analysis → Prioritized Optimization → Validation → Monitoring**.
+**Method:** the repo's own gate (`pnpm build:ci` + `ops/scripts/performance/budget.mjs`, the same check CI runs) plus manual bundle/HTML/config inspection, executed with the *Performance Tuning Specialist* workflow: **Profile → Deep Analysis → Prioritized Optimization → Validation → Monitoring**.
 **Prompt provenance:** "Performance Tuning Agent Role" (prompts.chat, *Performance* tag, retrieved via the prompts.chat registry). The repo's `search_prompts` MCP path was attempted first; this authoring sandbox cannot reach prompts.chat (TLS blocked), so retrieval used the same upstream registry's public pages — identical to earlier validations recorded in `docs/ai/ai-prompt-library.md` §E. Guardrails per that library and `free-first-design-mcp-workflow.md`: every number below was measured on this date; nothing is estimated without being labeled as such.
 
 **Environment:** commit `2a447df` (branch `arena/01a0756c-architech`, merged with `origin/main` b08c481), Node 22.22.3, pnpm 10.4.1, cold build cache.
@@ -16,7 +16,7 @@
 
 ### Gate result: **PASS** — all budgets green
 
-| Budget (config/performance/budgets.json) | Limit | Measured | Headroom |
+| Budget (ops/config/performance/budgets.json) | Limit | Measured | Headroom |
 |---|---:|---:|---:|
 | Shared first-load JS baseline (most routes) | ≤ 770.0 KiB raw / 240.0 KiB gzip | 642.4 / 197.0 KiB | 16.6% / 17.9% |
 | `/search` first-load JS | ≤ 820.0 raw / 245.0 gzip | **737.9 / 228.4 KiB** | 10.0% / **6.8%** |
@@ -45,7 +45,7 @@
 
 | # | Finding | Class | Evidence |
 |---|---|---|---|
-| F1 | **Shared client shell is the dominant cost:** 197.0 KiB gzip before route code on *every* route — including nearly-static pages (`/privacy`, `/terms`). Broker surfaces push it to ~726.6 KiB raw. | network/parse | route-bundle-stats; 58 chunks; 65 `use client` files in `client/src` |
+| F1 | **Shared client shell is the dominant cost:** 197.0 KiB gzip before route code on *every* route — including nearly-static pages (`/privacy`, `/terms`). Broker surfaces push it to ~726.6 KiB raw. | network/parse | route-bundle-stats; 58 chunks; 65 `use client` files in `src` |
 | F2 | **`/search` gzip headroom is only 6.8%** (228.4 / 245.0). Conversely its raw line *dropped* ~36 KiB since the 820000 ceiling was set (773.9 → 737.9 measured) — the ceiling no longer guards sensitively. | budget hygiene | budgets.json `why` vs this build |
 | F3 | **Homepage HTML at 88.6% of the 128 KiB cap** (113.4 KiB). Next content additions will trip the gate with warning-level margin. | HTML weight | budget check output |
 | F4 | **No explicit immutable caching for `/vendor`** (maplibre ~1.14 MB, version-pinned at config-eval) or `public/images` derivatives → default revalidation on repeat visits. | caching | `next.config.ts` headers() (only security + dev `/_next` rules) |
@@ -69,15 +69,15 @@
 ## 4. Validation performed (this audit, all commands run on 2026-09-06)
 
 1. `pnpm build:ci` → exit 0 (513 static pages; phases logged above).
-2. `node scripts/performance/budget.mjs` → **"Performance budgets passed."** (identical logic to CI's `pnpm test:perf`, minus the redundant rebuild).
+2. `node ops/scripts/performance/budget.mjs` → **"Performance budgets passed."** (identical logic to CI's `pnpm test:perf`, minus the redundant rebuild).
 3. Direct analysis of `.next/diagnostics/route-bundle-stats.json` (gzip computed per chunk) and `.next/static/chunks` (58 chunks, 1608.2 KiB total).
-4. Greps: MapLibre single importer + `webpackIgnore/turbopackIgnore` runtime import; `next/dynamic` ×5; `next/image` ×0 with dual-path media module (`client/src/lib/media/image-loader.ts` + tests); `use client` = 2 in `app/`, 65 in `client/src/`; `@fontsource*` imports in `app/layout.tsx`; 37 files in `.next/static/media`; 0/58 chunks referencing Sentry with DSN unset; headers()` rules in `next.config.ts`.
+4. Greps: MapLibre single importer + `webpackIgnore/turbopackIgnore` runtime import; `next/dynamic` ×5; `next/image` ×0 with dual-path media module (`src/lib/media/image-loader.ts` + tests); `use client` = 2 in `app/`, 65 in `src/`; `@fontsource*` imports in `app/layout.tsx`; 37 files in `.next/static/media`; 0/58 chunks referencing Sentry with DSN unset; headers()` rules in `next.config.ts`.
 5. Prompt retrieval: live MCP POST `tools/call search_prompts` → `000`/`fetch failed` (sandbox egress block on prompts.chat); registry pages fetched tool-side instead — consistent with the documented sandbox limitation.
 
 ## 5. Monitoring & cadence
 
 - Keep the ratchet rule: budget lines move only with a measured before/after recorded in `budgets.json.why`.
-- Re-run this audit on any PR touching `next.config.ts`, the media pipeline, broker route segments, or `client/src/components/architech/MapListSync.tsx`.
+- Re-run this audit on any PR touching `next.config.ts`, the media pipeline, broker route segments, or `src/components/architech/MapListSync.tsx`.
 - After RUM lands: convert `coreWebVitalsTargets` into measured baselines and add a Lighthouse/CrUX budget line, per the Phase-1 baseline doc's forward plan.
 
 **Conclusion:** the project passes all eight enforced budget classes with 6.8–79% headroom, the build is healthy, and the foundational performance decisions (static-first, vendored map, guarded icon/motion imports, image-derivative caps) are working. The one structural lever worth deliberate investment is the **197 KiB gzip shared client shell (F1)**; everything else is calibration, caching policy, and closing the CWV evidence gap.
@@ -86,12 +86,12 @@
 
 ## Addendum — implementation log (all findings, implemented 2026-09-06)
 
-Every finding above was actioned on the same day; each entry names the change and its measured verification. Gates after the full batch: `pnpm check` ✅ · `pnpm build:ci` ✅ · `node scripts/performance/budget.mjs` ✅ **"Performance budgets passed."**
+Every finding above was actioned on the same day; each entry names the change and its measured verification. Gates after the full batch: `pnpm check` ✅ · `pnpm build:ci` ✅ · `node ops/scripts/performance/budget.mjs` ✅ **"Performance budgets passed."**
 
 | # | Status | What changed | Measured result |
 |---|---|---|---|
-| F1 | **Implemented** | (a) Root `Toaster` now `dynamic(..., {ssr:false})` in `Providers.tsx` (CompareTray precedent); (b) new `client/src/lib/lazy-toast.ts` — fire-and-forget dynamic `import("sonner")` used by the two universal importers (`CompareContext`, `PropertyCard`); (c) new reproducible attribution tool `pnpm perf:shell` (`scripts/performance/shell-report.mjs`). | Universal shell **642.4 → 609.1 KiB raw (-5.2%)** and **197.0 → 188.0 KiB gzip (-4.6%)**; sonner verified **ejected** from all-route chunks. Remaining ~86% of shell is React/Next framework floor — not splittable; `better-auth` signature persists via `lib/auth` module chain and is logged as a separate reviewed refactor (auth surgery is out of scope for a perf branch). |
-| F2 | **Implemented** | `config/performance/budgets.json`: `/search` raw ceiling **820000 → 780000** with measured before/after recorded in `why` (773.9@4f7a308 → 737.9@2a447df). | Budget gate passes with the tighter ceiling; /search measured **738.4 KiB raw** post-changes — guard margin restored. |
+| F1 | **Implemented** | (a) Root `Toaster` now `dynamic(..., {ssr:false})` in `Providers.tsx` (CompareTray precedent); (b) new `src/lib/lazy-toast.ts` — fire-and-forget dynamic `import("sonner")` used by the two universal importers (`CompareContext`, `PropertyCard`); (c) new reproducible attribution tool `pnpm perf:shell` (`ops/scripts/performance/shell-report.mjs`). | Universal shell **642.4 → 609.1 KiB raw (-5.2%)** and **197.0 → 188.0 KiB gzip (-4.6%)**; sonner verified **ejected** from all-route chunks. Remaining ~86% of shell is React/Next framework floor — not splittable; `better-auth` signature persists via `lib/auth` module chain and is logged as a separate reviewed refactor (auth surgery is out of scope for a perf branch). |
+| F2 | **Implemented** | `ops/config/performance/budgets.json`: `/search` raw ceiling **820000 → 780000** with measured before/after recorded in `why` (773.9@4f7a308 → 737.9@2a447df). | Budget gate passes with the tighter ceiling; /search measured **738.4 KiB raw** post-changes — guard margin restored. |
 | F3 | **Resolved by measurement + decision** (watch item retained) | Anatomy measured: homepage 112.8 KiB = 87.4 KiB markup+text (77%) / 23.3 KiB RSC payloads / ~2 KiB scripts. Driver identified: 74 server-rendered inline `<svg>` (lucide) = 26.9 KiB raw — near-free over gzip, but they count against the raw cap. Decision: no sprite refactor now (wide JSX churn for accounting-only benefit); an icon `<use>`-sprite migration is the documented first lever when `/` approaches the cap. | No regression: HTML class still passes at 113.4/128 KiB; decision + anatomy recorded here as the baseline for the next content batch. |
 | F4 | **Implemented** | `next.config.ts` now vendors MapLibre to the version-pinned path `public/vendor/maplibre@6.5.0/` (+ self-cleanup of legacy flat files), injects `NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH` at build time, and adds a matching headers rule `Cache-Control: public, max-age=31536000, immutable`; `MapListSync.tsx` loads JS+CSS from the injected path. | Verified: versioned files on disk, legacy files removed, header rule present; budget totals unchanged (vendor stays out of chunks). Repeat visits no longer revalidate 1.14 MB of map code. |
 | F5 | **Implemented** | `next.config.ts` comment drift fixed: fonts are credited to the actual `@fontsource` imports in `app/layout.tsx`; the media block now documents the intentional dual path (`image-loader.ts` pure module == `loaderFile`). | Comment-only change; no runtime effect, verified by inspection. |

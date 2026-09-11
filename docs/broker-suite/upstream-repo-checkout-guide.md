@@ -106,16 +106,16 @@ file: command not found
 
 ### Issue 4: Evolution API Prisma file name was different
 
-**Attempted:** `evolution-api/prisma/schema.prisma`
+**Attempted:** `evolution-api/db/schema.prisma`
 
 **Actual files in 2.3.7:**
 ```
-prisma/postgresql-schema.prisma
-prisma/mysql-schema.prisma
-prisma/psql_bouncer-schema.prisma
+db/postgresql-schema.prisma
+db/mysql-schema.prisma
+db/psql_bouncer-schema.prisma
 ```
 
-**Solution:** list `prisma/` first, then read `postgresql-schema.prisma` (the one matching PostgreSQL).
+**Solution:** list `db/` first, then read `postgresql-schema.prisma` (the one matching PostgreSQL).
 
 ---
 
@@ -192,7 +192,7 @@ frappe/model/document.py     # confirms standard Document columns
 
 **Evolution API 2.3.7**
 ```
-evolution-api/prisma/postgresql-schema.prisma
+evolution-api/db/postgresql-schema.prisma
 ```
 
 ---

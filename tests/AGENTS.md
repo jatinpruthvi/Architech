@@ -1,7 +1,7 @@
 # tests/ — Browser and end-to-end suites
 
 Playwright-driven suites that run against a **built** app (`pnpm build:ci` first).
-Unit tests do NOT live here — they are colocated in `client/src/**/*.test.ts`.
+Unit tests do NOT live here — they are colocated in `src/**/*.test.ts`.
 
 ## Layout
 

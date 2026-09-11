@@ -10,8 +10,8 @@ Generated on 2026-09-11 from the repository Markdown tree.
 2. [AGENTS.md](../AGENTS.md) — task-based navigation map for agents and humans.
 3. [docs/planning/STATUS.md](../docs/planning/STATUS.md) — current implementation and activation status.
 4. [docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md](../docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md) — active delivery tracker.
-5. [config/governance/contracts/DOMAIN-CONTRACTS.md](../config/governance/contracts/DOMAIN-CONTRACTS.md) — shared domain vocabulary and boundaries.
-6. [config/governance/contracts/IMPLEMENTATION-MATRIX.md](../config/governance/contracts/IMPLEMENTATION-MATRIX.md) — feature-to-code mapping.
+5. [ops/config/governance/contracts/DOMAIN-CONTRACTS.md](../ops/config/governance/contracts/DOMAIN-CONTRACTS.md) — shared domain vocabulary and boundaries.
+6. [ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md](../ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md) — feature-to-code mapping.
 7. [docs/runtime-activation-gates.md](../docs/runtime-activation-gates.md) — production credentials and provider gates.
 
 ## Start Here
@@ -40,8 +40,6 @@ Generated on 2026-09-11 from the repository Markdown tree.
 
 ## Product and Engineering Docs
 
-- [AGENTS](../config/AGENTS.md)
-- [README](../config/data/location/README.md)
 - [AGENTS](../docs/AGENTS.md)
 - [Ai Prompt Library](../docs/ai/ai-prompt-library.md)
 - [Bug Hunt Report 2026 09 06 Round2](../docs/ai/bug-hunt-report-2026-09-06-round2.md)
@@ -142,6 +140,9 @@ Generated on 2026-09-11 from the repository Markdown tree.
 - [Hero Direction Evaluation](../docs/ui/hero-direction-evaluation.md)
 - [NIGHT SURVEY THEME](../docs/ui/NIGHT-SURVEY-THEME.md)
 - [Reference Screenshot Findings](../docs/ui/reference-screenshot-findings.md)
+- [AGENTS](../ops/config/AGENTS.md)
+- [README](../ops/config/data/location/README.md)
+- [AGENTS](../ops/scripts/AGENTS.md)
 
 ## Product Inventories
 
@@ -154,14 +155,14 @@ Generated on 2026-09-11 from the repository Markdown tree.
 
 ## Governance and Contracts
 
-- [CHANGELOG](../config/governance/CHANGELOG.md)
-- [DOMAIN CONTRACTS](../config/governance/contracts/DOMAIN-CONTRACTS.md)
-- [IMPLEMENTATION MATRIX](../config/governance/contracts/IMPLEMENTATION-MATRIX.md)
-- [REQUIREMENTS](../config/governance/contracts/REQUIREMENTS.md)
-- [DECISION LOG](../config/governance/decisions/DECISION-LOG.md)
-- [SUPERSESSION MANIFEST](../config/governance/decisions/SUPERSESSION-MANIFEST.md)
-- [FEEDBACK REVIEW](../config/governance/feedback/FEEDBACK-REVIEW.md)
-- [LEGAL GATES](../config/governance/legal/LEGAL-GATES.md)
+- [CHANGELOG](../ops/config/governance/CHANGELOG.md)
+- [DOMAIN CONTRACTS](../ops/config/governance/contracts/DOMAIN-CONTRACTS.md)
+- [IMPLEMENTATION MATRIX](../ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md)
+- [REQUIREMENTS](../ops/config/governance/contracts/REQUIREMENTS.md)
+- [DECISION LOG](../ops/config/governance/decisions/DECISION-LOG.md)
+- [SUPERSESSION MANIFEST](../ops/config/governance/decisions/SUPERSESSION-MANIFEST.md)
+- [FEEDBACK REVIEW](../ops/config/governance/feedback/FEEDBACK-REVIEW.md)
+- [LEGAL GATES](../ops/config/governance/legal/LEGAL-GATES.md)
 
 ## SEO and Authority
 
@@ -230,6 +231,7 @@ Generated on 2026-09-11 from the repository Markdown tree.
 - [2026 09 10 Broker Calling Completion](../docs/superpowers/plans/2026-09-10-broker-calling-completion.md)
 - [2026 09 11 Repository Restructure](../docs/superpowers/plans/2026-09-11-repository-restructure.md)
 - [2026 09 10 Broker Calling Completion Design](../docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md)
+- [2026 09 10 Repo Restructure Src Layout Design](../docs/superpowers/specs/2026-09-10-repo-restructure-src-layout-design.md)
 - [2026 09 11 Repository Restructure Design](../docs/superpowers/specs/2026-09-11-repository-restructure-design.md)
 
 ## Historical Recommendations and Reviews
@@ -252,9 +254,8 @@ Generated on 2026-09-11 from the repository Markdown tree.
 
 ## Other
 
-- [AGENTS](../app/AGENTS.md)
-- [AGENTS](../client/AGENTS.md)
-- [AGENTS](../scripts/AGENTS.md)
+- [AGENTS](../src/AGENTS.md)
+- [AGENTS](../src/app/AGENTS.md)
 - [AGENTS](../tests/AGENTS.md)
 - [README](../tests/e2e/README.md)
 

@@ -26,7 +26,7 @@ migrations applied, and three databases created: the main sandbox, a parity
 database, and a throwaway bench database.
 
 > **A sandbox defect found and fixed along the way.**
-> `scripts/sandbox/setup-local-db.mjs` decided whether to stub migrations from
+> `ops/scripts/sandbox/setup-local-db.mjs` decided whether to stub migrations from
 > a *single* `hasPostGis()` probe — and that one boolean gated the `pg_trgm`
 > stubs too. PostGIS and `pg_trgm` are unrelated extensions, and the embedded
 > server ships `pg_trgm` (1.6) but not PostGIS, so **every sandbox database
@@ -48,7 +48,7 @@ database, and a throwaway bench database.
 
 ```
 ARCHITECH_PARITY_DATABASE_URL=... pnpm vitest run \
-  client/src/lib/search/sql-page-integration.test.ts
+  src/lib/search/sql-page-integration.test.ts
 ```
 
 45/45 passed on first run — the SQL page path returns byte-identical wire JSON
@@ -117,7 +117,7 @@ Measured on real rows with the real GIN index:
 **Three recoveries, zero regressions.** Field weights (A/B/C/D) are preserved
 exactly, which the ranking in §3 depends on.
 
-`client/src/lib/search/sql.ts` now exposes `FTS_CONFIGS` and `ftsMatchSql()` so
+`src/lib/search/sql.ts` now exposes `FTS_CONFIGS` and `ftsMatchSql()` so
 both the narrow path and the page path ask both configurations from one
 definition, and `db-schema.test.ts` fails the build if the migration and the
 code list ever drift apart.
@@ -134,7 +134,7 @@ rather than removing the note's premise.
 
 - **SQL path** — `ts_rank_cd('{0.1,0.2,0.4,1.0}', searchVector, <union tsquery>)`,
   the weight array mirroring the D/C/B/A `setweight` labels.
-- **JS path** — `client/src/lib/search/relevance.ts`, scoring the same weighted
+- **JS path** — `src/lib/search/relevance.ts`, scoring the same weighted
   fields so the fallback answers the same question.
 - Both tie-break on read order (`fresh`), then `id`, giving a total, stable
   order so a page boundary cannot duplicate or drop a row.
@@ -164,7 +164,7 @@ scorer fails the build.
 | Gate | Result |
 |---|---|
 | `tsc --noEmit` | pass |
-| `eslint app client/src` | pass, 0 warnings |
+| `eslint app src` | pass, 0 warnings |
 | `prisma validate` | pass |
 | Unit tests | **1,807 passed**, 2 skipped (live-only suites) |
 | Live parity matrix | **48/48** |
@@ -245,10 +245,10 @@ Both fail closed: any SQL error is logged (`search.sql_page_failed`,
 
 ```bash
 ARCHITECH_PARITY_DATABASE_URL=postgres://... \
-  pnpm vitest run client/src/lib/search/sql-page-integration.test.ts
+  pnpm vitest run src/lib/search/sql-page-integration.test.ts
 
 ARCHITECH_BENCH_DATABASE_URL=postgres://... \
-  pnpm vitest run client/src/lib/search/latency-bench.test.ts
+  pnpm vitest run src/lib/search/latency-bench.test.ts
 ```
 
 The migration is additive and idempotent in effect: it drops and recreates the

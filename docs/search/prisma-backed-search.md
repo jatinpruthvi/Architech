@@ -20,7 +20,7 @@ If unset, it follows `ARCHITECH_DATA_SOURCE`:
 `app/api/search/route.ts` now uses the server search adapter:
 
 ```text
-client/src/lib/search/server.ts
+src/lib/search/server.ts
 ```
 
 In fixture mode, it returns the same deterministic parser/filter/sort results as before.
@@ -34,7 +34,7 @@ postgres-fts-trigram
 and includes query-plan metadata generated from:
 
 ```text
-client/src/lib/search/sql.ts
+src/lib/search/sql.ts
 ```
 
 ## PostgreSQL search plan

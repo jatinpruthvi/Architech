@@ -25,7 +25,7 @@ fixture
 ## Server-only adapter
 
 ```text
-client/src/lib/repositories/server/prisma.ts
+src/lib/repositories/server/prisma.ts
 ```
 
 Exports async server functions:
@@ -41,7 +41,7 @@ The adapter imports `server-only` and must not be imported into client component
 ## Mapping layer
 
 ```text
-client/src/lib/repositories/mappers.ts
+src/lib/repositories/mappers.ts
 ```
 
 Maps Prisma rows to the existing UI/domain view models:

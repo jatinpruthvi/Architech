@@ -5,7 +5,7 @@
 Machine-readable inventory:
 
 ```text
-config/governance/secrets/phase-1-secret-inventory.json
+ops/config/governance/secrets/phase-1-secret-inventory.json
 ```
 
 ## Storage rules

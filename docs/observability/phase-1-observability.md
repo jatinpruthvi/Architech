@@ -43,7 +43,7 @@ This is not yet a full observability stack. Remaining production work:
 ## Validation
 
 ```bash
-pnpm test -- client/src/lib/observability/observability.test.ts
+pnpm test -- src/lib/observability/observability.test.ts
 pnpm check
 pnpm lint
 pnpm test

@@ -9,7 +9,7 @@ might reach for would reverse them while looking like an improvement. Each
 entry below states the decision, the reason, and the **exact action** to take
 if you disagree.
 
-Read this before changing anything under `client/src/lib/seo/`,
+Read this before changing anything under `src/lib/seo/`,
 `app/api/admin/acquisition/`, or `app/admin/acquisition/`.
 
 ---
@@ -19,7 +19,7 @@ Read this before changing anything under `client/src/lib/seo/`,
 **Decision.** `GET /api/admin/acquisition` is gated on
 `moderation.queue.read`. No new permission, no roles migration.
 
-**Where.** The constant lives in `client/src/lib/seo/acquisition-queue.ts` as
+**Where.** The constant lives in `src/lib/seo/acquisition-queue.ts` as
 `ACQUISITION_READ_PERMISSION`, and the route imports it. It is exported rather
 than inlined specifically so a test pins it.
 
@@ -35,14 +35,14 @@ later”. It is the considered answer.
 ### If you disagree, do exactly this
 
 1. Add the permission string to the permission set in
-   `client/src/lib/auth/roles.ts` (define it alongside the existing
+   `src/lib/auth/roles.ts` (define it alongside the existing
    `moderation.*` entries — do not introduce a new naming scheme).
 2. Grant it in `demoBrokerSession.permissions` and in every role that should
    retain access. **Check `requirePermission`**: it currently short-circuits to
    `true` for `role === "ADMIN"`, so admins keep access automatically and the
    brokers/analysts do not.
 3. Update the `ACQUISITION_READ_PERMISSION` constant in
-   `client/src/lib/seo/acquisition-queue.ts`.
+   `src/lib/seo/acquisition-queue.ts`.
 4. Update `acquisition-queue.test.ts` — the pinning test asserts the constant's
    value. If you change the constant you must change that assertion in the
    same commit; do not skip the test.
@@ -160,7 +160,7 @@ hole."
 visible — an import, a CSV ingest, a lifecycle migration — it must go through
 `moderateListingForServer` or emit through the same spine.
 
-**The test that catches this:** `client/src/lib/persistence/publish-gate.test.ts`
+**The test that catches this:** `src/lib/persistence/publish-gate.test.ts`
 asserts that a blocked approval emits `listing.gate_blocked`, leaves the draft
 at `IN_REVIEW`, and emits no `listing.published`. If the gate is ever routed
 around, that is what fails.
@@ -176,14 +176,14 @@ same locality is approved and pointed at the listing it duplicates.
 **Why.** Refusing a duplicate throws away real inventory; publishing it as a
 second page creates two pages competing for the same query. Canonicalizing
 keeps the listing visible and gives Google one page. This is the first writer
-of `Listing.canonicalToListingId`, which has been in `prisma/schema.prisma`
+of `Listing.canonicalToListingId`, which has been in `db/schema.prisma`
 since it was written and was referenced by nothing.
 
 **The subtlety:** the gate will only canonicalize to a peer that is itself
 `published`. Pointing Google at a page that does not exist is worse than a
 duplicate. A near-duplicate whose twin is still in review therefore publishes
 normally and only raises a warning — see
-`nearestPublishedDuplicate` in `client/src/lib/listing/publish-gate.ts`.
+`nearestPublishedDuplicate` in `src/lib/listing/publish-gate.ts`.
 
 **Do not** drop the `published` check, and do not canonicalize to the
 alphabetically-first or oldest peer. The target is the most similar published
@@ -215,7 +215,7 @@ blocker for every availability.
 
 `MIN_DESCRIPTION_CHARS = 80`, `THIN_DESCRIPTION_CHARS = 200`,
 `DUPLICATE_SIMILARITY_THRESHOLD = 0.75`, `MIN_PUBLISHABLE_MEDIA = 1`. All are
-exported from `client/src/lib/listing/publish-gate.ts`.
+exported from `src/lib/listing/publish-gate.ts`.
 
 These are judgement calls, and they were chosen against the inventory that
 exists today. 80 characters blocks a single clause while passing every real
@@ -244,7 +244,7 @@ bookkeeping reason no broker can see or act on.
 
 ## Decision 11 — `listAllDrafts()` is not for broker-facing surfaces
 
-`listAllDrafts()` was added to `client/src/lib/broker/workflow.ts` so the gate
+`listAllDrafts()` was added to `src/lib/broker/workflow.ts` so the gate
 can see its peers. Duplicate detection is only meaningful across the whole
 corpus — two brokers pasting the same paragraph is exactly the case being
 caught, and a per-organization view would never see it.
@@ -257,7 +257,7 @@ inventory to another.
 
 ## Decision 12 — One existing test was changed, and that was the point
 
-`client/src/lib/persistence/persistence.test.ts` previously approved a draft
+`src/lib/persistence/persistence.test.ts` previously approved a draft
 that had no photographs attached, and asserted the approval succeeded. The gate
 made it fail. It now attaches media before approving, the way the broker flow
 does.
@@ -342,7 +342,7 @@ are constants in a file. A dashboard that renders them invites someone to make
 a real decision on invented data, which is the most dangerous state an SEO
 dashboard can be in — far worse than showing nothing.
 
-`client/src/lib/seo/url-status.test.ts` asserts this. If you change it, you are
+`src/lib/seo/url-status.test.ts` asserts this. If you change it, you are
 choosing to show numbers that did not come from Google.
 
 **Also true:** the board reports `perUrl: false`. The current snapshot is

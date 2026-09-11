@@ -24,7 +24,7 @@ Your task is to:
 
 ## Phase 1: Initial Repository Assessment
 You will:
-1. Map the complete project structure (e.g., src/, lib/, tests/, docs/, config/, scripts/).
+1. Map the complete project structure (e.g., src/, lib/, tests/, docs/, ops/config/, ops/scripts/).
 2. Identify the technology stack and dependencies (e.g., package.json, requirements.txt).
 3. Document main entry points, critical paths, and system boundaries.
 4. Analyze build configurations and CI/CD pipelines.
@@ -113,6 +113,6 @@ Bug report: <bug>. Follow this strict protocol: PHASE 1 (Reproduce): Write mock-
 
 ## Why these two
 
-- **Option A** is the community's highest-voted bug-discovery prompt (19 upvotes) and is built exactly for "scan our repo for bugs" — its 7 phases (assess → discover → document → fix → validate → report → improve) line up with this repo's audit-heavy workflow (`CODEBASE-AUDIT-*.md`, security audits in `scripts/security/`).
+- **Option A** is the community's highest-voted bug-discovery prompt (19 upvotes) and is built exactly for "scan our repo for bugs" — its 7 phases (assess → discover → document → fix → validate → report → improve) line up with this repo's audit-heavy workflow (`CODEBASE-AUDIT-*.md`, security audits in `ops/scripts/security/`).
 - **Option B** is the focused companion for a *known* bug: it forces reproduction via a failing test before any code change, which matches the repo's Vitest/Playwright setup and TDD conventions.
 - Everything else surfaced by search (code-review meta-prompts, generic "master prompt" posts) was either sponsored ads, off-topic, or lower-voted.

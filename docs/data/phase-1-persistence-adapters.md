@@ -8,13 +8,13 @@ The broker listing, media, and RERA modules were in-memory contract stores used 
 ## Files
 
 ```text
-client/src/lib/persistence/source.ts
-client/src/lib/persistence/rera-store.ts
-client/src/lib/persistence/media-store.ts
-client/src/lib/persistence/broker-store.ts
-client/src/lib/persistence/persistence.test.ts
+src/lib/persistence/source.ts
+src/lib/persistence/rera-store.ts
+src/lib/persistence/media-store.ts
+src/lib/persistence/broker-store.ts
+src/lib/persistence/persistence.test.ts
 vitest.config.ts            (stub `server-only` for unit tests)
-client/src/test/server-only-stub.ts
+src/test/server-only-stub.ts
 ```
 
 ## Design

@@ -27,7 +27,7 @@ Round 12 asks for improvements on the previous answers, so this document is dens
 
 A asks for explicit `width`/`height` on images and CLS below 0.1. Checking that against the real files found the opposite of the intent: the dimensions were explicit **and wrong**, which is worse than omitting them.
 
-`client/src/components/architech/Pic.tsx` derived every image's height as `width / 1.5`, on the comment's claim that "1.5 is what every derivative in `/public/images` is cropped to." Measured against the actual files:
+`src/components/architech/Pic.tsx` derived every image's height as `width / 1.5`, on the comment's claim that "1.5 is what every derivative in `/public/images` is cropped to." Measured against the actual files:
 
 | Asset | Actual | Declared | Error |
 |---|---|---|---|
@@ -45,7 +45,7 @@ Why this matters more than a cosmetic bug: `width`/`height` tell the browser the
 
 **The fix** replaces the single ratio with a per-asset `PIC_INTRINSIC_SIZES` map carrying real measured dimensions, and the fallback is now explicitly a last resort.
 
-**Preventing recurrence is the real fix.** The bug came from a comment that was true once and went stale silently. `client/src/components/architech/pic.test.ts` now reads the actual image files — parsing WebP and JPEG headers — and asserts the map against them, plus checks that the WebP derivative shipped in `srcset` has the same ratio, and that no portrait asset is declared landscape. An unmapped or re-cropped asset fails CI instead of quietly costing CLS.
+**Preventing recurrence is the real fix.** The bug came from a comment that was true once and went stale silently. `src/components/architech/pic.test.ts` now reads the actual image files — parsing WebP and JPEG headers — and asserts the map against them, plus checks that the WebP derivative shipped in `srcset` has the same ratio, and that no portrait asset is declared landscape. An unmapped or re-cropped asset fails CI instead of quietly costing CLS.
 
 Verified in rendered HTML after the change:
 
@@ -189,7 +189,7 @@ A's minimum rules for a generated page — ≥5 active listings, unique market s
 
 **Decision: Partly implemented; analytics gated.**
 
-`client/src/lib/seo/monitoring.ts` covers the Search Console side — indexed-vs-submitted ratio, coverage and click-drop thresholds, and a setup checklist. Per-query-group reporting, rich-result monitoring and the analytics conversions A lists (qualified calls, WhatsApp clicks, viewing requests, saved properties, calculator completions, leads per 1,000 organic visits) need live GSC and GA4 accounts.
+`src/lib/seo/monitoring.ts` covers the Search Console side — indexed-vs-submitted ratio, coverage and click-drop thresholds, and a setup checklist. Per-query-group reporting, rich-result monitoring and the analytics conversions A lists (qualified calls, WhatsApp clicks, viewing requests, saved properties, calculator completions, leads per 1,000 organic visits) need live GSC and GA4 accounts.
 
 The framing is adopted: rankings alone are not the goal. The round-11 register already measures indexed *valuable* pages rather than total indexed pages.
 
@@ -199,8 +199,8 @@ The framing is adopted: rankings alone are not the goal. The round-11 register a
 
 | Change | File(s) |
 |---|---|
-| Per-asset intrinsic image dimensions replacing the single 1.5 ratio | `client/src/components/architech/Pic.tsx` |
-| Tests asserting declared dimensions against the real image files | `client/src/components/architech/pic.test.ts` (new) |
+| Per-asset intrinsic image dimensions replacing the single 1.5 ratio | `src/components/architech/Pic.tsx` |
+| Tests asserting declared dimensions against the real image files | `src/components/architech/pic.test.ts` (new) |
 
 ## Verification
 

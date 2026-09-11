@@ -7,7 +7,7 @@
 
 ## 0. Two corrections to my own audit (I was wrong, and you were right)
 
-**Correction 1 — Pattern 8 already exists.** I recommended "parse-then-confirm" as if you'd have to build it. You built it, and it's better than my suggestion: `client/src/lib/search/parse-query.ts` is a deterministic grammar (with Hindi vocabulary — `किराया`, `ख़रीद`) that turns `3 bhk in koramangala under 2 cr` into structured scope with an explicit `residual` so "understanding a query can never lose information". `ResultsPage.tsx:172-185` calls `parseSearchQuery` → `applyParsedQueryToParams`, and even renders a *pre-run* `describeParsedQuery` preview. **Scrap that pattern; the work is only to make the preview visually distinct** (it's currently a `text-ink/60` 11px string — your own audit finding #1). Don't rebuild what you have.
+**Correction 1 — Pattern 8 already exists.** I recommended "parse-then-confirm" as if you'd have to build it. You built it, and it's better than my suggestion: `src/lib/search/parse-query.ts` is a deterministic grammar (with Hindi vocabulary — `किराया`, `ख़रीद`) that turns `3 bhk in koramangala under 2 cr` into structured scope with an explicit `residual` so "understanding a query can never lose information". `ResultsPage.tsx:172-185` calls `parseSearchQuery` → `applyParsedQueryToParams`, and even renders a *pre-run* `describeParsedQuery` preview. **Scrap that pattern; the work is only to make the preview visually distinct** (it's currently a `text-ink/60` 11px string — your own audit finding #1). Don't rebuild what you have.
 
 **Correction 2 — but the results page does not use your live data.** You said the inventory feed is live with real photos. Here's the actual chain:
 
@@ -22,7 +22,7 @@ ResultsPage.tsx:100  fetch(`/api/search/?…`)
 ResultsPage.tsx:102  setSearchResponse(data)                                ← and the client re-filters? no — it renders. But the fixture copy still ran at :85
 ```
 
-`getListingsForServer()` (`client/src/lib/repositories/server/prisma.ts:45-53`) has **no `where` beyond `lifecycle`**, no `take`, no pagination — and `listingInclude` pulls `city`, `locality`, and `media` for every row. So with 40k live listings: one unbounded `findMany`, ~40k serialised objects, FTS/trigram never executed. And `buildPostgresSearchPlan` (`sql.ts:20`) builds a correct `where` array — including trigram + `websearch_to_tsquery` — that is **attached to the response as `queryPlan` and read by nothing** (`grep queryPlan client/src --include=*.tsx` → 0 hits). You wrote a Postgres search compiler and then didn't run it.
+`getListingsForServer()` (`src/lib/repositories/server/prisma.ts:45-53`) has **no `where` beyond `lifecycle`**, no `take`, no pagination — and `listingInclude` pulls `city`, `locality`, and `media` for every row. So with 40k live listings: one unbounded `findMany`, ~40k serialised objects, FTS/trigram never executed. And `buildPostgresSearchPlan` (`sql.ts:20`) builds a correct `where` array — including trigram + `websearch_to_tsquery` — that is **attached to the response as `queryPlan` and read by nothing** (`grep queryPlan src --include=*.tsx` → 0 hits). You wrote a Postgres search compiler and then didn't run it.
 
 Plus a re-render bug: the effect's dep array includes `initialSearch`, a `useMemo` that returns a **new object identity whenever any dep changes**, and `setLoading(true)` runs on mount → **every visit to `/search/` flashes skeletons over already-correct server-rendered results**, then adds up to **1.38s** of stagger (`delay={i*60}`, key includes `active`+`sort`). Your filter feels 300% slower than the data is.
 
@@ -68,7 +68,7 @@ Notes on judgement, not taste:
 ### Schema (audience-neutral core)
 
 ```ts
-// client/src/lib/search/facets.ts
+// src/lib/search/facets.ts
 export type FacetValue = { id: string; label: string; labelHi?: string;
   /** SQL predicate fragment, parameterised — never interpolated from user input. */
   predicate: SqlFragment; };
@@ -114,7 +114,7 @@ Because your split is **even**, the drawer must not be a mobile fallback — it'
 
 ### 4a. Blocking gap (worse than "missing columns")
 `Listing` has: `priceInr`, `bhk`, `areaSqft`, `availability`, `propertyType`, `verification`, `postalCode`, `latitude/longitude`, `meaningfulUpdatedAt`, `sourceSummary`, `media[]`.
-It has **no `details` column** — `grep -n "details" prisma/schema.prisma` → 0 hits — yet `PropertyCard.tsx:173-175` renders *Baths · Parking · Furnishing* on every card.
+It has **no `details` column** — `grep -n "details" db/schema.prisma` → 0 hits — yet `PropertyCard.tsx:173-175` renders *Baths · Parking · Furnishing* on every card.
 
 Here's where that data actually comes from (`mappers.ts:179`):
 
@@ -224,7 +224,7 @@ You already have recovery chips derived from real inventory (`ResultsPage.tsx:18
 > | 6 | `media` filter | **done** | `has-photos` / `photos-5plus` over `gallery.length`; defaults OFF because §4a is unresolved |
 > | 7 | Ladder + saved-search CTA | **done** | Zero-result SSR shows relax → widen → trending → capture; `q=paldi&intent=rent` → "0 homes to rent" + honest empty locality group |
 > | 8 | `$queryRaw` plan | **not started** | correct call: no city exceeds ~10k rows yet; `truncated` is the tripwire |
-> | 9 | Guard test | **done** | `client/src/lib/ui/design-token-discipline.test.ts` (113 cases) + `design-token-baseline.json` ratchet + `design-token-baseline.cjs --write` |
+> | 9 | Guard test | **done** | `src/lib/ui/design-token-discipline.test.ts` (113 cases) + `design-token-baseline.json` ratchet + `design-token-baseline.cjs --write` |
 >
 > Two deviations from this spec, both intentional:
 >

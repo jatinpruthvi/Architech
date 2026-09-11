@@ -10,7 +10,7 @@ The moderation queue is now live rather than a static contract shell. It reads d
 ```text
 app/api/admin/moderation/listings/route.ts          (GET queue)
 app/api/admin/moderation/listings/[draftId]/route.ts (POST decision)
-client/src/pages/ModerationQueue.tsx
+src/pages/ModerationQueue.tsx
 ```
 
 ## Design rules
@@ -25,7 +25,7 @@ client/src/pages/ModerationQueue.tsx
 ```bash
 pnpm check
 pnpm lint
-pnpm exec vitest run client/src/lib/persistence/persistence.test.ts
+pnpm exec vitest run src/lib/persistence/persistence.test.ts
 ```
 
 The persistence contract test covers create → submit → moderate → queue round-trip in the fixture/memory path.

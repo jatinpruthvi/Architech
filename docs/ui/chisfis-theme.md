@@ -5,7 +5,7 @@
 
 ## What changed
 
-The site is re-themed through its **design-token layer** (`client/src/index.css`), which drives every `bg-*`, `text-*`, `border-*`, and component surface via Tailwind v4 `@theme inline`. Re-pointing the CSS variables re-themes the whole app without touching component markup.
+The site is re-themed through its **design-token layer** (`src/index.css`), which drives every `bg-*`, `text-*`, `border-*`, and component surface via Tailwind v4 `@theme inline`. Re-pointing the CSS variables re-themes the whole app without touching component markup.
 
 ### Palette (light)
 | Token | Before (terracotta) | Now (Chisfis) |
@@ -51,7 +51,7 @@ The Playwright a11y suite could not complete in this sandbox because the headles
 
 ## Files touched
 ```text
-client/src/index.css
-client/src/components/architech/PropertyCard.tsx
-client/src/components/architech/Header.tsx
+src/index.css
+src/components/architech/PropertyCard.tsx
+src/components/architech/Header.tsx
 ```
