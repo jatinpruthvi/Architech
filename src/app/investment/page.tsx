@@ -1,0 +1,17 @@
+import type { Metadata } from "next";
+import InvestmentPage from "@/screens/InvestmentPage";
+import { homeUrl, SITE_URL } from "@/lib/seo/urls";
+import { defaultSocialImage } from "@/lib/seo/social";
+import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
+
+export const metadata: Metadata = {
+  title: "India investment lens",
+  description: "Read property signals through locality movement, supply, documentation, and everyday context. General information, not personalized financial advice.",
+  alternates: { canonical: `${SITE_URL}/investment/` },
+  openGraph: { title: "India investment lens", url: `${SITE_URL}/investment/`, type: "article", images: [defaultSocialImage()] },
+};
+
+export default function Page() {
+  const jsonLd = { "@context": "https://schema.org", "@type": "Article", headline: "India investment lens", description: "General editorial context for reading Indian property signals.", url: `${SITE_URL}/investment/`, isPartOf: { "@type": "WebSite", name: "Architech", url: homeUrl() } };
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} /><InvestmentPage /></>;
+}

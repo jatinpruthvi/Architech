@@ -21,7 +21,7 @@ Four sweeps produced **no defect** after evidence review (details in §4): unref
 
 ## 2. Method (ARCH-16 phases)
 
-1. **Baseline measurement before any change** (`pnpm build:ci`, `scripts/performance/budget.mjs`, `scripts/performance/shell-report.mjs`).
+1. **Baseline measurement before any change** (`pnpm build:ci`, `ops/scripts/performance/budget.mjs`, `ops/scripts/performance/shell-report.mjs`).
 2. **Sweeps** across four classes: bundle hygiene, render path, data layer, API surface.
 3. **Measure before/after for every suspected defect** — no speculative fixes.
 4. **Fix confirmed defects** with a regression guard test where practical.
@@ -36,7 +36,7 @@ Four sweeps produced **no defect** after evidence review (details in §4): unref
 | Shell first-load, gzip | 188.0 KiB | 188.0 KiB | **0.0** |
 | `/search` first-load, raw | 738.4 KiB | 738.4 KiB | **0.0** |
 | Raw budget cap | 780 000 B | — | PASS (94.7 %) |
-| `scripts/performance/budget.mjs` | PASS | PASS | — |
+| `ops/scripts/performance/budget.mjs` | PASS | PASS | — |
 | `pnpm build:ci` | green | green | — |
 
 First-load posture after F1–F6 is stable with **zero drift** since the audit measurements.
@@ -47,7 +47,7 @@ First-load posture after F1–F6 is stable with **zero drift** since the audit m
 
 ### 4.1 PERF-BUG-16-001 — governance list queries unbounded (P3, data class) — FIXED
 
-**Evidence.** `client/src/lib/config/governance/server.ts` contained three Prisma-style `findMany` calls with **no `take` and no pagination contract**:
+**Evidence.** `src/lib/ops/config/governance/server.ts` contained three Prisma-style `findMany` calls with **no `take` and no pagination contract**:
 
 | Call site | Query | Before fix |
 |---|---|---|
@@ -59,7 +59,7 @@ First-load posture after F1–F6 is stable with **zero drift** since the audit m
 
 **Fix.** Single module-level constant `GOVERNANCE_LIST_PAGE_CAP = 500` (documented in-code: preserves newest-first semantics; zero behaviour change below the cap; bounds worst-case memory/serialization). Applied `take: GOVERNANCE_LIST_PAGE_CAP` at all three call sites.
 
-**Guard.** New `client/src/lib/config/governance/server-query-caps.test.ts` asserts at source level that (a) the cap constant exists and is positive, and (b) **every** `findMany` in `config/governance/server.ts` passes `take: GOVERNANCE_LIST_PAGE_CAP`. A source-level (filesystem) guard was chosen deliberately: `server.ts` begins with `import "server-only"`, which throws under plain vitest, so behavioural mocking of the Prisma client is impractical; the fs-regex pattern mirrors the proven `env-docs-parity.test.ts` guard from round 2 and makes the *class* of regression CI-visible.
+**Guard.** New `src/lib/ops/config/governance/server-query-caps.test.ts` asserts at source level that (a) the cap constant exists and is positive, and (b) **every** `findMany` in `ops/config/governance/server.ts` passes `take: GOVERNANCE_LIST_PAGE_CAP`. A source-level (filesystem) guard was chosen deliberately: `server.ts` begins with `import "server-only"`, which throws under plain vitest, so behavioural mocking of the Prisma client is impractical; the fs-regex pattern mirrors the proven `env-docs-parity.test.ts` guard from round 2 and makes the *class* of regression CI-visible.
 
 **Guard self-validation (failing-first).** The guard initially failed twice during authoring — first on a wrong relative path depth (governance is one directory deeper than `lib/`), then on a regex that truncated at the first `}` of a nested `orderBy` object. Both were fixed before the green run, confirming the guard actually executes its assertions rather than vacuously passing.
 
@@ -90,8 +90,8 @@ First-load posture after F1–F6 is stable with **zero drift** since the audit m
 | Vitest | **158 files / 1721 tests passed** (+1 file, +2 tests from the new guard) |
 | `pnpm check` (tsc) | clean |
 | `pnpm lint` | exit 0 |
-| `scripts/performance/budget.mjs` | PASS |
-| `scripts/performance/shell-report.mjs` | matches audit baselines |
+| `ops/scripts/performance/budget.mjs` | PASS |
+| `ops/scripts/performance/shell-report.mjs` | matches audit baselines |
 
 ## 6. Patterns for the next hunt (ARCH-16 addendum)
 

@@ -51,9 +51,9 @@ The highest-value next slice is a **coherent Amdavad Modern discovery pass**, no
 
 | Priority | Change | Impact | Risk | Suggested route |
 |---|---|---:|---:|---|
-| P0 | Replace purple/blue primary visual language with coherent brick/paper/ink/trust semantics | Very high | Medium | `client/src/index.css`, header, hero, CTA primitives |
-| P0 | Rework reusable property card into an editorial evidence card | Very high | Medium | `client/src/components/architech/PropertyCard.tsx` |
-| P0 | Remove duplicated listing dossier trust/history block | High | Low | `client/src/pages/ListingPage.tsx` |
+| P0 | Replace purple/blue primary visual language with coherent brick/paper/ink/trust semantics | Very high | Medium | `src/index.css`, header, hero, CTA primitives |
+| P0 | Rework reusable property card into an editorial evidence card | Very high | Medium | `src/components/architech/PropertyCard.tsx` |
+| P0 | Remove duplicated listing dossier trust/history block | High | Low | `src/screens/ListingPage.tsx` |
 | P1 | Add architectural field-journal geometry to hero/search/results | High | Medium | `Home.tsx`, `ResultsPage.tsx`, shared motifs |
 | P1 | Improve filter/search context and empty states | High | Medium | `ResultsPage.tsx`, search components |
 | P1 | Add intent-aware contextual bento content using existing typed data | Medium-high | Medium | homepage discovery modules |

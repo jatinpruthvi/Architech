@@ -120,7 +120,7 @@ Brokers install the **official** Chatwoot app, then enter your Chatwoot URL + th
 model AreaAssignment {
   id             String  @id @default(cuid())
   organizationId String
-  localitySlug   String  // from client/src/lib/localities.ts
+  localitySlug   String  // from src/lib/localities.ts
   brokerUserId   String
   active         Boolean @default(true)
   @@unique([organizationId, localitySlug])

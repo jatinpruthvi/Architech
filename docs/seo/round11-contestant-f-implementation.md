@@ -28,7 +28,7 @@ F's warning is specific:
 
 > "If you create 5,000 locality pages that are just templates with the locality name swapped in, Google will classify them as **doorway pages** (spam policy violation) and ignore them. Instead, each locality page should have: actual price trend data, nearby schools/hospitals/metro distances, locality pros/cons written by someone who knows the area, original photos, resident reviews. **Quality > quantity.**"
 
-File 3 wired the quality gate that is supposed to catch exactly this. Reviewing it against F's wording surfaced a defect in that work: for locality pages, `hasUniqueData` was **hardcoded `true`** in `client/src/lib/seo/page-gate.ts`, not derived.
+File 3 wired the quality gate that is supposed to catch exactly this. Reviewing it against F's wording surfaced a defect in that work: for locality pages, `hasUniqueData` was **hardcoded `true`** in `src/lib/seo/page-gate.ts`, not derived.
 
 That matters. `hasUniqueData` is one of the gate's hard requirements, and for the one page type most at risk of being a template with a swapped name, it was asserted rather than measured. A locality added to the registry with nothing but a name and coordinates would have sailed through. The gate was real for every other requirement and symbolic for this one.
 
@@ -63,7 +63,7 @@ Two tests cover both directions: a locality confirmed to have its own data index
 
 F's targets ("2 BHK under 80 lakhs in Whitefield", "apartments near Metro station HSR Layout", "gated community villas in Sarjapur Road") decompose into BHK, budget, and landmark. Architech serves all three:
 
-- **BHK and budget** are parsed query dimensions in `client/src/lib/search/parse-query.ts`, with real URL parameters.
+- **BHK and budget** are parsed query dimensions in `src/lib/search/parse-query.ts`, with real URL parameters.
 - **Landmark and property type** are filters over real inventory.
 - **Locality pages** carry the structured facts that make long-tail queries answerable: PIN codes, named commute stops, price bands, BHK and budget splits, RERA coverage.
 
@@ -78,7 +78,7 @@ F's own condition — "their micro-locality pages are often thin; create genuine
 | Mobile-first | **Already implemented** — `width=device-width, initial-scale=1` verified in rendered HTML. |
 | XML sitemaps segmented by property type/locality with accurate `lastmod` | **Already implemented (file 1)**, segmented by **content type** rather than property type: `pages` / `cities` / `localities` / `listings` / `guides`. Property type is not a URL dimension here, so it cannot be a sitemap partition without creating the pages first. `lastmod` is derived from entity data and is never the build clock. |
 | Canonical tags preventing duplicate listings from multiple brokers | **Already implemented** — one canonical page per property, `DUPLICATE` → 301 to `canonicalToListingId`. See the §9 divergence note in file 4 for why Architech does not canonicalise outward to upstream sources. |
-| `noindex` faceted filter combinations | **Already implemented** — `client/src/lib/seo/facets.ts`, plus `Disallow` for `/search/` and `/saved/`. File 2 upgraded this from a stub to a real qualification gate. |
+| `noindex` faceted filter combinations | **Already implemented** — `src/lib/seo/facets.ts`, plus `Disallow` for `/search/` and `/saved/`. File 2 upgraded this from a stub to a real qualification gate. |
 
 ## §3 — Structured data
 
@@ -130,8 +130,8 @@ The registry lists 12 cities, which reads as contradicting this. The wedge is pr
 
 | Change | File(s) |
 |---|---|
-| Locality `hasUniqueData` derived from the locality record instead of hardcoded | `client/src/lib/seo/page-gate.ts` |
-| Tests covering both directions of the distinct-data requirement | `client/src/lib/seo/page-quality.test.ts` |
+| Locality `hasUniqueData` derived from the locality record instead of hardcoded | `src/lib/seo/page-gate.ts` |
+| Tests covering both directions of the distinct-data requirement | `src/lib/seo/page-quality.test.ts` |
 
 ## Verification
 

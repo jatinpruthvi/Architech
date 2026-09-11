@@ -1,7 +1,7 @@
 # ARCHITECH — Design System Audit + Theme Concepts + Dual-Audience Patterns
 
 **Date:** 2026-08-28 · **Auditor role:** Senior UI/UX + design-systems review
-**What was reviewed:** not screenshots — the actual runtime. `client/src/theme.css` (474 lines), the rendered DOM of `/`, `/search/`, `/broker/agent/leads` from a live dev server, `PropertyCard`, `Header`, `ResultsPage`, `ListingPage`, `AgentWorkspace`, `RequirementCapture`, `ListingGallery`, `Pic`, `filters.ts`, `ThemeContext`.
+**What was reviewed:** not screenshots — the actual runtime. `src/theme.css` (474 lines), the rendered DOM of `/`, `/search/`, `/broker/agent/leads` from a live dev server, `PropertyCard`, `Header`, `ResultsPage`, `ListingPage`, `AgentWorkspace`, `RequirementCapture`, `ListingGallery`, `Pic`, `filters.ts`, `ThemeContext`.
 
 ---
 

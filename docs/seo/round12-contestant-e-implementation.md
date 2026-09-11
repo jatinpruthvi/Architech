@@ -163,7 +163,7 @@ noindexed and excluded, 0 unsegmented pages.*
   threshold, and now additionally keeps the gated price index out of the
   index.
 - **LCP under 1.5s on locality pages** — **not adopted as a target.** The
-  repo pins `lcpMs: 2500` in `config/performance/budgets.json`, which is Google's
+  repo pins `lcpMs: 2500` in `ops/config/performance/budgets.json`, which is Google's
   published "good" threshold and what the SLO alerts on. Lowering the number
   in a config file does not make a page faster, and 1.5s cannot be verified
   in CI. What *is* enforced on locality routes is the HTML byte budget —
@@ -180,28 +180,28 @@ noindexed and excluded, 0 unsegmented pages.*
 | --- | --- |
 | `app/price-index/page.tsx` | The hub: every city, published or withheld. |
 | `app/price-index/[city]/page.tsx` | The per-city report, gated. |
-| `client/src/lib/seo/price-index.ts` | Metadata, `Article` + `BreadcrumbList` JSON-LD, hub head, outbound links. |
-| `client/src/components/architech/NotesList.tsx` | Titled list. Exists so `role="list"` lives where ESLint allows it — see below. |
-| `client/src/lib/seo/price-index.test.ts` | 14 tests. |
-| `client/src/lib/seo/urls.ts` | `priceIndexPath/Url`, `cityPriceIndexPath/Url`. |
+| `src/lib/seo/price-index.ts` | Metadata, `Article` + `BreadcrumbList` JSON-LD, hub head, outbound links. |
+| `src/components/architech/NotesList.tsx` | Titled list. Exists so `role="list"` lives where ESLint allows it — see below. |
+| `src/lib/seo/price-index.test.ts` | 14 tests. |
+| `src/lib/seo/urls.ts` | `priceIndexPath/Url`, `cityPriceIndexPath/Url`. |
 
 **Changed**
 
 | File | Change |
 | --- | --- |
-| `client/src/lib/seo/serp.ts` | `fitTail()`; `localitySerpTitle` now ladders real data; price-index SERP helpers. |
-| `client/src/pages/CityPage.tsx` | Nearby localities 4 → 5. |
-| `client/src/lib/seo/pages.ts` | `report` route type, 13 pages registered, indexability from the report's gate. |
-| `client/src/lib/seo/sitemap.ts` | `reports` segment. |
-| `scripts/seo/raw-html-smoke.mjs` | 3 price-index routes and the `reports` sitemap added. |
-| `client/src/lib/seo/serp.test.ts`, `pages.test.ts` | New ladder tests; registry count formula. |
+| `src/lib/seo/serp.ts` | `fitTail()`; `localitySerpTitle` now ladders real data; price-index SERP helpers. |
+| `src/screens/CityPage.tsx` | Nearby localities 4 → 5. |
+| `src/lib/seo/pages.ts` | `report` route type, 13 pages registered, indexability from the report's gate. |
+| `src/lib/seo/sitemap.ts` | `reports` segment. |
+| `ops/scripts/seo/raw-html-smoke.mjs` | 3 price-index routes and the `reports` sitemap added. |
+| `src/lib/seo/serp.test.ts`, `pages.test.ts` | New ladder tests; registry count formula. |
 
 **Why `NotesList` is a component.** Two rules disagree about `role="list"` on
 a `<ul>`: `design-token-discipline.test.ts` requires it on every `<ul>`
 (Safari + VoiceOver drop list semantics once Tailwind's preflight removes
 list-style, and the item count is information), while the default jsx-a11y
 config that covers `app/**` treats it as a redundant role. `eslint.config.js`
-resolves this for `client/src/**` only. Every one of the repo's 10 `<ul>`
+resolves this for `src/**` only. Every one of the repo's 10 `<ul>`
 elements is in a component; the new pages follow that rather than suppress
 either rule.
 
@@ -243,7 +243,7 @@ Two of the new assertions caught real defects while being written, both fixed:
 
 ## Deliberately deferred
 
-- **Project pages** — no `Project` model (`prisma/schema.prisma`).
+- **Project pages** — no `Project` model (`db/schema.prisma`).
 - **"Near" pages** — would be thin slices of pages that already rank; E §6 and
   §7 both argue against.
 - **Per-locality price-trend pages** — the locality page already carries its

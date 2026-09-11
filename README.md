@@ -4,11 +4,11 @@
 
 Architech is the architecture and implementation-planning repository for a premium India-wide real-estate discovery platform. It defines the product, user experience, technical stack, page-authority model, Google-first SEO system, AI-search readiness, broker operations, RERA verification, media pipeline, security posture, localization strategy, infrastructure, testing, and three-phase delivery plan.
 
-This repository is the **normative architecture, governance package, and working reference implementation**. The architecture and governance documents define the contracts; the Next.js application under `app/`, `client/`, `prisma/`, and `scripts/`, together with the operational contracts in `config/`, demonstrates those contracts and is the active implementation surface.
+This repository is the **normative architecture, governance package, and working reference implementation**. The architecture and governance documents define the contracts; the Next.js application under `src/app/`, `src/`, `db/`, and `ops/scripts/`, together with the operational contracts in `ops/config/`, demonstrates those contracts and is the active implementation surface.
 
 ## 🚧 Live prototype (August 2026) — now on Next.js 16
 
-This repo contains a working **Next.js 16 App Router application** — the "Amdavad Modern" UI — with server-side rendering, per-route metadata, JSON-LD, generated sitemap/robots, dark mode, and a Hindi (हिन्दी) language toggle. Views/components live in `client/src/`, routes in `app/`.
+This repo contains a working **Next.js 16 App Router application** — the "Amdavad Modern" UI — with server-side rendering, per-route metadata, JSON-LD, generated sitemap/robots, dark mode, and a Hindi (हिन्दी) language toggle. Views/components live in `src/`, routes in `src/app/`.
 
 ```bash
 pnpm install
@@ -21,23 +21,23 @@ pnpm build      # next build (SSG: all public pages prerendered)
 pnpm start      # production server
 ```
 
-SEO now real: server-rendered HTML for every public page, per-route titles/canonicals, `Place`/`Residence`/`BreadcrumbList` JSON-LD, `sitemap.xml`, `robots.txt` (search/saved unindexed per faceted-navigation rules), true HTTP 404s, and stable trailing-slash URLs per the architecture's grammar. Dark mode: token-level theme with pre-paint script. Hindi: reviewed-strings foundation via `client/src/lib/i18n.ts` (ASCII slugs unchanged).
+SEO now real: server-rendered HTML for every public page, per-route titles/canonicals, `Place`/`Residence`/`BreadcrumbList` JSON-LD, `sitemap.xml`, `robots.txt` (search/saved unindexed per faceted-navigation rules), true HTTP 404s, and stable trailing-slash URLs per the architecture's grammar. Dark mode: token-level theme with pre-paint script. Hindi: reviewed-strings foundation via `src/lib/i18n.ts` (ASCII slugs unchanged).
 
 Pages: Home (`/`), the national hub (`/buy/` — every city Architech covers), city hubs (`/buy/{city}/`), locality pages (`/buy/{city}/{locality}/`), search (`/search` — URL-synced multi-select filters plus a city scope), listing dossiers (`/listing/:id`), field notes (`/guide`), saved shortlist (`/saved`, persisted locally).
 
 ### India-wide coverage
 
-Coverage is registry-driven. `client/src/lib/cities.ts` holds the city registry (slug, native name, state, centroid, viewport, price band, state RERA authority, launch status) and `client/src/lib/localities.ts` holds localities keyed to a city. Twelve cities are live — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — across ten states and 72 localities.
+Coverage is registry-driven. `src/lib/cities.ts` holds the city registry (slug, native name, state, centroid, viewport, price band, state RERA authority, launch status) and `src/lib/localities.ts` holds localities keyed to a city. Twelve cities are live — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Gurugram, Noida, Surat and Jaipur — across ten states and 72 localities.
 
-Adding a city is a registry edit: routes (`/buy/[city]/[locality]/`), `generateStaticParams`, the `SeoPage` registry, sitemap partitions, the search city scope, the home city index, and broker/requirement city validation all read from the registry. Run `node scripts/data/generate-seed-registry.mjs` afterwards so `prisma db seed` provisions the same places; `client/src/lib/seed-sync.test.ts` fails if the two drift.
+Adding a city is a registry edit: routes (`/buy/[city]/[locality]/`), `generateStaticParams`, the `SeoPage` registry, sitemap partitions, the search city scope, the home city index, and broker/requirement city validation all read from the registry. Run `node ops/scripts/data/generate-seed-registry.mjs` afterwards so `prisma db seed` provisions the same places; `src/lib/seed-sync.test.ts` fails if the two drift.
 
-Ahmedabad keeps hand-authored editorial fixtures (they model the edge cases behavioural tests rely on, such as a rent-only locality). Inventory for every other city is derived deterministically in `client/src/lib/property-generator.ts` from the city price band and a locality price index, and remains illustrative demo data.
+Ahmedabad keeps hand-authored editorial fixtures (they model the edge cases behavioural tests rely on, such as a rent-only locality). Inventory for every other city is derived deterministically in `src/lib/property-generator.ts` from the city price band and a locality price index, and remains illustrative demo data.
 
 ### PIN code queries
 
 Every city carries its India Post sorting-district prefixes (`pincodePrefixes`) and every locality carries the PIN codes it serves (`pincodes`). The relationship is many-to-many in both directions — Thaltej spans 380059 and 380054, while 395007 covers both Vesu and Piplod — so both sides are lists rather than single columns.
 
-PIN codes are a **query dimension, not a URL key**: canonical URLs stay slug-based (`/buy/{city}/{locality}/`) because slugs are stable, readable, and already indexed. `client/src/lib/pincodes.ts` resolves a PIN in layers and refuses to guess: an exact PIN returns the localities that claim it, an unclaimed PIN falls back to its three-digit district's city, and anything outside every covered district returns `null`.
+PIN codes are a **query dimension, not a URL key**: canonical URLs stay slug-based (`/buy/{city}/{locality}/`) because slugs are stable, readable, and already indexed. `src/lib/pincodes.ts` resolves a PIN in layers and refuses to guess: an exact PIN returns the localities that claim it, an unclaimed PIN falls back to its three-digit district's city, and anything outside every covered district returns `null`.
 
 Search accepts `?pincode=380007` and also recognises a bare six-digit token typed into `?q=` (`3 bhk 411057` works). Locality pages state their PINs as a visible fact and emit `postalCode` in the `PostalAddress` JSON-LD. In the database, `Locality.pincodes` is a GIN-indexed `String[]`, `City.pincodePrefixes` a `String[]`, and `Listing.postalCode` a nullable indexed column (migration `202608270001_pincode_registry`).
 
@@ -45,7 +45,7 @@ Search accepts `?pincode=380007` and also recognises a bare six-digit token type
 
 ### Search understanding
 
-The search box parses what is typed instead of forwarding it as an opaque string. `client/src/lib/search/parse-query.ts` is a deterministic grammar over the place registry and the filter vocabulary: it reads BHK, budget ("under 1.5 cr", "below 80 lakh"), buy/rent intent, category, property type, availability, RERA, city, locality and PIN, and reports what it did not understand rather than guessing.
+The search box parses what is typed instead of forwarding it as an opaque string. `src/lib/search/parse-query.ts` is a deterministic grammar over the place registry and the filter vocabulary: it reads BHK, budget ("under 1.5 cr", "below 80 lakh"), buy/rent intent, category, property type, availability, RERA, city, locality and PIN, and reports what it did not understand rather than guessing.
 
 Recognised parts become real URL parameters (`city`, `pincode`, `intent`, `category`, `filters`) and anything a parameter cannot carry — a locality name, a budget above the exposed price filter — stays in `q`, so rewriting a query is lossless. The interpretation is shown above the results ("Reads as: 3 BHK · in Koramangala · under ₹2 Cr") before the search runs.
 
@@ -107,7 +107,7 @@ The current implementation and activation state is summarized in [`STATUS.md`(do
 
 ### Required reading order
 
-For implementation, read `README.md`, then `config/governance/feedback/FEEDBACK-REVIEW.md`, `docs/architecture/normative/final-three-phase-architecture.md`, `config/governance/contracts/REQUIREMENTS.md`, `config/governance/contracts/DOMAIN-CONTRACTS.md`, `config/governance/contracts/IMPLEMENTATION-MATRIX.md`, `config/governance/decisions/DECISION-LOG.md`, and `config/governance/legal/LEGAL-GATES.md`. Historical version files are for context only and are not independent specifications.
+For implementation, read `README.md`, then `ops/config/governance/feedback/FEEDBACK-REVIEW.md`, `docs/architecture/normative/final-three-phase-architecture.md`, `ops/config/governance/contracts/REQUIREMENTS.md`, `ops/config/governance/contracts/DOMAIN-CONTRACTS.md`, `ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md`, `ops/config/governance/decisions/DECISION-LOG.md`, and `ops/config/governance/legal/LEGAL-GATES.md`. Historical version files are for context only and are not independent specifications.
 
 The normative architecture uses stable requirement IDs, decision IDs, contract invariants, work IDs, acceptance evidence, and reversal triggers. A feature can be architecturally anticipated in Phase 1 while remaining disabled until its contract, implementation, validation, legal, cost, or performance gates pass.
 
@@ -264,13 +264,13 @@ The India privacy posture includes notice, purpose limitation, consent and withd
 
 | File | Authority and purpose |
 |---|---|
-| `config/governance/feedback/FEEDBACK-REVIEW.md` | Accepted/rejected governance suggestions and resolved contradictions. |
-| `config/governance/contracts/REQUIREMENTS.md` | Stable requirement IDs, owners, status, and acceptance evidence. |
-| `config/governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts and invariants. |
-| `config/governance/contracts/IMPLEMENTATION-MATRIX.md` | Work IDs, owners, dependencies, planning estimates, entry/exit criteria, and evidence. |
-| `config/governance/decisions/DECISION-LOG.md` | Stable decisions, rationale, affected requirements/work, evidence, and reversal triggers. |
-| `config/governance/legal/LEGAL-GATES.md` | Legal and compliance approvals required before public enablement. |
-| `config/governance/decisions/SUPERSESSION-MANIFEST.md` | Normative versus historical document status and reading order. |
+| `ops/config/governance/feedback/FEEDBACK-REVIEW.md` | Accepted/rejected governance suggestions and resolved contradictions. |
+| `ops/config/governance/contracts/REQUIREMENTS.md` | Stable requirement IDs, owners, status, and acceptance evidence. |
+| `ops/config/governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts and invariants. |
+| `ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md` | Work IDs, owners, dependencies, planning estimates, entry/exit criteria, and evidence. |
+| `ops/config/governance/decisions/DECISION-LOG.md` | Stable decisions, rationale, affected requirements/work, evidence, and reversal triggers. |
+| `ops/config/governance/legal/LEGAL-GATES.md` | Legal and compliance approvals required before public enablement. |
+| `ops/config/governance/decisions/SUPERSESSION-MANIFEST.md` | Normative versus historical document status and reading order. |
 | `docs/archive/ARCHIVE_INDEX.md` | Historical archive index. |
 
 ## How an AI coding system should use this repository
@@ -326,14 +326,14 @@ Reload your editor and approve the server to get the `search_prompts` and `get_p
 | `history/appendices/v8-accepted-seo-appendix.md` | Accepted v8 SEO implementation updates. |
 | `history/reviews/final-technical-stack-review.md` | Initial technical-stack and UI-first review. |
 | `ARCHIVE_INDEX.md` | Historical archive index. |
-| `config/governance/feedback/FEEDBACK-REVIEW.md` | Governance feedback decisions and contradiction resolution. |
-| `config/governance/contracts/REQUIREMENTS.md` | Stable requirement registry. |
-| `config/governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts. |
-| `config/governance/contracts/IMPLEMENTATION-MATRIX.md` | Workstream and acceptance matrix. |
-| `config/governance/decisions/DECISION-LOG.md` | Stable architecture decisions. |
-| `config/governance/legal/LEGAL-GATES.md` | Legal/compliance release gates. |
-| `config/governance/decisions/SUPERSESSION-MANIFEST.md` | Normative and historical document status. |
-| `config/governance/CHANGELOG.md` | Version evolution and governance update history. |
+| `ops/config/governance/feedback/FEEDBACK-REVIEW.md` | Governance feedback decisions and contradiction resolution. |
+| `ops/config/governance/contracts/REQUIREMENTS.md` | Stable requirement registry. |
+| `ops/config/governance/contracts/DOMAIN-CONTRACTS.md` | Executable domain contracts. |
+| `ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md` | Workstream and acceptance matrix. |
+| `ops/config/governance/decisions/DECISION-LOG.md` | Stable architecture decisions. |
+| `ops/config/governance/legal/LEGAL-GATES.md` | Legal/compliance release gates. |
+| `ops/config/governance/decisions/SUPERSESSION-MANIFEST.md` | Normative and historical document status. |
+| `ops/config/governance/CHANGELOG.md` | Version evolution and governance update history. |
 
 ## Definition of done
 

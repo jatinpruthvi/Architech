@@ -115,9 +115,9 @@ All ❌ — these are Phase-2 and require financial/legal providers + consent. N
 
 | Feature | Workstream | Deliverable |
 |---|---|---|
-| Agent/broker profile & reviews | `P1-AGENT-001` | `client/src/lib/agent/profile.ts` + tests; `RealEstateAgent` JSON-LD; "Your partner" & rating surface on the listing page (sample-review labelled, never inventing a score). |
-| Listing price history & comparables | `P1-DATA-006` | `client/src/lib/listing/history.ts` + tests; "Price & history" + same-locality comparables on the listing page; `priceHistory` JSON-LD. |
-| Listing performance tracking | `P1-OBS-003` | `client/src/lib/analytics/listing-stats.ts` + tests; idempotent `POST`/`GET /api/listings/:id/stats`; view-tracking effect on the listing page. |
+| Agent/broker profile & reviews | `P1-AGENT-001` | `src/lib/agent/profile.ts` + tests; `RealEstateAgent` JSON-LD; "Your partner" & rating surface on the listing page (sample-review labelled, never inventing a score). |
+| Listing price history & comparables | `P1-DATA-006` | `src/lib/listing/history.ts` + tests; "Price & history" + same-locality comparables on the listing page; `priceHistory` JSON-LD. |
+| Listing performance tracking | `P1-OBS-003` | `src/lib/analytics/listing-stats.ts` + tests; idempotent `POST`/`GET /api/listings/:id/stats`; view-tracking effect on the listing page. |
 
 ## Also fixed (pre-existing, to keep the foundation green)
 - **Performance budget re-baselined** after the parity overlay (first-load gzip 230→235 KiB, total static 2.1→2.15 MiB); `/saved` HTML sample replaced with `/home-loan` (overlay changed `/saved` to client-rendered, no standalone `.html`). Documented in `docs/performance/phase-1-baseline.md`.

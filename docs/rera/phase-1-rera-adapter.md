@@ -45,7 +45,7 @@ Replace the demo adapter with an official-source integration that:
 ## Validation
 
 ```bash
-pnpm test -- client/src/lib/rera/rera.test.ts
+pnpm test -- src/lib/rera/rera.test.ts
 pnpm check
 pnpm lint
 pnpm test

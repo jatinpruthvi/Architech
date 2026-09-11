@@ -11,12 +11,12 @@ Act as a comprehensive repository analysis and bug-fixing expert. You are tasked
 
 - **repositoryName:** Architech (`architech-web` v1.0.0, pnpm workspace)
 - **Stack:** Next.js (App Router) + TypeScript + React; Prisma + PostgreSQL; Tailwind CSS; Vitest; Playwright (a11y + UI); Storybook; Sentry
-- **In scope:** `app/` (routes, server actions, route handlers), `lib/` + `shared/` (domain logic), `prisma/` (schema + query code), `client/` (workspace package), `scripts/` (build/ops tooling), `proxy.ts`, `next.config.ts`
+- **In scope:** `app/` (routes, server actions, route handlers), `lib/` + `shared/` (domain logic), `db/` (schema + query code), `client/` (workspace package), `ops/scripts/` (build/ops tooling), `proxy.ts`, `next.config.ts`
 - **Out of scope:** `history/` (archived), `*.md` audit docs, `node_modules`, Storybook config (low risk)
 - **Domain constraint (repo policy):** Never invent or assume listing facts, prices, availability, RERA claims, broker claims, locality statistics, or SEO evidence. Treat unverifiable values as evidence gaps to flag, not facts to fix.
 
 ## Phase 1: Initial Repository Assessment
-1. Map the complete project structure (app/, client/, lib/, shared/, prisma/, scripts/, tests/).
+1. Map the complete project structure (app/, client/, lib/, shared/, db/, ops/scripts/, tests/).
 2. Confirm the technology stack and dependencies from package.json + pnpm-workspace.yaml.
 3. Document main entry points, critical paths (search → listing → detail → booking), and system boundaries.
 4. Analyze build configurations (next.config.ts, tsconfig.json) and CI/CD (.github/workflows).

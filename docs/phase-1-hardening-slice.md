@@ -7,10 +7,10 @@
 
 | # | Workstream | Module | Integration | Tests |
 |---|---|---|---|---|
-| 1 | P1-LEAD-001, P1-DATA-002 | `client/src/lib/leads/lead.ts` | soft-delete + consent-revoke workflow | `lead.test.ts` |
-| 2 | P1-MEDIA-001, P1-DATA-002 | `client/src/lib/media/upload.ts` + `persistence/media-store.ts` | takedown + delete workflow | `upload.test.ts`, `retention.test.ts` |
-| 3 | P1-SEO-003 | `client/src/lib/search/pagination.ts` + `seo/facets.ts` | search pagination meta + faceted indexability gate | `pagination.test.ts`, `facets.test.ts` |
-| 4 | P1-TEST-001 | `client/src/lib/api-contract.test.ts` | built route-handler contract suite | `api-contract.test.ts` |
+| 1 | P1-LEAD-001, P1-DATA-002 | `src/lib/leads/lead.ts` | soft-delete + consent-revoke workflow | `lead.test.ts` |
+| 2 | P1-MEDIA-001, P1-DATA-002 | `src/lib/media/upload.ts` + `persistence/media-store.ts` | takedown + delete workflow | `upload.test.ts`, `retention.test.ts` |
+| 3 | P1-SEO-003 | `src/lib/search/pagination.ts` + `seo/facets.ts` | search pagination meta + faceted indexability gate | `pagination.test.ts`, `facets.test.ts` |
+| 4 | P1-TEST-001 | `src/lib/api-contract.test.ts` | built route-handler contract suite | `api-contract.test.ts` |
 
 ## Details
 

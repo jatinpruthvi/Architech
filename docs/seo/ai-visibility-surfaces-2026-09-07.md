@@ -12,7 +12,7 @@ The question asked was "do we have added detail for llms.txt, llm-full.txt and s
 
 ## What shipped
 
-### 1. Explicit AI-crawler policy (`client/src/lib/seo/ai-crawlers.ts`)
+### 1. Explicit AI-crawler policy (`src/lib/seo/ai-crawlers.ts`)
 
 Ten crawlers, each classified by **purpose** with a recorded rationale:
 
@@ -92,7 +92,7 @@ It is a **static** route sitting beside `/sitemap/[segment]` (Next resolves stat
 | Gate | Result |
 |---|---|
 | `tsc --noEmit` | pass |
-| `pnpm lint` (app + client/src) | pass, 0 warnings |
+| `pnpm lint` (app + src) | pass, 0 warnings |
 | Unit tests | **1860 passed** / 49 skipped, 170 files (was 1807 — **+53 new**) |
 | Production build | pass; `/llms.txt`, `/llms-full.txt`, `/sitemap/images.xml` all registered |
 | SEO smoke | pass — 19 routes, **8 sitemaps**, **2 AI index files** |

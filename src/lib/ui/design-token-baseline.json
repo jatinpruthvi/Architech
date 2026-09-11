@@ -1,0 +1,198 @@
+{
+  "_readme": "Ratchet baseline for design-token-discipline.test.ts. Each number is the CURRENT count of a legacy pattern in that file. The test fails only when a file EXCEEDS its baseline, so debt can be paid down but never grows. Regenerate after a cleanup with: node src/lib/ui/design-token-baseline.cjs --write",
+  "src/app/buy/[city]/page.tsx": {
+    "alphaText": 10,
+    "microText": 4,
+    "nanoText": 0
+  },
+  "src/app/buy/page.tsx": {
+    "alphaText": 9,
+    "microText": 5,
+    "nanoText": 0
+  },
+  "src/app/compare/page.tsx": {
+    "alphaText": 5,
+    "microText": 3,
+    "nanoText": 0
+  },
+  "src/app/error.tsx": {
+    "alphaText": 2,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "src/app/privacy/page.tsx": {
+    "alphaText": 6,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "src/app/terms/page.tsx": {
+    "alphaText": 2,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "src/components/architech/CompareTray.tsx": {
+    "alphaText": 6,
+    "microText": 5,
+    "nanoText": 0
+  },
+  "src/components/architech/Footer.tsx": {
+    "alphaText": 10,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "src/components/architech/Header.tsx": {
+    "alphaText": 6,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "src/components/architech/HeroSearch.tsx": {
+    "alphaText": 7,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "src/components/architech/ListingGallery.tsx": {
+    "alphaText": 5,
+    "microText": 4,
+    "nanoText": 1
+  },
+  "src/components/architech/LocalityIntel.tsx": {
+    "alphaText": 22,
+    "microText": 22,
+    "nanoText": 1
+  },
+  "src/components/architech/LocalityTrust.tsx": {
+    "alphaText": 7,
+    "microText": 6,
+    "nanoText": 0
+  },
+  "src/components/architech/MapListSync.tsx": {
+    "alphaText": 4,
+    "microText": 3,
+    "nanoText": 1
+  },
+  "src/components/architech/MarketDirectory.tsx": {
+    "alphaText": 7,
+    "microText": 4,
+    "nanoText": 0
+  },
+  "src/components/architech/OwnershipCost.tsx": {
+    "alphaText": 4,
+    "microText": 3,
+    "nanoText": 2
+  },
+  "src/components/architech/PropertyCard.tsx": {
+    "alphaText": 1,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "src/components/architech/RequirementCapture.tsx": {
+    "alphaText": 4,
+    "microText": 14,
+    "nanoText": 1
+  },
+  "src/components/architech/StickyBar.tsx": {
+    "alphaText": 2,
+    "microText": 1,
+    "nanoText": 1
+  },
+  "src/components/architech/TrustPanel.tsx": {
+    "alphaText": 9,
+    "microText": 6,
+    "nanoText": 1
+  },
+  "src/screens/AgentWorkspace.tsx": {
+    "alphaText": 37,
+    "microText": 17,
+    "nanoText": 1
+  },
+  "src/screens/BrokerLeadInbox.tsx": {
+    "alphaText": 8,
+    "microText": 4,
+    "nanoText": 3
+  },
+  "src/screens/BrokerOnboarding.tsx": {
+    "alphaText": 3,
+    "microText": 1,
+    "nanoText": 0
+  },
+  "src/screens/CityPage.tsx": {
+    "alphaText": 23,
+    "microText": 15,
+    "nanoText": 3
+  },
+  "src/screens/Collections.tsx": {
+    "alphaText": 9,
+    "microText": 3,
+    "nanoText": 0
+  },
+  "src/screens/DeveloperIndexPage.tsx": {
+    "alphaText": 6,
+    "microText": 4,
+    "nanoText": 1
+  },
+  "src/screens/Guide.tsx": {
+    "alphaText": 3,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "src/screens/GuideArticle.tsx": {
+    "alphaText": 8,
+    "microText": 4,
+    "nanoText": 0
+  },
+  "src/screens/Home.tsx": {
+    "alphaText": 20,
+    "microText": 8,
+    "nanoText": 0
+  },
+  "src/screens/InvestmentPage.tsx": {
+    "alphaText": 10,
+    "microText": 3,
+    "nanoText": 2
+  },
+  "src/screens/ListProperty.tsx": {
+    "alphaText": 7,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "src/screens/ListingPage.tsx": {
+    "alphaText": 32,
+    "microText": 26,
+    "nanoText": 5
+  },
+  "src/screens/ListingSubmission.tsx": {
+    "alphaText": 30,
+    "microText": 12,
+    "nanoText": 0
+  },
+  "src/screens/ModerationQueue.tsx": {
+    "alphaText": 5,
+    "microText": 3,
+    "nanoText": 1
+  },
+  "src/screens/NotFound.tsx": {
+    "alphaText": 1,
+    "microText": 0,
+    "nanoText": 0
+  },
+  "src/screens/PublicParity.tsx": {
+    "alphaText": 34,
+    "microText": 21,
+    "nanoText": 3
+  },
+  "src/screens/RequirementsPage.tsx": {
+    "alphaText": 5,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "src/screens/Saved.tsx": {
+    "alphaText": 3,
+    "microText": 2,
+    "nanoText": 0
+  },
+  "src/screens/SavedSearches.tsx": {
+    "alphaText": 6,
+    "microText": 3,
+    "nanoText": 0
+  }
+}

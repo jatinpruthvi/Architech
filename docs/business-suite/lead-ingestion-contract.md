@@ -1,7 +1,7 @@
 # Lead ingestion contract — the one schema every lead source normalizes to
 
 **Date:** 08 Sep 2026
-**Status:** Contract v1, implemented. The normative TypeScript reference lives at [`client/src/lib/interop/lead-ingestion.ts`](../../client/src/lib/interop/lead-ingestion.ts) with tests in `lead-ingestion.test.ts` (11 passing; `pnpm exec vitest run client/src/lib/interop/lead-ingestion.test.ts`). The Frappe-side implementation (`business_suite_core`) mirrors this in Python.
+**Status:** Contract v1, implemented. The normative TypeScript reference lives at [`src/lib/interop/lead-ingestion.ts`](../../src/lib/interop/lead-ingestion.ts) with tests in `lead-ingestion.test.ts` (11 passing; `pnpm exec vitest run src/lib/interop/lead-ingestion.test.ts`). The Frappe-side implementation (`business_suite_core`) mirrors this in Python.
 **Builds on:** [`real-estate-portal-lead-ingestion.md`](./real-estate-portal-lead-ingestion.md) (per-portal mechanisms) and [`feature-coverage-mapping.md`](./feature-coverage-mapping.md) §5 (the ingestion spine). This document is the contract those adapters build against.
 **Consumers:** portal adapters (MagicBricks/99acres/Housing/…), B2B aggregator adapters (IndiaMart/JustDial/TradeIndia), Meta/Google lead-form flows, the website/Architech enquiry projection, CSV import, email-parse, and the CRM writer in `business_suite_core`.
 
@@ -27,7 +27,7 @@ Registry: `LEAD_SOURCES` in the module. IDs are stable, lowercase, hyphenated; t
 | `google-ads` | Google Lead Forms | search-ads | digital-paid |
 | `csv-import`, `email-parse`, `manual` | Import surfaces | import | import |
 
-**Portal ids are anonymous by design.** Shipped code (`app/`, `client/src/`) must not carry a competitor portal's brand — not in ids, not in labels, not in comments (the competitor-names guard scans every built source, comments included). Portal sources therefore carry capability ids and ordinals; the id↔portal mapping lives here in the spec, where competitive analysis may name names:
+**Portal ids are anonymous by design.** Shipped code (`app/`, `src/`) must not carry a competitor portal's brand — not in ids, not in labels, not in comments (the competitor-names guard scans every built source, comments included). Portal sources therefore carry capability ids and ordinals; the id↔portal mapping lives here in the spec, where competitive analysis may name names:
 
 | Contract id | Portal (trade name) | Integration |
 |---|---|---|

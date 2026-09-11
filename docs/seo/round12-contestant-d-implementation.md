@@ -32,7 +32,7 @@ amenity counts.
 
 `/buy/[city]/[locality]` already does this across **72 localities**, and the
 evidence gate added in file 7 (`EVIDENCE_BAR.programmatic` in
-`client/src/lib/seo/page-quality.ts`) is what stops those pages from being the
+`src/lib/seo/page-quality.ts`) is what stops those pages from being the
 thin doorways D warns about in §7. A locality page is only published when it
 has `activeListings >= 6 || verifiedTransactions >= 1 || uniqueWordCount >= 300`.
 
@@ -47,7 +47,7 @@ Vitals discipline, and breadcrumbs marked up with schema.
 | --- | --- |
 | Server rendering | Every public route prerenders. No change. |
 | Sitemaps split by type | Six already: pages, cities, localities, listings, guides, plus the index. No change. |
-| Facet combinations `noindex` | `FACET_POLICY.indexable = false` in `client/src/lib/seo/facets.ts`. Left shut — see §7 below. |
+| Facet combinations `noindex` | `FACET_POLICY.indexable = false` in `src/lib/seo/facets.ts`. Left shut — see §7 below. |
 | Core Web Vitals / images | **3716/3716** rendered images sit in a `<picture>` with a WebP `srcSet`, and **all 3716** carry `width`, `height` and `loading`. One exception, fixed. |
 | Breadcrumbs + schema | 421/436 routes had `BreadcrumbList`. Now 425. |
 
@@ -62,7 +62,7 @@ real number: 3716 of 3716. The LCP image on a listing page is
 **Fixed in this pass:**
 
 1. **The 404 page bypassed the image primitive.**
-   `client/src/pages/NotFound.tsx` had a raw
+   `src/screens/NotFound.tsx` had a raw
    `<img src="/images/brick-arch.jpg">` — the only one of 3716 without WebP,
    a responsive source, intrinsic dimensions, or lazy loading. It now uses
    `Pic`. *Measured: images missing `width`/`height`/`loading` went 1 → 0.*
@@ -89,7 +89,7 @@ real number: 3716 of 3716. The LCP image on a listing page is
 3. **Guide JSON-LD was triplicated and had no breadcrumbs.** The same
    `Article` block was copy-pasted into all three guide route templates, and it
    had already drifted: two emitted a relative image path, one absolute. Now
-   one builder (`client/src/lib/seo/guide-jsonld.ts`) emits `Article` +
+   one builder (`src/lib/seo/guide-jsonld.ts`) emits `Article` +
    `BreadcrumbList`, and one `guideMetadata()` emits the head. The three
    templates are now three lines each.
 
@@ -159,26 +159,26 @@ combinations speculatively. D's own §7 outranks D's §2 here.
 
 | File | Purpose |
 | --- | --- |
-| `client/src/lib/media/intrinsic-sizes.ts` | Measured image dimensions, hooks-free so a server component can read them. Extracted from `Pic.tsx`. |
-| `client/src/lib/seo/social.ts` | `socialImage()` / `defaultSocialImage()` — absolute URL plus measured dimensions, or a URL with none. Never guesses. |
-| `client/src/lib/seo/guide-jsonld.ts` | One guide head: `guideMetadata()`, `guideJsonLd()`, `guideHubJsonLd()`, `guideBreadcrumb()`, `guideArticleUrl()`. |
+| `src/lib/media/intrinsic-sizes.ts` | Measured image dimensions, hooks-free so a server component can read them. Extracted from `Pic.tsx`. |
+| `src/lib/seo/social.ts` | `socialImage()` / `defaultSocialImage()` — absolute URL plus measured dimensions, or a URL with none. Never guesses. |
+| `src/lib/seo/guide-jsonld.ts` | One guide head: `guideMetadata()`, `guideJsonLd()`, `guideHubJsonLd()`, `guideBreadcrumb()`, `guideArticleUrl()`. |
 
 **Changed**
 
 | File | Change |
 | --- | --- |
-| `client/src/components/architech/Pic.tsx` | Imports the shared map; `PIC_INTRINSIC_SIZES` is now an alias of it, so there is one source of truth. |
+| `src/components/architech/Pic.tsx` | Imports the shared map; `PIC_INTRINSIC_SIZES` is now an alias of it, so there is one source of truth. |
 | `app/layout.tsx` | Default card from `defaultSocialImage()`. Was `1600x900` and a relative URL. |
-| `client/src/pages/NotFound.tsx` | Raw `<img>` → `Pic`. |
+| `src/screens/NotFound.tsx` | Raw `<img>` → `Pic`. |
 | `app/guide/page.tsx` | Hub JSON-LD from the shared builder; gains `BreadcrumbList`. |
 | `app/guide/{city,locality,rera}/…/page.tsx` | Three near-identical templates collapse to `guideMetadata()` + `guideJsonLd()`. |
 | `app/listing/[id]/page.tsx`, `app/buy/[city]/[locality]/page.tsx` | Cards from `socialImage()`. |
 | `app/{about-us,contact-us,home-loan,investment,requirements,review}/page.tsx` | Were missing a card entirely; now carry the site default. |
-| `scripts/seo/raw-html-smoke.mjs` | `assertSocialCard()` — every served route's `og:image` must be absolute and dimensioned. |
+| `ops/scripts/seo/raw-html-smoke.mjs` | `assertSocialCard()` — every served route's `og:image` must be absolute and dimensioned. |
 
-**Tests** — `client/src/lib/media/intrinsic-sizes.test.ts` (5),
-`client/src/lib/seo/social.test.ts` (5),
-`client/src/lib/seo/guide-jsonld.test.ts` (9).
+**Tests** — `src/lib/media/intrinsic-sizes.test.ts` (5),
+`src/lib/seo/social.test.ts` (5),
+`src/lib/seo/guide-jsonld.test.ts` (9).
 
 ---
 
@@ -220,7 +220,7 @@ dimensions fails, absent card passes.
 
 ## Carried forward from file 8
 
-- C §1 society pages — no `Project` model in `prisma/schema.prisma`.
+- C §1 society pages — no `Project` model in `db/schema.prisma`.
 - C §2 IGR ingest — `verifiedTransactions` remains 0.
 - C §3 tranche release — no Search Console access, and page-count quotas are
   forbidden by the decision register.

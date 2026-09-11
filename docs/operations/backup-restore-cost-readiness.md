@@ -18,7 +18,7 @@ This document defines the operational readiness contract before production servi
 The machine-readable source of truth is:
 
 ```text
-config/governance/operations/phase-1-operational-readiness.json
+ops/config/governance/operations/phase-1-operational-readiness.json
 ```
 
 ## Service coverage

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
-  stories: ["../client/src/**/*.stories.@(ts|tsx|mdx)"],
+  stories: ["../src/**/*.stories.@(ts|tsx|mdx)"],
   addons: ["@storybook/addon-a11y"],
   framework: { name: "@storybook/nextjs-vite", options: {} },
   staticDirs: ["../public"],
@@ -15,8 +15,8 @@ const config: StorybookConfig = {
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),
-      "@": path.resolve(dirname, "../client/src"),
-      "@shared": path.resolve(dirname, "../shared"),
+      "@": path.resolve(dirname, "../src"),
+      "@shared": path.resolve(dirname, "../src/shared"),
     };
     return config;
   },

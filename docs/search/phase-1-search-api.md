@@ -33,16 +33,16 @@ type SearchResponse = {
 
 ## Current implementation
 
-- `client/src/lib/search/search.ts` applies the existing deterministic parser, filters, and sort over repository-backed listings.
+- `src/lib/search/search.ts` applies the existing deterministic parser, filters, and sort over repository-backed listings.
 - `app/api/search/route.ts` exposes the contract through a Next.js route handler.
-- `client/src/pages/ResultsPage.tsx` now fetches from `/api/search` and uses the backend response for result cards/counts.
+- `src/screens/ResultsPage.tsx` now fetches from `/api/search` and uses the backend response for result cards/counts.
 
 ## PostgreSQL search migration
 
 Manual migration:
 
 ```text
-prisma/migrations/202608240002_search_indexes/migration.sql
+db/migrations/202608240002_search_indexes/migration.sql
 ```
 
 It adds:
@@ -57,7 +57,7 @@ The repository remains fixture-backed until database provisioning is active. Whe
 ## Validation
 
 ```bash
-pnpm test -- client/src/lib/search/search.test.ts
+pnpm test -- src/lib/search/search.test.ts
 pnpm db:validate
 pnpm check
 pnpm lint

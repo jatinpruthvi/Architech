@@ -41,7 +41,7 @@
 > - `erpnext/stock/doctype/item/item.json`, `item_price.json`, `bin.json`, `stock_ledger_entry.json`
 > - `crm/fcrm/doctype/crm_lead/crm_lead.json`, `crm_deal.json`, `crm_organization.json`, `crm_call_log.json`, `crm_task.json`, `fcrm_note.json`, `erpnext_crm_settings.json`
 > - `frappe/model/document.py` (standard columns)
-> - `evolution-api/prisma/postgresql-schema.prisma`
+> - `evolution-api/db/postgresql-schema.prisma`
 
 ---
 
@@ -142,7 +142,7 @@ CRM DocTypes actually live under `crm/fcrm/doctype/...`. Key ones:
 
 ---
 
-## 3. Database-level detail: Evolution API (exact from `prisma/postgresql-schema.prisma` @ 2.3.7)
+## 3. Database-level detail: Evolution API (exact from `db/postgresql-schema.prisma` @ 2.3.7)
 
 **DB engine:** PostgreSQL (or MySQL) via Prisma; Redis for cache/queues. **Never write into this DB directly.** Use the Evolution HTTP API and consume its webhooks.
 

@@ -65,10 +65,10 @@ registry, **11 were wrong**, and the label renders on the locality page:
 as *Landmark*. That single inconsistency is the clearest evidence the
 categoriser was never a good idea.
 
-**Change.** `client/src/lib/realestate/amenities.ts` introduces a nine-value
+**Change.** `src/lib/realestate/amenities.ts` introduces a nine-value
 `AmenityCategory` vocabulary (`transit`, `work`, `learning`, `health`, `green`,
 `culture`, `retail`, `sports`, `landmark`). Every landmark in
-`client/src/lib/localities.ts` now declares its category as a third tuple
+`src/lib/localities.ts` now declares its category as a third tuple
 element. Inference survives only as a fallback for database rows that predate
 the field, and its rule order is fixed so employment is tested before green.
 
@@ -173,7 +173,7 @@ rather than a comparison against the wrong denominator.
 
 ## 5 · The market-report asset, with the gate that makes it safe (§2)
 
-`client/src/lib/realestate/market-trends.ts` produces the per-city,
+`src/lib/realestate/market-trends.ts` produces the per-city,
 per-locality table B wants, and `app/api/cities/[slug]/market-trends/route.ts`
 serves it.
 
@@ -202,7 +202,7 @@ described — which is the precondition for building the page safely.
 ## 6 · One registry for stamp duty and registration (§3)
 
 `0.05` and `0.01` were written twice: as `DEFAULT_STAMP_DUTY` /
-`DEFAULT_REGISTRATION` in `client/src/lib/cost/ownership.ts`, and as a `RATES`
+`DEFAULT_REGISTRATION` in `src/lib/cost/ownership.ts`, and as a `RATES`
 literal in `app/api/cost/ownership/route.ts` whose comment claimed "Gujarat
 defaults" while the constants themselves named no state.
 
@@ -267,22 +267,22 @@ published inventory.
 
 | File | Change |
 |---|---|
-| `client/src/lib/realestate/amenities.ts` | New — category vocabulary, declared-first resolution, row validation |
-| `client/src/lib/realestate/amenities.test.ts` | New — 28 tests |
-| `client/src/lib/realestate/market-trends.ts` | New — sample-gated city report |
-| `client/src/lib/realestate/market-trends.test.ts` | New — 13 tests |
-| `client/src/lib/realestate/price-trends.ts` | Sale/rent separation, unit helpers, sample gate |
-| `client/src/lib/realestate/price-trends.test.ts` | Updated, +2 tests |
-| `client/src/lib/realestate/locality-intel.ts` | Names categories, city-scoped baseline, sample gate |
-| `client/src/lib/realestate/locality-intel.test.ts` | Updated, +2 tests |
-| `client/src/lib/localities.ts` | All 33 landmarks declare a category |
-| `client/src/lib/repositories/mappers.ts` | Validates amenity rows instead of casting |
-| `client/src/components/architech/LocalityIntel.tsx` | Labels sourced from the vocabulary |
-| `client/src/lib/cost/ownership.ts` | `TRANSFER_CHARGES` registry; result carries its charges |
-| `client/src/lib/cost/ownership.test.ts` | +3 tests |
+| `src/lib/realestate/amenities.ts` | New — category vocabulary, declared-first resolution, row validation |
+| `src/lib/realestate/amenities.test.ts` | New — 28 tests |
+| `src/lib/realestate/market-trends.ts` | New — sample-gated city report |
+| `src/lib/realestate/market-trends.test.ts` | New — 13 tests |
+| `src/lib/realestate/price-trends.ts` | Sale/rent separation, unit helpers, sample gate |
+| `src/lib/realestate/price-trends.test.ts` | Updated, +2 tests |
+| `src/lib/realestate/locality-intel.ts` | Names categories, city-scoped baseline, sample gate |
+| `src/lib/realestate/locality-intel.test.ts` | Updated, +2 tests |
+| `src/lib/localities.ts` | All 33 landmarks declare a category |
+| `src/lib/repositories/mappers.ts` | Validates amenity rows instead of casting |
+| `src/components/architech/LocalityIntel.tsx` | Labels sourced from the vocabulary |
+| `src/lib/cost/ownership.ts` | `TRANSFER_CHARGES` registry; result carries its charges |
+| `src/lib/cost/ownership.test.ts` | +3 tests |
 | `app/api/cost/ownership/route.ts` | Reads the registry; removes the duplicate `RATES` |
 | `app/api/cities/[slug]/market-trends/route.ts` | New — serves the report |
-| `client/src/lib/api-contract.test.ts` | +6 tests across the touched endpoints |
+| `src/lib/api-contract.test.ts` | +6 tests across the touched endpoints |
 
 ## Open items
 

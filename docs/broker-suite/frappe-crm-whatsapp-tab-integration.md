@@ -27,7 +27,7 @@ The tab itself is **already shipped inside the Frappe CRM v1.83.0 we pin** — t
 
 | Piece | File (frappe/crm `52c500d`) | What it does |
 |---|---|---|
-| Tab registration | `frontend/src/pages/Lead.vue`, `Deal.vue` (and `MobileLead.vue`, `MobileDeal.vue`) | Registers a `WhatsApp` tab; `condition: () => whatsappEnabled.value` |
+| Tab registration | `frontend/src/screens/Lead.vue`, `Deal.vue` (and `MobileLead.vue`, `MobileDeal.vue`) | Registers a `WhatsApp` tab; `condition: () => whatsappEnabled.value` |
 | Feature flags | `frontend/src/composables/whatsapp.js` | Calls `crm.api.whatsapp.is_whatsapp_installed` (a `WhatsApp Settings` DocType exists) and `is_whatsapp_enabled` (default outgoing account set and its `WhatsApp Account.status == "Active"`) |
 | Chat pane | `frontend/src/components/Activities/WhatsAppArea.vue`, `WhatsAppBox.vue`, `Modals/WhatsappTemplateSelectorModal.vue` | Message list, composer with attachments/emoji/replies/reactions, template picker for first-contact sends |
 | Settings page | `frontend/src/components/Settings/WhatsAppSettings.vue` | A generic desk form: `<SettingsPage doctype="WhatsApp Settings" />` — any app that provides the doctype gets the settings UI free |
@@ -162,7 +162,7 @@ That last row is the property that makes the tab compose with v8's "normal Whats
 
 ### 5.5 Number hygiene
 
-Leads created from Architech's purpose-minimised lead event must carry `mobile_no` in **E.164** (`+91…`) so CRM's `parse_phone_number`/`are_same_phone_number` matching (default region IN) resolves threads deterministically. This is the same normalisation contract as Architech's `client/src/lib/interop/phone.ts`; the Architech lead-event adapter should enforce it at projection time.
+Leads created from Architech's purpose-minimised lead event must carry `mobile_no` in **E.164** (`+91…`) so CRM's `parse_phone_number`/`are_same_phone_number` matching (default region IN) resolves threads deterministically. This is the same normalisation contract as Architech's `src/lib/interop/phone.ts`; the Architech lead-event adapter should enforce it at projection time.
 
 ## 6. Interaction with the immediate-dispatch flow (v8 §7)
 

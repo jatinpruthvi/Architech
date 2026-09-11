@@ -21,7 +21,7 @@ scope, not a routing default.
 Guide content is defined in:
 
 ```text
-client/src/lib/repositories/guides.ts
+src/lib/repositories/guides.ts
 ```
 
 Each guide includes:

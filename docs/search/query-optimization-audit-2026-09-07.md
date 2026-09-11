@@ -49,7 +49,7 @@ survive contact with this repository, and report only what is verifiable from ar
 Because correctness gates are blind to index usage, the audit did not read the query
 builders and reason about them. It **executed** them in a throwaway Vitest file and
 captured the literal SQL string emitted, then diffed those predicates against every
-`CREATE INDEX` in `prisma/migrations`. Both sides are real artifacts.
+`CREATE INDEX` in `db/migrations`. Both sides are real artifacts.
 
 ---
 
@@ -57,14 +57,14 @@ captured the literal SQL string emitted, then diffed those predicates against ev
 
 | ID | Severity | Class | Location | Status |
 |---|---|---|---|---|
-| QP-19-001 | High | Redundant work | `client/src/lib/search/sql.ts` — `buildSqlNarrowPlan` | **Fixed** |
+| QP-19-001 | High | Redundant work | `src/lib/search/sql.ts` — `buildSqlNarrowPlan` | **Fixed** |
 | QP-19-002 | High | Missing index | `City."name"` trigram | **Fixed** |
 | QP-19-003 | Medium | Missing index | `Listing."titleHi"`, `"descriptionHi"`, `"note"` | **Fixed** |
 | QP-19-004 | Medium | Ineffective index | `Locality_aliases_idx` / alias predicate | **Fixed** (see §4) |
 
 ### QP-19-001 — the narrow query ignored the city scope
 
-`searchListingsForServer` (`client/src/lib/search/server.ts`) runs candidate narrowing and
+`searchListingsForServer` (`src/lib/search/server.ts`) runs candidate narrowing and
 then the scoped read:
 
 ```ts
@@ -154,7 +154,7 @@ of the existing `(localityId, normalizedName, languageCode)` unique key.
 **Why this is recall-safe — it widens, never narrows.** `LocalityAlias` is a strict superset
 of the legacy array: migration `202608300002` backfilled it via
 `CROSS JOIN LATERAL UNNEST(locality."aliases")` as type `SEARCH`, *in addition to* the
-`OFFICIAL` name and the `TRANSLITERATION` `hindiName` rows, and `prisma/seed.mjs` still
+`OFFICIAL` name and the `TRANSLITERATION` `hindiName` rows, and `db/seed.mjs` still
 writes both representations. Crucially this alternative is **OR'd** into a candidate
 *superset* that the unchanged JS filter then narrows, so a wider candidate pool cannot change
 which rows the caller returns. That is what made the earlier "this changes recall" concern
@@ -174,7 +174,7 @@ Nothing from this audit remains unfixed. The only outstanding items are the meas
 | Gap | What would unlock it |
 |---|---|
 | Whether the planner **chooses** the new indexes | `EXPLAIN (ANALYZE, BUFFERS)` on production-shaped data. No database in the sandbox: `DATABASE_URL` is `localhost:5432`, and there is no `psql`, no Postgres install, and no Docker. |
-| Actual latency change | `ARCHITECH_BENCH_DATABASE_URL=... pnpm vitest run client/src/lib/search/latency-bench.test.ts` — the harness exists and is opt-in; it skipped here. |
+| Actual latency change | `ARCHITECH_BENCH_DATABASE_URL=... pnpm vitest run src/lib/search/latency-bench.test.ts` — the harness exists and is opt-in; it skipped here. |
 | Which existing indexes are unused | `pg_stat_user_indexes` from production. |
 | Write-cost of the four new GIN indexes | Measured insert throughput on production-shaped data. GIN maintenance is not free; these are justified by read patterns that demonstrably exist, but the trade was not measured. |
 
@@ -189,7 +189,7 @@ lint, 1972 tests, the 48-case SQL/JS parity matrix and the 578-page crawler — 
 them assert *which rows come back*, and on fixture-sized data a sequential scan returns
 exactly the same rows as an index scan, just slower. The class was structurally invisible.
 
-That is why the fix ships with `client/src/lib/search/sql-index-coverage.test.ts`, which
+That is why the fix ships with `src/lib/search/sql-index-coverage.test.ts`, which
 asserts a *different kind* of property: it executes the query builder, extracts every
 predicate that requires a specific index type, and checks a matching `CREATE INDEX` exists
 in the migrations. It needs no database. It cannot prove the planner picks the index — but
@@ -214,7 +214,7 @@ and temporarily removing the `City_name_trgm_idx` statement produced:
   AssertionError: expected [ 'City.name' ] to deeply equal []
 ```
 
-The migration was then restored and `git diff --stat prisma/` confirmed clean.
+The migration was then restored and `git diff --stat db/` confirmed clean.
 
 ## 7. Verification
 
@@ -228,17 +228,17 @@ The migration was then restored and `git diff --stat prisma/` confirmed clean.
 
 ## 8. Changes
 
-- `client/src/lib/search/sql.ts` — optional `citySlug` scope pushdown (QP-19-001).
-- `client/src/lib/search/sql-narrow.ts` — threads `citySlug`; logs it in telemetry.
-- `client/src/lib/search/server.ts` — passes the resolved city scope.
-- `prisma/migrations/202609070003_search_predicate_indexes/migration.sql` — five additive
+- `src/lib/search/sql.ts` — optional `citySlug` scope pushdown (QP-19-001).
+- `src/lib/search/sql-narrow.ts` — threads `citySlug`; logs it in telemetry.
+- `src/lib/search/server.ts` — passes the resolved city scope.
+- `db/migrations/202609070003_search_predicate_indexes/migration.sql` — five additive
   GIN trigram indexes (QP-19-002, QP-19-003, QP-19-004). Amended in place rather than
   superseded by a further migration: the database is not yet live anywhere, so no
   environment has applied it and there is no checksum to invalidate. Once it is deployed,
   the same change would have to be a new migration.
-- `client/src/lib/search/sql.test.ts` — the assertion pinning the old `unnest(...)` form
+- `src/lib/search/sql.test.ts` — the assertion pinning the old `unnest(...)` form
   updated to the new contract.
-- `client/src/lib/search/sql-index-coverage.test.ts` — the index-coverage invariant.
+- `src/lib/search/sql-index-coverage.test.ts` — the index-coverage invariant.
 
 ---
 
@@ -295,7 +295,7 @@ already known. It found four; two were the defects above, and:
 
 ### Guard
 
-`client/src/lib/db/index-leftmost-coverage.test.ts` reads `prisma/schema.prisma` and asserts
+`src/lib/db/index-leftmost-coverage.test.ts` reads `db/schema.prisma` and asserts
 each registered single-column filter has **some** index — plain, unique, or composite — whose
 *first* column is that field. No database required.
 
@@ -313,7 +313,7 @@ decorative, since every model has plenty of indexes *mentioning* the relevant co
 × treats a trailing column as NOT covered
 ```
 
-The schema was then restored and `git diff --stat prisma/schema.prisma` confirmed clean.
+The schema was then restored and `git diff --stat db/schema.prisma` confirmed clean.
 
 **Known limit:** the registry is hand-maintained, so a *newly added* single-column filter is
 not auto-discovered. Step 2 of ARCH-19 re-runs the census. The registry is asserted non-empty

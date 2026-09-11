@@ -28,7 +28,7 @@ The headline finding is a **recurring defect class**: *unbounded in-process stat
 | `pnpm lint` (ESLint) | exit 0 | exit 0 |
 | `pnpm db:validate` | valid (see §2) | valid |
 
-No P0. No data corruption, no authorisation bypass, no injection found. Multi-tenant isolation was checked specifically and holds: `withOrg()` (`client/src/lib/persistence/channel-store.ts:203`) sets `app.current_org_id` as a **transaction-local** Postgres setting for row-level security, and the queries additionally carry an explicit `organizationId` predicate — defence in depth rather than a single mechanism.
+No P0. No data corruption, no authorisation bypass, no injection found. Multi-tenant isolation was checked specifically and holds: `withOrg()` (`src/lib/persistence/channel-store.ts:203`) sets `app.current_org_id` as a **transaction-local** Postgres setting for row-level security, and the queries additionally carry an explicit `organizationId` predicate — defence in depth rather than a single mechanism.
 
 ---
 
@@ -36,24 +36,24 @@ No P0. No data corruption, no authorisation bypass, no injection found. Multi-te
 
 **Stack (from `package.json` + `pnpm-workspace.yaml`):** `architech-web` v1.0.0, single-package pnpm workspace (`packages: ["."]`), Next.js ^16.3.2 (App Router) + React 19 + TypeScript 5.6.3, Prisma ^7.9.1 + PostgreSQL, Tailwind 4, Vitest 4, Playwright (a11y/UI/broker), Storybook, Sentry.
 
-**Structure mapped:** `app/` 128 `.ts`/`.tsx` (of which **73** are `app/api/**/route.ts` handlers) · `client/src/` 424 · `scripts/` 41 (own `node --test` suites) · `prisma/` (schema + migrations + seeds) · `shared/` · `tests/` (a11y, e2e, ui).
+**Structure mapped:** `app/` 128 `.ts`/`.tsx` (of which **73** are `app/api/**/route.ts` handlers) · `src/` 424 · `ops/scripts/` 41 (own `node --test` suites) · `db/` (schema + migrations + seeds) · `shared/` · `tests/` (a11y, e2e, ui).
 
-**Path aliases:** `@/* → client/src/*`, `@shared/* → shared/*` (tsconfig + vitest, kept in sync). Vitest stubs `server-only` so server-mode modules are unit-testable in plain Node.
+**Path aliases:** `@/* → src/*`, `@shared/* → shared/*` (tsconfig + vitest, kept in sync). Vitest stubs `server-only` so server-mode modules are unit-testable in plain Node.
 
 **Critical paths:** search → listing → detail → booking; broker channel (demand/supply matching → deal → commission split); leads; saved-search alerts; media upload/moderation/retention; RERA verification.
 
-**Auth boundary:** every privileged route funnels through `authorizeRequest(request, { permission })` (`client/src/lib/auth/guards.ts`), which runs `enforceMutationSafety` → session contract → production demo-auth refusal → `requirePermission` → optional organisation-scope check. Census of all **73** route handlers (`find app/api -name route.ts | wc -l`): **43** call `authorizeRequest`, **4** internal scheduled routes use constant-time `CRON_SECRET`, **26** are unguarded (public read/search/observability/auth) — 43+4+26=73, no overlap. **No privileged route was found missing its guard.**
+**Auth boundary:** every privileged route funnels through `authorizeRequest(request, { permission })` (`src/lib/auth/guards.ts`), which runs `enforceMutationSafety` → session contract → production demo-auth refusal → `requirePermission` → optional organisation-scope check. Census of all **73** route handlers (`find app/api -name route.ts | wc -l`): **43** call `authorizeRequest`, **4** internal scheduled routes use constant-time `CRON_SECRET`, **26** are unguarded (public read/search/observability/auth) — 43+4+26=73, no overlap. **No privileged route was found missing its guard.**
 
-**`pnpm db:validate` — unblocked this round.** Rounds 2 and 3 recorded this gate as blocked by sandbox egress (the Prisma CLI tries to download `schema-engine` from `binaries.prisma.sh`; TLS is blocked). That is true but *not* a dead end: the repo ships `scripts/sandbox/schema-engine-shim.cjs`, whose own header documents that it stands in for the native engine. Installing it at the platform engine path makes the gate run:
+**`pnpm db:validate` — unblocked this round.** Rounds 2 and 3 recorded this gate as blocked by sandbox egress (the Prisma CLI tries to download `schema-engine` from `binaries.prisma.sh`; TLS is blocked). That is true but *not* a dead end: the repo ships `ops/scripts/sandbox/schema-engine-shim.cjs`, whose own header documents that it stands in for the native engine. Installing it at the platform engine path makes the gate run:
 
 ```
-cp scripts/sandbox/schema-engine-shim.cjs \
-   node_modules/.pnpm/@prisma+engines@7.9.1/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x
+cp ops/scripts/sandbox/schema-engine-shim.cjs \
+   node_modules/.pnpm/@prisma+engines@7.9.1/node_modules/@db/engines/schema-engine-debian-openssl-3.0.x
 chmod 755 <that path>          # --version → 7.9.0-1.e922089b7d7502aff4249d5da3420f6fa55fc6ad
-pnpm db:validate               # → "The schema at prisma/schema.prisma is valid 🚀"
+pnpm db:validate               # → "The schema at db/schema.prisma is valid 🚀"
 ```
 
-`prisma validate` performs static schema validation and never opens a database connection, so this satisfies the "no live DB" constraint without weakening it. **Recommendation:** `scripts/sandbox/setup-local-db.mjs` already installs this shim, but only as part of full local-DB setup; a lighter `db:validate`-only path would stop future hunts from reporting the gate as unrunnable.
+`prisma validate` performs static schema validation and never opens a database connection, so this satisfies the "no live DB" constraint without weakening it. **Recommendation:** `ops/scripts/sandbox/setup-local-db.mjs` already installs this shim, but only as part of full local-DB setup; a lighter `db:validate`-only path would stop future hunts from reporting the gate as unrunnable.
 
 ---
 
@@ -61,17 +61,17 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 
 | BUG-ID | Sev | Category | File (pre-fix site) | Component | Status |
 |---|---|---|---|---|---|
-| **BUG-R4-001** | **P1** | Security / availability — unbounded memory | `client/src/lib/observability/metrics-store.ts:52-55` | Public RUM ingest | **Fixed** `10b88e8` |
-| **BUG-R4-002** | **P1** | Security / availability — unbounded memory | `client/src/lib/auth/request-safety.ts:7,146` | Every mutation route | **Fixed** `9a9f240` + `866698b` |
-| **BUG-R4-003** | **P2** | Security / availability — unbounded memory | `client/src/lib/auth/login-throttle.ts:28-29,36` | Credential sign-in | **Fixed** `e75f841` |
-| **BUG-R4-004** | **P2** | Functional / resilience — batch abort + head-of-line block | `client/src/lib/persistence/rera-store.ts:116-146` | RERA refresh cron | **Fixed** `0225e0e` |
+| **BUG-R4-001** | **P1** | Security / availability — unbounded memory | `src/lib/observability/metrics-store.ts:52-55` | Public RUM ingest | **Fixed** `10b88e8` |
+| **BUG-R4-002** | **P1** | Security / availability — unbounded memory | `src/lib/auth/request-safety.ts:7,146` | Every mutation route | **Fixed** `9a9f240` + `866698b` |
+| **BUG-R4-003** | **P2** | Security / availability — unbounded memory | `src/lib/auth/login-throttle.ts:28-29,36` | Credential sign-in | **Fixed** `e75f841` |
+| **BUG-R4-004** | **P2** | Functional / resilience — batch abort + head-of-line block | `src/lib/persistence/rera-store.ts:116-146` | RERA refresh cron | **Fixed** `0225e0e` |
 
 ---
 
 ### BUG-R4-001 — P1 · public RUM endpoint mints unbounded in-process series
 
 - **Category:** Critical-class security (resource exhaustion), no authentication required.
-- **File:** `client/src/lib/observability/metrics-store.ts`, pre-fix lines 52-55.
+- **File:** `src/lib/observability/metrics-store.ts`, pre-fix lines 52-55.
 - **Current behaviour (pre-fix):**
   ```ts
   export function recordWebVitalSample(name: string, value: number) {
@@ -86,9 +86,9 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 - **Impact:** unauthenticated remote memory exhaustion. Worst case is ~720 retained numbers per distinct name (≈5.7 KB), so cardinality of names × 720 samples is the growth curve. Availability of the public site; on a single-replica deploy (`metricsStoreMeta().scope === "process"`) this takes the whole instance.
 - **Reproduction (exact):**
   ```bash
-  git checkout 420b77c -- client/src/lib/observability/metrics-store.ts
-  npx vitest run client/src/lib/observability/metrics-store.test.ts \
-                 client/src/lib/observability/observability.test.ts
+  git checkout 420b77c -- src/lib/observability/metrics-store.ts
+  npx vitest run src/lib/observability/metrics-store.test.ts \
+                 src/lib/observability/observability.test.ts
   # 4 failed | 15 passed
   ```
   The route-level guard shows the defect concretely: after 250 POSTs through the real handler with names `EVIL_0…EVIL_249`, pre-fix `snapshotSeries("web_vital.EVIL_0").sampleSize === 1` (expected `0`); the test failed with `expected 1 to be +0`.
@@ -100,7 +100,7 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 ### BUG-R4-002 — P1 · mutation rate-limiter bucket map never pruned
 
 - **Category:** Critical-class security (resource exhaustion) + permanent leak.
-- **File:** `client/src/lib/auth/request-safety.ts`, pre-fix lines 7 and 146.
+- **File:** `src/lib/auth/request-safety.ts`, pre-fix lines 7 and 146.
 - **Current behaviour (pre-fix):** `const buckets = new Map<string, { startedAt: number; count: number }>()` keyed `${ip}:${route}:${method}`, `buckets.set(...)` on every new key, and **no eviction whatsoever** — the only cleanup in the module was the test-only `clearMutationSafetyBucketsForTests()` at line 155. An expired window was merely overwritten *if the same key reappeared*; keys that never reappeared lived forever.
 - **Expected behaviour:** the map is bounded; expired windows are reclaimed.
 - **Root cause:** same shape as BUG-R4-001 — a per-entry budget (`MAX_MUTATIONS_PER_WINDOW = 60`) with no bound on entry count.
@@ -114,8 +114,8 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 - **Impact:** availability; unbounded process-lifetime memory growth on the site's most-called write path.
 - **Reproduction (exact):**
   ```bash
-  git checkout 420b77c -- client/src/lib/auth/request-safety.ts
-  npx vitest run client/src/lib/auth/request-safety.test.ts
+  git checkout 420b77c -- src/lib/auth/request-safety.ts
+  npx vitest run src/lib/auth/request-safety.test.ts
   # 2 failed | 11 passed
   ```
 - **Fix:** prune expired windows when the map reaches the ceiling, then evict longest-resident windows if still over; `MAX_RATE_LIMIT_BUCKETS = 10_000`. Pruning is lazy and only runs at the ceiling, so steady-state cost stays O(1). Export `mutationSafetyBucketCount()`.
@@ -127,15 +127,15 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 ### BUG-R4-003 — P2 · login throttle bucket maps never pruned
 
 - **Category:** Security / availability — resource exhaustion.
-- **File:** `client/src/lib/auth/login-throttle.ts`, pre-fix lines 28-29 (`ipBuckets`, `emailBuckets`) and 36 (`store.set`).
+- **File:** `src/lib/auth/login-throttle.ts`, pre-fix lines 28-29 (`ipBuckets`, `emailBuckets`) and 36 (`store.set`).
 - **Current behaviour (pre-fix):** neither map was ever pruned. `clearLoginAttempts()` fires only on a **successful** sign-in — the one outcome an attacker never produces. `clearLoginThrottleForTests()` is test-only.
 - **Reachability (verified):** `app/api/auth/login/route.ts` → `signInWithCredentials` → `credential-flow.ts:133` `registerLoginAttempt({ ip: clientKey(request), email })`. The only thing standing in front of it is `validateSignIn` (`credentials.ts:68`), which checks email *shape* and password presence — so syntactically valid but distinct addresses (`spray0@…`, `spray1@…`, …) are unlimited. The throttle is invoked **before** password verification, by design, so every attempt registers.
 - **Aggravating factor:** `LOGIN_WINDOW_MS = 15 * 60_000`. Each entry outlives the mutation limiter's 60-second windows by **15×**.
 - **Impact:** unauthenticated memory exhaustion on the endpoint that attracts the most automated traffic on any site. Classified P2 rather than P1 on per-entry cost (same ~330 B as R4-002, vs R4-001's ~5.7 KB worst case) — it is borderline P1 and should be read as such.
 - **Reproduction (exact):**
   ```bash
-  git checkout 420b77c -- client/src/lib/auth/login-throttle.ts
-  npx vitest run client/src/lib/auth/login-throttle.test.ts
+  git checkout 420b77c -- src/lib/auth/login-throttle.ts
+  npx vitest run src/lib/auth/login-throttle.test.ts
   # 3 failed | 7 passed
   ```
 - **Fix:** same bounded pattern, `MAX_LOGIN_THROTTLE_BUCKETS = 20_000` per map, insertion-order eviction (no sort — see the `866698b` lesson, applied from the start here). Export `loginThrottleBucketCount()`.
@@ -146,7 +146,7 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 ### BUG-R4-004 — P2 · one failed write permanently wedges the RERA refresh cron
 
 - **Category:** Functional / resilience. Round 1 recorded this as **watchlist item 2** ("a throw from the `upsert`/`auditEvent.create` … aborts the whole cron batch"). It is a confirmed bug, and the consequence is worse than round 1 stated.
-- **File:** `client/src/lib/persistence/rera-store.ts`, pre-fix lines 116-146 (`refreshStaleReraRecordsForServer`).
+- **File:** `src/lib/persistence/rera-store.ts`, pre-fix lines 116-146 (`refreshStaleReraRecordsForServer`).
 - **Current behaviour (pre-fix):** the `try/catch` wrapped **only** the provider call (`verifyReraRecordForServer`, caught at line 106). The `db.reraRecord.upsert` (116) and `db.auditEvent.create` (143) that follow sat unguarded inside the `for` loop, and `refreshed += 1` at 146.
 - **Two distinct consequences:**
   1. **Batch abort.** A throw propagated out of the function. The caller `app/api/internal/scheduled/rera-refresh/route.ts:45` does **not** catch either, so the cron returns an unhandled **500** and every row after the failure is skipped.
@@ -157,13 +157,13 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 - **Impact:** RERA/compliance data staleness (second-highest business weight in the protocol's ordering) with no user-visible signal beyond a failing cron.
 - **Reproduction (exact):**
   ```bash
-  git checkout 420b77c -- client/src/lib/persistence/rera-store.ts
-  npx vitest run client/src/lib/persistence/rera-store.test.ts
+  git checkout 420b77c -- src/lib/persistence/rera-store.ts
+  npx vitest run src/lib/persistence/rera-store.test.ts
   # 2 failed | 2 passed — the upsert case fails with the propagated error:
   #   Error: Invalid value provided. Expected Date, got Invalid Date.
   ```
 - **Fix:** wrap the write half per row in `try/catch` and report the failure into `errors` exactly as a provider failure is reported — the row stays STALE for the next run and the rest of the batch proceeds. `ok` remains `errors.length === 0`, so the cron still surfaces the problem.
-- **Audit trail:** commit `0225e0e`. Failing tests in the **new** `client/src/lib/persistence/rera-store.test.ts`: *"BUG-R4-004: an upsert failure on one row must not abort the rest of the batch"*, *"…an audit-event failure is contained the same way"*. **2 red → green.** Two others passed pre-fix and pin existing correct behaviour: the happy path, and the provider-failure path (which the pre-existing `try/catch` already handled). This file is also the first test coverage `rera-store.ts` has ever had — a gap round 1's Phase 7 called out.
+- **Audit trail:** commit `0225e0e`. Failing tests in the **new** `src/lib/persistence/rera-store.test.ts`: *"BUG-R4-004: an upsert failure on one row must not abort the rest of the batch"*, *"…an audit-event failure is contained the same way"*. **2 red → green.** Two others passed pre-fix and pin existing correct behaviour: the happy path, and the provider-failure path (which the pre-existing `try/catch` already handled). This file is also the first test coverage `rera-store.ts` has ever had — a gap round 1's Phase 7 called out.
 
 ---
 
@@ -173,7 +173,7 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 |---|---|
 | Severity | **P1** — unauthenticated 500 from a malformed public payload |
 | Class | Input validation → convert-before-validate |
-| Location | `client/src/lib/requirements.ts:249-262` (`validateRequirementInput`) and `client/src/lib/broker/channel.ts:300-312` (`validateChannelRequest`) |
+| Location | `src/lib/requirements.ts:249-262` (`validateRequirementInput`) and `src/lib/broker/channel.ts:300-312` (`validateChannelRequest`) |
 | Introduced by | Original feature; never a ceiling check |
 | Reproduction | Deterministic |
 | Fix commit | `67c9188` |
@@ -182,7 +182,7 @@ pnpm db:validate               # → "The schema at prisma/schema.prisma is vali
 **The bug.** `validateRequirementInput` and `validateChannelRequest` are the single validation seam shared by **both** storage modes (memory and Prisma), but neither bounds the *magnitude* of a number. `toPositiveInteger` (`requirements.ts:131`) checks `Number.isSafeInteger` + sign + `min <= max`; `toNumberOrNull` (`channel.ts:200`) checks `Number.isFinite` + sign. Nothing compares against the column that will store the value. The writers then convert raw input by hand:
 
 ```js
-// client/src/lib/repositories/server/requirement-store.ts:156-173
+// src/lib/repositories/server/requirement-store.ts:156-173
 bhkMin: BigInt(Math.round(Number(input.bhkMin))),
 budgetMinInr: BigInt(Math.round(Number(input.budgetMinInr))),
 ```
@@ -194,7 +194,7 @@ JavaScript `BigInt` is arbitrary-precision, so the conversion *succeeds* at any 
 **Measured severity — from the real migration DDL, not Prisma's documented mapping:**
 
 ```
-$ grep -rhn '"bhkMin"\|"areaMinSqft"\|"budgetMinInr"' prisma/migrations/*/migration.sql
+$ grep -rhn '"bhkMin"\|"areaMinSqft"\|"budgetMinInr"' db/migrations/*/migration.sql
   "bhkMin" INTEGER,  "areaMinSqft" INTEGER,  "budgetMinInr" BIGINT,
 ```
 
@@ -215,23 +215,23 @@ const MAX_STORED_INT = 2_147_483_647;
 const MAX_INR = Number.MAX_SAFE_INTEGER;   // the money.ts MAX_SAFE_INR bound
 ```
 
-`MAX_INR` is deliberately `Number.MAX_SAFE_INTEGER` rather than something larger: `client/src/lib/utils/money.ts:20` already declares `MAX_SAFE_INR = Number.MAX_SAFE_INTEGER` as the project's INR ceiling and every currency formatter respects it, so accepting an amount no formatter can render would be inconsistent. At ~9.0e15 rupees that is still ~₹90 quadrillion — roughly 1,000× India's annual GDP.
+`MAX_INR` is deliberately `Number.MAX_SAFE_INTEGER` rather than something larger: `src/lib/utils/money.ts:20` already declares `MAX_SAFE_INR = Number.MAX_SAFE_INTEGER` as the project's INR ceiling and every currency formatter respects it, so accepting an amount no formatter can render would be inconsistent. At ~9.0e15 rupees that is still ~₹90 quadrillion — roughly 1,000× India's annual GDP.
 
 **Tests (red → green).**
 
 | File | Test | Result pre-fix |
 |---|---|---|
-| `client/src/lib/requirements.test.ts` | `BUG-R4-005: rejects a budget past the BIGINT column range…` | **FAIL** (`expected { ok: true } …`) |
+| `src/lib/requirements.test.ts` | `BUG-R4-005: rejects a budget past the BIGINT column range…` | **FAIL** (`expected { ok: true } …`) |
 | | `…rejects an area past the INTEGER column range…` | **FAIL** |
 | | `…rejects a bhk count past the INTEGER column range` | **FAIL** |
 | | `…still accepts realistic large values` | PASS throughout (no-regression pin) |
-| `client/src/lib/requirements.server.test.ts` | `BUG-R4-005: a budget past the BIGINT column range is a 400, not a database overflow` | **FAIL** |
+| `src/lib/requirements.server.test.ts` | `BUG-R4-005: a budget past the BIGINT column range is a 400, not a database overflow` | **FAIL** |
 | | `…an area past the INTEGER column range is a 400…` | **FAIL** |
 | | `…whatever reaches Prisma is inside its column range` | PASS throughout |
-| `client/src/lib/broker/channel.test.ts` | `rejects a budget/price past the BIGINT column range…`, `…an area past the INTEGER column range…` | **3 FAIL** |
+| `src/lib/broker/channel.test.ts` | `rejects a budget/price past the BIGINT column range…`, `…an area past the INTEGER column range…` | **3 FAIL** |
 | | `…rejects a non-integer price without NaN…`, `…still accepts realistic large values` | PASS throughout |
 
-**Verification gap, stated plainly:** there is no live PostgreSQL here, so the overflow is proved arithmetically and from the migration DDL, not by executing an `INSERT`. The tests assert the *validator* contract; the column widths are quoted from `prisma/migrations/*/migration.sql`.
+**Verification gap, stated plainly:** there is no live PostgreSQL here, so the overflow is proved arithmetically and from the migration DDL, not by executing an `INSERT`. The tests assert the *validator* contract; the column widths are quoted from `db/migrations/*/migration.sql`.
 
 ---
 
@@ -241,7 +241,7 @@ const MAX_INR = Number.MAX_SAFE_INTEGER;   // the money.ts MAX_SAFE_INR bound
 |---|---|
 | Severity | **P2** — authenticated broker route, but it is the money path |
 | Class | Input validation → convert-before-validate |
-| Location | `client/src/lib/persistence/channel-store.ts:641-655` and `client/src/lib/broker/channel.ts:573-583` (`saveChannelDealSplit`) |
+| Location | `src/lib/persistence/channel-store.ts:641-655` and `src/lib/broker/channel.ts:573-583` (`saveChannelDealSplit`) |
 | Introduced by | **BUG-2026-001's fix was incomplete** (round 1) |
 | Reproduction | Deterministic |
 | Fix commit | `548baee` |
@@ -260,7 +260,7 @@ if (demandShare + supplyShare !== total) return fail(400, "Commission split must
 totalCommissionInr: BigInt(total),
 ```
 
-`6e29 + 4e29 === 1e30` exactly, so the sum check passes too. The columns are `"totalCommissionInr" BIGINT`, `"demandBrokerShareInr" BIGINT`, `"amountInr" BIGINT NOT NULL` (all confirmed in `prisma/migrations/*/migration.sql`), so `BigInt(1e30)` is ~1.08e+11× past the maximum.
+`6e29 + 4e29 === 1e30` exactly, so the sum check passes too. The columns are `"totalCommissionInr" BIGINT`, `"demandBrokerShareInr" BIGINT`, `"amountInr" BIGINT NOT NULL` (all confirmed in `db/migrations/*/migration.sql`), so `BigInt(1e30)` is ~1.08e+11× past the maximum.
 
 **Why it is a separate BUG-ID from R4-005.** Different module, different entry point (the authenticated deal-split route, not the public requirement route), and a different history — this one is a *regression-adjacent gap* left by a prior round's fix, which is exactly the kind of thing an audit trail needs to be able to name. The split validation is duplicated inline in **both** storage modes, so the ceiling went into both.
 
@@ -276,9 +276,9 @@ if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) return fa
 
 | File | Test | Result pre-fix |
 |---|---|---|
-| `client/src/lib/persistence/channel-store.test.ts` | `BUG-R4-005: rejects a commission past the BIGINT column range with 400` | **FAIL** (`expected { ok: true } …`) |
+| `src/lib/persistence/channel-store.test.ts` | `BUG-R4-005: rejects a commission past the BIGINT column range with 400` | **FAIL** (`expected { ok: true } …`) |
 | | `BUG-R4-005: any commission that does reach the write fits BIGINT` | PASS throughout |
-| `client/src/lib/broker/channel.test.ts` | `rejects a commission split past the BIGINT column range` | **FAIL** (`expected true to be false`) |
+| `src/lib/broker/channel.test.ts` | `rejects a commission split past the BIGINT column range` | **FAIL** (`expected true to be false`) |
 
 The new tests sit beside the four pre-existing split tests written for BUG-2026-001 (`rejects negative commission`, `…fractional commission`, `rounds fractional input to whole rupees`), which all stayed green — so the ceiling did not disturb the normaliser's existing contract.
 
@@ -290,7 +290,7 @@ The new tests sit beside the four pre-existing split tests written for BUG-2026-
 |---|---|
 | Severity | **P2** — unauthenticated memory growth; demo-mode only in production |
 | Class | Unbounded in-process state keyed by client input (4th instance) |
-| Location | `client/src/lib/analytics/listing-stats.ts:18-19` (`statsByListing`, `seenViews`) |
+| Location | `src/lib/analytics/listing-stats.ts:18-19` (`statsByListing`, `seenViews`) |
 | Introduced by | Original feature (P1-OBS-003) |
 | Reproduction | Deterministic |
 | Fix commit | `8f06834` |
@@ -309,11 +309,11 @@ const seenViews = new Set<string>();                      // key = `${listingId}
 
 **Why the CI guard missed it.** This round's own `unbounded-state-guard.test.ts` passed on this file because `resetListingStatsForTests()` calls `.clear()` — a helper that only ever runs under vitest. A test-reset helper is not an eviction path. The guard now strips `reset*`/`*ForTests` function bodies before checking, and treats a call to an `evict*` helper as a legitimate bound. **Verified by removing the eviction and watching the guard go red on both containers**, then restoring.
 
-The 12 demo-store maps that had been passing on the same false negative (`broker/channel.ts` ×7, `config/governance/registry.ts` ×2, `leads/lead.ts`, `requirements.ts`, `rera/rera.ts`) are now explicitly marked `bounded-state:` — they are fixture-mode only, selected by `getPersistenceMode()` when `ARCHITECH_DATA_SOURCE !== "prisma"`, and that gating is enforced by `pnpm production:plan:audit`.
+The 12 demo-store maps that had been passing on the same false negative (`broker/channel.ts` ×7, `ops/config/governance/registry.ts` ×2, `leads/lead.ts`, `requirements.ts`, `rera/rera.ts`) are now explicitly marked `bounded-state:` — they are fixture-mode only, selected by `getPersistenceMode()` when `ARCHITECH_DATA_SOURCE !== "prisma"`, and that gating is enforced by `pnpm production:plan:audit`.
 
 **The fix.** `MAX_TRACKED_LISTINGS = 5_000`, `MAX_SEEN_VIEW_KEYS = 50_000`, insertion-order eviction (no sort, for the reason in `utils/bounded-window-map.ts`), plus `listingStatsStoreCounts()` for observability.
 
-**Tests (red → green).** `client/src/lib/analytics/listing-stats.test.ts` (new, 6 tests). Pre-fix: `expected 20000 to be less than or equal to 5000` and `expected true to be false` (a flooded idempotency key was still remembered). Both green after; the three pre-existing-behaviour pins stayed green throughout.
+**Tests (red → green).** `src/lib/analytics/listing-stats.test.ts` (new, 6 tests). Pre-fix: `expected 20000 to be less than or equal to 5000` and `expected true to be false` (a flooded idempotency key was still remembered). Both green after; the three pre-existing-behaviour pins stayed green throughout.
 
 ---
 
@@ -326,7 +326,7 @@ The 12 demo-store maps that had been passing on the same false negative (`broker
 | Raw SQL | grep `$queryRaw*`/`$executeRaw*` across non-test code | Only parameterized `set_config($1, …)` and pre-planned statements with `$N` placeholders; no interpolation of user values |
 | `dangerouslySetInnerHTML` (24 sites) | Read each | All render via `serializeJsonLd` (escapes `<`, `>`, U+2028/29) |
 | `parseInt` without radix / bare `.sort()` on numbers / loose `==` | grep sweeps | Zero radix omissions. All bare `.sort()` calls are over strings (SigV4 header names, 6-digit PIN codes, id/fingerprint lists) where lexicographic order is correct. All `==`/`!=` hits are intentional `!= null` nullish checks |
-| Empty `catch {}`, `eval`, `new Function`, TODO/FIXME debt | grep sweeps | None in `app/` or `client/src/` |
+| Empty `catch {}`, `eval`, `new Function`, TODO/FIXME debt | grep sweeps | None in `app/` or `src/` |
 | `process.env` leakage into client bundles | grep non-`NEXT_PUBLIC_` in components/pages/contexts | None; the 3 `NEXT_PUBLIC_*` reads are correct build-time inlines |
 | `NEXT_PUBLIC_*` documentation parity | Round 2's `env-docs-parity.test.ts` guard (both directions) | Green. `NEXT_PUBLIC_ARCHITECH_MEDIA_KINDS` **is** documented (`.env.example:34`, as a comment — the guard's regex matches it) |
 | Script test suites (outside vitest) | Ran all 7 individually | `location` 28/28, `privacy` 3/3, plus 2+5+6+2+7+6 — **all pass** |
@@ -334,10 +334,10 @@ The 12 demo-store maps that had been passing on the same false negative (`broker
 | Channel matching determinism | Read `channel/matching.ts` in full | `now` injected; `scoreArea` guards `target === 0`; weights sum to 100; tie-break total. No defect |
 | Other scheduled jobs (batch-abort class) | Read `retention-runtime.ts`, `alerts-runtime.ts` | Both already correct — and instructive: the media sweep paginates by **id cursor** (`orderBy: { id: "asc" }` + `cursor`), so a failing row cannot block the queue. That is the pattern BUG-R4-004 lacked |
 | **All 26 unguarded API routes** | Enumerated every `app/api/**/route.ts` lacking `authorizeRequest`/`CRON_SECRET`; recorded its exported HTTP methods and whether it mutates | 17 are read-only GETs. 9 expose a write method; 5 of those call `enforceMutationSafety` (auth login/logout/register, leads, observability errors + web-vitals). Of the 3 that did not, `cost/ownership` and `investment/metrics` are pure calculators that touch no state, and `listings/[id]/stats` **was a bug** — BUG-R4-007 |
-| **`useEffect` without a dependency array** | Balanced-argument parser over all `.ts`/`.tsx` in `client/src`, counting top-level commas in each call's argument list — shape-agnostic, so `() => {…}` and `() => setX(…)` are both covered | **51 call sites, 0 missing a dependency array.** An earlier regex-only scan in this session matched one callback shape and was not sufficient evidence; this scan is |
-| Multi-tenant isolation | Traced `withOrg()` (`persistence/channel-store.ts:203`) and grepped every `findFirst`/`findUnique` in `client/src/lib/persistence` | Holds, and with two independent mechanisms: `withOrg` sets `app.current_org_id` via `set_config(..., true)` — **transaction-local**, so it cannot leak across pooled connections — and the queries additionally carry an explicit `organizationId` predicate. Zero unscoped `findUnique({ where: { id } })` calls found |
+| **`useEffect` without a dependency array** | Balanced-argument parser over all `.ts`/`.tsx` in `src`, counting top-level commas in each call's argument list — shape-agnostic, so `() => {…}` and `() => setX(…)` are both covered | **51 call sites, 0 missing a dependency array.** An earlier regex-only scan in this session matched one callback shape and was not sufficient evidence; this scan is |
+| Multi-tenant isolation | Traced `withOrg()` (`persistence/channel-store.ts:203`) and grepped every `findFirst`/`findUnique` in `src/lib/persistence` | Holds, and with two independent mechanisms: `withOrg` sets `app.current_org_id` via `set_config(..., true)` — **transaction-local**, so it cannot leak across pooled connections — and the queries additionally carry an explicit `organizationId` predicate. Zero unscoped `findUnique({ where: { id } })` calls found |
 | `proxy.ts` is the wrong filename for Next 16 middleware | Checked the installed compiler | **Not a bug.** `node_modules/next/dist/lib/constants.js:289` defines `PROXY_FILENAME = 'proxy'`, and `dist/build/utils.js:280` accepts `proxy` alongside `middleware`. The production `X-Robots-Tag: noindex, nofollow` guard in `proxy.ts:11-13` does run |
-| Sitemap / robots correctness | Read `client/src/lib/seo/sitemap.ts` in full | `parseIsoDate` pins to UTC and returns `undefined` on garbage, so a bad fixture degrades to "no `lastmod`" instead of a wrong date or the build clock; `escapeXml` covers `& < > " '`; segments are asserted exhaustive by `collectUnsegmentedPages`. No defect |
+| Sitemap / robots correctness | Read `src/lib/seo/sitemap.ts` in full | `parseIsoDate` pins to UTC and returns `undefined` on garbage, so a bad fixture degrades to "no `lastmod`" instead of a wrong date or the build clock; `escapeXml` covers `& < > " '`; segments are asserted exhaustive by `collectUnsegmentedPages`. No defect |
 
 ---
 
@@ -346,10 +346,10 @@ The 12 demo-store maps that had been passing on the same false negative (`broker
 | ID | Item | Evidence | Proposed handling |
 |---|---|---|---|
 | **W1** | **Rate limiter fails open with no client identity.** `clientKey()` returns `null` when no `x-real-ip`/`cf-connecting-ip`/`x-forwarded-for` is present, and `enforceMutationSafety` then returns `null` (pre-fix line 137) — no throttling at all. Deliberate and documented in-code (avoids lumping NATed clients into one bucket), and Origin/Host + body-size checks still run. | `request-safety.ts:31-39,136-137` | Product/infra decision, not a bug: either require a trusted proxy in production (and fail closed behind it) or add a global per-route fallback budget. Do **not** "fix" unilaterally — failing closed would break legitimate server-to-server callers |
-| **W2 — RESOLVED (see below)** | **`comparableListings` divided by `subject.priceNum`.** If a subject listing ever had `priceNum === 0`, `deltaPct` becomes `Infinity`. The peer filter checks `listing.priceNum > 0` but not the subject's. Not reachable today: the only caller (`app/listing/[id]/page.tsx:181`) passes fixture-sourced prices, all non-zero. | `client/src/lib/listing/comparables.ts:20` | **Fixed in `9bb3b3d`.** Red test first: `expected Infinity to be null`. `deltaPct` is now `number \| null`, returning null for a non-positive subject price — matching the existing convention in `realestate/locality-intel.ts:32` and `market-trends.ts:40`. Zero was explicitly rejected as an invented value. `ListingPage.tsx` updated to render an em dash |
+| **W2 — RESOLVED (see below)** | **`comparableListings` divided by `subject.priceNum`.** If a subject listing ever had `priceNum === 0`, `deltaPct` becomes `Infinity`. The peer filter checks `listing.priceNum > 0` but not the subject's. Not reachable today: the only caller (`app/listing/[id]/page.tsx:181`) passes fixture-sourced prices, all non-zero. | `src/lib/listing/comparables.ts:20` | **Fixed in `9bb3b3d`.** Red test first: `expected Infinity to be null`. `deltaPct` is now `number \| null`, returning null for a non-positive subject price — matching the existing convention in `realestate/locality-intel.ts:32` and `market-trends.ts:40`. Zero was explicitly rejected as an invented value. `ListingPage.tsx` updated to render an em dash |
 | **W3** | **Permission-string inconsistency:** one route asks for `"channel.write"` where its siblings (`accept`, `reject`) ask for `"broker.channel.write"`. Functionally equivalent today (both granted to the same roles) but a future role split would silently diverge. | `app/api/broker/channel/matches/[id]/respond/route.ts:12` vs `roles.ts` | Cosmetic rename once product confirms the two grants are meant to be the same |
-| **W4** | **Coverage copy (Mumbai / "12 metros").** Carried forward from round 1's watchlist; round 2 re-verified the claim matches the 12 live city hubs in `liveCities`. Left untouched: a copy/product decision, and changing it would mean asserting coverage facts. | `app/buy/page.tsx:12`, `client/src/pages/Home.tsx:48` | Flag to content owner |
-| **W5** | **`validateEnvCatalog` is a dormant control.** `ALLOWED_ENV_KEYS` (48 entries) is the repo's declared allow-list of environment keys, but the only caller of `validateEnvCatalog` in the entire tree is its own unit test — nothing in `app/`, `client/src/`, `scripts/`, or `shared/` invokes it. Separately, **18** keys are read from `process.env` in code yet absent from the list, including security-relevant ones: `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION`, `DATA_GOV_IN_API_KEY`, `BROKER_CHANNEL_ERPNEXT_TOKEN`, `BROKER_CHANNEL_ERPNEXT_URL`. So the control would report false positives *and* is never consulted. Not a bug today because it gates nothing — but a reviewer reading the allow-list would reasonably assume it was enforced. | `client/src/lib/operations/hygiene.ts:93` (definition); sole reference outside it is `hygiene.test.ts` | Either wire it into `pnpm env:audit` / a CI guard and reconcile the 18 keys, or delete it. **Do not "fix" by adding the 18 keys silently** — several deserve a deliberate decision about whether they belong in a declared allow-list at all |
+| **W4** | **Coverage copy (Mumbai / "12 metros").** Carried forward from round 1's watchlist; round 2 re-verified the claim matches the 12 live city hubs in `liveCities`. Left untouched: a copy/product decision, and changing it would mean asserting coverage facts. | `app/buy/page.tsx:12`, `src/screens/Home.tsx:48` | Flag to content owner |
+| **W5** | **`validateEnvCatalog` is a dormant control.** `ALLOWED_ENV_KEYS` (48 entries) is the repo's declared allow-list of environment keys, but the only caller of `validateEnvCatalog` in the entire tree is its own unit test — nothing in `app/`, `src/`, `ops/scripts/`, or `shared/` invokes it. Separately, **18** keys are read from `process.env` in code yet absent from the list, including security-relevant ones: `ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION`, `DATA_GOV_IN_API_KEY`, `BROKER_CHANNEL_ERPNEXT_TOKEN`, `BROKER_CHANNEL_ERPNEXT_URL`. So the control would report false positives *and* is never consulted. Not a bug today because it gates nothing — but a reviewer reading the allow-list would reasonably assume it was enforced. | `src/lib/operations/hygiene.ts:93` (definition); sole reference outside it is `hygiene.test.ts` | Either wire it into `pnpm env:audit` / a CI guard and reconcile the 18 keys, or delete it. **Do not "fix" by adding the 18 keys silently** — several deserve a deliberate decision about whether they belong in a declared allow-list at all |
 
 ---
 
@@ -391,16 +391,16 @@ The 12 demo-store maps that had been passing on the same false negative (`broker
 
 | BUG-ID | Failing test (red-first) | Red pre-fix | Fix commit | Post-fix |
 |---|---|---|---|---|
-| BUG-R4-001 | `client/src/lib/observability/metrics-store.test.ts` — 3 tests named `BUG-R4-001: …`; `client/src/lib/observability/observability.test.ts` — 1 test named `BUG-R4-001: the public RUM route cannot mint unbounded series via arbitrary names` | **4 failed** (`expected 1 to be +0` on the route probe) | `10b88e8` | 4 green |
-| BUG-R4-002 | `client/src/lib/auth/request-safety.test.ts` — `BUG-R4-002: the bucket map stays bounded…`, `…expired windows are reclaimed…` | **2 failed** (+ measured 66.4 MB heap growth / 200k requests via throwaway probe) | `9a9f240`, then `866698b` (eviction order) | 2 green, 3rd guard green throughout |
-| BUG-R4-003 | `client/src/lib/auth/login-throttle.test.ts` — `BUG-R4-003: the email bucket map stays bounded…`, `…the ip bucket map stays bounded…`, `…expired windows are reclaimed…` | **3 failed** | `e75f841` | 3 green, 4th guard green throughout |
-| BUG-R4-004 | `client/src/lib/persistence/rera-store.test.ts` (new file) — `BUG-R4-004: an upsert failure on one row must not abort the rest of the batch`, `…an audit-event failure is contained the same way` | **2 failed** (`Error: Invalid value provided. Expected Date, got Invalid Date.` propagated out of the batch) | `0225e0e` | 2 green, 2 pre-existing-behaviour pins green throughout |
-| BUG-R4-005 | `client/src/lib/requirements.test.ts` (3), `client/src/lib/requirements.server.test.ts` (2), `client/src/lib/broker/channel.test.ts` (3) — all named `BUG-R4-005: …` | **8 failed** (`expected { ok: true } to match object { ok: false, status: 400 }`) | `67c9188` | 8 green, 4 no-regression pins green throughout |
-| BUG-R4-006 | `client/src/lib/persistence/channel-store.test.ts` (1), `client/src/lib/broker/channel.test.ts` (1) | **2 failed** (`expected { ok: true } …` / `expected true to be false`) | `548baee` | 2 green, 4 BUG-2026-001 split tests green throughout |
-| BUG-R4-007 | `client/src/lib/analytics/listing-stats.test.ts` (new, 6 tests) | **2 failed** (`expected 20000 to be less than or equal to 5000`) | `8f06834` | 6 green, 3 behaviour pins green throughout |
-| W2 (watchlist → fixed) | `client/src/lib/listing/comparables.test.ts` (new, 9 tests, repository mocked) | **2 failed** (`expected Infinity to be null`) | `9bb3b3d` | 9 green |
+| BUG-R4-001 | `src/lib/observability/metrics-store.test.ts` — 3 tests named `BUG-R4-001: …`; `src/lib/observability/observability.test.ts` — 1 test named `BUG-R4-001: the public RUM route cannot mint unbounded series via arbitrary names` | **4 failed** (`expected 1 to be +0` on the route probe) | `10b88e8` | 4 green |
+| BUG-R4-002 | `src/lib/auth/request-safety.test.ts` — `BUG-R4-002: the bucket map stays bounded…`, `…expired windows are reclaimed…` | **2 failed** (+ measured 66.4 MB heap growth / 200k requests via throwaway probe) | `9a9f240`, then `866698b` (eviction order) | 2 green, 3rd guard green throughout |
+| BUG-R4-003 | `src/lib/auth/login-throttle.test.ts` — `BUG-R4-003: the email bucket map stays bounded…`, `…the ip bucket map stays bounded…`, `…expired windows are reclaimed…` | **3 failed** | `e75f841` | 3 green, 4th guard green throughout |
+| BUG-R4-004 | `src/lib/persistence/rera-store.test.ts` (new file) — `BUG-R4-004: an upsert failure on one row must not abort the rest of the batch`, `…an audit-event failure is contained the same way` | **2 failed** (`Error: Invalid value provided. Expected Date, got Invalid Date.` propagated out of the batch) | `0225e0e` | 2 green, 2 pre-existing-behaviour pins green throughout |
+| BUG-R4-005 | `src/lib/requirements.test.ts` (3), `src/lib/requirements.server.test.ts` (2), `src/lib/broker/channel.test.ts` (3) — all named `BUG-R4-005: …` | **8 failed** (`expected { ok: true } to match object { ok: false, status: 400 }`) | `67c9188` | 8 green, 4 no-regression pins green throughout |
+| BUG-R4-006 | `src/lib/persistence/channel-store.test.ts` (1), `src/lib/broker/channel.test.ts` (1) | **2 failed** (`expected { ok: true } …` / `expected true to be false`) | `548baee` | 2 green, 4 BUG-2026-001 split tests green throughout |
+| BUG-R4-007 | `src/lib/analytics/listing-stats.test.ts` (new, 6 tests) | **2 failed** (`expected 20000 to be less than or equal to 5000`) | `8f06834` | 6 green, 3 behaviour pins green throughout |
+| W2 (watchlist → fixed) | `src/lib/listing/comparables.test.ts` (new, 9 tests, repository mocked) | **2 failed** (`expected Infinity to be null`) | `9bb3b3d` | 9 green |
 
-Every commit message names its BUG-ID. Every guard test is named after its BUG-ID, so `grep -rn "BUG-R4-00" client/src` enumerates the whole regression surface.
+Every commit message names its BUG-ID. Every guard test is named after its BUG-ID, so `grep -rn "BUG-R4-00" src` enumerates the whole regression surface.
 
 **Commit order on `arena/01a0776f-architech` (oldest → newest):**
 
@@ -429,7 +429,7 @@ fb85e58  docs(bug-hunt): W5 + non-blocking backlog
 |---|---|---|
 | `pnpm test` | 159 files / **1725** pass · 2 files / 46 tests skipped · 0 fail | 160 files / **1754** pass · 2 files / 46 tests skipped · 0 fail |
 | `pnpm check` (`tsc --noEmit`) | clean, exit 0 | clean, exit 0 |
-| `pnpm lint` (`eslint app client/src`) | exit 0 | exit 0 |
+| `pnpm lint` (`eslint app src`) | exit 0 | exit 0 |
 | `pnpm db:validate` | **valid** (via the shipped sandbox shim — see §2) | **valid** — not re-run after `67c9188`/`548baee`: neither touched a Prisma schema or a query, only in-memory validators |
 | `pnpm location:import:test` | 28/28 | unchanged |
 | `pnpm privacy:requirements:test` | 3/3 | unchanged |
@@ -437,7 +437,7 @@ fb85e58  docs(bug-hunt): W5 + non-blocking backlog
 
 **Test delta:** 1725 → 1754 = **+29 guard tests** (R4-001: 4 · R4-002: 3 · R4-003: 4 · R4-004: 4 · R4-005: 12 · R4-006: 2). No pre-existing test was modified or deleted; the +1 file is `rera-store.test.ts`.
 
-**Diff (`420b77c..HEAD`):** 18 files, +1011 / −42. Excluding the two Markdown documents: **16 files in `client/src`, +685 / −39** — of which **7 source modules** (`auth/login-throttle.ts`, `auth/request-safety.ts`, `broker/channel.ts`, `observability/metrics-store.ts`, `persistence/channel-store.ts`, `persistence/rera-store.ts`, `requirements.ts`, +231 / −37) and **9 test files** (+454 / −2). No migration, no schema change, no dependency change, no unrelated refactor.
+**Diff (`420b77c..HEAD`):** 18 files, +1011 / −42. Excluding the two Markdown documents: **16 files in `src`, +685 / −39** — of which **7 source modules** (`auth/login-throttle.ts`, `auth/request-safety.ts`, `broker/channel.ts`, `observability/metrics-store.ts`, `persistence/channel-store.ts`, `persistence/rera-store.ts`, `requirements.ts`, +231 / −37) and **9 test files** (+454 / −2). No migration, no schema change, no dependency change, no unrelated refactor.
 
 **UI-impacting verification:** none required. No fixed code path changes rendered output, routing, or public page content, so `pnpm test:a11y` / `pnpm test:ui` were not run. The RUM and login fixes are ingest-side only; the RERA fix is a background cron; the R4-005/006 fixes narrow the set of inputs that reach the database.
 
@@ -445,7 +445,7 @@ fb85e58  docs(bug-hunt): W5 + non-blocking backlog
 1. POST 5 000 distinct `name` values to `/api/observability/web-vitals`, then read `seriesCount` from `metricsStoreMeta()` — must be ≤ 6.
 2. Watch `heapUsed` across a burst of mutations carrying rotating `x-real-ip` — the curve must plateau at the `MAX_RATE_LIMIT_BUCKETS` ceiling instead of climbing.
 3. Force one `reraRecord.upsert` to fail (e.g. a malformed `retrievedAt`) and confirm the cron returns `ok: false` with the row named in `errors`, `refreshed` still counting the other rows, and the *next* run reaching rows beyond the failed one.
-4. **R4-005/006 — the check this sandbox cannot do:** `POST /api/requirements` with `budgetMaxInr: 1e30` must return **400**. Before the fix it returns **500** with a PostgreSQL `22003 numeric_value_out_of_range`. Same for the deal-split route with `totalCommissionInr: 1e30`. This is the single assertion in this report that is proved only arithmetically — the column widths come from `prisma/migrations/*/migration.sql`, the round-tripped values from `BigInt(Math.round(x))`, and the rejection behaviour from documented PostgreSQL semantics.
+4. **R4-005/006 — the check this sandbox cannot do:** `POST /api/requirements` with `budgetMaxInr: 1e30` must return **400**. Before the fix it returns **500** with a PostgreSQL `22003 numeric_value_out_of_range`. Same for the deal-split route with `totalCommissionInr: 1e30`. This is the single assertion in this report that is proved only arithmetically — the column widths come from `db/migrations/*/migration.sql`, the round-tripped values from `BigInt(Math.round(x))`, and the rejection behaviour from documented PostgreSQL semantics.
 
 ---
 
@@ -457,11 +457,11 @@ Status as of `9bb3b3d`. Most of this backlog has since been closed; what remains
 |---|---|---|
 | N1 | **BUG-R4-005/006 unverified against a live PostgreSQL column.** | **Still open — cannot be closed here.** No PostgreSQL binary exists in this sandbox (`/usr/lib/postgresql` absent). Proven from migration DDL + arithmetic. Run the two `curl` checks in §8 item 4 against staging. |
 | N2 | **`pnpm test:a11y` / `test:a11y:broker` / `test:ui` not run.** | **Still open — blocked.** Attempted: `pnpm exec playwright install chromium` fails with `ECONNRESET` to the browser CDN. No rendered-output change in any fix, so the risk is low. |
-| N3 | **Shared `BoundedWindowMap`.** | **DONE** (`3645d47`). `client/src/lib/utils/bounded-window-map.ts`, 8 tests; `login-throttle.ts` and `request-safety.ts` refactored onto it with their existing guard tests unchanged. Note: the report earlier said "three near-identical prune implementations" — that was wrong. `metrics-store.ts` bounds via a closed 6-name allowlist, not a prune, so there were **two**. |
+| N3 | **Shared `BoundedWindowMap`.** | **DONE** (`3645d47`). `src/lib/utils/bounded-window-map.ts`, 8 tests; `login-throttle.ts` and `request-safety.ts` refactored onto it with their existing guard tests unchanged. Note: the report earlier said "three near-identical prune implementations" — that was wrong. `metrics-store.ts` bounds via a closed 6-name allowlist, not a prune, so there were **two**. |
 | N4 | **CI source guards.** | **DONE** (`3645d47` + `8f06834`). `unbounded-state-guard.test.ts` and `bigint-range-guard.test.ts`, both following the `sql-query-bounds.test.ts` precedent. The state guard found a real gap on its second iteration — see BUG-R4-007. |
-| N5 | **Coverage gap in `client/src/lib`.** | **Partially done.** 54 modules lacked tests; `format-inr.ts` (+9) and `listing/comparables.ts` (+9) now have them, and `analytics/listing-stats.ts` gained 6. ~51 remain. **New evidence for prioritising this:** `comparableListings` cannot return a single comparable in the current fixture, because all 336 listings sit in distinct localities — no locality has two. The "comparable homes" surface is therefore unrenderable with shipped data. Flagged to the data owner; **not** fixed by inventing listings. |
+| N5 | **Coverage gap in `src/lib`.** | **Partially done.** 54 modules lacked tests; `format-inr.ts` (+9) and `listing/comparables.ts` (+9) now have them, and `analytics/listing-stats.ts` gained 6. ~51 remain. **New evidence for prioritising this:** `comparableListings` cannot return a single comparable in the current fixture, because all 336 listings sit in distinct localities — no locality has two. The "comparable homes" surface is therefore unrenderable with shipped data. Flagged to the data owner; **not** fixed by inventing listings. |
 | N6 | **Dormant `validateEnvCatalog`.** | **DONE** (`3645d47`). 18 missing keys added (catalog 48 → 66, no duplicates); `env-catalog-parity.test.ts` now drives the real validator from a source scan in both directions on every CI run. |
-| N7 | **`db:validate` unusable offline.** | **DONE** (`9bb3b3d`). `scripts/sandbox/install-schema-engine-shim.mjs` + `pnpm db:validate:offline`. Verified end to end: engine removed → plain `db:validate` failed with the TLS error → the script installed the shim → `prisma validate` passed. Idempotent, and it never overwrites a real engine. |
+| N7 | **`db:validate` unusable offline.** | **DONE** (`9bb3b3d`). `ops/scripts/sandbox/install-schema-engine-shim.mjs` + `pnpm db:validate:offline`. Verified end to end: engine removed → plain `db:validate` failed with the TLS error → the script installed the shim → `prisma validate` passed. Idempotent, and it never overwrites a real engine. |
 | N8 | **No pull request opened.** | **Still open.** The branch is pushed; opening a PR is a review-workflow decision. |
 
 **Environment instability observed while doing this work** (relevant to anyone re-verifying): the sandbox dropped `node_modules` between turns and, on one turn, reset local git history to the base commit `420b77c` while leaving the working tree intact. Recovery was `git fetch` + `git reset --mixed <remote-sha>`. Treat the **remote branch as the source of truth**, and run install + gates in a single command.

@@ -1145,7 +1145,7 @@ export function useNetworkQuality(): 'fast' | 'medium' | 'slow' {
 ### 3.21 Database Schema — Prisma ORM
 
 ```prisma
-// prisma/schema.prisma
+// db/schema.prisma
 generator client { provider = "prisma-client-js"; previewFeatures = ["postgresqlExtensions"] }
 datasource db { provider = "postgresql"; url = env("DATABASE_URL"); extensions = [vector, pg_trgm, unaccent] }
 

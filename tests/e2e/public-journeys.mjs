@@ -7,7 +7,7 @@
  * redirect that loses its query string, a JSON-LD block that stops parsing.
  *
  * Scope note: this is a REGRESSION net, not an exhaustive content audit. Deep
- * SEO assertions already live in `scripts/seo/raw-html-smoke.mjs`; the checks
+ * SEO assertions already live in `ops/scripts/seo/raw-html-smoke.mjs`; the checks
  * here are the cheap, high-signal ones that should never go red.
  */
 import { assert, assertEqual, assertIncludes, assertMatch, createSuite, startServer } from "./harness.mjs";
@@ -288,7 +288,7 @@ async function run() {
          signed-out visitor with no visible way IN, and a signed-in visitor with
          no visible way OUT. */
       const accountMenu = await import("node:fs/promises").then((fs) =>
-        fs.readFile(new URL("../../client/src/components/architech/AccountMenu.tsx", import.meta.url), "utf8"));
+        fs.readFile(new URL("../../src/components/architech/AccountMenu.tsx", import.meta.url), "utf8"));
 
       await test("a signed-out visitor is offered a Sign in control", async () => {
         const anonymous = await client.fork().get("/api/auth/session/");
@@ -327,7 +327,7 @@ async function run() {
          demo mode offered a live-looking Create account tab that can only ever
          answer 503 — discovered after filling the form in. */
       const loginPage = await import("node:fs/promises").then((fs) =>
-        fs.readFile(new URL("../../client/src/pages/Login.tsx", import.meta.url), "utf8"));
+        fs.readFile(new URL("../../src/screens/Login.tsx", import.meta.url), "utf8"));
 
       await test("the register endpoint refuses clearly, with a reason", async () => {
         const response = await client.fork().post("/api/auth/register/", {

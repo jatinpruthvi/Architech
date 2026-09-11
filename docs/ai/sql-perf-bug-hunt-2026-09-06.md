@@ -17,7 +17,7 @@
 | **SQL-PERF-17-004** | P3 | Boundedness (2 sites) | FIXED — channel requests + deals lists capped. |
 | **SQL-PERF-17-005** | P3 | Boundedness (whole-table scan) | FIXED — media retention sweep now streams id-cursor batches. |
 | **SQL-PERF-17-006** | P4 | Filter pushdown | FIXED — agent directory public-tier filter moved into the query (was: fetch ALL orgs, drop most in JS). |
-| — | — | Guard | **`client/src/lib/sql-query-bounds.test.ts`** — global source guard, proven red via mutation probe. |
+| — | — | Guard | **`src/lib/sql-query-bounds.test.ts`** — global source guard, proven red via mutation probe. |
 
 **6 findings fixed across 11 call sites**, zero migrations shipped (2 index proposals deferred to watchlist — Prisma engine unreachable from this sandbox, and ARCH-17 step 6 forbids unverifiable migrations).
 
@@ -41,27 +41,27 @@ Prior-art proof the repo already knows this discipline: `getListingsForServer` w
 ## 4. Findings and fixes
 
 ### SQL-PERF-17-001 — moderation queue: unbounded + undefined order (P2) — FIXED
-`client/src/lib/persistence/broker-store.ts` — `listing.findMany({ where: { lifecycle: "IN_REVIEW" }, include })` fetched **every pending listing platform-wide, with no `take` and no `orderBy`**. Worst finding in the set: unbounded *and* non-deterministic on the largest table.
+`src/lib/persistence/broker-store.ts` — `listing.findMany({ where: { lifecycle: "IN_REVIEW" }, include })` fetched **every pending listing platform-wide, with no `take` and no `orderBy`**. Worst finding in the set: unbounded *and* non-deterministic on the largest table.
 **Fix:** `orderBy: { updatedAt: "asc" }` (a review queue drains oldest-first) + `take: BROKER_LIST_PAGE_CAP (500)`.
 
 ### SQL-PERF-17-002 — broker drafts list unbounded (P3) — FIXED
 Same module — `findMany({ where: { brokerOrgId }, orderBy: { updatedAt: "desc" }, include })`: every draft an org ever created, all statuses. **Fix:** `take: BROKER_LIST_PAGE_CAP`.
 
 ### SQL-PERF-17-003 — lead inbox + compounding history read (P3) — FIXED
-`client/src/lib/leads/server.ts` — `lead.findMany({ where: { deletedAt: null, organizationId }, include: LEAD_LISTING_INCLUDE })` unbounded, *then* `hydrateLeadHistory` issued `auditEvent.findMany({ in: [every lead id] })` over a forever-growing event table on **every inbox render**. **Fix:** `LEAD_INBOX_PAGE_CAP = 500` on the inbox read — the history read inherits the bound (it queries only the capped id set, on index `[entityType, entityId]`). The audit query itself is marked intentionally-unbounded-by-caller (a blind total `take` could starve one lead's trail).
+`src/lib/leads/server.ts` — `lead.findMany({ where: { deletedAt: null, organizationId }, include: LEAD_LISTING_INCLUDE })` unbounded, *then* `hydrateLeadHistory` issued `auditEvent.findMany({ in: [every lead id] })` over a forever-growing event table on **every inbox render**. **Fix:** `LEAD_INBOX_PAGE_CAP = 500` on the inbox read — the history read inherits the bound (it queries only the capped id set, on index `[entityType, entityId]`). The audit query itself is marked intentionally-unbounded-by-caller (a blind total `take` could starve one lead's trail).
 
 ### SQL-PERF-17-004 — channel requests + deals lists unbounded (P3) — FIXED
-`client/src/lib/persistence/channel-store.ts` (2 sites) — org-scoped `channelRequest` / `channelDeal` lists, `orderBy updatedAt desc`, no cap; org history grows forever. **Fix:** `BROKER_CHANNEL_LIST_PAGE_CAP = 500` on both.
+`src/lib/persistence/channel-store.ts` (2 sites) — org-scoped `channelRequest` / `channelDeal` lists, `orderBy updatedAt desc`, no cap; org history grows forever. **Fix:** `BROKER_CHANNEL_LIST_PAGE_CAP = 500` on both.
 
 ### SQL-PERF-17-005 — media retention sweep loaded the whole table (P3) — FIXED
-`client/src/lib/media/retention-runtime.ts` — `propertyMedia.findMany({ select })` with **no `where`, no `take`**: the entire media table into memory every sweep, growing with every upload forever. **Fix:** streaming id-cursor batches of `MEDIA_RETENTION_SCAN_BATCH = 500` (`orderBy id asc` + `cursor`/`skip:1`). The id cursor is stable under the sweep's own status updates, so batching cannot skip or double-visit a row; peak memory is one batch. Behavior preserved deliberately: memory-store records still receive the prisma-side actions when prisma persistence is on (the id-keyed `updateMany` is an idempotent no-op when the row is absent) — same as the original loop.
+`src/lib/media/retention-runtime.ts` — `propertyMedia.findMany({ select })` with **no `where`, no `take`**: the entire media table into memory every sweep, growing with every upload forever. **Fix:** streaming id-cursor batches of `MEDIA_RETENTION_SCAN_BATCH = 500` (`orderBy id asc` + `cursor`/`skip:1`). The id cursor is stable under the sweep's own status updates, so batching cannot skip or double-visit a row; peak memory is one batch. Behavior preserved deliberately: memory-store records still receive the prisma-side actions when prisma persistence is on (the id-keyed `updateMany` is an idempotent no-op when the row is absent) — same as the original loop.
 
 ### SQL-PERF-17-006 — agent directory: filter pushdown (P4) — FIXED
-`client/src/lib/repositories/server/prisma.ts` — `brokerOrganization.findMany` fetched **every organization platform-wide** and dropped non-public tiers in JS on a public request path. **Fix:** `where: { verificationStatus: { in: [...PUBLIC_VERIFICATION_STATUSES] } }` (set now exported from `client/src/lib/agent/directory.ts`); the JS filter stays as a second line of defense. Left uncapped *on purpose* (a directory page renders every public org; pagination is a product decision → marker + watchlist).
+`src/lib/repositories/server/prisma.ts` — `brokerOrganization.findMany` fetched **every organization platform-wide** and dropped non-public tiers in JS on a public request path. **Fix:** `where: { verificationStatus: { in: [...PUBLIC_VERIFICATION_STATUSES] } }` (set now exported from `src/lib/agent/directory.ts`); the JS filter stays as a second line of defense. Left uncapped *on purpose* (a directory page renders every public org; pagination is a product decision → marker + watchlist).
 
 ## 5. Guard
 
-**`client/src/lib/sql-query-bounds.test.ts`** walks every non-test `.ts` under `client/src`, `app`, `shared`, extracts each `.findMany(` argument list with **balanced-brace matching** (regex proven insufficient — see methodology), and fails unless the call passes `take:` or carries a `sql-perf: intentionally-unbounded` marker within 500 chars. A sanity test fails if the scanner ever sees < 30 call sites (a degenerate scan must not pass vacuously).
+**`src/lib/sql-query-bounds.test.ts`** walks every non-test `.ts` under `src`, `app`, `shared`, extracts each `.findMany(` argument list with **balanced-brace matching** (regex proven insufficient — see methodology), and fails unless the call passes `take:` or carries a `sql-perf: intentionally-unbounded` marker within 500 chars. A sanity test fails if the scanner ever sees < 30 call sites (a degenerate scan must not pass vacuously).
 **Proven red:** a probe file with an unbounded `findMany` made the guard fail, naming the file and line; removed → green. The class cannot silently return.
 
 ## 6. Cleared by evidence
@@ -80,7 +80,7 @@ Same module — `findMany({ where: { brokerOrgId }, orderBy: { updatedAt: "desc"
 
 ## 7. Watchlist (speculation / deferred — explicit non-actions)
 
-- **W1 (index) — RESOLVED 7 Sep 2026.** The moderation-queue filter `lifecycle = 'IN_REVIEW'` had no leftmost-lifecycle index on `Listing` (all six existing lifecycle indexes carry it as a *trailing* column, so none was usable); the cap bounds memory, not scan cost. Shipped as `@@index([lifecycle, updatedAt])` — `updatedAt` second so the FIFO `orderBy` is served by the same index. The original blocker ("sandbox cannot run `prisma validate`") no longer applies: `pnpm db:validate:offline` validates without egress. Guarded by `client/src/lib/db/index-leftmost-coverage.test.ts`. See `docs/search/query-optimization-audit-2026-09-07.md` §9.
+- **W1 (index) — RESOLVED 7 Sep 2026.** The moderation-queue filter `lifecycle = 'IN_REVIEW'` had no leftmost-lifecycle index on `Listing` (all six existing lifecycle indexes carry it as a *trailing* column, so none was usable); the cap bounds memory, not scan cost. Shipped as `@@index([lifecycle, updatedAt])` — `updatedAt` second so the FIFO `orderBy` is served by the same index. The original blocker ("sandbox cannot run `prisma validate`") no longer applies: `pnpm db:validate:offline` validates without egress. Guarded by `src/lib/db/index-leftmost-coverage.test.ts`. See `docs/search/query-optimization-audit-2026-09-07.md` §9.
 - **W2 (index) — RESOLVED 7 Sep 2026.** `ReraRecord.verificationStatus` only appeared as a 2nd column in both indexes. Shipped as `@@index([verificationStatus, updatedAt])`. The "impact negligible at `take: 10`" assessment still stands — it shipped because it is the identical defect to W1 and cost one statement, not because measurement justified it independently.
 - **W3 (product decisions):** directory pagination; publish-gate peer windowing (cap would weaken a correctness gate — marker in place); locality-registry include fan-out if coverage goes nationwide; saved-search alert platform scan (the in-code comment itself predicts this becomes the perf bug).
 - **W4 (infra):** `pnpm db:validate` is engine-download-dependent and blocked by sandbox egress after node_modules wipes. CI with warm caches is unaffected; last green locally at `686e4fc`.

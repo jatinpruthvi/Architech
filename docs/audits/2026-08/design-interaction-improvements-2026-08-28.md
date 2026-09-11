@@ -170,7 +170,7 @@ hover/tap → crosshair + a tooltip with `month, ₹/sqft, Δ vs previous`, and 
 
 ## 4. Mobile realism: the viewport unit you are not using
 
-`dvh`/`svh`/`lvh`/`env(safe-area-inset)` appear **0 times** in `client/src` and `app`.
+`dvh`/`svh`/`lvh`/`env(safe-area-inset)` appear **0 times** in `src` and `app`.
 What is used instead: `min-h-screen` (`app/compare/page.tsx:20`,
 `ErrorBoundary.tsx:28`), `lg:max-h-[calc(100vh-130px)]` (my own
 `ResultsPage.tsx:487`), `h-[62vh] ... lg:h-[calc(100vh-190px)]` (`:610`), and a
@@ -241,7 +241,7 @@ applies to every image on the site.
 ### 6.1 The product has two kinds of dialog, and the worse one is on the money path
 `ListingPage.tsx:57` runs its lead-capture form through the real Radix Dialog
 (`Dialog`/`DialogContent`/`DialogHeader` — focus trap, restore, `inert`, and it is the
-only Radix-dialog consumer in `client/src` + `app`). Two other surfaces re-implement the
+only Radix-dialog consumer in `src` + `app`). Two other surfaces re-implement the
 same thing by hand:
 
 - `RequirementCapture.tsx:103` — `<section role="dialog" aria-modal="true">`,
@@ -271,11 +271,11 @@ fires with no toast and no undo, and `Toaster` is already mounted globally
 a mis-tap from a lost listing into nothing. The heart-pop is optional; the undo is not.
 
 ### 6.3 Guard tests to add (these are the cheapest "stay excellent" lever you have)
-Extend `client/src/lib/ui/design-token-discipline.test.ts`, which already has the
+Extend `src/lib/ui/design-token-discipline.test.ts`, which already has the
 mechanism, with:
 1. **no hover-only affordance anywhere** — generalise the existing
    "never gates a control behind hover" check from `FilterSurface.tsx` to all of
-   `client/src` (it catches the `opacity-0 group-hover:opacity-100` pattern that made
+   `src` (it catches the `opacity-0 group-hover:opacity-100` pattern that made
    Compare unusable on touch — already a real bug you shipped once).
 2. **ARIA wiring smoke test** — every `role="combobox"` in the codebase must declare
    `aria-expanded` bound to a state variable whose expression is not a tautology
@@ -283,7 +283,7 @@ mechanism, with:
    every `role="listbox"` file must contain a key handler. This is the test that would have
    caught §2.1 and §2.3 in the day they were written.
 3. **no `<li>` outside a list, no `role` on `<ul>` that removes `list` semantics.**
-4. **dialog contract**: any `role="dialog"` in `client/src` must come from
+4. **dialog contract**: any `role="dialog"` in `src` must come from
    `components/ui/dialog` or `components/ui/drawer` (import check), not hand-rolled.
 
 ---

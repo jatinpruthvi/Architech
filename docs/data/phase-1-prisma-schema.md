@@ -8,10 +8,10 @@ This is the first production data-model slice for Architech. The app still reads
 ## Files
 
 ```text
-prisma/schema.prisma
+db/schema.prisma
 prisma.config.ts
-prisma/migrations/202608240001_phase1_domain_schema/migration.sql
-prisma/seed.mjs
+db/migrations/202608240001_phase1_domain_schema/migration.sql
+db/seed.mjs
 ```
 
 ## Domain coverage
@@ -43,7 +43,7 @@ It also includes lifecycle/status enums for:
 ## Commands
 
 ```bash
-pnpm db:validate    # validates prisma/schema.prisma
+pnpm db:validate    # validates db/schema.prisma
 pnpm db:generate    # generates Prisma Client
 pnpm db:migrate     # deploys committed migrations to DATABASE_URL
 pnpm db:seed        # seeds Ahmedabad demo data into DATABASE_URL
@@ -51,7 +51,7 @@ pnpm db:seed        # seeds Ahmedabad demo data into DATABASE_URL
 
 ## Seed data
 
-`prisma/seed.mjs` creates representative Ahmedabad data matching the current prototype fixtures:
+`db/seed.mjs` creates representative Ahmedabad data matching the current prototype fixtures:
 
 - Ahmedabad city
 - 6 locality records
@@ -74,4 +74,4 @@ pnpm db:validate
 pnpm db:generate
 ```
 
-Migration SQL is generated from the Prisma schema with `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script`. A live `migrate deploy`/seed run requires a real PostgreSQL database via `DATABASE_URL`.
+Migration SQL is generated from the Prisma schema with `prisma migrate diff --from-empty --to-schema db/schema.prisma --script`. A live `migrate deploy`/seed run requires a real PostgreSQL database via `DATABASE_URL`.

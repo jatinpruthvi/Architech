@@ -33,6 +33,6 @@ The latest Google-first off-page authority recommendation is saved at `docs/seo/
 
 ## Governance update
 
-The archive is historical. The current normative implementation package is defined by `README.md`, `docs/architecture/normative/final-three-phase-architecture.md`, `config/governance/contracts/REQUIREMENTS.md`, `config/governance/contracts/DOMAIN-CONTRACTS.md`, `config/governance/contracts/IMPLEMENTATION-MATRIX.md`, `config/governance/decisions/DECISION-LOG.md`, `config/governance/legal/LEGAL-GATES.md`, and `config/governance/decisions/SUPERSESSION-MANIFEST.md`.
+The archive is historical. The current normative implementation package is defined by `README.md`, `docs/architecture/normative/final-three-phase-architecture.md`, `ops/config/governance/contracts/REQUIREMENTS.md`, `ops/config/governance/contracts/DOMAIN-CONTRACTS.md`, `ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md`, `ops/config/governance/decisions/DECISION-LOG.md`, `ops/config/governance/legal/LEGAL-GATES.md`, and `ops/config/governance/decisions/SUPERSESSION-MANIFEST.md`.
 
-The accepted governance review is documented in `config/governance/feedback/FEEDBACK-REVIEW.md`. Historical recommendation files remain available for auditability and should not be treated as separate current specifications.
+The accepted governance review is documented in `ops/config/governance/feedback/FEEDBACK-REVIEW.md`. Historical recommendation files remain available for auditability and should not be treated as separate current specifications.

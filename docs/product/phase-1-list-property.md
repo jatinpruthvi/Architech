@@ -11,7 +11,7 @@ A property could previously be listed only at `/broker/listings/new`, reachable 
 
 Added a discoverable **"List your property"** path that funnels an owner/seller to the listing form (the broker operations workspace):
 
-- **Public page** `/list-property/` (`app/list-property/page.tsx` + `client/src/pages/ListProperty.tsx`) explaining the 3-step source-trail process (facts → media rights → submit for review), with a strong **"Start listing"** CTA to `/broker/listings/new`.
+- **Public page** `/list-property/` (`app/list-property/page.tsx` + `src/screens/ListProperty.tsx`) explaining the 3-step source-trail process (facts → media rights → submit for review), with a strong **"Start listing"** CTA to `/broker/listings/new`.
 - **Entry points:**
   - **Header** — a "List your property" nav item (desktop) and the same item in the mobile menu (via `navItems`).
   - **Footer** — a "List your property" link in the Explore column.
@@ -27,15 +27,15 @@ Added a discoverable **"List your property"** path that funnels an owner/seller 
 
 ```text
 app/list-property/page.tsx
-client/src/pages/ListProperty.tsx
-client/src/lib/seo/urls.ts            (listPropertyPath/Url)
-client/src/lib/seo/pages.ts           (registry entry)
-client/src/lib/seo/pages.test.ts
-client/src/components/architech/Header.tsx
-client/src/components/architech/Footer.tsx
-client/src/pages/Home.tsx
-client/src/lib/i18n.ts
-scripts/seo/raw-html-smoke.mjs
+src/screens/ListProperty.tsx
+src/lib/seo/urls.ts            (listPropertyPath/Url)
+src/lib/seo/pages.ts           (registry entry)
+src/lib/seo/pages.test.ts
+src/components/architech/Header.tsx
+src/components/architech/Footer.tsx
+src/screens/Home.tsx
+src/lib/i18n.ts
+ops/scripts/seo/raw-html-smoke.mjs
 docs/product/phase-1-list-property.md
 ```
 

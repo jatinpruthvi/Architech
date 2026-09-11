@@ -25,7 +25,7 @@ The Phase 1 schema already includes `User`, `BrokerOrganization`, and `BrokerUse
 
 ## Next production handoff
 
-Replace `demoBrokerSession` in `client/src/lib/auth/roles.ts` / `session.ts` with Better Auth server session retrieval and Prisma-backed organization memberships:
+Replace `demoBrokerSession` in `src/lib/auth/roles.ts` / `session.ts` with Better Auth server session retrieval and Prisma-backed organization memberships:
 
 1. validate secure session cookie
 2. load user
@@ -37,7 +37,7 @@ Replace `demoBrokerSession` in `client/src/lib/auth/roles.ts` / `session.ts` wit
 ## Validation
 
 ```bash
-pnpm test -- client/src/lib/auth/auth.test.ts
+pnpm test -- src/lib/auth/auth.test.ts
 pnpm check
 pnpm lint
 pnpm test

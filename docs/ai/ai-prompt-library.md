@@ -43,7 +43,7 @@ real-estate platform (first city: Ahmedabad).
 
 STACK (do not substitute):
 - Next.js 16 App Router + React 19 + TypeScript strict mode; package manager pnpm 10.
-- App routes in app/; shared UI in client/src/ (import alias @/* -> client/src/*);
+- App routes in app/; shared UI in src/ (import alias @/* -> src/*);
   cross-boundary shared code in shared/ (alias @shared/*).
 - Tailwind CSS 4, Prisma 7, Vitest, Playwright, Storybook 10.
 
@@ -61,7 +61,7 @@ IMMOVABLE RULES:
 SOURCE OF TRUTH READING ORDER:
 1. README.md → section "How an AI coding system should use this repository".
 2. docs/architecture/normative/final-three-phase-architecture.md before production code.
-3. config/governance/contracts/DOMAIN-CONTRACTS.md and IMPLEMENTATION-MATRIX.md for
+3. ops/config/governance/contracts/DOMAIN-CONTRACTS.md and IMPLEMENTATION-MATRIX.md for
    vocabulary and feature-to-code mapping.
 4. STATUS.md before declaring anything done.
 
@@ -85,7 +85,7 @@ QUALITY GATES (run before claiming completion):
 CONTEXT: You have just joined the Architech repository. Read in this exact order and
 summarize each in one line as you go: README.md ("How an AI coding system should use
 this repository"), STATUS.md, docs/architecture/normative/final-three-phase-architecture.md,
-config/governance/contracts/DOMAIN-CONTRACTS.md, config/governance/contracts/IMPLEMENTATION-MATRIX.md.
+ops/config/governance/contracts/DOMAIN-CONTRACTS.md, ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md.
 ROLE: Senior engineer taking ownership of a codebase they did not write.
 ACTION:
 1. State the canonical entity model, route grammar, SeoPage registry role, and
@@ -116,7 +116,7 @@ ACTION:
 3. Only then implement: App Router conventions, @/* and @shared/* alias imports,
    Tailwind 4 utilities, typed props, no client-side fetching for public content.
 4. Public pages: real <a href> navigation, server-rendered HTML, correct metadata via
-   the existing SEO surface (client/src/lib/seo).
+   the existing SEO surface (src/lib/seo).
 5. Update or add docs if a contract or decision changed.
 FORMAT: Plan, then a per-file diff-style implementation, then the gate results.
 Do not invent listing facts or placeholder domain content; use repository fixtures.
@@ -134,7 +134,7 @@ ACTION:
 2. Contract violations: invented facts, client-rendered public surface, fake anchors,
    broken localization fields, missing metadata, registry bypass.
 3. Security and privacy: input validation, auth boundaries, RLS-sensitive queries,
-   secrets handling, legal-gate surfaces (config/governance/legal/LEGAL-GATES.md).
+   secrets handling, legal-gate surfaces (ops/config/governance/legal/LEGAL-GATES.md).
 4. Accessibility: semantic HTML, keyboard paths, contrast tokens.
 5. Tests: which gates cover the change; what is missing.
 FORMAT: Findings table — severity (blocker / should-fix / nit), file:line, the rule
@@ -223,7 +223,7 @@ public pages — assert meaningful structure and links.
 
 ```text
 CONTEXT: Architech accessibility gates: pnpm test:a11y (Playwright + axe),
-pnpm audit:contrast (scripts/audit-surface-contrast.mjs). Finding: {paste finding}.
+pnpm audit:contrast (ops/scripts/audit-surface-contrast.mjs). Finding: {paste finding}.
 ROLE: WCAG-focused front-end engineer working in Tailwind 4 + Radix primitives.
 ACTION:
 1. Reproduce with the named gate; map the finding to the failing WCAG criterion.
@@ -242,7 +242,7 @@ FORMAT: Criterion -> cause -> fix -> gate output. Note any residual manual-check
 
 ```text
 CONTEXT: Architech SEO is contract-driven: the SeoPage registry and server helpers
-(client/src/lib/seo/pages-server.ts, getPublishableSeoPagesForServer) feed
+(src/lib/seo/pages-server.ts, getPublishableSeoPagesForServer) feed
 app/sitemap.xml and app/sitemap/[segment] routes; seo/authority defines page
 authority. Task: {describe}.
 ROLE: Technical SEO engineer who treats HTML as the ranking asset.
@@ -264,7 +264,7 @@ then gate output. Flag anything needing editorial review before indexing.
 
 ```text
 CONTEXT: Architech persistence — Prisma 7, repositories under the data layer
-(docs/data/*), seed expectations in prisma/. Change: {describe}.
+(docs/data/*), seed expectations in db/. Change: {describe}.
 ROLE: Database engineer optimizing for correctness and deployability.
 ACTION:
 1. Check DOMAIN-CONTRACTS.md and IMPLEMENTATION-MATRIX.md for the entity's rules
@@ -283,8 +283,8 @@ FORMAT: Contract citation, schema diff, query diffs, migration steps, gate outpu
 
 ```text
 CONTEXT: Architech gates: pnpm security:headers, pnpm security:rls, pnpm legal:gates
-(combined: pnpm security:audit); config/governance/legal/LEGAL-GATES.md; privacy retention in
-scripts/privacy. Change under review: {describe or paste diff}.
+(combined: pnpm security:audit); ops/config/governance/legal/LEGAL-GATES.md; privacy retention in
+ops/scripts/privacy. Change under review: {describe or paste diff}.
 ROLE: Application security reviewer for a consumer real-estate platform in India.
 ACTION:
 1. Enumerate trust boundaries the change crosses (public/anonymous, broker, admin,
@@ -414,15 +414,15 @@ alone, without rerunning your session.
 
 ```text
 CONTEXT: Proactive performance-bug hunt on the Architech repository (ARCH-CTX).
-Performance evidence is first-class here: config/performance/budgets.json caps,
-scripts/performance/budget.mjs, pnpm perf:shell (universal-shell attribution),
+Performance evidence is first-class here: ops/config/performance/budgets.json caps,
+ops/scripts/performance/budget.mjs, pnpm perf:shell (universal-shell attribution),
 .next/diagnostics/route-bundle-stats.json after a build, the RUM reporter
 (WebVitalsReporter), and .github/workflows/lighthouse.yml for lab runs.
 A PERF BUG is a verifiable defect costing measurable time, bytes, or stability
 beyond the intended budget or design — never an unmeasured style preference.
 ROLE: Performance engineer; you measure before you touch anything.
 ACTION:
-1. Baseline: pnpm build:ci, then node scripts/performance/budget.mjs and
+1. Baseline: pnpm build:ci, then node ops/scripts/performance/budget.mjs and
    pnpm perf:shell; record the measured table. Any failing gate is a confirmed
    perf bug by definition.
 2. Discovery sweeps (every finding needs exact file + line evidence):
@@ -439,7 +439,7 @@ ACTION:
    a watchlist — never report intuition as a bug.
 4. Fix only verified findings: minimal change; capture before/after numbers and
    add a guard (budget line or test) so the class cannot silently return.
-5. Verify: node scripts/performance/budget.mjs, pnpm check, pnpm lint, pnpm test.
+5. Verify: node ops/scripts/performance/budget.mjs, pnpm check, pnpm lint, pnpm test.
 FORMAT: report docs/ai/perf-bug-hunt-<date>.md with a PERF-BUG-ID table,
 before/after measurements, a cleared-by-evidence list, and the watchlist.
 TARGET AUDIENCE: reviewers verifying performance claims from artifacts alone.
@@ -452,13 +452,13 @@ TARGET AUDIENCE: reviewers verifying performance claims from artifacts alone.
 ```text
 CONTEXT: Proactive SQL query performance hunt on the Architech repository
 (ARCH-CTX). Data layer facts (verified 2026-09-06): Prisma 7, datasource
-provider postgresql (prisma/schema.prisma, migrations in prisma/migrations);
+provider postgresql (db/schema.prisma, migrations in db/migrations);
 ONE shared client via globalThis singleton at
-client/src/lib/repositories/server/prisma.ts; raw SQL lives in
-client/src/lib/search/sql-narrow.ts, client/src/lib/search/sql-page-runtime.ts,
-client/src/lib/persistence/channel-store.ts,
-client/src/lib/repositories/server/tenant.ts; measurable harness
-client/src/lib/search/latency-bench.test.ts. There is NO live database in the
+src/lib/repositories/server/prisma.ts; raw SQL lives in
+src/lib/search/sql-narrow.ts, src/lib/search/sql-page-runtime.ts,
+src/lib/persistence/channel-store.ts,
+src/lib/repositories/server/tenant.ts; measurable harness
+src/lib/search/latency-bench.test.ts. There is NO live database in the
 agent sandbox — verification is static + test-driven: pnpm db:validate plus
 the Vitest db suites are the evidence floor. A SQL PERF BUG is a verifiable
 query defect — unbounded read, N+1, hot filter without supporting index,
@@ -495,7 +495,7 @@ ACTION:
    documented constant (precedent: GOVERNANCE_LIST_PAGE_CAP, capped at 500).
    Guard the class so it cannot return: source-level Vitest guard for modules
    importing "server-only" (precedent:
-   client/src/lib/config/governance/server-query-caps.test.ts); behavioural tests
+   src/lib/ops/config/governance/server-query-caps.test.ts); behavioural tests
    where the module is importable.
 6. Schema/index changes: require a migration and pnpm db:validate. If the
    migration cannot be verified in the sandbox, DO NOT ship it — flag the
@@ -557,9 +557,9 @@ the source prompts were **deliberately dropped** — they conflict with the repo
 rule that copy states verified facts only.
 
 ```text
-CONTEXT: Architech renders metadata through client/src/lib/seo/serp.ts, whose
+CONTEXT: Architech renders metadata through src/lib/seo/serp.ts, whose
 budgets already account for the " · Architech" suffix app/layout.tsx appends via
-its title template. scripts/seo/onpage-audit.mjs measures RENDERED html for the
+its title template. ops/scripts/seo/onpage-audit.mjs measures RENDERED html for the
 whole sitemap corpus and runs inside pnpm test:seo. Task: {describe}.
 ROLE: Technical SEO auditor. Evidence only; never generic advice.
 ACTION:
@@ -580,11 +580,11 @@ then gate output. Record the retrieval path used, per Section C Step 4.
 
 ### ARCH-19 — Audit emitted SQL against the indexes that actually exist
 
-**Best for:** the defect class correctness gates are structurally blind to — a predicate the query builder emits with no index able to serve it. **Different from ARCH-17**, which is a broad query-layer hunt (boundedness, N+1, client lifecycle) done by *reading* call sites; ARCH-19 is narrow and empirical: it *executes* the builders, captures the literal SQL, and diffs it against `prisma/migrations`. **Provenance:** adapted from *Database Architect Agent Role* (`@wkaandemir`, prompts.chat), retrieved 7 Sep 2026 via Path A/B after the MCP probe returned `http_code=000`. Adopted: EXPLAIN-first standard, "indexes justified by actual query patterns, no speculative indexes", per-finding rationale + testing, the Red Flags list. Dropped: its `TODO_database-architect.md` output rule (repo uses dated `docs/` reports), migration-safety tooling (gh-ost etc. — index-only additive migrations here), MongoDB/Redis guidance. First run: `docs/search/query-optimization-audit-2026-09-07.md`.
+**Best for:** the defect class correctness gates are structurally blind to — a predicate the query builder emits with no index able to serve it. **Different from ARCH-17**, which is a broad query-layer hunt (boundedness, N+1, client lifecycle) done by *reading* call sites; ARCH-19 is narrow and empirical: it *executes* the builders, captures the literal SQL, and diffs it against `db/migrations`. **Provenance:** adapted from *Database Architect Agent Role* (`@wkaandemir`, prompts.chat), retrieved 7 Sep 2026 via Path A/B after the MCP probe returned `http_code=000`. Adopted: EXPLAIN-first standard, "indexes justified by actual query patterns, no speculative indexes", per-finding rationale + testing, the Red Flags list. Dropped: its `TODO_database-architect.md` output rule (repo uses dated `docs/` reports), migration-safety tooling (gh-ost etc. — index-only additive migrations here), MongoDB/Redis guidance. First run: `docs/search/query-optimization-audit-2026-09-07.md`.
 
 ```text
 CONTEXT: Query-optimization audit on Architech (ARCH-CTX). Prisma 7 +
-PostgreSQL; raw SQL builders in client/src/lib/search/{sql.ts,sql-page.ts},
+PostgreSQL; raw SQL builders in src/lib/search/{sql.ts,sql-page.ts},
 executed by {sql-narrow.ts,sql-page-runtime.ts}. THERE IS NO LIVE DATABASE in
 the sandbox (DATABASE_URL is localhost; no psql, no Postgres, no Docker), and
 `pnpm db:validate` needs blocked egress — use `pnpm db:validate:offline`.
@@ -602,7 +602,7 @@ ACTION:
    specific index type: `%` / similarity (needs gin_trgm_ops ONLY), leading-
    wildcard ILIKE (btree cannot serve; gin_trgm_ops can), @@ tsquery (needs
    GIN on the tsvector), array containment, and ordinary equality/range.
-3. Diff against reality: grep every CREATE INDEX in prisma/migrations. Report
+3. Diff against reality: grep every CREATE INDEX in db/migrations. Report
    a gap only where an emitted predicate has no index able to serve it.
 4. Check for indexes that EXIST BUT CANNOT APPLY — e.g. a plain array GIN
    index cannot serve ILIKE/% on elements after unnest(), because unnest() is
@@ -619,10 +619,10 @@ ACTION:
    index migration; put it on the watchlist.
 7. Guard the CLASS: a database-free test that executes the builder, extracts
    the index-dependent predicates, and asserts a matching CREATE INDEX exists
-   (precedent: client/src/lib/search/sql-index-coverage.test.ts). Assert the
+   (precedent: src/lib/search/sql-index-coverage.test.ts). Assert the
    extracted set is non-empty so it cannot pass vacuously.
 8. PROVE THE GUARD FAILS: delete one index statement, show the test go red,
-   restore it, confirm `git diff --stat prisma/` is clean. A gate never seen
+   restore it, confirm `git diff --stat db/` is clean. A gate never seen
    failing is not known to work.
 9. Verify: npx tsc --noEmit, pnpm lint, npx vitest run (show before/after
    counts), pnpm db:validate:offline.
@@ -647,5 +647,5 @@ TARGET AUDIENCE: reviewers re-verifying every claim from artifacts alone.
 - Community source: canonical prompts.chat dataset fetched and inspected directly; entries quoted above (Prompt Generator/CRAFT, Linux Terminal, JavaScript Console, SQL Terminal, Web Design Consultant, Tech Reviewer) were located and content-checked.
 - MCP path: the stdio bridge handshake and `tools/list` were tested live against the real server this date; tools available: `search_prompts`, `get_prompt` (server `prompts-chat` v1.0.9).
 - MCP transports (second pass, same date): editor-style HTTP POST (`initialize` + `tools/call`) and the unmodified local stdio bridge (`initialize`, `search_prompts`, `get_prompt`) both exercised end-to-end against a localhost stub emulating the upstream API, returning well-formed prompt results. The throwaway npx cache was patched back afterwards; no repo files touched.
-- Repo cross-check: every path, alias, script, and contract file named in ARCH-01..ARCH-13 was verified to exist in the repo at this date (incl. `pnpm check|lint|test|db:validate|test:a11y|audit:contrast|security:audit|test:seo|test:crawl|quality`, `client/src/lib/seo/pages-server.ts`, `config/governance/contracts/*`, `config/governance/legal/LEGAL-GATES.md`, `scripts/privacy`, `scripts/audit-surface-contrast.mjs`).
+- Repo cross-check: every path, alias, script, and contract file named in ARCH-01..ARCH-13 was verified to exist in the repo at this date (incl. `pnpm check|lint|test|db:validate|test:a11y|audit:contrast|security:audit|test:seo|test:crawl|quality`, `src/lib/seo/pages-server.ts`, `ops/config/governance/contracts/*`, `ops/config/governance/legal/LEGAL-GATES.md`, `ops/scripts/privacy`, `ops/scripts/audit-surface-contrast.mjs`).
 - Note: the authoring sandbox cannot reach prompts.chat over TLS (`SSL_ERROR_SYSCALL` on direct POST, `fetch failed` on the live bridge's `tools/call`) — a sandbox egress restriction, not a configuration problem. Live-upstream validation therefore used the canonical dataset fetch above; both transports return real prompt data on a normal developer machine. **For future sessions: don't try-and-fail the MCP in such environments — follow the validated retrieval playbook in Section C.**

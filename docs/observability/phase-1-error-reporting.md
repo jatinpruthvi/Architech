@@ -10,7 +10,7 @@
 
 ## Redacted error reporting
 
-- **`client/src/lib/observability/errors.ts`** — `normalizeClientError(value, metadata)` turns any thrown value into a bounded, serializable report (message/stack truncated, non-printable characters stripped). `isReportableSeverity` validates severity.
+- **`src/lib/observability/errors.ts`** — `normalizeClientError(value, metadata)` turns any thrown value into a bounded, serializable report (message/stack truncated, non-printable characters stripped). `isReportableSeverity` validates severity.
 - **`POST /api/observability/errors`** — validates the payload and logs it through the redacted pino logger (`phone`/`email`/`token`/`password` paths are redacted before they reach the sink).
 
 ## Design rules
@@ -22,7 +22,7 @@
 ## Validation
 
 ```bash
-pnpm exec vitest run client/src/lib/observability/errors.test.ts
+pnpm exec vitest run src/lib/observability/errors.test.ts
 pnpm check
 pnpm lint
 pnpm build

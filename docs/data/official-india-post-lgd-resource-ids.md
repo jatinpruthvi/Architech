@@ -43,20 +43,20 @@ The implementation is prepared, but no nationwide bulk file has been acquired or
 ### Already implemented
 
 - Official 36-entry LGD State/UT registry:
-  - `config/data/location/official/lgd-state-ut-2026-08-30.json`
+  - `ops/config/data/location/official/lgd-state-ut-2026-08-30.json`
   - 28 states and 8 Union Territories
   - SHA-256: `7e1f421512b11b92696364d1ce3508f5da050bd81c1f0f0a9d24b3eaf94d3aa9`
 - Controlled OGD downloader:
-  - `scripts/location/fetch-ogd-snapshot.mjs`
+  - `ops/scripts/location/fetch-ogd-snapshot.mjs`
 - India Post importer:
-  - `scripts/location/import-india-post.mjs`
+  - `ops/scripts/location/import-india-post.mjs`
 - LGD local-body/PIN importer:
-  - `scripts/location/import-lgd-local-bodies.mjs`
+  - `ops/scripts/location/import-lgd-local-bodies.mjs`
 - Coverage release audit:
-  - `scripts/location/audit-coverage.mjs`
+  - `ops/scripts/location/audit-coverage.mjs`
 - Database schema and migrations:
-  - `prisma/migrations/202608300002_india_location_foundation/migration.sql`
-  - `prisma/migrations/202608300003_official_lgd_state_registry/migration.sql`
+  - `db/migrations/202608300002_india_location_foundation/migration.sql`
+  - `db/migrations/202608300003_official_lgd_state_registry/migration.sql`
 - Exact PIN and location APIs/pages:
   - `/api/locations/postal-codes/{PIN}`
   - `/api/locations/status`

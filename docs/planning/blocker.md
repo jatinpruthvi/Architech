@@ -14,7 +14,7 @@ Cross-references: workstream IDs (`P1-…`) per `PHASE-1-IMPLEMENTATION-PLAN.md`
 
 ## 1. Legal & privacy gates (LEG-001…LEG-009)
 
-Canonical table with owners, evidence requirements, and release procedure: [`config/governance/legal/LEGAL-GATES.md`](./config/governance/legal/LEGAL-GATES.md). All nine are **pending approval** (`docs/release/phase-1-release-report.md`). A rejected/expired gate disables the feature or sends it to its safe fallback — the code paths already honor this.
+Canonical table with owners, evidence requirements, and release procedure: [`ops/config/governance/legal/LEGAL-GATES.md`](./ops/config/governance/legal/LEGAL-GATES.md). All nine are **pending approval** (`docs/release/phase-1-release-report.md`). A rejected/expired gate disables the feature or sends it to its safe fallback — the code paths already honor this.
 
 - [ ] **LEG-001 RERA ingestion** — source terms, field mapping, provenance, freshness, correction, republication, disclaimer.
 - [ ] **LEG-002 Personal data** — notice, consent/withdrawal, access/correction/deletion, retention, processor inventory, security, incident process. Specifically: approve the 180-day requirement-retention window, approve a retention period for every active flow in `docs/security/privacy-data-flow-map.md`, schedule purge monitoring, name the incident-response owner, enable managed encryption-key rotation.
@@ -43,11 +43,11 @@ Everything is **implemented and fail-closed**: OGD snapshot fetcher, India Post 
 
 ## 3. Production infrastructure
 
-- [ ] **Provision hosting + managed data.** Railway/Vercel app, PostgreSQL with the **PostGIS extension installed** (`postgis` must be creatable/installed before migrations if the migration role lacks superuser). Runbook: `docs/operations/environment-provisioning-runbook.md`; checklist: `docs/operations/provisioning-execution-checklist.md`; prepared manifests (`vercel.json`, `railway.json`, `docker-compose.production-like.yml`, `config/governance/environments/phase-1-environments.json`). (`P1-PLAT-001/002`)
+- [ ] **Provision hosting + managed data.** Railway/Vercel app, PostgreSQL with the **PostGIS extension installed** (`postgis` must be creatable/installed before migrations if the migration role lacks superuser). Runbook: `docs/operations/environment-provisioning-runbook.md`; checklist: `docs/operations/provisioning-execution-checklist.md`; prepared manifests (`vercel.json`, `railway.json`, `docker-compose.production-like.yml`, `ops/config/governance/environments/phase-1-environments.json`). (`P1-PLAT-001/002`)
 - [ ] **Production deploy target serves APIs.** *(code fixed)* `railway.json` now runs `pnpm start:next` (the Next runtime; `/api/observability/health/` returns 200 against a live boot, verified locally) and the old static snapshot survives as the explicitly-labelled `pnpm start:static` demo target. Remaining: run the target once on the live host as part of §3.
 - [ ] **DB verification + seed.** `pnpm db:validate`, `pnpm db:migrate -- --live` (sandbox-proved 14/14 migrations on 5 Sep; two ordering bugs fixed and committed), then seed; RLS policy proof re-run against the production cluster.
 - [ ] **Backups + restore drill** with the procedure from `docs/operations/backup-restore-cost-readiness.md` — including replaying erasure tombstones before restored services accept traffic (deleted PII must not reappear).
-- [ ] **Secrets via the inventory.** Every secret lands in the platform secret store per `config/governance/secrets/phase-1-secret-inventory.json` policy — never chat/Git. Storage audit exists: `pnpm security:audit`.
+- [ ] **Secrets via the inventory.** Every secret lands in the platform secret store per `ops/config/governance/secrets/phase-1-secret-inventory.json` policy — never chat/Git. Storage audit exists: `pnpm security:audit`.
 - [ ] **Shared rate limiting + cross-instance events.** In-process rate limiter is a deliberate single-instance baseline (`docs/runtime-activation-gates.md`); replace/supplement with edge/Redis before multi-instance. *(constraint documented)* The in-memory listing event bus (M-5) single-replica constraint is now written up in `docs/runtime-activation-gates.md` and machine-visible in `GET /api/observability/status` (`activationGates.*.mode`), so single-replica deployment is explicit until the durable queue lands in provisioning. Remaining: the shared edge/Redis limiter and durable queue themselves (§3 provisioning).
 - [ ] **Rollback tested, environment management live, health checks wired** (`/api/observability/status` exists; hook it to the platform monitor).
 
@@ -60,7 +60,7 @@ Everything is **implemented and fail-closed**: OGD snapshot fetcher, India Post 
 
 ## 5. Data cutover (strict order)
 
-1. [ ] **Land the M-1 deferred slice first (D5-04): prisma-back the SeoPage registry, sitemap, and PIN-directory indexes.** Otherwise pages are prisma-built while the sitemap advertises the fixture corpus — orphan URLs and sitemap-404s. Gate: `node scripts/seo/crawl-simulation.mjs` must show 0 problems on the prisma-built, indexing-enabled candidate.
+1. [ ] **Land the M-1 deferred slice first (D5-04): prisma-back the SeoPage registry, sitemap, and PIN-directory indexes.** Otherwise pages are prisma-built while the sitemap advertises the fixture corpus — orphan URLs and sitemap-404s. Gate: `node ops/scripts/seo/crawl-simulation.mjs` must show 0 problems on the prisma-built, indexing-enabled candidate.
 2. [ ] Then flip `ARCHITECH_DATA_SOURCE=prisma` with the production `DATABASE_URL`.
 3. [ ] Re-run indexed crawl on the production-like build: sitemap ⊆ crawl, self-canonicals, depth ≤ 4, 0 problems.
 4. [ ] *(Quality, non-blocking)* Enrich seed/listing dossiers with structured details so prisma-mode pages match fixture JSON-LD richness (D5-06 follow-up).

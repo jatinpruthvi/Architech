@@ -132,4 +132,4 @@ The in-memory adapter is not just non-durable across restarts: it is per
 process. If the runtime serves from multiple workers, each holds a different set
 of users, and identical credentials succeed or fail depending on which worker
 answers. Treat `ARCHITECH_AUTH_SOURCE=better-auth` as single-process-only for
-now; see `client/src/lib/auth/server-auth.ts`.
+now; see `src/lib/auth/server-auth.ts`.

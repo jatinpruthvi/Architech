@@ -8,12 +8,12 @@ Trust signals now reach the discovery hubs, not just the listing dossier: the ci
 ## Files
 
 ```text
-client/src/lib/trust/locality.ts                  (locality/city aggregation)
-client/src/components/architech/LocalityTrust.tsx  (area trust band)
+src/lib/trust/locality.ts                  (locality/city aggregation)
+src/components/architech/LocalityTrust.tsx  (area trust band)
 app/buy/ahmedabad/page.tsx                         (city hub JSON-LD + band)
 app/buy/ahmedabad/[locality]/page.tsx              (locality JSON-LD + band)
-client/src/lib/i18n.ts                             (en/hi locality.trust)
-scripts/seo/raw-html-smoke.mjs
+src/lib/i18n.ts                             (en/hi locality.trust)
+ops/scripts/seo/raw-html-smoke.mjs
 ```
 
 ## What it does
@@ -28,8 +28,8 @@ scripts/seo/raw-html-smoke.mjs
 ```bash
 pnpm check
 pnpm lint
-pnpm exec vitest run client/src/lib/trust/locality.test.ts
-node scripts/seo/raw-html-smoke.mjs
+pnpm exec vitest run src/lib/trust/locality.test.ts
+node ops/scripts/seo/raw-html-smoke.mjs
 ```
 
 The SEO smoke now asserts `trustScore` and the trust labels are present in the raw HTML of `/buy/ahmedabad/` and `/buy/ahmedabad/paldi/`.

@@ -4,12 +4,12 @@ import jsxA11y from "eslint-plugin-jsx-a11y";
 import globals from "globals";
 
 export default tseslint.config(
-  { ignores: ["dist", ".next", "node_modules", "client/src/components/ui/**", "*.config.*", "next-env.d.ts"] },
+  { ignores: ["dist", ".next", "node_modules", "src/components/ui/**", "*.config.*", "next-env.d.ts"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   jsxA11y.flatConfigs.recommended,
   {
-    files: ["client/src/**/*.{ts,tsx}", "server/**/*.ts", "shared/**/*.ts"],
+    files: ["src/**/*.{ts,tsx}"],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
     },
@@ -33,7 +33,7 @@ export default tseslint.config(
     /* The VoiceOver `role="list"` contract above applies to app/ routes too;
        without a scoped override those pages inherit recommended and lint
        fails on exactly the accessibility fix the design system mandates. */
-    files: ["app/**/*.{ts,tsx}"],
+    files: ["src/app/**/*.{ts,tsx}"],
     rules: {
       "jsx-a11y/no-redundant-roles": "off",
     },

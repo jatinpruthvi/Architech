@@ -205,8 +205,8 @@ For operational CRM, Architech emits a purpose-minimized, idempotent lead event 
 Before automatic contact:
 
 - Current `Lead` stores only `phoneMasked`; add purpose-scoped encrypted post-commit contact storage or an equivalent protected intake record.
-- Replace raw-derived default idempotency material in `client/src/lib/leads/server.ts` with random/opaque or keyed material.
-- Reuse the existing AES-256-GCM pattern in `client/src/lib/requirements.server.ts` with key versioning and purpose separation.
+- Replace raw-derived default idempotency material in `src/lib/leads/server.ts` with random/opaque or keyed material.
+- Reuse the existing AES-256-GCM pattern in `src/lib/requirements.server.ts` with key versioning and purpose separation.
 - Extend privacy purge/erasure across outbox, provider mappings, CRM projection and restore tombstones.
 - Enforce organization isolation consistently and add negative two-business tests.
 

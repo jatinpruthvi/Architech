@@ -26,8 +26,8 @@ GUJARAT_RERA_API_KEY=
 ## Provider abstraction
 
 ```text
-client/src/lib/rera/provider.ts
-client/src/lib/rera/server/provider.ts
+src/lib/rera/provider.ts
+src/lib/rera/server/provider.ts
 ```
 
 Implemented providers:

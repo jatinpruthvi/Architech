@@ -81,7 +81,7 @@ This is already decided at architecture level by [`repositories-and-db-sharing-d
 | 1.1 | Create `business_suite_core` repo | `bench new-app business_suite_core` scaffold; README (links to Architech specs); LICENSE (MIT — our own code); `.github/workflows/ci.yml` (pytest, semgrep-lite or ruff, build). |
 | 1.2 | Dev environment | `deploy/docker-compose.dev.yml`: MariaDB + Redis + a bench container; `deploy/bench-init.sh` installing the **candidate line pins**: `bench get-app https://github.com/frappe/frappe --branch v16.33.0`, `frappe/crm@v1.83.0`, `frappe/erpnext@v16.34.1` (+ `hrms`/`india-compliance` deferred to Phase 7 profiles). One site `dev.localhost` with CRM + ERPNext + core installed. Per v8 §13 these are *candidates* — the exact-commit lock is recorded in `deploy/pins.md` only after the 1.3 install/migration/rollback proof passes. |
 | 1.3 | Same-site integration proof | Configure `ERPNext CRM Settings` (verified doctype: `erpnext_site_url`, api key/secret, `create_customer_on_status_change`); script-test: CRM Deal → ERPNext Customer + Quotation idempotently. |
-| 1.4 | Fixtures harness | A `tests/` convention for doctype fixtures + the contract fixtures ported from `client/src/lib/interop/lead-ingestion.test.ts` (the 11 cases become the Python test matrix). |
+| 1.4 | Fixtures harness | A `tests/` convention for doctype fixtures + the contract fixtures ported from `src/lib/interop/lead-ingestion.test.ts` (the 11 cases become the Python test matrix). |
 | 1.5 | Deploy pinning record | `deploy/pins.md`: every upstream tag + SHA + image digest (the WAHA pin lands in Phase 3). |
 
 **Gate:** `bench start` serves CRM and ERPNext on one site; the Deal→Customer test passes twice in a row (idempotency); CI green on an empty test.

@@ -26,7 +26,7 @@ This pass therefore centres on the guardrail that makes programmatic generation 
 
 ## The headline finding: the quality gate was dead code
 
-`client/src/lib/seo/page-quality.ts` defined a full indexability gate — editorial approval, canonical ownership, parent link, distinct data, methodology, source metadata, and an evidence threshold. It had a test file. It was **imported by nothing in the application**.
+`src/lib/seo/page-quality.ts` defined a full indexability gate — editorial approval, canonical ownership, parent link, distinct data, methodology, source metadata, and an evidence threshold. It had a test file. It was **imported by nothing in the application**.
 
 That matters because §2 recommends generating pages at scale from a template, and this module is the only thing standing between that and a thin-page penalty. A gate that no caller consults is not a gate.
 
@@ -63,7 +63,7 @@ This is honest calibration, not a number tuned to pass. Regression tests lock th
 
 ### Wiring
 
-`client/src/lib/seo/page-gate.ts` (new) derives each page's real inputs — live listing counts from the repository, guide word counts from actual section copy, sourced-freshness from `meaningfulUpdatedAt` — and exposes the decision. `getPublishableSeoPages()` in the registry intersects registry intent with the gate, and **the sitemap now publishes only from that set**, so a held-back page can never be submitted however it entered the registry.
+`src/lib/seo/page-gate.ts` (new) derives each page's real inputs — live listing counts from the repository, guide word counts from actual section copy, sourced-freshness from `meaningfulUpdatedAt` — and exposes the decision. `getPublishableSeoPages()` in the registry intersects registry intent with the gate, and **the sitemap now publishes only from that set**, so a held-back page can never be submitted however it entered the registry.
 
 `getHeldBackPages()` surfaces every held page with its reasons: held-back pages are a worklist, never a silent drop.
 
@@ -75,7 +75,7 @@ Current state: **zero pages held back**, and a test asserts that. The gate is wi
 
 **Decision: Adapt.**
 
-Targeting "2 BHK near Magarpatta IT park with EV charging" instead of "2 BHK apartments in Pune" is right, and matches the strategy already in place. The mechanism differs: Architech does not create a landing page per query string. Long-tail demand is served by locality pages carrying structured, distinguishable facts (PIN codes, commute stops, price bands, BHK and budget splits, RERA coverage), and by the search grammar in `client/src/lib/search/parse-query.ts`, which parses BHK, budget, intent, category, filters, city, locality and PIN from free text.
+Targeting "2 BHK near Magarpatta IT park with EV charging" instead of "2 BHK apartments in Pune" is right, and matches the strategy already in place. The mechanism differs: Architech does not create a landing page per query string. Long-tail demand is served by locality pages carrying structured, distinguishable facts (PIN codes, commute stops, price bands, BHK and budget splits, RERA coverage), and by the search grammar in `src/lib/search/parse-query.ts`, which parses BHK, budget, intent, category, filters, city, locality and PIN from free text.
 
 Creating a page per long-tail query is precisely the doorway pattern §5 warns about. Dedicated pages are created where a page has independent reason to exist and clears the quality gate — not because a query exists.
 
@@ -106,7 +106,7 @@ Original street-level photography, resident interviews, distances to tech parks 
 
 **Decision: Already implemented, with one item rejected.**
 
-Next-gen formats (WebP/AVIF), lazy-loading below the fold, eager hero with priority, explicit image dimensions, a CDN, and minimised JavaScript all exist and are enforced by route budgets in `config/performance/budgets.json`.
+Next-gen formats (WebP/AVIF), lazy-loading below the fold, eager hero with priority, explicit image dimensions, a CDN, and minimised JavaScript all exist and are enforced by route budgets in `ops/config/performance/budgets.json`.
 
 **Rejected: "aim for a PageSpeed Insights score of 90+".** A Lighthouse score is a lab diagnostic on a synthetic run, not a ranking factor and not a substitute for field data. The register is explicit: measure the 75th-percentile Core Web Vitals (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1) from real users. Chasing a lab score encourages optimising for the test rather than for users.
 
@@ -114,7 +114,7 @@ Next-gen formats (WebP/AVIF), lazy-loading below the fold, eager hero with prior
 
 **Decision: Implemented (with one correction), plus a visible-text bug fixed.**
 
-The "ghost listing" diagnosis is accurate and Architech already treats it as a product problem: the lifecycle matrix in `client/src/lib/seo/lifecycle.ts` maps `SOLD` → 200 but `noindex`, `EXPIRED`/`REMOVED` → 410, `DUPLICATE` → 301 to canonical, and keeps a page with verified continuing value visible with alternatives.
+The "ghost listing" diagnosis is accurate and Architech already treats it as a product problem: the lifecycle matrix in `src/lib/seo/lifecycle.ts` maps `SOLD` → 200 but `noindex`, `EXPIRED`/`REMOVED` → 410, `DUPLICATE` → 301 to canonical, and keeps a page with verified continuing value visible with alternatives.
 
 **Added: a prominent absolute freshness stamp.** Listings previously showed only a relative label ("Updated 2 days ago"), which cannot be checked against anything — the same opacity that lets portals leave stale inventory up. Each listing now also carries `<time datetime="…">Updated on 24 Aug 2026</time>`.
 
@@ -138,13 +138,13 @@ Claiming and optimising a Google Business Profile is correct and is already reco
 
 | Change | File(s) |
 |---|---|
-| Per-kind evidence bar; the strict bar retained for programmatic pages | `client/src/lib/seo/page-quality.ts` |
-| Registry → gate wiring from real data | `client/src/lib/seo/page-gate.ts` (new) |
-| Sitemap publishes only gate-approved pages; held-back pages reported | `client/src/lib/seo/pages.ts`, `client/src/lib/seo/sitemap.ts` |
-| Specific schema types (`Apartment`, `SingleFamilyResidence`) | `client/src/lib/listing-vocabulary.ts`, `app/listing/[id]/page.tsx` |
-| Absolute `Updated on {date}` stamp with `<time datetime>` | `client/src/pages/ListingPage.tsx`, `client/src/lib/i18n.ts` |
-| Fixed hardcoded city in listing header | `client/src/pages/ListingPage.tsx` |
-| Tests: gate calibration (14) and publication enforcement (3) | `client/src/lib/seo/page-quality.test.ts`, `client/src/lib/seo/sitemap-contract.test.ts` |
+| Per-kind evidence bar; the strict bar retained for programmatic pages | `src/lib/seo/page-quality.ts` |
+| Registry → gate wiring from real data | `src/lib/seo/page-gate.ts` (new) |
+| Sitemap publishes only gate-approved pages; held-back pages reported | `src/lib/seo/pages.ts`, `src/lib/seo/sitemap.ts` |
+| Specific schema types (`Apartment`, `SingleFamilyResidence`) | `src/lib/listing-vocabulary.ts`, `app/listing/[id]/page.tsx` |
+| Absolute `Updated on {date}` stamp with `<time datetime>` | `src/screens/ListingPage.tsx`, `src/lib/i18n.ts` |
+| Fixed hardcoded city in listing header | `src/screens/ListingPage.tsx` |
+| Tests: gate calibration (14) and publication enforcement (3) | `src/lib/seo/page-quality.test.ts`, `src/lib/seo/sitemap-contract.test.ts` |
 
 ## Verification
 

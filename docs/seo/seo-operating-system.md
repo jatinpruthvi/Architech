@@ -52,11 +52,11 @@ Measured against the code, not guessed.
 | Stage | State |
 | --- | --- |
 | Listing approved in moderation | `moderateListingForServer` updates `lifecycle` and writes an `AuditEvent`. **That is all.** |
-| Cache invalidation | **Zero** uses of `revalidatePath`, `revalidateTag`, or `unstable_cache` anywhere in `app/` or `client/src/`. |
+| Cache invalidation | **Zero** uses of `revalidatePath`, `revalidateTag`, or `unstable_cache` anywhere in `app/` or `src/`. |
 | Sitemap | `app/sitemap/[segment]/route.ts` is `export const dynamic = "force-static"`. A new listing does not appear until the next build. |
 | Search Console | `LiveGscProvider` throws by design ("awaiting domain verification and credentials"). It is read-only anyway — `fetchSnapshot()` only, no submit. |
 | Indexing API / IndexNow | Absent. |
-| Duplicate handling | `Listing.canonicalToListingId` exists in `prisma/schema.prisma` and is referenced by **nothing**. |
+| Duplicate handling | `Listing.canonicalToListingId` exists in `db/schema.prisma` and is referenced by **nothing**. |
 | Internal links | The locality page's listing grid is baked at build time. `getRelatedListings(id, 3)` is computed per render, so siblings appear — the locality hub does not update. |
 | Quality gate | `page-quality.ts` evaluates the registry once **at module load**. It is a build-time report, not a publish-time gate. |
 | Persistence | Default is **fixture** mode (`ARCHITECH_DATA_SOURCE`); the prototype's writes are in-memory. With Prisma off, a listing added through the UI does not survive the process. |
@@ -325,22 +325,22 @@ what the business does on Monday. It is built:
 
 | File | Role |
 | --- | --- |
-| `client/src/lib/seo/acquisition-queue.ts` | The computation. `cityAcquisitionPlan(citySlug)`, `acquisitionQueue()`, `acquisitionHeadline()`. |
-| `client/src/lib/seo/acquisition-queue.test.ts` | 16 tests. |
+| `src/lib/seo/acquisition-queue.ts` | The computation. `cityAcquisitionPlan(citySlug)`, `acquisitionQueue()`, `acquisitionHeadline()`. |
+| `src/lib/seo/acquisition-queue.test.ts` | 16 tests. |
 | `app/api/admin/acquisition/route.ts` | `GET`, gated on `moderation.queue.read`, `no-store`, recomputed per request. |
-| `app/admin/acquisition/page.tsx` + `client/src/pages/AcquisitionQueue.tsx` | The worklist UI. |
+| `app/admin/acquisition/page.tsx` + `src/screens/AcquisitionQueue.tsx` | The worklist UI. |
 | `app/price-index/[city]/page.tsx` | The public half: a withheld index now states exactly what would publish it. |
 
 #3–#7 are built. What they change, in one line each:
 
 | File | Role |
 | --- | --- |
-| `client/src/lib/seo/discovery.ts` | Revalidation + the ping, as one discovery pass. Registered at startup from `instrumentation.ts`. |
-| `client/src/lib/seo/indexnow.ts` | IndexNow submission. Fails closed; Google does not support it. |
-| `client/src/lib/seo/query-targeting.ts` | The declared query, derived from the listing's own fields, plus a check that the SERP title answers it. |
-| `client/src/lib/seo/url-status.ts` | The status board: indexability, gate state, sitemap membership, declared query, and whatever Search Console will admit to. |
+| `src/lib/seo/discovery.ts` | Revalidation + the ping, as one discovery pass. Registered at startup from `instrumentation.ts`. |
+| `src/lib/seo/indexnow.ts` | IndexNow submission. Fails closed; Google does not support it. |
+| `src/lib/seo/query-targeting.ts` | The declared query, derived from the listing's own fields, plus a check that the SERP title answers it. |
+| `src/lib/seo/url-status.ts` | The status board: indexability, gate state, sitemap membership, declared query, and whatever Search Console will admit to. |
 | `app/sitemap.xml/route.ts`, `app/sitemap/[segment]/route.ts` | `force-static` replaced with a one-hour `revalidate`, so a publish can refresh them. |
-| `client/src/lib/repositories/listings.ts` | `getRelatedListings` is now locality-first rather than city-first. |
+| `src/lib/repositories/listings.ts` | `getRelatedListings` is now locality-first rather than city-first. |
 
 **The two things that are still not done, and are not closeable by writing
 more code:**
@@ -364,10 +364,10 @@ something changed, and until now approval told nobody anything.
 
 | File | Role |
 | --- | --- |
-| `client/src/lib/listing/events.ts` | The spine. `emitListingEvent`, `onListingEvent`. Isolates every subscriber; a throwing listener can never fail the write that triggered it. |
-| `client/src/lib/listing/publish-gate.ts` | The rules, pure. Three outcomes: `publish`, `canonicalize`, `block`. |
-| `client/src/lib/persistence/broker-store.ts` | The wiring, inside `moderateListingForServer`. |
-| `client/src/lib/listing/events.test.ts`, `publish-gate.test.ts`, `client/src/lib/persistence/publish-gate.test.ts` | 8 + 24 + 13 tests. |
+| `src/lib/listing/events.ts` | The spine. `emitListingEvent`, `onListingEvent`. Isolates every subscriber; a throwing listener can never fail the write that triggered it. |
+| `src/lib/listing/publish-gate.ts` | The rules, pure. Three outcomes: `publish`, `canonicalize`, `block`. |
+| `src/lib/persistence/broker-store.ts` | The wiring, inside `moderateListingForServer`. |
+| `src/lib/listing/events.test.ts`, `publish-gate.test.ts`, `src/lib/persistence/publish-gate.test.ts` | 8 + 24 + 13 tests. |
 
 Three things were decided while building it, and all three are recorded in
 `docs/seo/seo-os-decisions.md` because none is visible in a diff:
@@ -432,12 +432,12 @@ guesswork without it.
 
 | Concern | Existing home | Note |
 | --- | --- | --- |
-| Lifecycle → HTTP/indexability | `client/src/lib/seo/lifecycle.ts` | Rules exist; propagation does not |
-| Quality gate | `client/src/lib/seo/page-quality.ts`, `page-gate.ts` | Predicate is right; evaluate at publish, not at module load |
-| Page registry | `client/src/lib/seo/pages.ts` | New pages must register here |
-| Sitemap | `client/src/lib/seo/sitemap.ts`, `app/sitemap/[segment]/route.ts` | Segment route is `force-static` |
-| SERP copy | `client/src/lib/seo/serp.ts` | Budget, ladder, and `fitTail` already there |
-| Schema | `client/src/lib/seo/{guide-jsonld,price-index,organization}.ts` | Per-type builders |
-| Search Console | `client/src/lib/seo/gsc.ts`, `monitoring.ts` | Demo, read-only |
-| Listing facts | `client/src/lib/realestate/{locality-intel,price-trends,market-trends}.ts` | The aggregation layer |
-| Publish path | `app/api/admin/moderation/listings/[draftId]/route.ts`, `client/src/lib/persistence/broker-store.ts` | The choke point for §3.1 |
+| Lifecycle → HTTP/indexability | `src/lib/seo/lifecycle.ts` | Rules exist; propagation does not |
+| Quality gate | `src/lib/seo/page-quality.ts`, `page-gate.ts` | Predicate is right; evaluate at publish, not at module load |
+| Page registry | `src/lib/seo/pages.ts` | New pages must register here |
+| Sitemap | `src/lib/seo/sitemap.ts`, `app/sitemap/[segment]/route.ts` | Segment route is `force-static` |
+| SERP copy | `src/lib/seo/serp.ts` | Budget, ladder, and `fitTail` already there |
+| Schema | `src/lib/seo/{guide-jsonld,price-index,organization}.ts` | Per-type builders |
+| Search Console | `src/lib/seo/gsc.ts`, `monitoring.ts` | Demo, read-only |
+| Listing facts | `src/lib/realestate/{locality-intel,price-trends,market-trends}.ts` | The aggregation layer |
+| Publish path | `app/api/admin/moderation/listings/[draftId]/route.ts`, `src/lib/persistence/broker-store.ts` | The choke point for §3.1 |
