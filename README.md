@@ -271,11 +271,11 @@ The India privacy posture includes notice, purpose limitation, consent and withd
 | `config/governance/decisions/DECISION-LOG.md` | Stable decisions, rationale, affected requirements/work, evidence, and reversal triggers. |
 | `config/governance/legal/LEGAL-GATES.md` | Legal and compliance approvals required before public enablement. |
 | `config/governance/decisions/SUPERSESSION-MANIFEST.md` | Normative versus historical document status and reading order. |
-| `ARCHIVE_INDEX.md` | Historical archive index. |
+| `docs/archive/ARCHIVE_INDEX.md` | Historical archive index. |
 
 ## How an AI coding system should use this repository
 
-An AI coding system must read `docs/architecture/normative/final-three-phase-architecture.md` before writing production code; treat the canonical entity model, route grammar, `SeoPage` registry, page-authority hierarchy, and server-rendering contract as foundational; preserve approved capabilities through interfaces, feature flags, dynamic imports, benchmarks, and fallbacks; never invent property, price, availability, or RERA facts; use real `<a href>` links for public pages; keep public content server-first; maintain localization fields; run SEO, accessibility, security, performance, and mobile tests; avoid manipulative link tactics; and document any changed architecture decision.
+**Start from `AGENTS.md`** (repository root) — the task-based navigation map that routes agents to the right directory first. Then read `docs/architecture/normative/final-three-phase-architecture.md` before writing production code; treat the canonical entity model, route grammar, `SeoPage` registry, page-authority hierarchy, and server-rendering contract as foundational; preserve approved capabilities through interfaces, feature flags, dynamic imports, benchmarks, and fallbacks; never invent property, price, availability, or RERA facts; use real `<a href>` links for public pages; keep public content server-first; maintain localization fields; run SEO, accessibility, security, performance, and mobile tests; avoid manipulative link tactics; and document any changed architecture decision.
 
 ## AI assistant tooling (prompt library)
 

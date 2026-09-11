@@ -7,7 +7,7 @@ const files = [];
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (ignored.has(entry.name)) continue;
+    if (ignored.has(entry.name) || (entry.isDirectory() && entry.name.startsWith("."))) continue;
     const absolute = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(absolute);
     else if (entry.isFile() && entry.name.endsWith(".md")) files.push(path.relative(root, absolute).replaceAll(path.sep, "/"));
@@ -64,26 +64,26 @@ const order = [
 const lines = [
   "# Architech Markdown Documentation Index",
   "",
-  "> This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](./AGENTS.md).",
+  "> This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).",
   "",
   `Generated on ${new Date().toISOString().slice(0, 10)} from the repository Markdown tree.`,
   "",
   "## Recommended Reading Order",
   "",
-  "1. [README.md](./README.md) — project source of truth and document map.",
-  "2. [AGENTS.md](./AGENTS.md) — task-based navigation map for agents and humans.",
-  "3. [docs/planning/STATUS.md](./docs/planning/STATUS.md) — current implementation and activation status.",
-  "4. [docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md](./docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md) — active delivery tracker.",
-  "5. [config/governance/contracts/DOMAIN-CONTRACTS.md](./config/governance/contracts/DOMAIN-CONTRACTS.md) — shared domain vocabulary and boundaries.",
-  "6. [config/governance/contracts/IMPLEMENTATION-MATRIX.md](./config/governance/contracts/IMPLEMENTATION-MATRIX.md) — feature-to-code mapping.",
-  "7. [docs/runtime-activation-gates.md](./docs/runtime-activation-gates.md) — production credentials and provider gates.",
+  "1. [README.md](../README.md) — project source of truth and document map.",
+  "2. [AGENTS.md](../AGENTS.md) — task-based navigation map for agents and humans.",
+  "3. [docs/planning/STATUS.md](../docs/planning/STATUS.md) — current implementation and activation status.",
+  "4. [docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md](../docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md) — active delivery tracker.",
+  "5. [config/governance/contracts/DOMAIN-CONTRACTS.md](../config/governance/contracts/DOMAIN-CONTRACTS.md) — shared domain vocabulary and boundaries.",
+  "6. [config/governance/contracts/IMPLEMENTATION-MATRIX.md](../config/governance/contracts/IMPLEMENTATION-MATRIX.md) — feature-to-code mapping.",
+  "7. [docs/runtime-activation-gates.md](../docs/runtime-activation-gates.md) — production credentials and provider gates.",
   "",
 ];
 for (const key of order) {
   const entries = groups.get(key);
   if (!entries?.length) continue;
   lines.push(`## ${key}`, "");
-  for (const file of entries) lines.push(`- [${title(file)}](./${file})`);
+  for (const file of entries) lines.push(`- [${title(file)}](../${file})`);
   lines.push("");
 }
 fs.writeFileSync(path.join(root, "docs", "MARKDOWN-DOCUMENTATION-INDEX.md"), `${lines.join("\n")}\n`);
