@@ -10,7 +10,7 @@
  * later through reviewed LocalityPostalCode links.
  *
  * Usage:
- *   node scripts/location/import-india-post.mjs \
+ *   node ops/scripts/location/import-india-post.mjs \
  *     --file /secure/imports/all_india_pin_code.csv \
  *     --source-url https://www.indiapost.gov.in/rti/pincodelist \
  *     --retrieved-at 2026-08-30 \
@@ -235,7 +235,7 @@ async function applyRows(rows, metadata, rejectionReportUri, options) {
         retrievedAt: metadata.retrievedAt,
         attribution: metadata.attribution || "Department of Posts, Government of India",
         status: "STAGING",
-        metadata: { importer: "scripts/location/import-india-post.mjs", schemaVersion: "india-post-post-office-v1" },
+        metadata: { importer: "ops/scripts/location/import-india-post.mjs", schemaVersion: "india-post-post-office-v1" },
       },
       update: {
         sourceUrl: metadata.sourceUrl,
@@ -356,7 +356,7 @@ function assertProductionCompleteness(coverage) {
 export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   if (options.help) {
-    console.log("See the usage block at the top of scripts/location/import-india-post.mjs.");
+    console.log("See the usage block at the top of ops/scripts/location/import-india-post.mjs.");
     return;
   }
   if (!options.file) throw new Error("--file is required.");

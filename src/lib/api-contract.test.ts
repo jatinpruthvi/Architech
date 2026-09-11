@@ -6,28 +6,28 @@
    (memory/fixture sources). */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as searchGet } from "../../../app/api/search/route";
-import { GET as suggestGet } from "../../../app/api/search/suggest/route";
-import { POST as leadsPost } from "../../../app/api/leads/route";
-import { GET as healthGet } from "../../../app/api/observability/health/route";
-import { GET as sloGet } from "../../../app/api/observability/slo/route";
-import { GET as statusGet } from "../../../app/api/observability/status/route";
-import { GET as authorityAssetsGet, POST as authorityAssetsPost } from "../../../app/api/authority/assets/route";
-import { POST as authorityOutreachPost } from "../../../app/api/authority/outreach/route";
-import { GET as brokerDraftsGet, POST as brokerDraftsPost } from "../../../app/api/broker/listings/route";
-import { POST as draftMediaPost } from "../../../app/api/broker/listings/[draftId]/media/route";
-import { POST as mediaSignPost } from "../../../app/api/media/uploads/sign/route";
-import { POST as mediaCompletePost } from "../../../app/api/media/uploads/[uploadId]/complete/route";
-import { POST as errorsPost } from "../../../app/api/observability/errors/route";
-import { GET as savedSearchesGet, POST as savedSearchesPost } from "../../../app/api/saved-searches/route";
-import { GET as reraGet } from "../../../app/api/rera/[state]/route";
-import { GET as aiAssistGet } from "../../../app/api/ai/search-assist/route";
-import { GET as listingStatsGet, POST as listingStatsPost } from "../../../app/api/listings/[id]/stats/route";
-import { GET as priceTrendsGet } from "../../../app/api/localities/[slug]/price-trends/route";
-import { POST as investmentMetricsPost } from "../../../app/api/investment/metrics/route";
-import { GET as marketTrendsGet } from "../../../app/api/cities/[slug]/market-trends/route";
-import { POST as ownershipPost } from "../../../app/api/cost/ownership/route";
-import { GET as authGetSession, POST as authSignUpPost } from "../../../app/api/auth/[...all]/route";
+import { GET as searchGet } from "../app/api/search/route";
+import { GET as suggestGet } from "../app/api/search/suggest/route";
+import { POST as leadsPost } from "../app/api/leads/route";
+import { GET as healthGet } from "../app/api/observability/health/route";
+import { GET as sloGet } from "../app/api/observability/slo/route";
+import { GET as statusGet } from "../app/api/observability/status/route";
+import { GET as authorityAssetsGet, POST as authorityAssetsPost } from "../app/api/authority/assets/route";
+import { POST as authorityOutreachPost } from "../app/api/authority/outreach/route";
+import { GET as brokerDraftsGet, POST as brokerDraftsPost } from "../app/api/broker/listings/route";
+import { POST as draftMediaPost } from "../app/api/broker/listings/[draftId]/media/route";
+import { POST as mediaSignPost } from "../app/api/media/uploads/sign/route";
+import { POST as mediaCompletePost } from "../app/api/media/uploads/[uploadId]/complete/route";
+import { POST as errorsPost } from "../app/api/observability/errors/route";
+import { GET as savedSearchesGet, POST as savedSearchesPost } from "../app/api/saved-searches/route";
+import { GET as reraGet } from "../app/api/rera/[state]/route";
+import { GET as aiAssistGet } from "../app/api/ai/search-assist/route";
+import { GET as listingStatsGet, POST as listingStatsPost } from "../app/api/listings/[id]/stats/route";
+import { GET as priceTrendsGet } from "../app/api/localities/[slug]/price-trends/route";
+import { POST as investmentMetricsPost } from "../app/api/investment/metrics/route";
+import { GET as marketTrendsGet } from "../app/api/cities/[slug]/market-trends/route";
+import { POST as ownershipPost } from "../app/api/cost/ownership/route";
+import { GET as authGetSession, POST as authSignUpPost } from "../app/api/auth/[...all]/route";
 import { resetAuthServerForTests } from "./auth/server-auth";
 
 async function json(response: Response): Promise<Record<string, unknown>> {
@@ -214,7 +214,7 @@ describe("public API contract", () => {
       body: JSON.stringify({ listingId: "garden-courtyard", name: "Sanjay Patel", phone: "+91 91234 56780", message: "Please share more details about this home.", consentText: "I consent to masked contact.", idempotencyKey: "api-contract-delete" }),
     }));
     const { lead } = await json(created) as { lead: { id: string } };
-    const response = await (await import("../../../app/api/broker/leads/[id]/route")).DELETE(new Request(`http://example.com/api/broker/leads/${encodeURIComponent(lead.id)}?mode=consent`, { method: "DELETE" }), { params: Promise.resolve({ id: lead.id }) });
+    const response = await (await import("../app/api/broker/leads/[id]/route")).DELETE(new Request(`http://example.com/api/broker/leads/${encodeURIComponent(lead.id)}?mode=consent`, { method: "DELETE" }), { params: Promise.resolve({ id: lead.id }) });
     expect(response.status).toBe(200);
     const body = await json(response);
     expect((body as { lead: { status: string } }).lead.status).toBe("DELETED");

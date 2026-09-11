@@ -10,7 +10,7 @@ const root = process.cwd();
    so every link on the page would 404. Keep the page on the shared
    `localityPath()` helper so the grammar has exactly one definition. */
 describe("postal-code page locality links", () => {
-  const pageSource = readFileSync(resolve(root, "app/locations/postal-codes/[code]/page.tsx"), "utf8");
+  const pageSource = readFileSync(resolve(root, "src/app/locations/postal-codes/[code]/page.tsx"), "utf8");
 
   it("builds locality hrefs with the shared localityPath helper", () => {
     expect(pageSource).toContain("localityPath(locality.citySlug, locality.slug)");

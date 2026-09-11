@@ -42,9 +42,9 @@ describe("fixture-backed repositories", () => {
 
   it("keeps pages and components behind repository facades instead of fixture arrays", () => {
     const checkedFiles = [
-      ...sourceFiles("app"),
-      ...sourceFiles("client/src/pages"),
-      ...sourceFiles("client/src/components/architech"),
+      ...sourceFiles("src/app"),
+      ...sourceFiles("src/pages"),
+      ...sourceFiles("src/components/architech"),
     ];
     const offenders = checkedFiles.filter((file) => {
       const source = readFileSync(file, "utf8");

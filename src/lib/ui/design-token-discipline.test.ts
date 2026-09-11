@@ -17,14 +17,14 @@ import { execSync } from "node:child_process";
  * These checks are ratchets, not a whitelist: every file carries its current
  * count in design-token-baseline.json and may only go DOWN. Paying debt down
  * never breaks the build; adding any of it does. `node
- * client/src/lib/ui/design-token-baseline.cjs --write` re-locks a lower level.
+ * src/lib/ui/design-token-baseline.cjs --write` re-locks a lower level.
  */
-const css = readFileSync("client/src/theme.css", "utf8");
+const css = readFileSync("src/theme.css", "utf8");
 type Budget = { alphaText?: number; microText?: number; nanoText?: number };
-const baseline = JSON.parse(readFileSync("client/src/lib/ui/design-token-baseline.json", "utf8")) as Record<string, Budget>;
+const baseline = JSON.parse(readFileSync("src/lib/ui/design-token-baseline.json", "utf8")) as Record<string, Budget>;
 
 const legacyFiles = execSync(
-  "grep -rl --include='*.tsx' '' client/src app | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
+  "grep -rl --include='*.tsx' '' src app | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
   { encoding: "utf8" },
 )
   .split("\n")
@@ -142,9 +142,9 @@ describe("legacy debt may only shrink", () => {
   it("keeps the files this rebuild already cleaned at zero", () => {
     // Regression lock for the rebuild itself: these three are debt-free now.
     for (const file of [
-      "client/src/components/architech/FilterSurface.tsx",
-      "client/src/pages/ResultsPage.tsx",
-      "client/src/components/architech/PropertyCard.tsx",
+      "src/components/architech/FilterSurface.tsx",
+      "src/pages/ResultsPage.tsx",
+      "src/components/architech/PropertyCard.tsx",
     ]) {
       const clean = source(file).replace(/\/\*[\s\S]*?\*\//g, "");
       expect([file, (clean.match(/text-(?:ink|cream)\/(?:[1-5]\d)\b/g) ?? []).length], `${file} reintroduced a low-alpha label`).toEqual([file, 0]);
@@ -199,7 +199,7 @@ describe("ink ramp tokens clear AA in BOTH themes", () => {
 });
 
 describe("the filter surface works without a mouse", () => {
-  const surface = source("client/src/components/architech/FilterSurface.tsx");
+  const surface = source("src/components/architech/FilterSurface.tsx");
   const clean = surface.replace(/\/\*[\s\S]*?\*\//g, "");
 
   it("never gates a control behind hover", () => {
@@ -303,7 +303,7 @@ describe("aria wiring is wired, not merely present", () => {
   it("routes both search boxes through the one combobox module", () => {
     // The drift itself is what must not come back: the hero had arrow keys,
     // the results page did not, and both claimed to be the same control.
-    for (const page of ["client/src/components/architech/HeroSearch.tsx", "client/src/pages/ResultsPage.tsx"]) {
+    for (const page of ["src/components/architech/HeroSearch.tsx", "src/pages/ResultsPage.tsx"]) {
       expect(source(page), `${page} must use the shared combobox`).toContain("useSuggestCombobox");
       expect(strip(source(page)), `${page} must not re-implement the combobox keys`).not.toMatch(/const onKeyDown = \(e: React\.KeyboardEvent/);
     }
@@ -426,8 +426,8 @@ describe("viewport geometry is mobile-real", () => {
  * checks pin the fix so it cannot rot into a rail of dead links.
  * ------------------------------------------------------------------ */
 describe("the dossier navigates, and reuses the shared card", () => {
-  const page = "client/src/pages/ListingPage.tsx";
-  const nav = "client/src/components/architech/SectionNav.tsx";
+  const page = "src/pages/ListingPage.tsx";
+  const nav = "src/components/architech/SectionNav.tsx";
 
   it("has no dangling in-page anchor anywhere in the product", () => {
     /* `href="#"` jumps to the top of the document — it looks like a button and
@@ -489,7 +489,7 @@ describe("the dossier navigates, and reuses the shared card", () => {
        language. If this goes red, use <PropertyCard> — do not tune the copy. */
     expect(source(page)).not.toMatch(/aspect-\[1\.4\]/);
     expect(source(page)).toMatch(/<PropertyCard key=\{p\.id\} property=\{p\} index=\{i\} \/>/);
-    const card = source("client/src/components/architech/PropertyCard.tsx");
+    const card = source("src/components/architech/PropertyCard.tsx");
     expect(card).toMatch(/<div className="aspect-\[1\.5\]">/);
   });
 });
@@ -568,8 +568,8 @@ describe("the component-emitted hooks are real", () => {
  * ------------------------------------------------------------------ */
 describe("modal surfaces are one implementation", () => {
   const surfaces = [
-    "client/src/components/architech/RequirementCapture.tsx",
-    "client/src/pages/ListingPage.tsx",
+    "src/components/architech/RequirementCapture.tsx",
+    "src/pages/ListingPage.tsx",
   ];
 
   it("every surface with a dialog uses the shared primitive", () => {
@@ -604,7 +604,7 @@ describe("modal surfaces are one implementation", () => {
  * modes below are the ones that make a results page worse than no animation.
  * ------------------------------------------------------------------ */
 describe("results-grid motion stays a reflow, not a show", () => {
-  const results = source("client/src/pages/ResultsPage.tsx");
+  const results = source("src/pages/ResultsPage.tsx");
 
   it("does not FLIP-scale result cards", () => {
     /* Motion `layout` scales x/y to the new box. On a 1.5-crop card that reads

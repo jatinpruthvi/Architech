@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const postalCode = vi.hoisted(() => ({ findUnique: vi.fn() }));
 vi.mock("@/lib/repositories/server/prisma", () => ({ getPrismaClient: () => ({ postalCode }) }));
 
-import { GET } from "../../../../../app/api/locations/postal-codes/[code]/route";
+import { GET } from "../../../app/api/locations/postal-codes/[code]/route";
 import { resolvePostalCodeForServer } from "./postal-resolution";
 
 const context = (code: string) => ({ params: Promise.resolve({ code }) });

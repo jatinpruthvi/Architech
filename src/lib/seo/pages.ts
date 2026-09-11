@@ -508,7 +508,7 @@ const listingPages: SeoPage[] = src.listings.map((property) => ({
   freshnessPolicy: "Refresh on every meaningful listing edit, price/status change, verification update, or lifecycle transition.",
   entityIds: [`city:${property.citySlug}`, `locality:${property.localitySlug}`, `listing:${property.id}`],
   // The query this page is the answer to, declared as data so measurement has
-  // something to measure against. See client/src/lib/seo/query-targeting.ts.
+  // something to measure against. See src/lib/seo/query-targeting.ts.
   targetQuery: listingTargetQuery(property).text,
   // Mirrors `Listing.meaningfulUpdatedAt`, not `updatedAt`: a moderation touch
   // is not a content change and must not bump `lastmod`.

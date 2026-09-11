@@ -17,7 +17,7 @@
    sends someone to source inventory the site already has, which is worse
    than having no worklist at all. */
 import { describe, expect, it, vi } from "vitest";
-import { GET } from "../../../../app/api/admin/acquisition/route";
+import { GET } from "../../app/api/admin/acquisition/route";
 
 function request(url = "http://example.com/api/admin/acquisition") {
   return new Request(url);

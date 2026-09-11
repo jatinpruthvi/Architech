@@ -90,7 +90,7 @@ async function main() {
     }
   }
 
-  // The demo session (client/src/lib/auth/roles.ts) references this
+  // The demo session (src/lib/auth/roles.ts) references this
   // organization by its stable id; pinning it here keeps draft creation,
   // the broker dashboard, and moderation working in demo auth mode.
   const DEMO_ORG_ID = "demo-org-nivasa-partners";
@@ -242,7 +242,7 @@ async function main() {
       action: "seed.phase1_domain_schema",
       entityType: "database",
       entityId: "phase1-demo-fixtures",
-      metadata: { localities: LOCALITIES.length, listings: listings.length, source: "prisma/seed.mjs" },
+      metadata: { localities: LOCALITIES.length, listings: listings.length, source: "db/seed.mjs" },
     },
   });
 

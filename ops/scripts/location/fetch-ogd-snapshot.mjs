@@ -290,7 +290,7 @@ async function atomicWrite(file, content) {
 export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   if (options.help) {
-    console.log("See the usage block at the top of scripts/location/fetch-ogd-snapshot.mjs.");
+    console.log("See the usage block at the top of ops/scripts/location/fetch-ogd-snapshot.mjs.");
     return;
   }
   const resourceName = options.resource;

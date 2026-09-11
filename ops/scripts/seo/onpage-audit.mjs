@@ -23,7 +23,7 @@
  * word-count minimums -- are deliberately omitted, because Architech's rule is
  * that copy states verified facts and nothing else.
  *
- * Usage: node scripts/seo/onpage-audit.mjs [--base http://localhost:PORT]
+ * Usage: node ops/scripts/seo/onpage-audit.mjs [--base http://localhost:PORT]
  * Exits non-zero when any indexable page breaks a budget. */
 
 const args = process.argv.slice(2);

@@ -13,7 +13,7 @@
  * Opt-in: it needs a real Postgres with the schema applied. Run with
  *
  *   ARCHITECH_PARITY_DATABASE_URL=postgresql://user:pass@host:5432/db \
- *     pnpm vitest run client/src/lib/search/sql-page-integration.test.ts
+ *     pnpm vitest run src/lib/search/sql-page-integration.test.ts
  *
  * Without the variable the file skips, so the default `pnpm test` stays
  * green in environments without a database.
@@ -123,7 +123,7 @@ async function seedParityData(db: DbClient): Promise<void> {
   const cities = new Map<string, string>();
   for (const city of new Set(ROWS.map((row) => row.city))) {
     const res = await db.$queryRawUnsafe<Array<{ id: string }>>('SELECT "id" FROM "City" WHERE "slug" = $1', city);
-    if (!res[0]) throw new Error(`parity seed: city ${city} missing (run prisma/seed.mjs first)`);
+    if (!res[0]) throw new Error(`parity seed: city ${city} missing (run db/seed.mjs first)`);
     cities.set(city, res[0].id);
   }
   const localities = new Map<string, string>();
@@ -131,7 +131,7 @@ async function seedParityData(db: DbClient): Promise<void> {
     const key = `${row.city}/${row.locality}`;
     if (!localities.has(key)) {
       const res = await db.$queryRawUnsafe<Array<{ id: string }>>('SELECT "id" FROM "Locality" WHERE "cityId" = $1 AND "slug" = $2', cities.get(row.city), row.locality);
-      if (!res[0]) throw new Error(`parity seed: locality ${key} missing (run prisma/seed.mjs first)`);
+      if (!res[0]) throw new Error(`parity seed: locality ${key} missing (run db/seed.mjs first)`);
       localities.set(key, res[0].id);
     }
   }

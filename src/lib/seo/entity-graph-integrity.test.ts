@@ -69,12 +69,12 @@ describe("each entity is defined exactly once", () => {
     /* The rent hub, locality pages, and listings must all reference. If a
        second file starts defining cities, the graph has two competing
        descriptions of the same place. */
-    expect(definers("cityId(")).toEqual(["app/buy/[city]/page.tsx"]);
+    expect(definers("cityId(")).toEqual(["src/app/buy/[city]/page.tsx"]);
   });
 
   it("only the locality pages carry localityId definitions", () => {
     const files = routeFiles.filter((file) => src(file).includes("localityId("));
-    expect(files.sort()).toEqual(["app/buy/[city]/[locality]/page.tsx", "app/rent/[city]/[locality]/page.tsx"]);
+    expect(files.sort()).toEqual(["src/app/buy/[city]/[locality]/page.tsx", "src/app/rent/[city]/[locality]/page.tsx"]);
   });
 });
 

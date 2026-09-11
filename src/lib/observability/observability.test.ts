@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { GET as healthRoute } from "../../../../app/api/observability/health/route";
-import { POST as webVitalsRoute } from "../../../../app/api/observability/web-vitals/route";
+import { GET as healthRoute } from "../../app/api/observability/health/route";
+import { POST as webVitalsRoute } from "../../app/api/observability/web-vitals/route";
 import { metricsStoreMeta, resetMetricsStoreForTests, snapshotSeries } from "./metrics-store";
 import { formatWebVitalPayload, isCoreWebVital, metricWithinPhaseOneTarget } from "./web-vitals";
 

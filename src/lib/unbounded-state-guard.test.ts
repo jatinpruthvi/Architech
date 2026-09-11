@@ -24,8 +24,8 @@ import { fileURLToPath } from "node:url";
    governance/server-query-caps.test.ts: most of these modules import
    "server-only" and cannot be imported under plain vitest. */
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SCAN_ROOTS = ["client/src", "app", "shared"];
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const SCAN_ROOTS = ["src", "src/app", "src/shared"];
 const DECL = /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*(?::[^=]+)?=\s*new (Map|Set)\s*[<(]/;
 const MARKER = /bounded-state:/;
 /* 1200 rather than the 500 used by sql-query-bounds.test.ts: a single marker
@@ -138,16 +138,16 @@ describe("unbounded in-process state guard (BUG-R4-001/002/003 class)", () => {
     // 259 non-test .ts files across the three roots at the time of writing.
     expect(files.size).toBeGreaterThan(250);
     for (const expected of [
-      "client/src/lib/auth/login-throttle.ts",
-      "client/src/lib/auth/request-safety.ts",
-      "client/src/lib/observability/metrics-store.ts",
+      "src/lib/auth/login-throttle.ts",
+      "src/lib/auth/request-safety.ts",
+      "src/lib/observability/metrics-store.ts",
     ]) {
       expect(files.has(expected), `${expected} missing from scan`).toBe(true);
     }
   });
 
   it("the two rate-limit stores use the shared BoundedWindowMap", () => {
-    for (const file of ["client/src/lib/auth/login-throttle.ts", "client/src/lib/auth/request-safety.ts"]) {
+    for (const file of ["src/lib/auth/login-throttle.ts", "src/lib/auth/request-safety.ts"]) {
       const src = readFileSync(join(repoRoot, file), "utf8");
       expect(src, `${file} must use BoundedWindowMap`).toMatch(/\bBoundedWindowMap\b/);
     }

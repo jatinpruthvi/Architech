@@ -71,7 +71,7 @@ describe("revealLeadContact (spec §4/§5)", () => {
   });
 
   it("gate order: a foreign lead is blocked before any plan or reveal work", async () => {
-    // The real assertLeadBelongsToOrg (client/src/lib/leads/server.ts) queries
+    // The real assertLeadBelongsToOrg (src/lib/leads/server.ts) queries
     // prisma.lead.findUnique({ where: { id } }) — mock that exact shape
     // returning null, giving the real 404 path.
     vi.stubEnv("ARCHITECH_LEAD_STORAGE", "prisma");
@@ -182,7 +182,7 @@ describe("logLeadCall (spec §3: the plan gate applies to both calling operation
 
 describe("plan §6 guardrails", () => {
   it("LeadCallLog carries no invented telephony evidence (no duration/connected/recording)", () => {
-    const schema = readFileSync(join(__dirname, "../../../../prisma/schema.prisma"), "utf8");
+    const schema = readFileSync(join(__dirname, "../../../db/schema.prisma"), "utf8");
     const start = schema.indexOf("model LeadCallLog {");
     const block = schema.slice(start, schema.indexOf("}", start));
     expect(block).not.toMatch(/\b(duration|connected|recordingUrl|recording)\b/i);

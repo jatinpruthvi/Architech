@@ -132,7 +132,7 @@ export function nextStageFor(current: LeadStage, outcome: CallOutcome): LeadStag
  * ------------------------------------------------------------------ */
 
 /* DECISION D3 (08 Sep 2026): contact reveal is gated on the broker having an
-   ACTIVATED plan. No plan model exists in prisma/schema.prisma yet, so these
+   ACTIVATED plan. No plan model exists in db/schema.prisma yet, so these
    statuses are the proposed contract for it. `TRIAL` reveals because the point
    of a trial is to feel the product; `EXPIRED` stops revealing but must not
    delete data the broker already legitimately collected. */

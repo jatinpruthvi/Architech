@@ -22,7 +22,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-const css = readFileSync(path.join(root, "client/src/theme.css"), "utf8");
+const css = readFileSync(path.join(root, "src/theme.css"), "utf8");
 
 /* ---------------- token resolution ---------------- */
 
@@ -96,7 +96,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-const files = [...walk(path.join(root, "client/src")), ...walk(path.join(root, "app"))]
+const files = [...walk(path.join(root, "src")), ...walk(path.join(root, "src/app"))]
   .filter((f) => !f.includes(".stories.") && !f.includes(".test."));
 
 /* Solid background utilities that fully cover their label. Gradient, opacity

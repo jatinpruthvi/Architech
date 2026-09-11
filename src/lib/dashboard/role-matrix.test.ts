@@ -11,10 +11,10 @@
  * that is not an oversight, it is the design -- see lib/dashboard/persona.ts.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as getRequirements, POST as postRequirement } from "../../../../app/api/requirements/route";
-import { GET as getSavedSearches, POST as postSavedSearch } from "../../../../app/api/saved-searches/route";
-import { GET as getLeads } from "../../../../app/api/broker/leads/route";
-import { GET as getDrafts } from "../../../../app/api/broker/listings/route";
+import { GET as getRequirements, POST as postRequirement } from "../../app/api/requirements/route";
+import { GET as getSavedSearches, POST as postSavedSearch } from "../../app/api/saved-searches/route";
+import { GET as getLeads } from "../../app/api/broker/leads/route";
+import { GET as getDrafts } from "../../app/api/broker/listings/route";
 import { intentsForRole, resetRequirementStoreForTests } from "@/lib/requirements";
 import { resetSavedSearchStoreForTests } from "@/lib/saved-search/saved-search";
 import { resetLeadStoreForTests } from "@/lib/leads/lead";

@@ -15,7 +15,7 @@
  * the channel migration:
  *
  *   DATABASE_URL=postgresql://postgres@localhost:5432/scratch \
- *     node scripts/security/channel-integrity-proof.mjs
+ *     node ops/scripts/security/channel-integrity-proof.mjs
  *
  * Targets the canonical channel migration 202609040001_broker_channel (the
  * superseded listing-anchored draft was removed before any deploy applied it).
@@ -28,7 +28,7 @@ if (!url) {
   console.error("DATABASE_URL is required. Point it at a THROWAWAY database: this script drops and recreates schemas.");
   process.exit(2);
 }
-const R = "prisma/migrations";
+const R = "db/migrations";
 const admin = new Client({ connectionString: url });
 const out = [];
 const check = (n, p, d = "") => { out.push({ n, p }); console.log(`${p ? "PASS" : "FAIL"}  ${n}${d ? ` -- ${d}` : ""}`); };

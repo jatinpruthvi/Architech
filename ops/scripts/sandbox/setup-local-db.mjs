@@ -15,7 +15,7 @@
  *      starts it detached on port 5432.
  *   4. Creates the `architech` database if missing.
  *   5. Ensures the Prisma schema-engine: tries the CLI's own download; if
- *      that fails (blocked network), installs scripts/sandbox/
+ *      that fails (blocked network), installs ops/scripts/sandbox/
  *      schema-engine-shim.cjs in its place. Then generates the client.
  *   6. Applies all migrations. Each extension is probed INDEPENDENTLY: if the
  *      server lacks PostGIS (the embedded build does), the geo migration is
@@ -26,7 +26,7 @@
  *      server WITH pg_trgm still had its trigram indexes skipped whenever
  *      postgis was absent — a sandbox that looked like a search environment
  *      but silently exercised weaker predicates than production.
- *   7. Runs prisma/seed.mjs (idempotent upserts).
+ *   7. Runs db/seed.mjs (idempotent upserts).
  *
  * Afterwards: `pnpm dev` serves the site with ARCHITECH_DATA_SOURCE=prisma.
  *
@@ -350,7 +350,7 @@ function ensureEngine() {
   });
   if (usable) {
     log(`prisma engine available (${path.basename(usable)})`);
-    runPrisma(["generate", "--schema", "prisma/schema.prisma"]);
+    runPrisma(["generate", "--schema", "db/schema.prisma"]);
     log("client generated");
     return;
   }
@@ -359,7 +359,7 @@ function ensureEngine() {
   );
   const attempt = spawnSync(
     process.execPath,
-    [PRISMA_CLI, "generate", "--schema", "prisma/schema.prisma"],
+    [PRISMA_CLI, "generate", "--schema", "db/schema.prisma"],
     {
       cwd: repoRoot,
       stdio: "inherit",
@@ -394,7 +394,7 @@ function ensureEngine() {
       `engine binary at ${path.relative(repoRoot, target)} does not run: ${check.stderr}`
     );
   }
-  runPrisma(["generate", "--schema", "prisma/schema.prisma"]);
+  runPrisma(["generate", "--schema", "db/schema.prisma"]);
   log("client generated (via shim)");
 }
 
@@ -405,7 +405,7 @@ function patchLocationSql(sql) {
   let s = sql;
   s = s.replace(
     'CREATE EXTENSION IF NOT EXISTS "postgis";',
-    "-- SANDBOX-ONLY: postgis extension not available in this server; geo columns stubbed as TEXT\n-- (applied by scripts/sandbox/setup-local-db.mjs; original file restored afterwards)"
+    "-- SANDBOX-ONLY: postgis extension not available in this server; geo columns stubbed as TEXT\n-- (applied by ops/scripts/sandbox/setup-local-db.mjs; original file restored afterwards)"
   );
   s = s.replace(/"centroid" geography\(Point,4326\),/g, '"centroid" TEXT,');
   s = s.replace(
@@ -431,7 +431,7 @@ function patchSearchIndexSql(sql) {
   let s = sql;
   s = s.replace(
     "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
-    "-- SANDBOX-ONLY: pg_trgm extension not available in this server; trgm indexes skipped\n-- (applied by scripts/sandbox/setup-local-db.mjs; original file restored afterwards)"
+    "-- SANDBOX-ONLY: pg_trgm extension not available in this server; trgm indexes skipped\n-- (applied by ops/scripts/sandbox/setup-local-db.mjs; original file restored afterwards)"
   );
   for (const name of [
     "Listing_title_trgm_idx",
@@ -502,7 +502,7 @@ async function verifyMigrationsApplied() {
     const r = await c.query("SELECT count(*)::int FROM _prisma_migrations");
     const applied = r.rows[0].count;
     const expected = fs.readdirSync(
-      path.join(repoRoot, "prisma", "migrations")
+      path.join(repoRoot, "db", "migrations")
     ).length;
     if (applied !== expected) {
       fail(
@@ -521,13 +521,13 @@ async function applyMigrations(available) {
   const targets = [];
   if (!available.postgis) {
     targets.push({
-      file: "prisma/migrations/202608300002_india_location_foundation/migration.sql",
+      file: "db/migrations/202608300002_india_location_foundation/migration.sql",
       patch: patchLocationSql,
     });
   }
   if (!available.pgTrgm) {
     targets.push({
-      file: "prisma/migrations/202608240002_search_indexes/migration.sql",
+      file: "db/migrations/202608240002_search_indexes/migration.sql",
       patch: patchSearchIndexSql,
     });
   }

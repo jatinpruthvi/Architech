@@ -1,12 +1,12 @@
-/* Regenerates `prisma/seed-registry.mjs` from the TypeScript place registry.
+/* Regenerates `db/seed-registry.mjs` from the TypeScript place registry.
 
    The seed script is plain ESM and cannot import the TypeScript registry, so
    this script projects the registry into a generated data module. Run it after
    adding or changing a city or locality:
 
-     node scripts/data/generate-seed-registry.mjs
+     node ops/scripts/data/generate-seed-registry.mjs
 
-   `client/src/lib/seed-sync.test.ts` fails the build if the generated file
+   `src/lib/seed-sync.test.ts` fails the build if the generated file
    drifts from the registry, so this can never be silently forgotten. */
 import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -27,12 +27,12 @@ const server = await createServer({
   // The registry modules have no runtime deps to pre-bundle; scanning the whole
   // app here only produces noise.
   optimizeDeps: { noDiscovery: true, include: [] },
-  resolve: { alias: { "@": path.join(root, "client/src") } },
+  resolve: { alias: { "@": path.join(root, "src") } },
 });
 
 try {
-  const { cities } = await server.ssrLoadModule("/client/src/lib/cities.ts");
-  const { localities } = await server.ssrLoadModule("/client/src/lib/localities.ts");
+  const { cities } = await server.ssrLoadModule("/src/lib/cities.ts");
+  const { localities } = await server.ssrLoadModule("/src/lib/localities.ts");
 
   const coord = (marker, index) => Number(marker.split(",")[index]).toFixed(6);
 
@@ -62,20 +62,20 @@ try {
   }));
 
   const body = `/* GENERATED — do not edit by hand.
-   Mirrors the place registry in \`client/src/lib/cities.ts\` and
-   \`client/src/lib/localities.ts\` so \`prisma db seed\` provisions exactly the
+   Mirrors the place registry in \`src/lib/cities.ts\` and
+   \`src/lib/localities.ts\` so \`prisma db seed\` provisions exactly the
    cities and localities the application routes, sitemaps, and SEO registry
-   expect. \`client/src/lib/seed-sync.test.ts\` fails if the two drift apart.
+   expect. \`src/lib/seed-sync.test.ts\` fails if the two drift apart.
 
-   Regenerate with: node scripts/data/generate-seed-registry.mjs */
+   Regenerate with: node ops/scripts/data/generate-seed-registry.mjs */
 
 export const CITIES = ${JSON.stringify(CITIES, null, 2)};
 
 export const LOCALITIES = ${JSON.stringify(LOCALITIES, null, 2)};
 `;
 
-  writeFileSync(path.join(root, "prisma/seed-registry.mjs"), body);
-  console.log(`Wrote prisma/seed-registry.mjs — ${CITIES.length} cities, ${LOCALITIES.length} localities.`);
+  writeFileSync(path.join(root, "db/seed-registry.mjs"), body);
+  console.log(`Wrote db/seed-registry.mjs — ${CITIES.length} cities, ${LOCALITIES.length} localities.`);
 } finally {
   await server.close();
 }

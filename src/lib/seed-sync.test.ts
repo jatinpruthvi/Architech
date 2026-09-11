@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { CITIES, LOCALITIES } from "../../../prisma/seed-registry.mjs";
+import { CITIES, LOCALITIES } from "../../db/seed-registry.mjs";
 import { cities } from "./cities";
 import { localities } from "./localities";
 
 /* The Prisma seed is plain ESM and cannot import the TypeScript registry, so
-   `prisma/seed-registry.mjs` is generated from it. If the two drift, a seeded
+   `db/seed-registry.mjs` is generated from it. If the two drift, a seeded
    database would serve different cities than the routes and sitemap expect —
    these tests fail first.
 
-   Regenerate with: node scripts/data/generate-seed-registry.mjs */
+   Regenerate with: node ops/scripts/data/generate-seed-registry.mjs */
 describe("prisma seed registry stays in sync with the place registry", () => {
   it("seeds exactly the registry's cities", () => {
     expect(CITIES.map((city: { slug: string }) => city.slug)).toEqual(cities.map((city) => city.slug));

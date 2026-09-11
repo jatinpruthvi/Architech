@@ -298,7 +298,7 @@ async function demoModeFlows() {
          a production build, asserted above), so these check the part that IS
          observable end to end: the declaration the listing form reads to
          pre-select its checkbox. The draft-level default/override behaviour is
-         covered in client/src/lib/broker/workflow.test.ts. */
+         covered in src/lib/broker/workflow.test.ts. */
       await test("the broker-admin account declares BROKER", async () => {
         const fresh = client.fork();
         const response = await fresh.post("/api/auth/login/", DEMO.brokerAdmin);

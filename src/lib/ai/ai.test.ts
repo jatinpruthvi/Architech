@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { GET as searchAssistRoute } from "../../../../app/api/ai/search-assist/route";
-import { GET as compareRoute } from "../../../../app/api/ai/compare/route";
-import { POST as moderationRoute } from "../../../../app/api/ai/moderation-assist/route";
+import { GET as searchAssistRoute } from "../../app/api/ai/search-assist/route";
+import { GET as compareRoute } from "../../app/api/ai/compare/route";
+import { POST as moderationRoute } from "../../app/api/ai/moderation-assist/route";
 import { assistSearchQuery } from "./search-assist";
 import { compareListings, explainLocality } from "./explain";
 import { reviewListingDraft } from "./moderation";

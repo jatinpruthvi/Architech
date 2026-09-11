@@ -10,7 +10,7 @@
    until production sources are connected (see STATUS.md).
 
    To launch a new city: add an entry here, add its localities in
-   `client/src/lib/localities.ts`, and every route, sitemap entry, SEO registry
+   `src/lib/localities.ts`, and every route, sitemap entry, SEO registry
    record, search alias, and city switcher picks it up automatically. */
 
 export type CityTier = "metro" | "major" | "emerging";

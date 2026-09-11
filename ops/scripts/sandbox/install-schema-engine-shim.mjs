@@ -8,7 +8,7 @@
    infrastructure error instead of a schema verdict — which previous hunt rounds
    recorded as "gate blocked", losing the check entirely.
 
-   The repo already ships the stand-in at scripts/sandbox/schema-engine-shim.cjs,
+   The repo already ships the stand-in at ops/scripts/sandbox/schema-engine-shim.cjs,
    but until now it was only installed as a side effect of the full local-DB
    setup (`setup-local-db.mjs`), so a hunt that only needs `validate` had to
    either run the whole DB bootstrap or copy the file by hand.
@@ -18,7 +18,7 @@
    engine.
 
    Usage:
-     node scripts/sandbox/install-schema-engine-shim.mjs
+     node ops/scripts/sandbox/install-schema-engine-shim.mjs
      pnpm db:validate:offline        # shim (if needed) + prisma validate
 */
 import fs from "node:fs";

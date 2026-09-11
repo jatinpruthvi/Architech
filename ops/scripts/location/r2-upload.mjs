@@ -10,7 +10,7 @@
  * anyone's local disk.
  *
  * The signer below is a self-contained port of the dependency-free SigV4
- * implementation in client/src/lib/media/sigv4.ts (that module is pinned to
+ * implementation in src/lib/media/sigv4.ts (that module is pinned to
  * the official AWS worked example; this one is pinned to the same vector in
  * r2-upload.test.mjs). It is duplicated rather than imported because the
  * location scripts run in plain Node and must not pull in the Next/TS media

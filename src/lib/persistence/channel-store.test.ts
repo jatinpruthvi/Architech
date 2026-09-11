@@ -96,7 +96,7 @@ describe("saveChannelDealSplitForServer (Prisma path) — commission amount vali
   });
 
   it("rounds fractional input to whole rupees, matching the in-memory path", async () => {
-    // toNumberOrNull semantics (client/src/lib/broker/channel.ts): Math.round, reject negatives.
+    // toNumberOrNull semantics (src/lib/broker/channel.ts): Math.round, reject negatives.
     const result = await saveChannelDealSplitForServer(
       "deal-1",
       { totalCommissionInr: 100.4, demandBrokerShareInr: 50.2, supplyBrokerShareInr: 50.2 },

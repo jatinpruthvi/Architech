@@ -4,20 +4,20 @@
    ESLint config, which only knows ESM + TS. It is a maintenance tool, not app
    code — the guard test reads the JSON it writes, never this file. */
 /* Regenerate design-token-baseline.json after paying down legacy type/colour debt.
-   Run: node client/src/lib/ui/design-token-baseline.cjs --write
+   Run: node src/lib/ui/design-token-baseline.cjs --write
    The guard test compares against this file, so a cleanup that lowers a count
    passes immediately, and this command then locks the new level in. */
 const { readFileSync, writeFileSync } = require("node:fs");
 const { execSync } = require("node:child_process");
 
 const out = execSync(
-  "grep -rl --include='*.tsx' '' client/src app | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
+  "grep -rl --include='*.tsx' '' src app | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
   { encoding: "utf8" }
 ).split("\n").filter(Boolean);
 
 const base = {
   _readme:
-    "Ratchet baseline for design-token-discipline.test.ts. Each number is the CURRENT count of a legacy pattern in that file. The test fails only when a file EXCEEDS its baseline, so debt can be paid down but never grows. Regenerate after a cleanup with: node client/src/lib/ui/design-token-baseline.cjs --write",
+    "Ratchet baseline for design-token-discipline.test.ts. Each number is the CURRENT count of a legacy pattern in that file. The test fails only when a file EXCEEDS its baseline, so debt can be paid down but never grows. Regenerate after a cleanup with: node src/lib/ui/design-token-baseline.cjs --write",
 };
 for (const file of out) {
   const src = readFileSync(file, "utf8");
@@ -32,5 +32,5 @@ for (const file of out) {
 /* Key order is the filesystem walk's, which is not stable across machines — sort
    so regenerating the baseline cannot produce a diff full of pure reordering. */
 const sorted = Object.fromEntries(Object.keys(base).sort().map((k) => [k, base[k]]));
-writeFileSync("client/src/lib/ui/design-token-baseline.json", JSON.stringify(sorted, null, 2) + "\n");
+writeFileSync("src/lib/ui/design-token-baseline.json", JSON.stringify(sorted, null, 2) + "\n");
 console.log("baseline written:", Object.keys(base).length - 1, "files");

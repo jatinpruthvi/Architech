@@ -1,6 +1,6 @@
 /* INR money at the database boundary.
 
-   Money is stored as BigInt in PostgreSQL (see prisma/schema.prisma) because a
+   Money is stored as BigInt in PostgreSQL (see db/schema.prisma) because a
    32-bit integer caps at ₹2,147,483,647 (~₹214 crore), which is reachable for
    commercial property and land. The domain layer above this file works in
    `number`, which is exact for integers up to 2^53 (~₹90,07,19,92,54,740 — nine

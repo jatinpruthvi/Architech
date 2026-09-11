@@ -3,11 +3,11 @@
    Fixture storage mode: leads are created through the public lead route,
    which exercises createLeadForServer's fixture path. */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as leadDetailGet } from "../../../app/api/broker/leads/[id]/route";
-import { POST as revealPost } from "../../../app/api/broker/leads/[id]/reveal/route";
-import { POST as callsPost } from "../../../app/api/broker/leads/[id]/calls/route";
-import { GET as metricsGet } from "../../../app/api/broker/leads/metrics/route";
-import { POST as publicLeadsPost } from "../../../app/api/leads/route";
+import { GET as leadDetailGet } from "../app/api/broker/leads/[id]/route";
+import { POST as revealPost } from "../app/api/broker/leads/[id]/reveal/route";
+import { POST as callsPost } from "../app/api/broker/leads/[id]/calls/route";
+import { GET as metricsGet } from "../app/api/broker/leads/metrics/route";
+import { POST as publicLeadsPost } from "../app/api/leads/route";
 import { resetLeadStoreForTests } from "./leads/lead";
 
 async function json(response: Response): Promise<Record<string, unknown>> {

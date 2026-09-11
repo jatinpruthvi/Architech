@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GET } from "../../../../app/api/auth/session/route";
+import { GET } from "../../app/api/auth/session/route";
 import { canAccessBrokerDashboard, demoBrokerSession, hasRoleAtLeast, requirePermission } from "./roles";
 import { mapBetterAuthClaimsToSession } from "./live";
 import { getAuthSourceMode, validateBetterAuthEnvironment } from "./source";

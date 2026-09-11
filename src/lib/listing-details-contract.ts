@@ -5,7 +5,7 @@
  * now have their own column (`detailsJson Json?`, migration
  * `202609050001_listing_details_json`). Before it existed, the only place they
  * could live was `sourceSummary String?`, which every other writer used as a
- * PROSE note: `prisma/seed.mjs` put a human sentence in it, and external feed
+ * PROSE note: `db/seed.mjs` put a human sentence in it, and external feed
  * import was expected to do the same. One field, two incompatible meanings.
  *
  * That produced two bugs at once, and the second is the worse one:

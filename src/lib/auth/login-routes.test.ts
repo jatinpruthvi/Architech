@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST as login } from "../../../../app/api/auth/login/route";
-import { POST as logout } from "../../../../app/api/auth/logout/route";
-import { POST as register } from "../../../../app/api/auth/register/route";
-import { GET as session } from "../../../../app/api/auth/session/route";
+import { POST as login } from "../../app/api/auth/login/route";
+import { POST as logout } from "../../app/api/auth/logout/route";
+import { POST as register } from "../../app/api/auth/register/route";
+import { GET as session } from "../../app/api/auth/session/route";
 import { clearLoginThrottleForTests, MAX_ATTEMPTS_PER_EMAIL } from "./login-throttle";
 import { clearMutationSafetyBucketsForTests } from "./request-safety";
 import { DEMO_ACCOUNTS, DEMO_SESSION_COOKIE, DEMO_SIGNED_OUT } from "./demo-accounts";

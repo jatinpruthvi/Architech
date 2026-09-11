@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 
-const evidencePath = "config/governance/release/phase-1-release-evidence.json";
+const evidencePath = "ops/config/governance/release/phase-1-release-evidence.json";
 const reportPath = "docs/release/phase-1-release-report.md";
 const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
 const report = fs.readFileSync(reportPath, "utf8");

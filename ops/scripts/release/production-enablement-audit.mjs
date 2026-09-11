@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 
-const plan = JSON.parse(fs.readFileSync("config/governance/release/production-enablement-plan.json", "utf8"));
+const plan = JSON.parse(fs.readFileSync("ops/config/governance/release/production-enablement-plan.json", "utf8"));
 const failures = [];
 
 if (plan.decision !== "do_not_enable_production_until_all_required_gates_are_evidenced") failures.push("production decision must remain blocked until evidence gates pass");

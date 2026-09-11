@@ -17,7 +17,7 @@ if (build.error) {
 }
 if ((build.status ?? 1) !== 0) process.exit(build.status ?? 1);
 
-const materialize = spawnSync(process.execPath, ["scripts/materialize-static-publish.mjs"], {
+const materialize = spawnSync(process.execPath, ["ops/scripts/materialize-static-publish.mjs"], {
   env: {
     ...process.env,
     NODE_ENV: "production",

@@ -14,7 +14,7 @@
  * This test closes that blind spot WITHOUT needing a database: it reads the
  * SQL the builder actually emits, extracts the predicates that require a
  * specific index type to be servable, and asserts a matching CREATE INDEX
- * exists in prisma/migrations. Both sides are the real artifacts, so the
+ * exists in db/migrations. Both sides are the real artifacts, so the
  * invariant cannot drift out of sync with either.
  *
  * WHAT IT CANNOT DO: prove the planner CHOOSES the index. That needs EXPLAIN
@@ -27,7 +27,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { buildSqlNarrowPlan, NARROW_HAYSTACK_SQL_TARGETS } from "./sql";
 
-const MIGRATIONS_DIR = join(process.cwd(), "prisma", "migrations");
+const MIGRATIONS_DIR = join(process.cwd(), "db", "migrations");
 
 /** Every migration's SQL, concatenated. Index creation is append-only here
     (no migration drops a trigram index), so a substring search over the

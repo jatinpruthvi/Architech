@@ -1,10 +1,10 @@
 /* GENERATED — do not edit by hand.
-   Mirrors the place registry in `client/src/lib/cities.ts` and
-   `client/src/lib/localities.ts` so `prisma db seed` provisions exactly the
+   Mirrors the place registry in `src/lib/cities.ts` and
+   `src/lib/localities.ts` so `prisma db seed` provisions exactly the
    cities and localities the application routes, sitemaps, and SEO registry
-   expect. `client/src/lib/seed-sync.test.ts` fails if the two drift apart.
+   expect. `src/lib/seed-sync.test.ts` fails if the two drift apart.
 
-   Regenerate with: node scripts/data/generate-seed-registry.mjs */
+   Regenerate with: node ops/scripts/data/generate-seed-registry.mjs */
 
 export const CITIES = [
   {

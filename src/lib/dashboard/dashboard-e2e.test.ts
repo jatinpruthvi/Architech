@@ -10,7 +10,7 @@
  * dashboard.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as getRequirements, POST as postRequirement } from "../../../../app/api/requirements/route";
+import { GET as getRequirements, POST as postRequirement } from "../../app/api/requirements/route";
 import { intentsForRole, resetRequirementStoreForTests, type RequirementRecord } from "@/lib/requirements";
 import {
   DASHBOARD_PERSONAS,

@@ -10,7 +10,7 @@ export const SUPER_ADMIN_TTL_SECONDS = 28_800;
 const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 } as const;
 const KEY_LEN = 32;
 
-/** `scrypt$<salt-hex>$<hash-hex>` as printed by scripts/auth/make-super-admin-hash.mjs. */
+/** `scrypt$<salt-hex>$<hash-hex>` as printed by ops/scripts/auth/make-super-admin-hash.mjs. */
 export function parseSuperAdminHash(stored: string | undefined): { salt: Buffer; hash: Buffer } | null {
   if (!stored) return null;
   const parts = stored.split("$");

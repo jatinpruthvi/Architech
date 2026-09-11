@@ -105,13 +105,13 @@ const nextConfig: NextConfig = {
   // pre-generated WebP derivatives (unoptimized, as before). Audit F5 note:
   // components do not import next/image directly; they build the same
   // transformation URLs through the shared pure module
-  // client/src/lib/media/image-loader.ts, which is also this loaderFile, so
+  // src/lib/media/image-loader.ts, which is also this loaderFile, so
   // the <picture>/<img> markup path and any next/image consumer stay in
   // agreement by construction.
   images: r2ImageDelivery
     ? {
         loader: "custom",
-        loaderFile: "./client/src/lib/media/next-image-loader.ts",
+        loaderFile: "./src/lib/media/next-image-loader.ts",
       }
     : {
         unoptimized: true,

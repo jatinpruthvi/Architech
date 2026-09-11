@@ -35,7 +35,7 @@ export async function purgeExpiredLeads(prisma, { apply, asOf }) {
 
 function usage() {
   return [
-    "Usage: node scripts/privacy/purge-expired-leads.mjs [--apply] [--as-of <ISO>]",
+    "Usage: node ops/scripts/privacy/purge-expired-leads.mjs [--apply] [--as-of <ISO>]",
     "Without --apply, the command only reports how many rows are eligible.",
   ].join("\n");
 }

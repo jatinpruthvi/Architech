@@ -28,7 +28,7 @@
    baseline is agreed. */
 
 /* The base URL comes from argv, not process.env: every env key read anywhere in
-   the tree must be in the allow-list (client/src/lib/operations/env-catalog-parity.test.ts),
+   the tree must be in the allow-list (src/lib/operations/env-catalog-parity.test.ts),
    and a one-off developer script has no business adding a governance surface to
    get its own argument. */
 const BASE = process.argv[2] ?? "http://127.0.0.1:3000";

@@ -15,7 +15,7 @@
  * This shim implements (1)-(3) against PostgreSQL using the `pg` driver.
  * It is NOT a general-purpose replacement for the real engine: commands such
  * as createMigration, schemaPush, devDiagnostic and evaluateDataLoss are not
- * supported. `scripts/sandbox/setup-local-db.mjs` installs it ONLY when the
+ * supported. `ops/scripts/sandbox/setup-local-db.mjs` installs it ONLY when the
  * real engine cannot be downloaded; on a normal machine the real binary is
  * used and this file is never activated.
  *

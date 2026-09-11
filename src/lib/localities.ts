@@ -1,7 +1,7 @@
 /* Locality registry — names, Devanagari, OSM coordinates and map frames.
    Coordinates © OpenStreetMap contributors. Counts are illustrative demo data.
 
-   Every locality belongs to a city in `client/src/lib/cities.ts`. Locality slugs
+   Every locality belongs to a city in `src/lib/cities.ts`. Locality slugs
    are unique across India (asserted by `localities.test.ts`) so that a slug can
    be resolved with or without city context, while canonical URLs always carry
    the city segment: /buy/{city}/{locality}/. */

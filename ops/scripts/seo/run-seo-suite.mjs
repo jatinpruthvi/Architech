@@ -34,8 +34,8 @@ process.env.ARCHITECH_DATA_SOURCE = "";
 const run = (script) =>
   spawnSync(process.execPath, [path.join(root, script)], { cwd: root, stdio: "inherit", env: process.env });
 
-let result = run("scripts/build-ci.mjs");
+let result = run("ops/scripts/build-ci.mjs");
 if (result.status !== 0) process.exit(result.status ?? 1);
 
-result = run("scripts/seo/raw-html-smoke.mjs");
+result = run("ops/scripts/seo/raw-html-smoke.mjs");
 if (result.status !== 0) process.exit(result.status ?? 1);

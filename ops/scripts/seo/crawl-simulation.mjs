@@ -14,8 +14,8 @@
      5. Interactive surfaces keep their robots meta (noindex) when crawled.
 
    Usage:
-     node scripts/seo/crawl-simulation.mjs            (builds nothing; boots `next start`)
-     CRAWL_BASE_URL=http://127.0.0.1:3000 node scripts/seo/crawl-simulation.mjs
+     node ops/scripts/seo/crawl-simulation.mjs            (builds nothing; boots `next start`)
+     CRAWL_BASE_URL=http://127.0.0.1:3000 node ops/scripts/seo/crawl-simulation.mjs
                                                       (crawl an already-running server)
 */
 import { spawn } from "node:child_process";

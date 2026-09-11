@@ -61,7 +61,7 @@ export const ALLOWED_ENV_KEYS = [
   "TRUST_PROXY_HEADERS",
   "ALLOW_ORIGINLESS_MUTATIONS",
   /* Reconciled 2026-09-07 (bug-hunt round 4, W5): these 18 keys are read from
-     process.env somewhere in app/, client/src/, shared/ or scripts/ but were
+     process.env somewhere in app/, src/, shared/ or ops/scripts/ but were
      missing from the catalog, so validateEnvCatalog would have flagged the
      project's own configuration as unknown. env-catalog-parity.test.ts now
      drives this list from a source scan on every CI run. */
@@ -84,8 +84,8 @@ export const ALLOWED_ENV_KEYS = [
   "NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE",
   "SEO_REGISTRY_TTL_MS",
   /* Reconciled 2026-09-10 (PR #70 parity): these 4 keys are read from
-     process.env by the leads/calling feature (client/src/lib/leads/,
-     client/src/lib/plans/) and were previously missed here.
+     process.env by the leads/calling feature (src/lib/leads/,
+     src/lib/plans/) and were previously missed here.
      env-catalog-parity.test.ts direction A now catches this class of drift. */
   "ARCHITECH_BROKER_PLAN_STATUS",
   "ARCHITECH_CALLING_HOURS_IST",

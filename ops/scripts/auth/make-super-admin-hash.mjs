@@ -6,7 +6,7 @@
  *
  * Non-interactive (piped stdin) is supported for smoke tests: the password is
  * read twice, one per line:
- *   printf 'pw\npw\n' | node scripts/auth/make-super-admin-hash.mjs
+ *   printf 'pw\npw\n' | node ops/scripts/auth/make-super-admin-hash.mjs
  */
 import { createInterface } from "node:readline";
 import { randomBytes, scryptSync } from "node:crypto";

@@ -26,8 +26,8 @@ import { validateEnvCatalog } from "./hygiene";
    variables that are deliberately not part of the product's configuration
    surface. */
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const SCAN_ROOTS = ["app", "client/src", "shared", "scripts"];
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const SCAN_ROOTS = ["src/app", "src", "src/shared", "ops/scripts"];
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

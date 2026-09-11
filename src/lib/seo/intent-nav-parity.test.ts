@@ -26,14 +26,14 @@ import { QUICK_ACTIONS } from "../search/palette-actions";
 import { strings } from "../i18n";
 import { intentVocabulary, TRANSACTION_INTENTS } from "./intent";
 
-const repoRoot = join(__dirname, "..", "..", "..", "..");
+const repoRoot = join(__dirname, "..", "..", "..");
 const read = (rel: string) => readFileSync(join(repoRoot, rel), "utf8");
 
 /** Every hand-maintained surface that links a transaction hub. */
 const NAV_SURFACES = [
-  { name: "header nav", file: "client/src/components/architech/Header.tsx" },
-  { name: "footer", file: "client/src/components/architech/Footer.tsx" },
-  { name: "HTML sitemap", file: "client/src/pages/PublicParity.tsx" },
+  { name: "header nav", file: "src/components/architech/Header.tsx" },
+  { name: "footer", file: "src/components/architech/Footer.tsx" },
+  { name: "HTML sitemap", file: "src/pages/PublicParity.tsx" },
 ] as const;
 
 describe("intent navigation parity", () => {
@@ -85,8 +85,8 @@ describe("intent hub breadcrumbs", () => {
      Google can flag. Both city pages render Home / <hub> / <place>, so both
      BreadcrumbLists must declare three positions. */
   it.each([
-    { intent: "buy" as const, file: "app/buy/[city]/page.tsx" },
-    { intent: "rent" as const, file: "app/rent/[city]/page.tsx" },
+    { intent: "buy" as const, file: "src/app/buy/[city]/page.tsx" },
+    { intent: "rent" as const, file: "src/app/rent/[city]/page.tsx" },
   ])("$intent city JSON-LD breadcrumb mirrors the visible 3-step trail", ({ intent, file }) => {
     const source = read(file);
     const hub = `canonicalUrl("/${intentVocabulary(intent).segment}/")`;

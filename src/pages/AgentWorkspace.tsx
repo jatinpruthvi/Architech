@@ -195,7 +195,7 @@ function Sidebar({ section }: { section: AgentSection }) {
 }
 
 function PerformanceRegister({ leads, leadsState, drafts }: { leads: LeadRecord[]; leadsState: "loading" | "ready" | "unavailable"; drafts: ListingDraft[] }) {
-  /* Derived-only analytics (client/src/lib/broker/analytics.ts): nothing here
+  /* Derived-only analytics (src/lib/broker/analytics.ts): nothing here
      is estimated, and every small sample discloses its n. */
   const funnel = leadFunnel(leads);
   const response = leadsState === "ready" ? firstResponseStats(leads) : null;

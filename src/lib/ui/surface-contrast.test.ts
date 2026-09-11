@@ -13,14 +13,14 @@ import { join } from "node:path";
  * over any layered rule regardless of specificity — so `text-cream` on a link
  * was silently discarded. These tests pin the fix and the contrast budget.
  */
-const css = readFileSync("client/src/theme.css", "utf8");
+const css = readFileSync("src/theme.css", "utf8");
 
 const tsxFilesUnder = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
   const path = join(directory, entry.name);
   if (entry.isDirectory()) return tsxFilesUnder(path);
   return entry.isFile() && entry.name.endsWith(".tsx") ? [path] : [];
 });
-const componentFiles = [...tsxFilesUnder("client/src"), ...tsxFilesUnder("app")];
+const componentFiles = [...tsxFilesUnder("src"), ...tsxFilesUnder("src/app")];
 
 const hex = (value: string) => value.match(/^#([0-9a-f]{6})$/i)?.[1] ?? "";
 const luminance = (value: string) => {
@@ -182,10 +182,10 @@ describe("solid action markup contracts", () => {
    in the markup — per interaction state, per theme, honouring the dark-mode
    deepening rules — and computes the real WCAG ratio.
    That distinction matters: the auth tab that shipped unreadable used tokens
-   which each looked fine on their own. See scripts/audit-surface-contrast.mjs. */
+   which each looked fine on their own. See ops/scripts/audit-surface-contrast.mjs. */
 describe("repo-wide fill/label contrast", () => {
   it("has no pairing below its WCAG threshold in either theme", () => {
-    const result = spawnSync(process.execPath, ["scripts/audit-surface-contrast.mjs"], { encoding: "utf8" });
+    const result = spawnSync(process.execPath, ["ops/scripts/audit-surface-contrast.mjs"], { encoding: "utf8" });
     expect(result.stdout + result.stderr, "contrast audit reported failures").toContain("✓");
     expect(result.status).toBe(0);
   });

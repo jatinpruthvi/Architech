@@ -486,7 +486,7 @@ try {
      routes above. Reuses this server so CI does not pay for a second build.
      This is the check that caught 11 live title/description defects that
      typecheck, lint, and the unit suite all passed. */
-  const audit = spawnSync(process.execPath, [path.join(root, "scripts/seo/onpage-audit.mjs"), "--base", baseUrl], {
+  const audit = spawnSync(process.execPath, [path.join(root, "ops/scripts/seo/onpage-audit.mjs"), "--base", baseUrl], {
     cwd: root,
     encoding: "utf8",
     stdio: "pipe",

@@ -8,8 +8,8 @@ import { fileURLToPath } from "node:url";
    server.ts is server-only, so this guard asserts the contract at the source
    level: every findMany in the governance server path must carry a take cap. */
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const source = readFileSync(join(repoRoot, "client/src/lib/governance/server.ts"), "utf8");
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const source = readFileSync(join(repoRoot, "src/lib/governance/server.ts"), "utf8");
 
 describe("governance server queries stay bounded (PERF-BUG-16-001)", () => {
   it("exports a page-cap constant", () => {

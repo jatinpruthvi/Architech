@@ -11,7 +11,7 @@
  * the RLS migration:
  *
  *   DATABASE_URL=postgresql://postgres@localhost:5432/scratch \\
- *     node scripts/security/rls-isolation-proof.mjs
+ *     node ops/scripts/security/rls-isolation-proof.mjs
  *
  * Verified passing 22/22 on PostgreSQL 17.4.
  */
@@ -45,7 +45,7 @@ await admin.query(`
 `);
 
 // Apply the real migration file, minus psql-only bits.
-const sql = readFileSync("prisma/migrations/202609030004_row_level_security/migration.sql", "utf8");
+const sql = readFileSync("db/migrations/202609030004_row_level_security/migration.sql", "utf8");
 await admin.query(sql);
 check("migration applies cleanly to PostgreSQL 17", true);
 

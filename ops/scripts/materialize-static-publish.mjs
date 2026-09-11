@@ -97,11 +97,11 @@ rmSync(path.join(root, "dist"), { recursive: true, force: true });
 ensureDir(outputDir);
 copyPublicAssets();
 copyFile(nextStatic, path.join(outputDir, "_next", "static"));
-copyFile(path.join(root, "scripts", "publish-server.mjs"), path.join(root, "dist", "index.js"));
+copyFile(path.join(root, "ops/scripts", "publish-server.mjs"), path.join(root, "dist", "index.js"));
 materializePages();
 
 const manifest = {
-  generatedBy: "scripts/materialize-static-publish.mjs",
+  generatedBy: "ops/scripts/materialize-static-publish.mjs",
   source: "Next.js prerendered pages",
   runtimeNote: "Development publish artifact with a lightweight dist/index.js server entrypoint; the Next.js .next runtime remains preserved for future server deployment.",
 };

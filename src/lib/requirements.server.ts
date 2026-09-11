@@ -176,7 +176,7 @@ export async function createRequirementForServer(input: RequirementInput, sessio
         areaMaxSqft: normalizedInput.areaMaxSqft ?? null,
         /* bigint-range: bounded by validateRequirementInput (called above at
            the top of this function), which enforces MAX_INR and MAX_STORED_INT
-           from client/src/lib/requirements.ts. Without that ceiling these
+           from src/lib/requirements.ts. Without that ceiling these
            conversions succeed in JS at arbitrary precision and fail inside
            PostgreSQL as 22003 numeric_value_out_of_range — see BUG-R4-005. */
         budgetMinInr: normalizedInput.budgetMinInr != null ? BigInt(Math.round(Number(normalizedInput.budgetMinInr))) : null,

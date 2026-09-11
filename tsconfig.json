@@ -24,20 +24,17 @@
     ],
     "paths": {
       "@/*": [
-        "./client/src/*"
+        "./src/*"
       ],
       "@shared/*": [
-        "./shared/*"
+        "./src/shared/*"
       ]
     }
   },
   "include": [
     "next-env.d.ts",
-    "app/**/*.ts",
-    "app/**/*.tsx",
-    "client/src/**/*.ts",
-    "client/src/**/*.tsx",
-    "shared/**/*.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

@@ -173,7 +173,7 @@ export function buildSqlNarrowPlan(rawQuery: string, citySlug?: string): SqlNarr
          RECALL: this WIDENS, never narrows. LocalityAlias is a superset of
          the legacy array — migration 202608300002 backfilled it by
          `UNNEST(locality."aliases")` as type SEARCH, on top of the OFFICIAL
-         name and TRANSLITERATION hindiName rows, and prisma/seed.mjs keeps
+         name and TRANSLITERATION hindiName rows, and db/seed.mjs keeps
          writing both. Widening is safe here because this alternative is OR'd
          into a candidate SUPERSET that the unchanged JS filter then narrows,
          so the returned rows cannot change. */

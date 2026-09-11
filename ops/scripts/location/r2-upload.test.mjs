@@ -16,7 +16,7 @@ const ENV = {
 test("signRequest reproduces the official AWS worked-example signature exactly", () => {
   // The worked example from the AWS IAM User Guide's SigV4 documentation
   // (GET ListUsers against iam.amazonaws.com, signed 2015-08-30T12:36:00Z).
-  // Same vector that pins client/src/lib/media/sigv4.ts — a drift in this
+  // Same vector that pins src/lib/media/sigv4.ts — a drift in this
   // port breaks the byte-exact canonicalization and the signature changes.
   const signed = signRequest({
     method: "GET",

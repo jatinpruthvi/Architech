@@ -27,7 +27,7 @@
  * Opt-in (default `pnpm test` stays green without a database):
  *
  *   ARCHITECH_BENCH_DATABASE_URL=postgresql://user:pass@host:5432/architech_bench \
- *     pnpm vitest run client/src/lib/search/latency-bench.test.ts
+ *     pnpm vitest run src/lib/search/latency-bench.test.ts
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";

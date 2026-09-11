@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const schema = readFileSync("prisma/schema.prisma", "utf8");
-const migration = readFileSync("prisma/migrations/202608240001_phase1_domain_schema/migration.sql", "utf8");
-const searchMigration = readFileSync("prisma/migrations/202608240002_search_indexes/migration.sql", "utf8");
+const schema = readFileSync("db/schema.prisma", "utf8");
+const migration = readFileSync("db/migrations/202608240001_phase1_domain_schema/migration.sql", "utf8");
+const searchMigration = readFileSync("db/migrations/202608240002_search_indexes/migration.sql", "utf8");
 
 describe("Phase 1 Prisma schema contract", () => {
   it("declares the required production domain models", () => {
@@ -46,7 +46,7 @@ describe("Phase 1 Prisma schema contract", () => {
   });
 
   it("ships the widening migration for the listing price column", () => {
-    const widening = readFileSync("prisma/migrations/202609030002_listing_price_bigint/migration.sql", "utf8");
+    const widening = readFileSync("db/migrations/202609030002_listing_price_bigint/migration.sql", "utf8");
     expect(widening).toContain('ALTER TABLE "Listing"');
     expect(widening).toContain("BIGINT");
   });
@@ -55,7 +55,7 @@ describe("Phase 1 Prisma schema contract", () => {
      source, not by taste, so they are asserted rather than left to review.
      See docs/broker-suite/erpnext-consumability-schema-constraints.md. */
   describe("Frappe/ERPNext interop contract", () => {
-    const interop = readFileSync("prisma/migrations/202609030003_interop_foundation/migration.sql", "utf8");
+    const interop = readFileSync("db/migrations/202609030003_interop_foundation/migration.sql", "utf8");
 
     it("declares the outbox and inbound de-duplication models", () => {
       expect(schema).toContain("model InteropOutbox {");
@@ -99,9 +99,9 @@ describe("Phase 1 Prisma schema contract", () => {
 
   /* Tenant isolation is a production gate for the broker channel. Asserted
      here so the migration cannot be quietly weakened; the policies themselves
-     are executed against a real PostgreSQL by scripts/security/rls-audit.mjs. */
+     are executed against a real PostgreSQL by ops/scripts/security/rls-audit.mjs. */
   describe("row-level security", () => {
-    const rls = readFileSync("prisma/migrations/202609030004_row_level_security/migration.sql", "utf8");
+    const rls = readFileSync("db/migrations/202609030004_row_level_security/migration.sql", "utf8");
 
     it("protects every tenant-owned table with RLS", () => {
       for (const table of ["Lead", "BrokerUser", "InteropOutbox", "InteropInboundEvent", "AuditEvent"]) {
@@ -133,7 +133,7 @@ describe("Phase 1 Prisma schema contract", () => {
   });
 
   describe("India Compliance / GST identity", () => {
-    const gst = readFileSync("prisma/migrations/202609030005_gst_identity/migration.sql", "utf8");
+    const gst = readFileSync("db/migrations/202609030005_gst_identity/migration.sql", "utf8");
 
     it("stores a GSTIN at the exact upstream width", () => {
       expect(schema).toMatch(/gstin\s+String\?\s+@db\.VarChar\(15\)/);
@@ -155,7 +155,7 @@ describe("Phase 1 Prisma schema contract", () => {
        only broker-channel migration. The earlier listing-anchored draft was
        superseded before any environment applied it (durable data is not
        activated yet), so it was removed rather than shipped side by side. */
-    const channel = readFileSync("prisma/migrations/202609040001_broker_channel/migration.sql", "utf8");
+    const channel = readFileSync("db/migrations/202609040001_broker_channel/migration.sql", "utf8");
 
     it("declares the channel models", () => {
       for (const model of ["ChannelRequest", "ChannelRequestSource", "ChannelMatch", "ChannelDeal", "ChannelNotification"]) {
@@ -240,7 +240,7 @@ describe("Phase 1 Prisma schema contract", () => {
 
   describe("search text configuration (202609070001)", () => {
     const textConfigMigration = readFileSync(
-      "prisma/migrations/202609070001_search_text_config/migration.sql",
+      "db/migrations/202609070001_search_text_config/migration.sql",
       "utf8",
     );
 

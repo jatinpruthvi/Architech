@@ -14,13 +14,13 @@ import { fileURLToPath } from "node:url";
    caller-bounded in: reads).
    Source-level scan because most data-layer modules import "server-only"
    and cannot be imported under plain vitest (precedent:
-   client/src/lib/governance/server-query-caps.test.ts).
+   src/lib/governance/server-query-caps.test.ts).
    Balanced-brace extraction (not regex), because one-level regex nesting
    matched neither two-level include/select trees nor multi-line args —
    both caused false census results during the 2026-09-06 hunt. */
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SCAN_ROOTS = ["client/src", "app", "shared"];
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const SCAN_ROOTS = ["src", "src/app", "src/shared"];
 const MARKER = /sql-perf:\s*intentionally-unbounded/;
 const MARKER_WINDOW = 500;
 

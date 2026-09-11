@@ -26,13 +26,13 @@ describe("scope-aware guide routes", () => {
       expect(existsSync(dynamicPage)).toBe(true);
       expect(readFileSync(dynamicPage, "utf8")).toContain("getGuideByScope(ROUTE_KIND, scope, slug)");
     }
-    expect(existsSync(resolve(root, "app/guide/city/ahmedabad/[slug]/page.tsx"))).toBe(false);
-    expect(existsSync(resolve(root, "app/guide/locality/ahmedabad/[slug]/page.tsx"))).toBe(false);
-    expect(existsSync(resolve(root, "app/guide/rera/gujarat/[slug]/page.tsx"))).toBe(false);
+    expect(existsSync(resolve(root, "src/app/guide/city/ahmedabad/[slug]/page.tsx"))).toBe(false);
+    expect(existsSync(resolve(root, "src/app/guide/locality/ahmedabad/[slug]/page.tsx"))).toBe(false);
+    expect(existsSync(resolve(root, "src/app/guide/rera/gujarat/[slug]/page.tsx"))).toBe(false);
   });
 
   it("keeps the old Gujarat RERA URL as a redirect to the India canonical", () => {
-    const source = readFileSync(resolve(root, "app/guide/rera/[scope]/[slug]/page.tsx"), "utf8");
+    const source = readFileSync(resolve(root, "src/app/guide/rera/[scope]/[slug]/page.tsx"), "utf8");
     expect(source).toContain('scope === "gujarat"');
     expect(source).toContain('getGuideByScope(ROUTE_KIND, "india", slug)');
     expect(source).toContain("permanentRedirect(nationalGuide.path)");

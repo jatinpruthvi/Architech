@@ -22,7 +22,7 @@ function category(file) {
   const first = file.split("/")[0];
   if (first === "README.md") return "Start Here";
   if (first === "AGENTS.md") return "Start Here";
-  if (first !== "docs" && first !== "config") return "Other";
+  if (first !== "docs" && first !== "ops") return "Other";
   if (file.startsWith("docs/history/")) return "Historical Recommendations and Reviews";
   if (file.startsWith("docs/archive/")) return "Archive";
   if (file.startsWith("docs/planning/")) return "Planning";
@@ -33,7 +33,7 @@ function category(file) {
   if (file.startsWith("docs/research/")) return "Research";
   if (file.startsWith("docs/product/")) return "Product Inventories";
   if (file.startsWith("docs/specs/")) return "Specs";
-  if (file.startsWith("config/governance/")) return "Governance and Contracts";
+  if (file.startsWith("ops/config/governance/")) return "Governance and Contracts";
   return "Product and Engineering Docs";
 }
 
@@ -74,8 +74,8 @@ const lines = [
   "2. [AGENTS.md](../AGENTS.md) — task-based navigation map for agents and humans.",
   "3. [docs/planning/STATUS.md](../docs/planning/STATUS.md) — current implementation and activation status.",
   "4. [docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md](../docs/planning/PHASE-1-IMPLEMENTATION-PLAN.md) — active delivery tracker.",
-  "5. [config/governance/contracts/DOMAIN-CONTRACTS.md](../config/governance/contracts/DOMAIN-CONTRACTS.md) — shared domain vocabulary and boundaries.",
-  "6. [config/governance/contracts/IMPLEMENTATION-MATRIX.md](../config/governance/contracts/IMPLEMENTATION-MATRIX.md) — feature-to-code mapping.",
+  "5. [ops/config/governance/contracts/DOMAIN-CONTRACTS.md](../ops/config/governance/contracts/DOMAIN-CONTRACTS.md) — shared domain vocabulary and boundaries.",
+  "6. [ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md](../ops/config/governance/contracts/IMPLEMENTATION-MATRIX.md) — feature-to-code mapping.",
   "7. [docs/runtime-activation-gates.md](../docs/runtime-activation-gates.md) — production credentials and provider gates.",
   "",
 ];

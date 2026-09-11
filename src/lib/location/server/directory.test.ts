@@ -4,7 +4,7 @@ const administrativeArea = vi.hoisted(() => ({ findFirst: vi.fn(), findMany: vi.
 vi.mock("@/lib/repositories/server/prisma", () => ({ getPrismaClient: () => ({ administrativeArea }) }));
 
 import { getLocalBodiesForStateForServer } from "./directory";
-import { GET } from "../../../../../app/api/locations/states/[state]/local-bodies/route";
+import { GET } from "../../../app/api/locations/states/[state]/local-bodies/route";
 
 afterEach(() => vi.unstubAllEnvs());
 beforeEach(() => {

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { POST as createDraftRoute } from "../../../../app/api/broker/listings/route";
-import { PATCH as updateDraftRoute, POST as lifecycleDraftRoute, DELETE as deleteDraftRoute } from "../../../../app/api/broker/listings/[draftId]/route";
-import { POST as submitDraftRoute } from "../../../../app/api/broker/listings/[draftId]/submit/route";
-import { POST as moderateDraftRoute } from "../../../../app/api/admin/moderation/listings/[draftId]/route";
+import { POST as createDraftRoute } from "../../app/api/broker/listings/route";
+import { PATCH as updateDraftRoute, POST as lifecycleDraftRoute, DELETE as deleteDraftRoute } from "../../app/api/broker/listings/[draftId]/route";
+import { POST as submitDraftRoute } from "../../app/api/broker/listings/[draftId]/submit/route";
+import { POST as moderateDraftRoute } from "../../app/api/admin/moderation/listings/[draftId]/route";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import { archiveListingDraft, createListingDraft, deleteListingDraft, getModerationQueue, moderateListing, resetBrokerWorkflowForTests, resumeListingDraft, submitListingForReview, updateListingDraft, validateBrokerProfile, validateListingDraft, type ListingDraftInput } from "./workflow";
 

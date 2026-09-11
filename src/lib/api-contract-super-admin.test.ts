@@ -10,10 +10,10 @@ const database = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/repositories/server/prisma", () => ({ getPrismaClient: () => database }));
-import { POST as signInPost } from "../../../app/api/auth/super/sign-in/route";
-import { POST as signOutPost } from "../../../app/api/auth/super/sign-out/route";
-import { GET as plansGet, POST as plansPost } from "../../../app/api/admin/plans/route";
-import { POST as definitionsPost } from "../../../app/api/admin/plans/definitions/route";
+import { POST as signInPost } from "../app/api/auth/super/sign-in/route";
+import { POST as signOutPost } from "../app/api/auth/super/sign-out/route";
+import { GET as plansGet, POST as plansPost } from "../app/api/admin/plans/route";
+import { POST as definitionsPost } from "../app/api/admin/plans/definitions/route";
 import { SUPER_ADMIN_COOKIE } from "./auth/super-admin";
 
 const SECRET = "contract-test-better-auth-secret";

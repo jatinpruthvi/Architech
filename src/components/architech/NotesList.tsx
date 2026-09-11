@@ -5,7 +5,7 @@
    semantics — and its "N items" announcement — as soon as list-style is
    removed, which Tailwind's preflight does globally, so
    `design-token-discipline.test.ts` requires the explicit role on every
-   `<ul>`. `eslint.config.js` permits it for `client/src/**` only; under the
+   `<ul>`. `eslint.config.js` permits it for `src/**` only; under the
    default jsx-a11y config that covers `app/**` the same attribute is a
    "redundant role" error. Every other `<ul>` in the repo is in a component.
    Moving the markup into one keeps the two rules in agreement instead of

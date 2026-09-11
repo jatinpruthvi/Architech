@@ -30,7 +30,7 @@ export type Property = {
   galleryUrls?: string[];
   /** ISO `YYYY-MM-DD` date the listing's *content* last meaningfully changed.
 
-      Mirrors `Listing.meaningfulUpdatedAt` in `prisma/schema.prisma` (as opposed
+      Mirrors `Listing.meaningfulUpdatedAt` in `db/schema.prisma` (as opposed
       to `updatedAt`, which Prisma bumps on every write). Sitemaps and
       `dateModified` structured data must use this: it is the only field that
       answers "did the page's facts change?" Optional so a listing with no

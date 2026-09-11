@@ -24,8 +24,8 @@ import { fileURLToPath } from "node:url";
    first: prose about `BigInt(` (this report and several code comments discuss
    it) must not be counted as a conversion site. */
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SCAN_ROOTS = ["client/src", "app", "shared"];
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const SCAN_ROOTS = ["src", "src/app", "src/shared"];
 const MARKER = /bigint-range:/;
 const CEILING_TOKENS = ["MAX_INR", "MAX_SAFE_INR", "MAX_STORED_INT", "Number.MAX_SAFE_INTEGER"];
 
@@ -92,9 +92,9 @@ describe("BigInt range guard (BUG-R4-005/006 class)", () => {
        deliberately absent: it goes through money.ts's toInrBigInt, which is the
        preferred shape — the guard's \b boundary correctly does not match it. */
     for (const expected of [
-      "client/src/lib/money.ts",
-      "client/src/lib/persistence/channel-store.ts",
-      "client/src/lib/requirements.server.ts",
+      "src/lib/money.ts",
+      "src/lib/persistence/channel-store.ts",
+      "src/lib/requirements.server.ts",
     ]) {
       expect(withConversions.has(expected), `${expected} should be detected`).toBe(true);
     }
@@ -103,7 +103,7 @@ describe("BigInt range guard (BUG-R4-005/006 class)", () => {
   /* The two validators that BUG-R4-005/006 fixed must keep their ceilings. This
      is the direct regression pin on the fix itself, independent of the scan. */
   it("the requirement and channel validators declare their ceilings", () => {
-    for (const file of ["client/src/lib/requirements.ts", "client/src/lib/broker/channel.ts"]) {
+    for (const file of ["src/lib/requirements.ts", "src/lib/broker/channel.ts"]) {
       const src = readFileSync(join(repoRoot, file), "utf8");
       expect(src, `${file} lost MAX_STORED_INT`).toMatch(/MAX_STORED_INT\s*=\s*2_147_483_647/);
       expect(src, `${file} lost MAX_INR`).toMatch(/MAX_INR\s*=\s*Number\.MAX_SAFE_INTEGER/);

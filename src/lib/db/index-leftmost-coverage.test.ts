@@ -14,7 +14,7 @@
  * scan returns the same rows as an index scan, so every test stays green.
  * This guard asserts the ACCESS PATH exists instead of the rows being right.
  *
- * It reads prisma/schema.prisma — the real artifact — and requires that each
+ * It reads db/schema.prisma — the real artifact — and requires that each
  * known single-column filter has SOME index (plain, unique, or composite)
  * whose FIRST column is that column. It needs no database.
  *
@@ -29,7 +29,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const SCHEMA = readFileSync(join(process.cwd(), "prisma", "schema.prisma"), "utf8");
+const SCHEMA = readFileSync(join(process.cwd(), "db", "schema.prisma"), "utf8");
 
 /** Single-column equality filters that run against Postgres on a real path.
     Each entry: the model, the filtered field, and the call site that proves
@@ -44,7 +44,7 @@ const SINGLE_COLUMN_FILTERS: ReadonlyArray<{ model: string; field: string; site:
 /** Extract one model's body from the schema. */
 function modelBody(model: string): string {
   const match = new RegExp(`^model ${model} \\{([\\s\\S]*?)^\\}`, "m").exec(SCHEMA);
-  if (!match) throw new Error(`model ${model} not found in prisma/schema.prisma`);
+  if (!match) throw new Error(`model ${model} not found in db/schema.prisma`);
   return match[1];
 }
 

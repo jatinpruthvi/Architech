@@ -15,7 +15,7 @@ import { execSync } from "node:child_process";
  * a user-visible surface. A reviewer cannot be relied on to catch the next
  * one — greping for it is cheap and exact.
  *
- * SCOPE: shipped code only (`app/`, `client/src/`). Research and planning
+ * SCOPE: shipped code only (`app/`, `src/`). Research and planning
  * documents legitimately name the products they analyse; forbidding that would
  * make honest competitive analysis unwritable. The line is that nothing which
  * reaches a build may carry the name — not in UI copy, and not in a comment,
@@ -49,7 +49,7 @@ const FORBIDDEN_BRANDS = [
 /* Every source file that can reach a build. Test files are included: a
    fixture named after a competitor is the same leak one refactor later. */
 const shippedFiles = execSync(
-  "git ls-files 'app/**/*.ts' 'app/**/*.tsx' 'client/src/**/*.ts' 'client/src/**/*.tsx' 'client/src/**/*.css'",
+  "git ls-files 'src/app/**/*.ts' 'src/app/**/*.tsx' 'src/**/*.ts' 'src/**/*.tsx' 'src/**/*.css'",
   { encoding: "utf8" },
 )
   .split("\n")
@@ -82,7 +82,7 @@ describe("no competitor brand names in shipped code", () => {
     /* The counterpart to the rule above: the product has one name, and a
        stray "AddressBox" got in precisely because nobody was asserting what
        the name IS. */
-    const header = readFileSync("client/src/components/architech/Header.tsx", "utf8");
+    const header = readFileSync("src/components/architech/Header.tsx", "utf8");
     expect(header).toContain("Architech");
   });
 });

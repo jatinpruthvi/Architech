@@ -6,11 +6,11 @@ import { fileURLToPath } from "node:url";
 /* Bug-hunt round 2 (BUG-R2-001, 6 Sep 2026): a NEXT_PUBLIC_* variable was used
    in code without being documented in .env.example. This guard codifies the
    contract both directions:
-   - every NEXT_PUBLIC_* referenced in app/, client/src/, next.config.ts must be
+   - every NEXT_PUBLIC_* referenced in app/, src/, next.config.ts must be
      documented in .env.example (operators must be able to discover it), and
    - every NEXT_PUBLIC_* documented must still be referenced (no stale rows). */
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 function* walk(dir: string): Generator<string> {
   if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) return;
@@ -25,7 +25,7 @@ const ENV_TOKEN = /NEXT_PUBLIC_[A-Z0-9_]+/g;
 
 function usedTokens(): Set<string> {
   const tokens = new Set<string>();
-  const files = [...walk(join(repoRoot, "app")), ...walk(join(repoRoot, "client", "src"))];
+  const files = [...walk(join(repoRoot, "src/app")), ...walk(join(repoRoot, "src"))];
   files.push(join(repoRoot, "next.config.ts"));
   for (const file of files) {
     for (const match of readFileSync(file, "utf8").matchAll(ENV_TOKEN)) tokens.add(match[0]);

@@ -12,12 +12,12 @@
  * happily against a global store, which is exactly how the leaks survived.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as getRequirements, POST as postRequirement } from "../../../../app/api/requirements/route";
-import { GET as getSavedSearches, POST as postSavedSearch } from "../../../../app/api/saved-searches/route";
-import { DELETE as deleteSavedSearch } from "../../../../app/api/saved-searches/[id]/route";
-import { GET as getLeads } from "../../../../app/api/broker/leads/route";
-import { DELETE as deleteLead } from "../../../../app/api/broker/leads/[id]/route";
-import { POST as replyToLead } from "../../../../app/api/broker/leads/[id]/reply/route";
+import { GET as getRequirements, POST as postRequirement } from "../../app/api/requirements/route";
+import { GET as getSavedSearches, POST as postSavedSearch } from "../../app/api/saved-searches/route";
+import { DELETE as deleteSavedSearch } from "../../app/api/saved-searches/[id]/route";
+import { GET as getLeads } from "../../app/api/broker/leads/route";
+import { DELETE as deleteLead } from "../../app/api/broker/leads/[id]/route";
+import { POST as replyToLead } from "../../app/api/broker/leads/[id]/reply/route";
 import { resetRequirementStoreForTests } from "@/lib/requirements";
 import { resetSavedSearchStoreForTests } from "@/lib/saved-search/saved-search";
 import { createLead, resetLeadStoreForTests } from "@/lib/leads/lead";

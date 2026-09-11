@@ -35,7 +35,7 @@ function rendersViaSharedModule(src: string, array: string | undefined): boolean
   if (!modulePath) return false;
   // Find every other file importing the same constant from the same module.
   const consumers = execSync(
-    `grep -rl "${array}" client/src app --include='*.tsx' || true`,
+    `grep -rl "${array}" src app --include='*.tsx' || true`,
     { encoding: "utf8" },
   )
     .split("\n")

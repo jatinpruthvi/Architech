@@ -19,7 +19,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 
-const MIGRATION = "prisma/migrations/202609030004_row_level_security/migration.sql";
+const MIGRATION = "db/migrations/202609030004_row_level_security/migration.sql";
 
 /* Tables holding one tenant's private data. Adding a tenant-owned table
    without adding it here is itself the bug this list prevents. */

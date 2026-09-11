@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cities } from "@/lib/cities";
 import { localities } from "@/lib/localities";
 /* The seed registry is plain ESM; vitest resolves .mjs exactly like node. */
-import { CITIES, LOCALITIES } from "../../../prisma/seed-registry.mjs";
+import { CITIES, LOCALITIES } from "../../db/seed-registry.mjs";
 
 /* Entity locale completeness (P1-I18N-001).
  *

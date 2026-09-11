@@ -9,8 +9,8 @@ const database = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/repositories/server/prisma", () => ({ getPrismaClient: () => database }));
-import { GET as getCoverage } from "../../../../../app/api/locations/status/route";
-import { GET as getStates } from "../../../../../app/api/locations/states/route";
+import { GET as getCoverage } from "../../../app/api/locations/status/route";
+import { GET as getStates } from "../../../app/api/locations/states/route";
 import { getIndiaLocationCoverageForServer } from "./coverage";
 
 const now = new Date("2026-08-30T12:00:00.000Z");

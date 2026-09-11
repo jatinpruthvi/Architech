@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const environments = JSON.parse(readFileSync("config/governance/environments/phase-1-environments.json", "utf8"));
-const secrets = JSON.parse(readFileSync("config/governance/secrets/phase-1-secret-inventory.json", "utf8"));
+const environments = JSON.parse(readFileSync("ops/config/governance/environments/phase-1-environments.json", "utf8"));
+const secrets = JSON.parse(readFileSync("ops/config/governance/secrets/phase-1-secret-inventory.json", "utf8"));
 
 describe("production environment provisioning plan", () => {
   it("defines preview, staging, and production", () => {
