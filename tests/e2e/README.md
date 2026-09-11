@@ -108,4 +108,4 @@ the same credentials will succeed or fail depending on which worker answers.
 Live mode is therefore **single-process only** until the Prisma adapter lands
 (`docs/auth/live-better-auth-handoff.md`). The live suite pins its server to one
 worker so the flows are testable; the limitation itself is documented in
-`client/src/lib/auth/server-auth.ts`.
+`src/lib/auth/server-auth.ts`.

@@ -1063,7 +1063,7 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
    Type sizes are declared HERE (layered, no `!important`): the previous
    `!text-[9px]` / `!text-[10px]` call-site overrides existed only because
    `.stamp` and `.kicker` sat in an unlayered block. They must not come back —
-   `client/src/lib/ui/design-token-discipline.test.ts` fails the build on them. */
+   `src/lib/ui/design-token-discipline.test.ts` fails the build on them. */
 @layer components {
   /* Lists stay unmarked but keep their semantics. Safari + VoiceOver drop a
      list's role the moment list-style is removed, and preflight removes it
