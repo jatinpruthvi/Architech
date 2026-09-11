@@ -83,6 +83,17 @@ export const ALLOWED_ENV_KEYS = [
   "NEXT_PUBLIC_R2_PUBLIC_BASE_URL",
   "NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE",
   "SEO_REGISTRY_TTL_MS",
+  /* Reconciled 2026-09-10 (PR #70 parity): these 4 keys are read from
+     process.env by the leads/calling feature (client/src/lib/leads/,
+     client/src/lib/plans/) and were previously missed here.
+     env-catalog-parity.test.ts direction A now catches this class of drift. */
+  "ARCHITECH_BROKER_PLAN_STATUS",
+  "ARCHITECH_CALLING_HOURS_IST",
+  "ARCHITECH_LEAD_CALL_ATTEMPT_LIMIT",
+  "ARCHITECH_LEAD_RETENTION_DAYS",
+  /* Owner-only super-admin login (app/api/auth/super/sign-in) — scrypt hash
+     of the owner's password; the plaintext never enters the repo or DB. */
+  "ARCHITECH_SUPER_ADMIN_PASSWORD_HASH",
 ] as const;
 
 /** Risk keywords that reveal a stray secret in source or a rendered URL. */

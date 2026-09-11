@@ -1,4 +1,5 @@
 import { getListingById } from "@/lib/repositories";
+import { OUTCOME_RULES, type CallOutcome, type OutcomeRule } from "./calling";
 
 export type LeadMode = "MASKED" | "DIRECT_CONSENTED";
 export type LeadStatus = "NEW" | "ACKNOWLEDGED" | "REPLIED" | "CLOSED" | "DELETED";
@@ -81,6 +82,22 @@ export type LeadResult =
 const leadsByKey = new Map<string, LeadRecord>();
 const contactByLeadId = new Map<string, string>();
 
+/* Fixture-mode call state (spec §5 "both-store parity"): mirrors the prisma
+   LeadCallLog + Lead stage/callAttempts/callSuppressedAt updates so the full
+   detail → reveal → dial → log → stage-change flow works in memory mode
+   (local dev + e2e) with no database. */
+export type FixtureCallEntry = {
+  outcome: string;
+  stageBefore: string;
+  stageAfter: string;
+  nextActionAt: string | null;
+  note: string | null;
+  lostReason: string | null;
+  /** When the outcome was logged (ISO). Stamped by recordFixtureCall. */
+  at: string;
+};
+const callsByLeadId = new Map<string, FixtureCallEntry[]>();
+
 export function maskPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 4) return "••••";
@@ -129,7 +146,9 @@ export function createLead(input: LeadInput): LeadResult {
     mode: input.mode ?? "MASKED",
     status: "NEW",
     consentText: input.consentText.trim(),
-    consentClass: input.consentClass,
+    /* Both-store parity (spec §5): the prisma write path already defaults
+       consentClass to first-party-form; the fixture store must match. */
+    consentClass: input.consentClass ?? "first-party-form",
     idempotencyKey: key,
     auditEvent: {
       id: stableId("audit", `${key}:lead.created`),
@@ -208,7 +227,58 @@ export function getFixtureLeadContact(id: string): string | null {
   return contactByLeadId.get(id) ?? null;
 }
 
+/** Fixture-mode call logging: mirrors the prisma LeadCallLog update path so
+    the detail → dial → log flow works without a database (e2e + demo). */
+export function recordFixtureCall(
+  leadId: string,
+  entry: { outcome: string; stageBefore: string; stageAfter: string; nextActionAt: string | null; note: string | null; lostReason: string | null },
+): void {
+  const calls = callsByLeadId.get(leadId) ?? [];
+  calls.push({ ...entry, at: new Date().toISOString() });
+  callsByLeadId.set(leadId, calls);
+}
+
+/** Fixture-mode metrics for the call-result panel (overdue / outcomes / lost
+    reasons). Mirrors getLeadMetricsForServer's prisma branch, computed over
+    the in-memory call store. The store is bounded by design, so no row cap. */
+export function fixtureCallMetrics(organizationId: string): { overdue: number; outcomes: Record<string, number>; lostReasons: Record<string, number> } {
+  const outcomes: Record<string, number> = {};
+  const lostReasons: Record<string, number> = {};
+  let overdue = 0;
+  const now = Date.now();
+  for (const lead of listLeads()) {
+    if (lead.organizationId !== organizationId || lead.status === "DELETED") continue;
+    for (const call of callsByLeadId.get(lead.id) ?? []) {
+      outcomes[call.outcome] = (outcomes[call.outcome] ?? 0) + 1;
+      if (call.nextActionAt && new Date(call.nextActionAt).getTime() <= now) overdue += 1;
+      if (call.lostReason) lostReasons[call.lostReason] = (lostReasons[call.lostReason] ?? 0) + 1;
+    }
+  }
+  return { overdue, outcomes, lostReasons };
+}
+
+/** Read-side of the fixture call state for the single-lead detail contract.
+    Suppression is derived from OUTCOME_RULES (the single source of truth for
+    which outcomes put a number on the do-not-call list), never re-listed. */
+export function fixtureLeadDetail(
+  id: string,
+  organizationId: string,
+): { stage: string; callAttempts: number; suppressed: boolean; nextActionAt: string | null; callHistory: FixtureCallEntry[] } | null {
+  const lead = findLeadForOrganization(id, organizationId);
+  if (!lead) return null;
+  const calls = callsByLeadId.get(id) ?? [];
+  const last = calls.at(-1);
+  return {
+    stage: last?.stageAfter ?? "NEW",
+    callAttempts: calls.length,
+    suppressed: calls.some((call) => (OUTCOME_RULES as Record<string, OutcomeRule | undefined>)[call.outcome as CallOutcome]?.suppressesContact === true),
+    nextActionAt: last?.nextActionAt ?? null,
+    callHistory: calls.map((call) => ({ ...call })),
+  };
+}
+
 export function resetLeadStoreForTests() {
   leadsByKey.clear();
   contactByLeadId.clear();
+  callsByLeadId.clear();
 }

@@ -158,7 +158,7 @@ The comment at `:18-22` explains the gate: *"the counterparty's business number 
 | # | Decision | Answer |
 |---|---|---|
 | D1 | Where does the callable number come from? | **Store it encrypted** — `phoneCiphertext` + `phoneLast4` on `Lead`, mirroring `Requirement`. |
-| D3 | When is the number revealed? | **Gated on an activated broker plan.** A broker who has not activated a plan cannot view or call; reveal becomes a plan entitlement. |
+| D3 | When is the number revealed? | **Gated on an activated broker plan.** A broker who has not activated a plan cannot view or call; reveal becomes a plan entitlement. _Final mechanism (10 Sep 2026): per-organization via `MarketplaceSubscription`, manual owner activation on `/admin/plans`, `ARCHITECH_BROKER_PLAN_STATUS` as explicit override._ |
 | D5 | Scope of the first pass | **Full v8 workflow** — this document's Phases 1–5 plus the parent doc's area routing, WhatsApp number routing, manager funnel and ERPNext projection. |
 | D2 | Buyer consent copy | **OPEN — legal/DPDP review.** Blocks Phase 2. |
 | D4 | Calling hours + attempt limit values | **OPEN.** Proposed `09:00-20:00` IST and 3 attempts; provisional values are implemented and configurable. |
@@ -327,6 +327,8 @@ Each phase is independently shippable and leaves `pnpm quality` green.
 
 ### Phase 1 — Mobile shell fixes, no data change (1–2 days)
 - [ ] M1: server-render broker page structure + skeleton (all 6 routes) — **highest value; also unblocks measuring authenticated surfaces (§11.1)**
+
+  _M1 deferred; this pass completes Phases 2–4 per `docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md`._
 - [ ] M3: `PropertyCard` grid mobile-first
 - [x] M4: `/broker/leads/[id]/` detail route — **prototyped, see §11**
 - [x] Sticky bottom action bar with WhatsApp — **prototyped; the call action is wired but reveals from fixtures, not the API**
@@ -334,27 +336,28 @@ Each phase is independently shippable and leaves `pnpm quality` green.
 - **Exit:** `pnpm audit:mobile` shows ≥200 elements on broker routes, 0 fixedGrid findings, token counts down.
 
 ### Phase 2 — Encrypted contact storage (2–3 days) *(needs D1, D2)*
-- [ ] Migration: `phoneCiphertext`, `phoneLast4`, `consentClass` on `Lead`
-- [ ] Extract `requirements.server.ts`'s AES-GCM envelope into a shared `lib/interop/contact-crypto.ts` (one implementation, two callers — do **not** copy-paste the cipher)
-- [ ] Write ciphertext on lead creation in **both** stores
-- [ ] Structured `consentClass` capture on the enquiry form + reviewed copy
+- [x] Migration: `phoneCiphertext`, `phoneLast4`, `consentClass` on `Lead`
+- [x] Extract `requirements.server.ts`'s AES-GCM envelope into a shared `lib/interop/contact-crypto.ts` (one implementation, two callers — do **not** copy-paste the cipher)
+- [x] Write ciphertext on lead creation in **both** stores
+- [x] Structured `consentClass` capture on the enquiry form + reviewed copy
+  _Structured `consentClass` capture landed (defaults to `first-party-form`, registry-gated reveal); the D2 buyer-facing wording remains held for legal review._
 - [ ] Purge: extend `scripts/privacy/purge-expired-requirements.mjs` posture to leads — ciphertext deleted at retention expiry, tombstone kept
 - **Exit:** round-trip test (encrypt → decrypt → `telLink`), erasure drill, `pnpm db:validate`.
 
 ### Phase 3 — Gated reveal + Call from SIM (2–3 days) *(needs D3, D4)*
-- [ ] `lib/leads/contact.ts` gate, modelled on `publish.ts:counterpartyContact`
-- [ ] `POST …/reveal` with `AuditEvent` write
-- [ ] `tel:` button on detail route; `blockedReason` surfaced as copy, never a dead button
-- [ ] Calling-hours + attempt-limit + suppression enforcement, all server-side
-- [ ] Unit tests mirroring `publish.test.ts` / `server.test.ts:210`
+- [x] `lib/leads/contact.ts` gate, modelled on `publish.ts:counterpartyContact` _(shipped as `lib/leads/calling.ts` + `calling-server.ts`)_
+- [x] `POST …/reveal` with `AuditEvent` write
+- [x] `tel:` button on detail route; `blockedReason` surfaced as copy, never a dead button
+- [x] Calling-hours + attempt-limit + suppression enforcement, all server-side
+- [x] Unit tests mirroring `publish.test.ts` / `server.test.ts:210`
 - **Exit:** every gate has a test that asserts the *blocked* path; masked list contract provably unchanged.
 
 ### Phase 4 — Post-call result sheet (2 days)
-- [ ] `LeadCallLog` model + migration
-- [ ] vaul sheet on `visibilitychange`, dynamically imported
-- [ ] §3 outcome→stage mapping as a pure tested function
-- [ ] Required next-action / lost-reason validation
-- [ ] Overdue-follow-up sort on the list
+- [x] `LeadCallLog` model + migration
+- [x] vaul sheet on `visibilitychange`, dynamically imported
+- [x] §3 outcome→stage mapping as a pure tested function
+- [x] Required next-action / lost-reason validation
+- [ ] Overdue-follow-up sort on the list _(out of the approved spec's scope; the metrics panel shows the overdue count)_
 - **Exit:** a no-answer call leaves the stage unchanged and schedules a retry; a not-interested call suppresses the number permanently.
 
 ### Phase 5 — WhatsApp + manager view (2 days, optional per D5)
@@ -420,7 +423,9 @@ Built so the calling ergonomics can be felt on a phone **before** committing to 
 |---|---|---|
 | Calling domain logic — outcomes, stages, §3 mapping, reveal gate, IST calling hours | `client/src/lib/leads/calling.ts` | **Ships.** Pure and server-safe; Phase 3 moves `decideReveal` behind the reveal endpoint. |
 | Tests for the above (20) | `client/src/lib/leads/calling.test.ts` | **Ships.** |
-| Prototype fixtures — 5 leads covering hot / follow-up-due / attempt-limit / suppressed / not-stored | `client/src/lib/leads/calling-prototype-data.ts` | **Delete** when Phases 2–3 land. |
+| Prototype fixtures — 5 leads covering hot / follow-up-due / attempt-limit / suppressed / not-stored | `client/src/lib/leads/calling-prototype-data.ts` | **Deleted 10 Sep 2026** — fixture mode runs the real lead store + call parity instead. |
+| Prototype controls panel (plan switch / closed-hours toggle / lead picker) | `client/src/pages/BrokerLeadDetail.tsx` | **Deleted 10 Sep 2026** — the server is the only gate authority. |
+| Duplicate catalog (env allow-list drift source behind the PR #70 CI failure) | `client/src/lib/leads/hygiene.ts` | **Deleted 10 Sep 2026** — `operations/hygiene.ts` is the single catalog. |
 | Post-call result sheet (vaul drawer, dynamically imported) | `client/src/components/broker/CallResultSheet.tsx` | **Ships.** |
 | Lead detail surface + thumb-anchored call bar | `client/src/pages/BrokerLeadDetail.tsx` | **Ships**, minus the prototype control panel. |
 | Route `/broker/leads/[id]/` | `app/broker/leads/[id]/page.tsx` | **Ships.** Fixes M4. |
