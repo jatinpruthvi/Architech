@@ -1,6 +1,6 @@
 import type { ListerType } from "@/lib/listing/lister-type";
 
-export type AuthRole = "BUYER" | "BROKER_MEMBER" | "BROKER_ADMIN" | "MODERATOR" | "ADMIN";
+export type AuthRole = "BUYER" | "BROKER_MEMBER" | "BROKER_ADMIN" | "MODERATOR" | "ADMIN" | "SUPER_ADMIN";
 
 export type AuthOrganization = {
   id: string;
@@ -35,7 +35,7 @@ export type AuthSession = {
   };
   organization?: AuthOrganization;
   permissions: string[];
-  source: "better-auth-contract-demo" | "better-auth-live";
+  source: "better-auth-contract-demo" | "better-auth-live" | "super-admin";
 };
 
 export const roleRank: Record<AuthRole, number> = {
@@ -44,6 +44,9 @@ export const roleRank: Record<AuthRole, number> = {
   BROKER_ADMIN: 20,
   MODERATOR: 30,
   ADMIN: 40,
+  /* The owner's master account (spec §6). Above ADMIN in rank, but it acts
+     through its two permission grants, NOT through the ADMIN bypass. */
+  SUPER_ADMIN: 50,
 };
 
 export const demoBrokerSession: AuthSession = {
@@ -164,6 +167,9 @@ const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
   /* ADMIN bypasses checks via `requirePermission`; the list exists so a
      session introspection shows the role's surface. */
   ADMIN: ["platform.admin"],
+  /* SUPER_ADMIN acts through exactly these grants — there is deliberately
+     no ADMIN-style bypass (spec §6). */
+  SUPER_ADMIN: ["admin.plans.read", "admin.plans.write"],
 };
 
 export function permissionsForRole(role: AuthRole): string[] {

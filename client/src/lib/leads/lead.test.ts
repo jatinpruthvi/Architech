@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { createLead, findLeadForOrganization, listActiveLeads, listLeads, maskPhone, resetLeadStoreForTests, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput } from "./lead";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { demoBrokerSession } from "@/lib/auth/roles";
+import { createLead, fixtureLeadDetail, findLeadForOrganization, listActiveLeads, listLeads, maskPhone, recordFixtureCall, resetLeadStoreForTests, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput } from "./lead";
 import { getLeadStorageMode } from "./source";
 
 const ORG = "org-alpha";
@@ -88,5 +89,58 @@ describe("lead consent/audit workflow", () => {
     const revoked = revokeLeadConsent(created.lead.id);
     expect(revoked.ok).toBe(true);
     if (revoked.ok) expect(revoked.lead.status).toBe("DELETED");
+  });
+});
+
+describe("fixture call state (both-store parity, spec §5)", () => {
+  beforeEach(() => {
+    resetLeadStoreForTests();
+    vi.stubEnv("ARCHITECH_LEAD_STORAGE", "memory");
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  const createLeadForServerSync = () =>
+    createLead({
+      listingId: "garden-courtyard",
+      name: "Test Buyer",
+      phone: "07941234567",
+      message: "Is this 3 BHK still available this week?",
+      consentText: "I agree to being contacted about this enquiry.",
+      organizationId: demoBrokerSession.organization?.id ?? null,
+    });
+
+  function makeLead() {
+    const result = createLeadForServerSync();
+    if (!result.ok) throw new Error("fixture lead should create");
+    return result.lead.id;
+  }
+
+  it("createLead defaults consentClass to first-party-form like the prisma path", async () => {
+    const { createLeadForServer } = await import("./server");
+    const result = await createLeadForServer({
+      listingId: "garden-courtyard",
+      name: "Consent Buyer",
+      phone: "07941234568",
+      message: "Is this 3 BHK still available this week?",
+      consentText: "I agree to being contacted about this enquiry.",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.lead.consentClass).toBe("first-party-form");
+  });
+
+  it("recordFixtureCall advances stage, attempts and suppression", () => {
+    const id = makeLead();
+    recordFixtureCall(id, { outcome: "NO_ANSWER", stageBefore: "NEW", stageAfter: "CONTACTED", nextActionAt: "2026-09-11T09:00:00.000Z", note: "ringing", lostReason: null });
+    const detail = fixtureLeadDetail(id, demoBrokerSession.organization!.id)!;
+    expect(detail.stage).toBe("CONTACTED");
+    expect(detail.callAttempts).toBe(1);
+    expect(detail.suppressed).toBe(false);
+    expect(detail.nextActionAt).toBe("2026-09-11T09:00:00.000Z");
+    expect(detail.callHistory).toHaveLength(1);
+    recordFixtureCall(id, { outcome: "NOT_INTERESTED", stageBefore: "CONTACTED", stageAfter: "LOST", nextActionAt: null, note: null, lostReason: "went with another broker" });
+    const after = fixtureLeadDetail(id, demoBrokerSession.organization!.id)!;
+    expect(after.suppressed).toBe(true);
+    expect(after.callAttempts).toBe(2);
+    expect(after.stage).toBe("LOST");
   });
 });

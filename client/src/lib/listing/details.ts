@@ -1,5 +1,5 @@
 import "server-only";
-import { findLeadForOrganization, type LeadDetailRecord } from "../leads/lead";
+import { fixtureCallMetrics, fixtureLeadDetail, findLeadForOrganization, type LeadDetailRecord } from "../leads/lead";
 import { isPrismaLeadStorage } from "../leads/source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
 import { assertLeadBelongsToOrg } from "../leads/server";
@@ -15,7 +15,22 @@ export async function getLeadDetailForServer(id: string, organizationId: string)
   if (!isPrismaLeadStorage()) {
     const lead = findLeadForOrganization(id, organizationId);
     if (!lead) return { ok: false, status: 404, errors: ["Lead not found."] };
-    return { ok: true, lead: { ...lead, stage: "NEW", callAttempts: 0, maxAttempts: 3, suppressed: false, nextActionAt: null, callHistory: [] } };
+    /* Both-store parity (spec §5): fixture call state — stage, attempts,
+       suppression, next action and history — comes from the fixture store,
+       exactly as the prisma branch reads Lead + LeadCallLog. */
+    const state = fixtureLeadDetail(id, organizationId);
+    return {
+      ok: true,
+      lead: {
+        ...lead,
+        stage: state?.stage ?? "NEW",
+        callAttempts: state?.callAttempts ?? 0,
+        maxAttempts: 3,
+        suppressed: state?.suppressed ?? false,
+        nextActionAt: state?.nextActionAt ?? null,
+        callHistory: (state?.callHistory ?? []).map((call) => ({ outcome: call.outcome, stageBefore: call.stageBefore, stageAfter: call.stageAfter, nextActionAt: call.nextActionAt, note: call.note, createdAt: call.at })),
+      },
+    };
   }
   const db = getPrismaClient() as unknown as { lead: { findFirst(args: unknown): Promise<Record<string, unknown> | null> } };
   const row = await db.lead.findFirst({ where: { id, organizationId, deletedAt: null }, include: { listing: { select: { title: true, stableId: true, brokerOrg: { select: { name: true } } } }, callLogs: { orderBy: { createdAt: "asc" } } } });
@@ -29,7 +44,12 @@ export async function getLeadDetailForServer(id: string, organizationId: string)
 }
 
 export async function getLeadMetricsForServer(organizationId: string): Promise<{ overdue: number; outcomes: Record<string, number>; lostReasons: Record<string, number> }> {
-  if (!organizationId || !isPrismaLeadStorage()) return { overdue: 0, outcomes: {}, lostReasons: {} };
+  if (!organizationId) return { overdue: 0, outcomes: {}, lostReasons: {} };
+  /* Both-store parity (spec §5): fixture mode computes the same panel from
+     the in-memory call store — before this the inbox's call-result panel
+     silently rendered zeros (and, the route itself being absent, never
+     rendered at all). */
+  if (!isPrismaLeadStorage()) return fixtureCallMetrics(organizationId);
   const db = getPrismaClient() as unknown as { leadCallLog: { findMany(args: unknown): Promise<Array<Record<string, unknown>>> } };
   const rows = await db.leadCallLog.findMany({ where: { organizationId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 5000, select: { outcome: true, lostReason: true, nextActionAt: true } });
   const outcomes: Record<string, number> = {};

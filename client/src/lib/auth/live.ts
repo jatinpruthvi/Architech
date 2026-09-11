@@ -1,6 +1,7 @@
 import { demoBrokerSession, type AuthOrganization, type AuthRole, type AuthSession } from "./roles";
 import type { ListerType } from "@/lib/listing/lister-type";
 import { getAuthSourceMode, validateBetterAuthEnvironment } from "./source";
+import { SUPER_ADMIN_COOKIE, superAdminSessionFromCookie } from "./super-admin";
 
 export type BetterAuthClaims = {
   userId: string;
@@ -37,6 +38,15 @@ export function getAuthReadiness(source = getAuthSourceMode()) {
 export async function getSessionContractForRequest(request: Request): Promise<{ session: AuthSession | null; source: AuthSession["source"] | "better-auth-not-configured"; missing: string[] }> {
   const url = new URL(request.url);
   if (url.searchParams.get("mode") === "none") return { session: null, source: "better-auth-contract-demo", missing: [] };
+
+  /* Super-admin cookie (spec §6.3): checked before any auth source so the
+     owner's plan-activation session works under demo AND live mode. A cookie
+     with no BETTER_AUTH_SECRET in the environment is simply ignored. */
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  if (cookieHeader.includes(SUPER_ADMIN_COOKIE)) {
+    const superSession = superAdminSessionFromCookie(cookieHeader, process.env.BETTER_AUTH_SECRET);
+    if (superSession) return { session: superSession, source: "super-admin", missing: [] };
+  }
 
   const source = url.searchParams.get("source") === "better-auth" ? "better-auth" : getAuthSourceMode();
   if (source === "demo") {

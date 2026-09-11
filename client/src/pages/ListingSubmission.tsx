@@ -4,8 +4,7 @@
    draft, then lets the broker submit it for review (source trail + media-rights
    gate). Validation and status feedback are shown inline; the moderation queue
    reads the same persisted drafts. */
-import { ArrowUpRight, CheckCircle2, FileCheck2, Loader2, ShieldCheck, XCircle } from "lucide-react";
-import Link from "next/link";
+import { CheckCircle2, FileCheck2, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useTitle from "@/hooks/useTitle";
@@ -500,7 +499,6 @@ export default function ListingSubmission() {
             <li className="flex gap-2"><FileCheck2 size={15} className="mt-0.5 text-brick" /> Description has source context</li>
           </ul>
           <div className="mt-7 border-t border-ink/12 pt-4 stamp text-ink/45">CITY · LOCALITY · PIN · PRICE · MEDIA RIGHTS · RERA</div>
-          <Link href="/admin/moderation/listings" className="mt-7 inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">View moderation queue <ArrowUpRight size={14} /></Link>
         </aside>
       </section>
     </div>

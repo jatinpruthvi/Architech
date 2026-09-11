@@ -27,6 +27,10 @@ type PrismaClientLike = {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
   };
+  marketplaceSubscription: {
+    findMany(args: unknown): Promise<unknown[]>;
+    findFirst(args: unknown): Promise<unknown | null>;
+  };
 };
 
 declare global {
