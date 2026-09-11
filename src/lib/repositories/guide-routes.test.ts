@@ -22,7 +22,7 @@ describe("scope-aware guide routes", () => {
 
   it("has one dynamic implementation per route kind, with no Ahmedabad-only shadow route", () => {
     for (const kind of ["city", "locality", "rera"] as GuideRouteKind[]) {
-      const dynamicPage = resolve(root, `app/guide/${kind}/[scope]/[slug]/page.tsx`);
+      const dynamicPage = resolve(root, `src/app/guide/${kind}/[scope]/[slug]/page.tsx`);
       expect(existsSync(dynamicPage)).toBe(true);
       expect(readFileSync(dynamicPage, "utf8")).toContain("getGuideByScope(ROUTE_KIND, scope, slug)");
     }

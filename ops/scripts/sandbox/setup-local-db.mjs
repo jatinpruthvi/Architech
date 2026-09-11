@@ -50,6 +50,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
+  "..",
   ".."
 );
 const SANDBOX_DIR = path.join(repoRoot, "tmp", "sandbox");
@@ -566,7 +567,7 @@ function seedDatabase() {
   log("seeding ...");
   const r = spawnSync(
     process.execPath,
-    [path.join(repoRoot, "prisma", "seed.mjs")],
+    [path.join(repoRoot, "db", "seed.mjs")],
     {
       cwd: repoRoot,
       stdio: "inherit",

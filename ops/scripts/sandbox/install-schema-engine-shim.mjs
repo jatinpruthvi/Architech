@@ -28,7 +28,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, "..", "..");
+const repoRoot = path.resolve(here, "..", "..", "..");
 const SHIM_SRC = path.join(here, "schema-engine-shim.cjs");
 
 function enginesDir() {

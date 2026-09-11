@@ -21,7 +21,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
 const css = readFileSync(path.join(root, "src/theme.css"), "utf8");
 
 /* ---------------- token resolution ---------------- */

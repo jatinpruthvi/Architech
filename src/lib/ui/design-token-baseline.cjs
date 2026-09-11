@@ -11,7 +11,7 @@ const { readFileSync, writeFileSync } = require("node:fs");
 const { execSync } = require("node:child_process");
 
 const out = execSync(
-  "grep -rl --include='*.tsx' '' src app | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
+  "grep -rl --include='*.tsx' '' src | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
   { encoding: "utf8" }
 ).split("\n").filter(Boolean);
 

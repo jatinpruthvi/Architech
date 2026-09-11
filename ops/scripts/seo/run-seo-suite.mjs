@@ -17,7 +17,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
 /* Pin an EMPTY value rather than deleting: Next hydrates absent variables
    from .env at build AND runtime, so deleting would let a local prisma

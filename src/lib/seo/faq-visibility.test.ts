@@ -15,7 +15,7 @@ import { execSync } from "node:child_process";
  * pairing. It is deliberately a source-level check: it is the only place that
  * can see "schema emitted but nothing rendered". */
 
-const routes = execSync("grep -rl 'buildFaqPage' app --include='*.tsx'", { encoding: "utf8" })
+const routes = execSync("grep -rl 'buildFaqPage' src/app --include='*.tsx'", { encoding: "utf8" })
   .split("\n")
   .filter(Boolean);
 
@@ -35,7 +35,7 @@ function rendersViaSharedModule(src: string, array: string | undefined): boolean
   if (!modulePath) return false;
   // Find every other file importing the same constant from the same module.
   const consumers = execSync(
-    `grep -rl "${array}" src app --include='*.tsx' || true`,
+    `grep -rl "${array}" src --include='*.tsx' || true`,
     { encoding: "utf8" },
   )
     .split("\n")

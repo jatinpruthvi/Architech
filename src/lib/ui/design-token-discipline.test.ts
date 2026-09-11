@@ -24,7 +24,7 @@ type Budget = { alphaText?: number; microText?: number; nanoText?: number };
 const baseline = JSON.parse(readFileSync("src/lib/ui/design-token-baseline.json", "utf8")) as Record<string, Budget>;
 
 const legacyFiles = execSync(
-  "grep -rl --include='*.tsx' '' src app | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
+  "grep -rl --include='*.tsx' '' src | grep -v '\\.test\\.' | grep -v '\\.stories\\.'",
   { encoding: "utf8" },
 )
   .split("\n")
@@ -33,8 +33,8 @@ const legacyFiles = execSync(
 const source = (file: string) => readFileSync(file, "utf8");
 const countIn = (pattern: RegExp) => legacyFiles.reduce((sum, f) => sum + (source(f).match(pattern) ?? []).length, 0);
 
-/** Files may be listed under either path spelling; resolve to what grep printed. */
-const file0 = (f: string) => (baseline[f] ? f : f.replace(/^client\/src\//, ""));
+/** Baseline keys mirror the `src` scan output exactly. */
+const file0 = (f: string) => f;
 
 const hex = (value: string) => value.match(/^#([0-9a-f]{6})$/i)?.[1] ?? "";
 const luminance = (value: string) => {

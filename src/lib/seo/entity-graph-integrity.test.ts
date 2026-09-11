@@ -16,7 +16,7 @@ import { getCities, getLocalities } from "@/lib/repositories";
  *
  * Both are properties of the route files, so this test reads them. */
 
-const routeFiles = execSync("grep -rl '@type' app --include='*.tsx'", { encoding: "utf8" })
+const routeFiles = execSync("grep -rl '@type' src/app --include='*.tsx'", { encoding: "utf8" })
   .split("\n")
   .filter(Boolean);
 
