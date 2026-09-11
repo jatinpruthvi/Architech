@@ -6,6 +6,21 @@ export type Lang = "en" | "hi";
 export const strings = {
   en: {
     nav: { explore: "Explore cities", rent: "Rent", find: "Find a home", notes: "Field notes", saved: "Saved", start: "Start exploring", list: "List your property" },
+    /* Install affordance (PWA slice). The prompt path is the browser's own
+       beforeinstallprompt UI; the steps path is the manual Share → Add to Home
+       Screen flow iOS Safari requires. */
+    install: {
+      label: "Install app",
+      menuLabel: "Install the Architech app",
+      dialogTitle: "Install Architech",
+      dialogDescription: "Add Architech to your home screen for full-screen browsing and quick access to your saved homes.",
+      stepsTitle: "On iPhone or iPad",
+      stepShare: "Tap the Share button in Safari's toolbar.",
+      stepAdd: "Choose Add to Home Screen.",
+      stepConfirm: "Tap Add — Architech then opens like an app.",
+      dismiss: "Not now",
+      installed: "Architech is installed",
+    },
     palette: {
       open: "Search or jump — press ⌘K",
       label: "Command palette",
@@ -159,6 +174,18 @@ export const strings = {
   },
   hi: {
     nav: { explore: "भारत के शहर देखें", rent: "किराया", find: "घर खोजें", notes: "फ़ील्ड नोट्स", saved: "सहेजे गए", start: "खोज शुरू करें", list: "अपनी संपत्ति सूचीबद्ध करें" },
+    install: {
+      label: "ऐप इंस्टॉल करें",
+      menuLabel: "Architech ऐप इंस्टॉल करें",
+      dialogTitle: "Architech इंस्टॉल करें",
+      dialogDescription: "फ़ुल-स्क्रीन ब्राउज़िंग और सहेजे गए घरों तक तेज़ पहुँच के लिए Architech को होम स्क्रीन पर जोड़ें।",
+      stepsTitle: "iPhone या iPad पर",
+      stepShare: "Safari के टूलबार में Share बटन दबाएँ।",
+      stepAdd: "Add to Home Screen चुनें।",
+      stepConfirm: "Add दबाएँ — Architech ऐप की तरह खुलेगा।",
+      dismiss: "अभी नहीं",
+      installed: "Architech इंस्टॉल हो गया",
+    },
     palette: {
       open: "खोजें या सीधे जाएँ — ⌘K दबाएँ",
       label: "कमांड पैलेट",

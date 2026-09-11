@@ -32,6 +32,12 @@ jobs:
         run: pnpm test
       - name: Production build
         run: pnpm build
+      # Boots the static publisher (dist/index.js) on an ephemeral port and
+      # asserts the PWA install contract against the bytes that ship — manifest
+      # fields, reachable icons, a fetch-handling worker that is never
+      # long-cached. Exit 1 on regression.
+      - name: PWA installability audit
+        run: pnpm audit:pwa:ci
       - name: No-JavaScript SEO smoke tests
         run: pnpm test:seo
       # Links-first crawl over the production build: no broken links, canonicals

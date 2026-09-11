@@ -16,6 +16,7 @@ import Providers from "@/components/architech/Providers";
 import Header from "@/components/architech/Header";
 import Footer from "@/components/architech/Footer";
 import WebVitalsReporter from "@/components/architech/WebVitalsReporter";
+import ServiceWorkerRegistrar from "@/components/architech/ServiceWorkerRegistrar";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { organizationJsonLd } from "@/lib/seo/organization";
@@ -53,9 +54,20 @@ export const metadata: Metadata = {
     images: [{ ...defaultSocialImage(), alt: "Indian contemporary architecture at golden hour" }],
   },
   twitter: { card: "summary_large_image" },
+  /* iOS ignores the manifest's icons and display mode for home-screen
+     installs; these meta tags are what make Share → Add to Home Screen launch
+     full-screen with the right status bar and tile. */
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Architech" },
 };
 
-export const viewport: Viewport = { themeColor: "#180b05" };
+/* viewportFit:"cover" is what makes the env(safe-area-inset-*) values in
+   theme.css (.mobile-discovery-rail, .safe-bottom) non-zero on notched
+   iPhones: without it WebKit keeps the page inside the safe region, every
+   inset computes to 0px, and the fixed mobile rails sit under the home
+   indicator. Zoom stays enabled — pinching is an accessibility affordance,
+   not a bug to suppress. The appleWebApp half of the iOS install story lives
+   in `metadata` above: Next 16 types it on Metadata, not on Viewport. */
+export const viewport: Viewport = { themeColor: "#180b05", viewportFit: "cover" };
 
 const websiteJsonLd = {
   "@context": "https://schema.org",
@@ -97,6 +109,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body suppressHydrationWarning>
         {/* RUM heartbeat: reports LCP/INP/CLS/TTFB to /api/observability/web-vitals. */}
         <WebVitalsReporter />
+        {/* PWA: registers public/sw.js (offline shell) in production only. */}
+        <ServiceWorkerRegistrar />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
           <Header />

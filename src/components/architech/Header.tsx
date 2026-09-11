@@ -11,6 +11,7 @@ import { useLang } from "@/contexts/LangContext";
 import { useSession } from "@/contexts/SessionContext";
 import { loginUrlFor } from "@/lib/auth/redirects";
 import AccountMenu from "@/components/architech/AccountMenu";
+import InstallAppButton from "@/components/architech/InstallAppButton";
 import CommandPaletteLauncher from "@/components/architech/CommandPaletteLauncher";
 
 const RequirementCapture = dynamic(() => import("@/components/architech/RequirementCapture"), {
@@ -87,6 +88,7 @@ export default function Header() {
             <Bookmark size={14} strokeWidth={1.8} /> {t.nav.saved}
             {saved.length > 0 && <span className="clay-fill grid h-4.5 min-w-[18px] place-items-center rounded-full bg-brick px-1 text-[10px] font-bold text-cream">{saved.length}</span>}
           </Link>
+          <InstallAppButton onDark={onDark} />
           <AccountMenu onDark={onDark} />
           <CommandPaletteLauncher onDark={onDark} />
           <RequirementCapture compact />
@@ -106,6 +108,7 @@ export default function Header() {
             ))}
             <Link href="/requirements/" className="mt-6 stamp font-semibold text-brick">Tell us what you need →</Link>
             <Link href="/saved/" className="mt-3 stamp font-semibold text-brick">{t.nav.saved} {saved.length > 0 ? `(${saved.length})` : ""} →</Link>
+            <InstallAppButton variant="menu" />
             {session ? (
               <button type="button" onClick={() => { void signOut(); setOpen(false); }} className="mt-3 text-left stamp font-semibold text-brick">
                 Sign out ({session.user.name}) →

@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, normalize, relative as toRelative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const runtimeRoot = resolve(fileURLToPath(new URL(".", import.meta.url)));
@@ -21,9 +21,23 @@ const MIME_TYPES = {
   ".png": "image/png",
   ".svg": "image/svg+xml",
   ".txt": "text/plain; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".webp": "image/webp",
   ".woff2": "font/woff2",
 };
+
+/* PWA files must never be pinned immutable: a cached service worker is a
+   service worker that never updates, and a stale manifest silently changes the
+   installed app's name and icons. Mirrors the Cache-Control rules in
+   next.config.ts headers(). */
+const NO_CACHE_PATHS = new Set(["/sw.js", "/manifest.webmanifest"]);
+
+function cacheControlFor(filePath) {
+  if (filePath.endsWith("index.html")) return "no-cache";
+  const relativePath = `/${toRelative(publicRoot, filePath).split(sep).join("/")}`;
+  if (NO_CACHE_PATHS.has(relativePath)) return "no-cache";
+  return "public, max-age=31536000, immutable";
+}
 
 function safePath(requestUrl) {
   const pathname = decodeURIComponent(new URL(requestUrl, "http://architech.local").pathname);
@@ -52,7 +66,7 @@ const server = createServer(async (request, response) => {
 
     const body = await readFile(filePath);
     response.writeHead(200, {
-      "Cache-Control": filePath.endsWith("index.html") ? "no-cache" : "public, max-age=31536000, immutable",
+      "Cache-Control": cacheControlFor(filePath),
       "Content-Length": body.byteLength,
       "Content-Type": MIME_TYPES[extname(filePath).toLowerCase()] || "application/octet-stream",
       "X-Content-Type-Options": "nosniff",

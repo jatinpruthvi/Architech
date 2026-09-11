@@ -58,6 +58,10 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
+      /* Explicit rather than inherited from default-src: the PWA service worker
+         (public/sw.js) is same-origin, and a future default-src change must not
+         silently widen where workers may be loaded from. */
+      "worker-src 'self'",
       "base-uri 'self'",
       "object-src 'none'",
       `frame-ancestors ${frameAncestors}`,
@@ -125,6 +129,18 @@ const nextConfig: NextConfig = {
       {
         source: `/vendor/maplibre@${maplibreVersion}/:path*`,
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      /* PWA: a cached service worker is a service worker that never updates,
+         and a stale manifest silently changes the installed app's name and
+         icons. Both must revalidate on every visit. The static publisher
+         (ops/scripts/publish-server.mjs) carries the matching rule. */
+      {
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [{ key: "Cache-Control", value: "no-cache" }],
       },
     ];
     if (!isProduction) {

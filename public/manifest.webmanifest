@@ -2,12 +2,60 @@
   "name": "Architech — Property discovery across India",
   "short_name": "Architech",
   "description": "High-trust, locality-first property discovery across Indian cities.",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#241209",
   "theme_color": "#180b05",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": [
+    "business",
+    "lifestyle"
+  ],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explore cities",
+      "short_name": "Buy",
+      "url": "/buy/",
+      "description": "Browse homes for sale by city and locality"
+    },
+    {
+      "name": "Rental homes",
+      "short_name": "Rent",
+      "url": "/rent/",
+      "description": "Browse homes for rent"
+    },
+    {
+      "name": "Saved homes",
+      "short_name": "Saved",
+      "url": "/saved/",
+      "description": "Homes you saved on this device"
+    }
   ]
 }

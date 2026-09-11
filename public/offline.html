@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#180b05" />
+    <title>You are offline · Architech</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <!-- Served by the service worker (public/sw.js) when a navigation fails.
+         Everything is inline on purpose: this page has to render with the
+         network down and with nothing but the precached shell available. -->
+    <style>
+      :root {
+        color-scheme: dark;
+        --paper: #241209;
+        --cream: #fff3e4;
+        --brick: #f79b2e;
+        --ember: #ffbd66;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: max(24px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+        background: radial-gradient(
+          120% 90% at 50% 0%,
+          #3a1c0c 0%,
+          var(--paper) 62%
+        );
+        color: var(--cream);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        text-align: center;
+      }
+      .card {
+        max-width: 30rem;
+      }
+      /* The Architech arch mark, drawn in CSS so no image request is needed. */
+      .mark {
+        width: 64px;
+        height: 76px;
+        margin: 0 auto 28px;
+        border: 2px solid color-mix(in srgb, var(--cream) 55%, transparent);
+        border-bottom: none;
+        border-radius: 999px 999px 0 0;
+        position: relative;
+      }
+      .mark::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 22px;
+        height: 34px;
+        transform: translateX(-50%);
+        border: 2px solid var(--brick);
+        border-bottom: none;
+        border-radius: 999px 999px 0 0;
+      }
+      h1 {
+        font-size: 1.5rem;
+        line-height: 1.2;
+        margin: 0 0 12px;
+        letter-spacing: -0.02em;
+        font-weight: 600;
+      }
+      p {
+        margin: 0 auto 28px;
+        max-width: 24rem;
+        color: color-mix(in srgb, var(--cream) 72%, transparent);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 22px;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid color-mix(in srgb, var(--cream) 22%, transparent);
+        color: var(--cream);
+      }
+      a.primary {
+        background: var(--brick);
+        border-color: var(--brick);
+        color: #241209;
+      }
+      .stamp {
+        margin-top: 32px;
+        font-size: 0.6875rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--ember) 80%, transparent);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="mark" aria-hidden="true"></div>
+      <h1>You are offline</h1>
+      <p>
+        Architech needs a connection to load live listings, RERA context and
+        locality data. Reconnect and try again.
+      </p>
+      <div class="actions">
+        <a class="primary" href="/">Retry</a>
+        <a href="/buy/">Explore cities</a>
+      </div>
+      <p class="stamp">Architech · Find the place before the address</p>
+    </main>
+  </body>
+</html>

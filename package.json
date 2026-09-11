@@ -11,6 +11,7 @@
     "lint": "eslint src --max-warnings 200",
     "audit:contrast": "node ops/scripts/audit-surface-contrast.mjs",
     "audit:mobile": "node ops/scripts/audit/mobile-audit.mjs",
+    "audit:pwa": "node ops/scripts/audit/pwa-audit.mjs",
     "test": "vitest run",
     "format": "prettier --write .",
     "test:seo": "node ops/scripts/seo/run-seo-suite.mjs",
@@ -58,7 +59,9 @@
     "provisioning:smoke": "node ops/scripts/operations/provisioning-smoke.mjs",
     "start:next": "node node_modules/next/dist/bin/next start",
     "start:static": "node dist/index.js",
-    "test:a11y:broker": "playwright test --config playwright.a11y.broker.config.ts"
+    "test:a11y:broker": "playwright test --config playwright.a11y.broker.config.ts",
+    "icons:maskable": "node ops/scripts/media/generate-maskable-icon.mjs",
+    "audit:pwa:ci": "node ops/scripts/audit/run-pwa-audit.mjs"
   },
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.3.0",
