@@ -43,7 +43,7 @@ describe("fixture-backed repositories", () => {
   it("keeps pages and components behind repository facades instead of fixture arrays", () => {
     const checkedFiles = [
       ...sourceFiles("src/app"),
-      ...sourceFiles("src/pages"),
+      ...sourceFiles("src/screens"),
       ...sourceFiles("src/components/architech"),
     ];
     const offenders = checkedFiles.filter((file) => {
