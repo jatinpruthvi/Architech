@@ -2129,7 +2129,7 @@ Expected: all pass. Notes:
 - `production:plan:audit` must see `ARCHITECH_SUPER_ADMIN_PASSWORD_HASH` declared (Task 6 Step 7).
 - The crawl simulation must pass — no public page links to any new surface (the admin pages are unlinked by design; verify `grep -rn "admin/plans" app client/src --include="*.tsx" | grep -v "pages/PlanAdmin\|admin/plans/page"` returns nothing user-facing).
 
-- [ ] **Step 2: Regression spot-checks (the guardrails this work must not break)**
+- [x] **Step 2: Regression spot-checks (the guardrails this work must not break)**
 
 ```bash
 # Masked list contract byte-identical (spec):
@@ -2139,6 +2139,8 @@ pnpm exec vitest run client/src/lib/operations/env-catalog-parity.test.ts
 # The PR #70 CI failure stays fixed:
 pnpm exec vitest run client/src/lib/operations/env-catalog-parity.test.ts client/src/lib/env-docs-parity.test.ts
 ```
+
+Verified 11 Sep 2026 on `main` @ `183b7de` (merged PR #72): lead.test.ts + api-contract.test.ts 40/40 pass; env-catalog-parity 4/4 pass; env-docs-parity 2/2 pass.
 
 - [ ] **Step 3: Final diff review**
 
