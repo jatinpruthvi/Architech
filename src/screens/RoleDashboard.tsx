@@ -27,7 +27,6 @@ import {
   ClipboardList,
   Handshake,
   Inbox,
-  Loader2,
   LockKeyhole,
   Plus,
   ShieldCheck,

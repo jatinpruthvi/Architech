@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * are explicitly enabled. This protects against accidentally publishing demo
  * listing counts, RERA fixtures, or unreviewed guides into a sitemap.
  */
-export function proxy(request: NextRequest) {
+export function proxy(_request: NextRequest) {
   const response = NextResponse.next();
   const indexingEnabled = process.env.PUBLIC_INDEXING_ENABLED === "true";
   if (process.env.NODE_ENV === "production" && !indexingEnabled) {
