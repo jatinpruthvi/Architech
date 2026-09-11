@@ -38,7 +38,7 @@ jobs:
       # self-reference, sitemap ⊆ crawl graph, indexable pages within click
       #-depth budget. Reuses the build above (boots `next start` itself).
       - name: Crawl simulation
-        run: PUBLIC_INDEXING_ENABLED=true node scripts/seo/crawl-simulation.mjs
+        run: PUBLIC_INDEXING_ENABLED=true node ops/scripts/seo/crawl-simulation.mjs
       # Real-HTTP end-to-end suites against the production build: auth flows in
       # both auth modes, public routes, URL grammar, SEO plumbing, security
       # headers. Reuses the build above, so this adds seconds, not minutes.

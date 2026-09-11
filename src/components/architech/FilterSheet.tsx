@@ -2,7 +2,7 @@
 /* The filter sheet is the only consumer of the gesture-drawer library (vaul)
    on the /search first load, and it is only needed after a tap — so the whole
    sheet ships as a dynamic chunk. Keeping it out of the route's first-load JS
-   is what holds /search under its performance budget (config/performance/budgets.json);
+   is what holds /search under its performance budget (ops/config/performance/budgets.json);
    the other drawer consumers (CompareTray, SearchQuickView) are already
    dynamic imports. The footer is built here (not passed in) because
    DrawerClose must be rendered inside the Drawer's context, and importing
