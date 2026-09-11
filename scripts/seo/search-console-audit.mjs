@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const configPath = path.join(root, "seo/monitoring/search-console.config.json");
+const configPath = path.join(root, "config/seo/search-console.config.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 const failures = [];
 

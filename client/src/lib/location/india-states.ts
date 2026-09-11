@@ -1,4 +1,4 @@
-import snapshot from "../../../../data/location/official/lgd-state-ut-2026-08-30.json";
+import snapshot from "../../../../config/data/location/official/lgd-state-ut-2026-08-30.json";
 
 export type IndiaStateOrUt = {
   lgdCode: string;

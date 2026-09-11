@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const config = JSON.parse(readFileSync("governance/operations/phase-1-operational-readiness.json", "utf8"));
+const config = JSON.parse(readFileSync("config/governance/operations/phase-1-operational-readiness.json", "utf8"));
 
 describe("operational readiness registry", () => {
   it("declares RPO/RTO and backup retention", () => {

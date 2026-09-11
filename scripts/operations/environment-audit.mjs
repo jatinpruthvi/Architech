@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 
-const envs = JSON.parse(fs.readFileSync("governance/environments/phase-1-environments.json", "utf8"));
+const envs = JSON.parse(fs.readFileSync("config/governance/environments/phase-1-environments.json", "utf8"));
 const failures = [];
 const required = ["preview", "staging", "production"];
 

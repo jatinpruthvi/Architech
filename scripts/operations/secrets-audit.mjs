@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 
-const inventory = JSON.parse(fs.readFileSync("governance/secrets/phase-1-secret-inventory.json", "utf8"));
+const inventory = JSON.parse(fs.readFileSync("config/governance/secrets/phase-1-secret-inventory.json", "utf8"));
 const envExample = fs.readFileSync(".env.example", "utf8");
 const failures = [];
 

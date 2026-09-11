@@ -7,8 +7,8 @@ const requiredFiles = [
   "docker-compose.production-like.yml",
   ".env.staging.example",
   ".env.production.example",
-  "governance/environments/phase-1-environments.json",
-  "governance/secrets/phase-1-secret-inventory.json",
+  "config/governance/environments/phase-1-environments.json",
+  "config/governance/secrets/phase-1-secret-inventory.json",
   "docs/operations/provisioning-execution-checklist.md"
 ];
 const requiredEnvNames = [

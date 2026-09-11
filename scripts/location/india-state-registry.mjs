@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 export const officialStateSnapshot = JSON.parse(
-  readFileSync(new URL("../../data/location/official/lgd-state-ut-2026-08-30.json", import.meta.url), "utf8"),
+  readFileSync(new URL("../../config/data/location/official/lgd-state-ut-2026-08-30.json", import.meta.url), "utf8"),
 );
 
 export const officialStatesByCode = new Map(

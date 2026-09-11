@@ -4,7 +4,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 
 const root = process.cwd();
-const budgets = JSON.parse(fs.readFileSync(path.join(root, "performance/budgets.json"), "utf8"));
+const budgets = JSON.parse(fs.readFileSync(path.join(root, "config/performance/budgets.json"), "utf8"));
 const routeStatsPath = path.join(root, ".next/diagnostics/route-bundle-stats.json");
 
 function fail(message) {

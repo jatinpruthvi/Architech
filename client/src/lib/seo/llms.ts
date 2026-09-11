@@ -7,7 +7,7 @@
  * writing no major AI vendor has publicly committed to reading it. It is
  * cheap, harmless, and plausibly useful; it is not a ranking mechanism, and
  * the normative architecture is explicit about that in three places —
- * `architecture/normative/final-three-phase-architecture.md` §7.3, §13 and
+ * `docs/architecture/normative/final-three-phase-architecture.md` §7.3, §13 and
  * the v5 decision register all say the same thing:
  *
  *   "`llms.txt` may be generated as an optional supplemental resource index.

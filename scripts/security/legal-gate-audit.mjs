@@ -2,7 +2,7 @@
 import fs from "node:fs";
 
 const requiredIds = ["LEG-001", "LEG-002", "LEG-003", "LEG-004", "LEG-005", "LEG-006", "LEG-007", "LEG-008", "LEG-009"];
-const config = JSON.parse(fs.readFileSync("governance/legal/gates/phase-1-gates.json", "utf8"));
+const config = JSON.parse(fs.readFileSync("config/governance/legal/gates/phase-1-gates.json", "utf8"));
 const failures = [];
 const gates = new Map((config.gates ?? []).map((gate) => [gate.id, gate]));
 
