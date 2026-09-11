@@ -331,7 +331,7 @@ Each phase is independently shippable and leaves `pnpm quality` green.
   _M1 deferred; this pass completes Phases 2–4 per `docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md`._
 - [ ] M3: `PropertyCard` grid mobile-first
 - [x] M4: `/broker/leads/[id]/` detail route — **prototyped, see §11**
-- [x] Sticky bottom action bar with WhatsApp — **prototyped; the call action is wired but reveals from fixtures, not the API**
+- [x] Sticky bottom action bar with WhatsApp — **prototyped; rewired in PR #72 — the call action now reveals through the server's reveal endpoint, never from fixtures**
 - [ ] Pay down `BrokerLeadInbox` token debt (currently 9/14 alphaText, 5/5 microText, 3/5 nanoText — the microText budget is exactly full, so any edit there must not add a `!text-[10px]`)
 - **Exit:** `pnpm audit:mobile` shows ≥200 elements on broker routes, 0 fixedGrid findings, token counts down.
 
@@ -341,7 +341,8 @@ Each phase is independently shippable and leaves `pnpm quality` green.
 - [x] Write ciphertext on lead creation in **both** stores
 - [x] Structured `consentClass` capture on the enquiry form + reviewed copy
   _Structured `consentClass` capture landed (defaults to `first-party-form`, registry-gated reveal); the D2 buyer-facing wording remains held for legal review._
-- [ ] Purge: extend `scripts/privacy/purge-expired-requirements.mjs` posture to leads — ciphertext deleted at retention expiry, tombstone kept
+- [x] Purge: extend `scripts/privacy/purge-expired-requirements.mjs` posture to leads — ciphertext deleted at retention expiry, tombstone kept
+  _Landed as `scripts/privacy/purge-expired-leads.mjs` (mirrors the posture, reuses its `parsePurgeArgs`; dry-run default, `--apply` required) — shipped in PR #72._
 - **Exit:** round-trip test (encrypt → decrypt → `telLink`), erasure drill, `pnpm db:validate`.
 
 ### Phase 3 — Gated reveal + Call from SIM (2–3 days) *(needs D3, D4)*
@@ -361,7 +362,8 @@ Each phase is independently shippable and leaves `pnpm quality` green.
 - **Exit:** a no-answer call leaves the stage unchanged and schedules a retry; a not-interested call suppresses the number permanently.
 
 ### Phase 5 — WhatsApp + manager view (2 days, optional per D5)
-- [ ] `waMeLink` beside Call, gated on `automatedWhatsAppFirstTouch` **only if** the touch is human-initiated (it is — the broker taps it), so `humanFirstTouch` governs
+- [x] `waMeLink` beside Call, gated on `automatedWhatsAppFirstTouch` **only if** the touch is human-initiated (it is — the broker taps it), so `humanFirstTouch` governs
+  _Shipped with the reveal in PR #72 — the wa.me link appears beside Call, governed by the same humanFirstTouch-gated reveal._
 - [ ] Overdue follow-ups, call outcomes by employee, lost reasons
 - [ ] Deep link from `buyer-notifications` into the detail route
 
@@ -416,6 +418,8 @@ New tests, following existing conventions:
 ---
 
 ## 11. Prototype status (08 Sep 2026)
+
+**Status (10 Sep 2026):** Phases 2–4 are complete per `docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md` (shipped via PR #72): encrypted contact storage with structured consent-class capture, the server-side gated reveal with `tel:`/`wa.me` links and per-reveal audit, post-call result logging with the §3 outcome→stage mapping and suppression, and the lead retention purge. M1 (server-rendered broker shell), M3, the M5 browser a11y assertions, and Phase 5's manager view + deep link remain — the wa.me link beside Call shipped with the reveal. Plan activation is manual by the owner via `/admin/plans` (no payment gateway, by owner decision); an org without an activated plan resolves to plan status `NONE` and cannot reveal or call.
 
 Built so the calling ergonomics can be felt on a phone **before** committing to the data model. The gate logic and page shape are the things that ship; only the data source is throwaway.
 

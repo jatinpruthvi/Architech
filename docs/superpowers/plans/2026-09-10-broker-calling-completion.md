@@ -2107,7 +2107,7 @@ reachable only through the super-admin session."
 - Consumes: everything from Tasks 1–7.
 - Produces: a green `verify` CI job on the branch and an up-to-date PR description.
 
-- [ ] **Step 1: Run the full local gate set**
+- [x] **Step 1: Run the full local gate set**
 
 ```bash
 pnpm check
@@ -2129,7 +2129,12 @@ Expected: all pass. Notes:
 - `production:plan:audit` must see `ARCHITECH_SUPER_ADMIN_PASSWORD_HASH` declared (Task 6 Step 7).
 - The crawl simulation must pass — no public page links to any new surface (the admin pages are unlinked by design; verify `grep -rn "admin/plans" app client/src --include="*.tsx" | grep -v "pages/PlanAdmin\|admin/plans/page"` returns nothing user-facing).
 
-- [ ] **Step 2: Regression spot-checks (the guardrails this work must not break)**
+Verified 11 Sep 2026 on `main` @ `183b7de` (post-PR #72, re-run on this branch):
+- `check` ✅ 0 errors · `lint` ✅ 0 errors / 2 warnings (≤ 200 budget) · `test` ✅ 190 files, 2118/2118 passed (49 skipped) · `audit:contrast` ✅ · `secrets:audit` ✅ (10 tracked, platform stores only) · `production:plan:audit` ✅ (super-admin hash declared in `.env.example` + hygiene allow-list) · `build` ✅ · crawl-simulation ✅ (579 pages, no broken links; `admin/plans` grep clean — no user-facing links) · `test:perf` ✅ (budgets pass; largest chunk 71.7 KiB gzip ≪ 240 KB ceiling) · `audit:mobile` ✅ (14/14 routes 200; 0 overflow/tap/fixed-grid findings; broker shells now 102–258 elements post-PR #70 rework — the 88-element figure in the note is stale; no regression vs the post-PR #70 baseline).
+- `db:validate` ⚠️ blocked by sandbox environment, not code: the Prisma CLI must download the schema-engine binary from `binaries.prisma.sh`, which this sandbox's egress policy TLS-resets (all alternate mirrors — npmmirror, aliyun, archive.org — equally blocked; no GitHub release or npm artifact carries commit `e922089b`). Proven not-a-code-issue: `prisma/` is byte-identical to the PR #72 merge state (this branch's only prior commit is docs-only `8ab2ea8`), and the same validation ran green in PR #72's CI `verify` job.
+- `audit:mobile` requires a live dev server on `127.0.0.1:3000` (`pnpm dev`); run the audit while it is up.
+
+- [x] **Step 2: Regression spot-checks (the guardrails this work must not break)**
 
 ```bash
 # Masked list contract byte-identical (spec):
@@ -2140,7 +2145,9 @@ pnpm exec vitest run client/src/lib/operations/env-catalog-parity.test.ts
 pnpm exec vitest run client/src/lib/operations/env-catalog-parity.test.ts client/src/lib/env-docs-parity.test.ts
 ```
 
-- [ ] **Step 3: Final diff review**
+Verified 11 Sep 2026 on `main` @ `183b7de` (merged PR #72): lead.test.ts + api-contract.test.ts 40/40 pass; env-catalog-parity 4/4 pass; env-docs-parity 2/2 pass.
+
+- [x] **Step 3: Final diff review**
 
 ```bash
 git log --oneline main..HEAD
@@ -2149,7 +2156,12 @@ git diff --stat main..HEAD
 
 Expected: 7 feature commits (Tasks 1–7) on top of the two CI-fix commits; the diff touches only the files listed in the plan's File Structure section (plus the plan/spec docs). If the diff touches anything else, stop and justify it before pushing.
 
-- [ ] **Step 4: Push and update the PR**
+Reviewed 11 Sep 2026. The feature work is already in `main` via merged PR #72, so the scope review runs against the merge commit: `git diff --stat 82281b5d..183b7de` (39 files, +4657/−671). Every file is in this plan's File Structure section or is plan/spec documentation, except three deviations — each justified:
+1. `client/src/lib/plans/plan-status.ts` + `plan-status.test.ts` (new): the Task 1 resolver `resolvePlanStatusForOrg` was implemented as its own module instead of appended to `calling-server.ts` — cleaner separation, same spec §3 behaviour, covered by its own tests.
+2. `client/src/lib/repositories/server/prisma.ts` (+4): adds `marketplaceSubscription` to the structural `PrismaClientLike` type so the new prisma queries are type-safe.
+3. `client/src/pages/ListingSubmission.tsx` (−4): removes a public page's link to `/admin/moderation/listings` — a public→admin link, part of the crawl/typo-link CI fix; consistent with "admin pages are unlinked by design".
+
+- [x] **Step 4: Push and update the PR**
 
 ```bash
 git push origin arena/01a08b50-architech
@@ -2157,15 +2169,21 @@ git push origin arena/01a08b50-architech
 
 Update PR #71 (or open a follow-up PR if the two CI fixes have merged separately by then) with a description covering: the two CI fixes (env catalog parity, crawl/typo link) AND this feature completion — spec path, what was built (routes, gate, super admin, plan admin, purge), the deliberate behaviour change (prisma orgs without a plan cannot call until activated — activation steps: `node scripts/auth/make-super-admin-hash.mjs` → set `ARCHITECH_SUPER_ADMIN_PASSWORD_HASH` + `BETTER_AUTH_SECRET` in the deployment → sign in at `/admin/plans` → enter the broker's login id → grant a plan), and the verification evidence from Step 1.
 
-- [ ] **Step 5: Watch CI to green**
+Done 11 Sep 2026: the feature work already reached `main` via merged PR #72 (its original push target `arena/01a08b50-architech` was consumed by that merge), so this session's branch `arena/01a08e68-architech` was pushed to origin with the verification commits, and the PR record was added as a comment on the merged PR — https://github.com/jatinpruthvi/Architech/pull/72#issuecomment-5628926928 — covering the spec path, what was built (routes, gate, super admin, plan admin, purge), the deliberate behaviour change with the manual activation steps, and the Step 1/2/3 verification evidence.
+
+- [x] **Step 5: Watch CI to green**
 
 Poll `gh pr checks` until the `verify` job completes. If any step fails, return to systematic debugging (no symptom fixes) and loop. Expected remaining CI-only risk: the playwright a11y/ui jobs (browser-based) — they were passing before this branch and this branch adds no public-surface markup.
 
-- [ ] **Step 6: Close out the documentation**
+Confirmed 11 Sep 2026: PR #72 is merged and its CI `verify` job on merge commit `183b7de` is SUCCESS (4m46s, completed 2026-09-11T02:36:16Z, before the merge) — the job covers `db:validate`, the full test suite, build, e2e, perf, and the playwright a11y/ui jobs flagged as the only CI-only risk. No debugging loop needed.
+
+- [x] **Step 6: Close out the documentation**
 
 - `docs/business-suite/mobile-calling-implementation-plan.md` — already updated in Task 4; verify the checkboxes match reality.
 - Add a one-paragraph "Status (10 Sep 2026)" note at the top of the plan doc's §11: Phases 2–4 complete per `docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md`; M1/M5/Phase 5 remain; plan activation is manual via `/admin/plans` (no payment gateway, by owner decision).
 - Commit any doc-only tweaks with `docs: refresh mobile-calling plan status after Phases 2–4 completion`.
+
+Done 11 Sep 2026: verified `docs/business-suite/mobile-calling-implementation-plan.md` against the merged code — D3 row already carried the final mechanism; ticked the Phase 2 purge item (landed as `scripts/privacy/purge-expired-leads.mjs`) and the Phase 5 waMeLink item (shipped with the reveal); corrected the stale Phase 1 note (call action reveals through the server endpoint, not fixtures); added the Status (10 Sep 2026) paragraph at the top of §11. Committed as `docs: refresh mobile-calling plan status after Phases 2–4 completion`.
 
 ## Self-Review Notes (plan author)
 
