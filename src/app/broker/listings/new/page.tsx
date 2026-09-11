@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ListingSubmission from "@/pages/ListingSubmission";
+import ListingSubmission from "@/screens/ListingSubmission";
 import RequireSession from "@/components/architech/RequireSession";
 import { brokerListingNewUrl } from "@/lib/seo/urls";
 

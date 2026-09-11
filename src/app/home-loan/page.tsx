@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HomeLoanPage } from "@/pages/PublicParity";
+import { HomeLoanPage } from "@/screens/PublicParity";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";

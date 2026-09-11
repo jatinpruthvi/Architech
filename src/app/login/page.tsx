@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Login from "@/pages/Login";
+import Login from "@/screens/Login";
 
 /* Authentication surface: never indexed. A login page carries no discovery
    value, and letting it into the index dilutes the crawl budget the SEO model

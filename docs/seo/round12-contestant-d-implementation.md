@@ -62,7 +62,7 @@ real number: 3716 of 3716. The LCP image on a listing page is
 **Fixed in this pass:**
 
 1. **The 404 page bypassed the image primitive.**
-   `src/pages/NotFound.tsx` had a raw
+   `src/screens/NotFound.tsx` had a raw
    `<img src="/images/brick-arch.jpg">` — the only one of 3716 without WebP,
    a responsive source, intrinsic dimensions, or lazy loading. It now uses
    `Pic`. *Measured: images missing `width`/`height`/`loading` went 1 → 0.*
@@ -169,7 +169,7 @@ combinations speculatively. D's own §7 outranks D's §2 here.
 | --- | --- |
 | `src/components/architech/Pic.tsx` | Imports the shared map; `PIC_INTRINSIC_SIZES` is now an alias of it, so there is one source of truth. |
 | `app/layout.tsx` | Default card from `defaultSocialImage()`. Was `1600x900` and a relative URL. |
-| `src/pages/NotFound.tsx` | Raw `<img>` → `Pic`. |
+| `src/screens/NotFound.tsx` | Raw `<img>` → `Pic`. |
 | `app/guide/page.tsx` | Hub JSON-LD from the shared builder; gains `BreadcrumbList`. |
 | `app/guide/{city,locality,rera}/…/page.tsx` | Three near-identical templates collapse to `guideMetadata()` + `guideJsonLd()`. |
 | `app/listing/[id]/page.tsx`, `app/buy/[city]/[locality]/page.tsx` | Cards from `socialImage()`. |

@@ -139,7 +139,7 @@ The saffron voice is carried by concrete interface behaviour, not just tokens:
 - `src/contexts/ThemeContext.tsx` — made the product **night-first** (dark is the
   default landing state; a stored light choice still wins; system light no longer triggers
   day mode on a fresh visit).
-- `src/pages/Home.tsx` — hero: warm dusk scrim + saffron bloom + light sweep +
+- `src/screens/Home.tsx` — hero: warm dusk scrim + saffron bloom + light sweep +
   golden-hour figure in + search spring-in; segmented Buy / Rent / New projects pill with
   glowing active tab; wired `.contour-field` (city index) and `.survey-corner` (evidence).
   **Hero search simplified & readable:** the hero carried four stacked control rows

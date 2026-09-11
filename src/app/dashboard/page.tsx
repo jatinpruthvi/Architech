@@ -17,7 +17,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import RequireSession from "@/components/architech/RequireSession";
-import RoleDashboard from "@/pages/RoleDashboard";
+import RoleDashboard from "@/screens/RoleDashboard";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {

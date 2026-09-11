@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Saved from "@/pages/Saved";
+import Saved from "@/screens/Saved";
 import { getListings } from "@/lib/repositories/listings";
 import { savedUrl } from "@/lib/seo/urls";
 

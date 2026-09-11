@@ -54,7 +54,7 @@ The next implementation should be a focused hero asset refresh rather than a lay
 
 ## References
 
-[1]: ../../src/pages/Home.tsx "Current Architech homepage hero and search composition"
+[1]: ../../src/screens/Home.tsx "Current Architech homepage hero and search composition"
 [2]: ../../ops/config/performance/budgets.json "Architech performance budget source"
 [3]: ../../../upload/can-you-please-create-hero-style-images-for-my-real-estate-website(3).md "User-supplied hero direction and technical guide"
 [4]: ../../../upload/can-you-please-create-hero-style-images-for-my-real-estate-website(4).md "User-supplied stock-image and generic implementation guide"

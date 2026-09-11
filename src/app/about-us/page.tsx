@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AboutPage } from "@/pages/PublicParity";
+import { AboutPage } from "@/screens/PublicParity";
 import { aboutFaqs } from "@/lib/content/about-faqs";
 import { canonicalUrl, homeUrl } from "@/lib/seo/urls";
 import { buildFaqPage } from "@/lib/seo/faq";

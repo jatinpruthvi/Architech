@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import AcquisitionQueue from "@/pages/AcquisitionQueue";
+import AcquisitionQueue from "@/screens/AcquisitionQueue";
 import RequireSession from "@/components/architech/RequireSession";
 
 /* Internal worklist, not a public page: `force-dynamic` because it must

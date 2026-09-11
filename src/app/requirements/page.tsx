@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import RequirementsPage from "@/pages/RequirementsPage";
+import RequirementsPage from "@/screens/RequirementsPage";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";

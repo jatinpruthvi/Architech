@@ -422,9 +422,9 @@ Built so the calling ergonomics can be felt on a phone **before** committing to 
 | Tests for the above (20) | `src/lib/leads/calling.test.ts` | **Ships.** |
 | Prototype fixtures — 5 leads covering hot / follow-up-due / attempt-limit / suppressed / not-stored | `src/lib/leads/calling-prototype-data.ts` | **Delete** when Phases 2–3 land. |
 | Post-call result sheet (vaul drawer, dynamically imported) | `src/components/broker/CallResultSheet.tsx` | **Ships.** |
-| Lead detail surface + thumb-anchored call bar | `src/pages/BrokerLeadDetail.tsx` | **Ships**, minus the prototype control panel. |
+| Lead detail surface + thumb-anchored call bar | `src/screens/BrokerLeadDetail.tsx` | **Ships**, minus the prototype control panel. |
 | Route `/broker/leads/[id]/` | `app/broker/leads/[id]/page.tsx` | **Ships.** Fixes M4. |
-| Inbox row → detail link + primary Call action | `src/pages/BrokerLeadInbox.tsx` | **Ships.** |
+| Inbox row → detail link + primary Call action | `src/screens/BrokerLeadInbox.tsx` | **Ships.** |
 | Measurement harness, `pnpm audit:mobile` | `ops/scripts/audit/mobile-audit.mjs` | **Ships.** Produced §2. |
 
 Verified: `tsc --noEmit` clean; `eslint` clean on every new/changed file; **2052 tests pass** (baseline was 2029); the design-token ratchet passes with the new files at **zero** debt — no `text-ink/NN`, no `!text-[10px]`, no `!text-[9px]`, using `.ink-2`/`.ink-3`/`.stamp` instead. The `clay-fill` dark-mode contract and the env-catalog allow-list are both satisfied.

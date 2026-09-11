@@ -14,7 +14,7 @@ src/lib/saved-search/server.ts        (prisma write-through adapter)
 src/lib/saved-search/saved-search.test.ts
 app/api/saved-searches/route.ts              (GET list, POST create)
 app/api/saved-searches/[id]/route.ts         (DELETE)
-src/pages/ResultsPage.tsx             (wired "Save this search")
+src/screens/ResultsPage.tsx             (wired "Save this search")
 ```
 
 ## Design rules

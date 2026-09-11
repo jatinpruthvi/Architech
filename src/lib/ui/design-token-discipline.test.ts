@@ -143,7 +143,7 @@ describe("legacy debt may only shrink", () => {
     // Regression lock for the rebuild itself: these three are debt-free now.
     for (const file of [
       "src/components/architech/FilterSurface.tsx",
-      "src/pages/ResultsPage.tsx",
+      "src/screens/ResultsPage.tsx",
       "src/components/architech/PropertyCard.tsx",
     ]) {
       const clean = source(file).replace(/\/\*[\s\S]*?\*\//g, "");
@@ -303,7 +303,7 @@ describe("aria wiring is wired, not merely present", () => {
   it("routes both search boxes through the one combobox module", () => {
     // The drift itself is what must not come back: the hero had arrow keys,
     // the results page did not, and both claimed to be the same control.
-    for (const page of ["src/components/architech/HeroSearch.tsx", "src/pages/ResultsPage.tsx"]) {
+    for (const page of ["src/components/architech/HeroSearch.tsx", "src/screens/ResultsPage.tsx"]) {
       expect(source(page), `${page} must use the shared combobox`).toContain("useSuggestCombobox");
       expect(strip(source(page)), `${page} must not re-implement the combobox keys`).not.toMatch(/const onKeyDown = \(e: React\.KeyboardEvent/);
     }
@@ -426,7 +426,7 @@ describe("viewport geometry is mobile-real", () => {
  * checks pin the fix so it cannot rot into a rail of dead links.
  * ------------------------------------------------------------------ */
 describe("the dossier navigates, and reuses the shared card", () => {
-  const page = "src/pages/ListingPage.tsx";
+  const page = "src/screens/ListingPage.tsx";
   const nav = "src/components/architech/SectionNav.tsx";
 
   it("has no dangling in-page anchor anywhere in the product", () => {
@@ -569,7 +569,7 @@ describe("the component-emitted hooks are real", () => {
 describe("modal surfaces are one implementation", () => {
   const surfaces = [
     "src/components/architech/RequirementCapture.tsx",
-    "src/pages/ListingPage.tsx",
+    "src/screens/ListingPage.tsx",
   ];
 
   it("every surface with a dialog uses the shared primitive", () => {
@@ -604,7 +604,7 @@ describe("modal surfaces are one implementation", () => {
  * modes below are the ones that make a results page worse than no animation.
  * ------------------------------------------------------------------ */
 describe("results-grid motion stays a reflow, not a show", () => {
-  const results = source("src/pages/ResultsPage.tsx");
+  const results = source("src/screens/ResultsPage.tsx");
 
   it("does not FLIP-scale result cards", () => {
     /* Motion `layout` scales x/y to the new box. On a 1.5-crop card that reads

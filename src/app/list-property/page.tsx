@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ListProperty from "@/pages/ListProperty";
+import ListProperty from "@/screens/ListProperty";
 import { homeUrl, listPropertyUrl } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 

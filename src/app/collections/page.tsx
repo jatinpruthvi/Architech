@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Collections from "@/pages/Collections";
+import Collections from "@/screens/Collections";
 import { getListings } from "@/lib/repositories/listings";
 import { canonicalUrl } from "@/lib/seo/urls";
 

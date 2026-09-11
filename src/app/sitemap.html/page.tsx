@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HtmlSitemapPage } from "@/pages/PublicParity";
+import { HtmlSitemapPage } from "@/screens/PublicParity";
 import { homeUrl, htmlSitemapUrl } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 

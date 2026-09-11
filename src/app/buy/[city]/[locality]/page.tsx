@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import CityPage from "@/pages/CityPage";
+import CityPage from "@/screens/CityPage";
 import { getLiveCityBySlug, getLocalities, getLocalityBySlug, getLocalityStaticParams } from "@/lib/repositories";
 import { getListingsByLocalityForServer, getListingsForServer } from "@/lib/repositories/server/prisma";
 import { isIndexable } from "@/lib/seo/lifecycle";

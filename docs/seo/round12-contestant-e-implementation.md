@@ -190,7 +190,7 @@ noindexed and excluded, 0 unsegmented pages.*
 | File | Change |
 | --- | --- |
 | `src/lib/seo/serp.ts` | `fitTail()`; `localitySerpTitle` now ladders real data; price-index SERP helpers. |
-| `src/pages/CityPage.tsx` | Nearby localities 4 → 5. |
+| `src/screens/CityPage.tsx` | Nearby localities 4 → 5. |
 | `src/lib/seo/pages.ts` | `report` route type, 13 pages registered, indexability from the report's gate. |
 | `src/lib/seo/sitemap.ts` | `reports` segment. |
 | `ops/scripts/seo/raw-html-smoke.mjs` | 3 price-index routes and the `reports` sitemap added. |

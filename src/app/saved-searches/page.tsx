@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import SavedSearches from "@/pages/SavedSearches";
+import SavedSearches from "@/screens/SavedSearches";
 import { savedSearchesUrl } from "@/lib/seo/urls";
 
 /* Prerenderable by design: saved-searches state hydrates client-side, so the

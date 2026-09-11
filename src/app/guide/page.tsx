@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Guide from "@/pages/Guide";
+import Guide from "@/screens/Guide";
 import { guideUrl } from "@/lib/seo/urls";
 import { guideHubJsonLd } from "@/lib/seo/guide-jsonld";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";

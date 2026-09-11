@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import DeveloperIndexPage from "@/pages/DeveloperIndexPage";
+import DeveloperIndexPage from "@/screens/DeveloperIndexPage";
 import { getListingsForServer } from "@/lib/repositories/server/prisma";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";

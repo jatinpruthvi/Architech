@@ -100,97 +100,97 @@
     "microText": 6,
     "nanoText": 1
   },
-  "src/pages/AgentWorkspace.tsx": {
+  "src/screens/AgentWorkspace.tsx": {
     "alphaText": 37,
     "microText": 17,
     "nanoText": 1
   },
-  "src/pages/BrokerLeadInbox.tsx": {
+  "src/screens/BrokerLeadInbox.tsx": {
     "alphaText": 8,
     "microText": 4,
     "nanoText": 3
   },
-  "src/pages/BrokerOnboarding.tsx": {
+  "src/screens/BrokerOnboarding.tsx": {
     "alphaText": 3,
     "microText": 1,
     "nanoText": 0
   },
-  "src/pages/CityPage.tsx": {
+  "src/screens/CityPage.tsx": {
     "alphaText": 23,
     "microText": 15,
     "nanoText": 3
   },
-  "src/pages/Collections.tsx": {
+  "src/screens/Collections.tsx": {
     "alphaText": 9,
     "microText": 3,
     "nanoText": 0
   },
-  "src/pages/DeveloperIndexPage.tsx": {
+  "src/screens/DeveloperIndexPage.tsx": {
     "alphaText": 6,
     "microText": 4,
     "nanoText": 1
   },
-  "src/pages/Guide.tsx": {
+  "src/screens/Guide.tsx": {
     "alphaText": 3,
     "microText": 2,
     "nanoText": 0
   },
-  "src/pages/GuideArticle.tsx": {
+  "src/screens/GuideArticle.tsx": {
     "alphaText": 8,
     "microText": 4,
     "nanoText": 0
   },
-  "src/pages/Home.tsx": {
+  "src/screens/Home.tsx": {
     "alphaText": 20,
     "microText": 8,
     "nanoText": 0
   },
-  "src/pages/InvestmentPage.tsx": {
+  "src/screens/InvestmentPage.tsx": {
     "alphaText": 10,
     "microText": 3,
     "nanoText": 2
   },
-  "src/pages/ListProperty.tsx": {
+  "src/screens/ListProperty.tsx": {
     "alphaText": 7,
     "microText": 2,
     "nanoText": 0
   },
-  "src/pages/ListingPage.tsx": {
+  "src/screens/ListingPage.tsx": {
     "alphaText": 32,
     "microText": 26,
     "nanoText": 5
   },
-  "src/pages/ListingSubmission.tsx": {
+  "src/screens/ListingSubmission.tsx": {
     "alphaText": 30,
     "microText": 12,
     "nanoText": 0
   },
-  "src/pages/ModerationQueue.tsx": {
+  "src/screens/ModerationQueue.tsx": {
     "alphaText": 5,
     "microText": 3,
     "nanoText": 1
   },
-  "src/pages/NotFound.tsx": {
+  "src/screens/NotFound.tsx": {
     "alphaText": 1,
     "microText": 0,
     "nanoText": 0
   },
-  "src/pages/PublicParity.tsx": {
+  "src/screens/PublicParity.tsx": {
     "alphaText": 34,
     "microText": 21,
     "nanoText": 3
   },
-  "src/pages/RequirementsPage.tsx": {
+  "src/screens/RequirementsPage.tsx": {
     "alphaText": 5,
     "microText": 2,
     "nanoText": 0
   },
-  "src/pages/Saved.tsx": {
+  "src/screens/Saved.tsx": {
     "alphaText": 3,
     "microText": 2,
     "nanoText": 0
   },
-  "src/pages/SavedSearches.tsx": {
+  "src/screens/SavedSearches.tsx": {
     "alphaText": 6,
     "microText": 3,
     "nanoText": 0

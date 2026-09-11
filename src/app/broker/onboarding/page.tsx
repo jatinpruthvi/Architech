@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import BrokerOnboarding from "@/pages/BrokerOnboarding";
+import BrokerOnboarding from "@/screens/BrokerOnboarding";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Broker onboarding", robots: { index: false, follow: false } };

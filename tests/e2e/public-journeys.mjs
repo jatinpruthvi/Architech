@@ -327,7 +327,7 @@ async function run() {
          demo mode offered a live-looking Create account tab that can only ever
          answer 503 — discovered after filling the form in. */
       const loginPage = await import("node:fs/promises").then((fs) =>
-        fs.readFile(new URL("../../src/pages/Login.tsx", import.meta.url), "utf8"));
+        fs.readFile(new URL("../../src/screens/Login.tsx", import.meta.url), "utf8"));
 
       await test("the register endpoint refuses clearly, with a reason", async () => {
         const response = await client.fork().post("/api/auth/register/", {

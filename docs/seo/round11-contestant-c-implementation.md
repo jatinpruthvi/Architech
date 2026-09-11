@@ -142,8 +142,8 @@ Claiming and optimising a Google Business Profile is correct and is already reco
 | Registry → gate wiring from real data | `src/lib/seo/page-gate.ts` (new) |
 | Sitemap publishes only gate-approved pages; held-back pages reported | `src/lib/seo/pages.ts`, `src/lib/seo/sitemap.ts` |
 | Specific schema types (`Apartment`, `SingleFamilyResidence`) | `src/lib/listing-vocabulary.ts`, `app/listing/[id]/page.tsx` |
-| Absolute `Updated on {date}` stamp with `<time datetime>` | `src/pages/ListingPage.tsx`, `src/lib/i18n.ts` |
-| Fixed hardcoded city in listing header | `src/pages/ListingPage.tsx` |
+| Absolute `Updated on {date}` stamp with `<time datetime>` | `src/screens/ListingPage.tsx`, `src/lib/i18n.ts` |
+| Fixed hardcoded city in listing header | `src/screens/ListingPage.tsx` |
 | Tests: gate calibration (14) and publication enforcement (3) | `src/lib/seo/page-quality.test.ts`, `src/lib/seo/sitemap-contract.test.ts` |
 
 ## Verification

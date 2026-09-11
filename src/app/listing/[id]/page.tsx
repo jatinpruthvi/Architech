@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
-import ListingPage from "@/pages/ListingPage";
+import ListingPage from "@/screens/ListingPage";
 import { getCityBySlug, getLocalityBySlug, getRelatedListings } from "@/lib/repositories";
 import { comparableListings } from "@/lib/listing/comparables";
 import { getListingByIdForServer, getListingStaticParamsForServer } from "@/lib/repositories/server/prisma";

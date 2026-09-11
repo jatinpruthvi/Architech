@@ -10,7 +10,7 @@ The lead contract now surfaces to the broker side: enquiries land in a masked in
 ```text
 src/lib/leads/lead.ts         (listLeads, updateLeadStatus, statusHistory)
 src/lib/leads/server.ts       (listLeadsForServer, updateLeadStatusForServer)
-src/pages/BrokerLeadInbox.tsx
+src/screens/BrokerLeadInbox.tsx
 app/broker/leads/page.tsx
 app/api/broker/leads/route.ts        (GET list)
 app/api/broker/leads/[id]/reply/route.ts  (POST status change)

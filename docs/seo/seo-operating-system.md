@@ -328,7 +328,7 @@ what the business does on Monday. It is built:
 | `src/lib/seo/acquisition-queue.ts` | The computation. `cityAcquisitionPlan(citySlug)`, `acquisitionQueue()`, `acquisitionHeadline()`. |
 | `src/lib/seo/acquisition-queue.test.ts` | 16 tests. |
 | `app/api/admin/acquisition/route.ts` | `GET`, gated on `moderation.queue.read`, `no-store`, recomputed per request. |
-| `app/admin/acquisition/page.tsx` + `src/pages/AcquisitionQueue.tsx` | The worklist UI. |
+| `app/admin/acquisition/page.tsx` + `src/screens/AcquisitionQueue.tsx` | The worklist UI. |
 | `app/price-index/[city]/page.tsx` | The public half: a withheld index now states exactly what would publish it. |
 
 #3–#7 are built. What they change, in one line each:

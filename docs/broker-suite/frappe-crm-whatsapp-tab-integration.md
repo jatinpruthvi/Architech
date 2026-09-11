@@ -27,7 +27,7 @@ The tab itself is **already shipped inside the Frappe CRM v1.83.0 we pin** — t
 
 | Piece | File (frappe/crm `52c500d`) | What it does |
 |---|---|---|
-| Tab registration | `frontend/src/pages/Lead.vue`, `Deal.vue` (and `MobileLead.vue`, `MobileDeal.vue`) | Registers a `WhatsApp` tab; `condition: () => whatsappEnabled.value` |
+| Tab registration | `frontend/src/screens/Lead.vue`, `Deal.vue` (and `MobileLead.vue`, `MobileDeal.vue`) | Registers a `WhatsApp` tab; `condition: () => whatsappEnabled.value` |
 | Feature flags | `frontend/src/composables/whatsapp.js` | Calls `crm.api.whatsapp.is_whatsapp_installed` (a `WhatsApp Settings` DocType exists) and `is_whatsapp_enabled` (default outgoing account set and its `WhatsApp Account.status == "Active"`) |
 | Chat pane | `frontend/src/components/Activities/WhatsAppArea.vue`, `WhatsAppBox.vue`, `Modals/WhatsappTemplateSelectorModal.vue` | Message list, composer with attachments/emoji/replies/reactions, template picker for first-contact sends |
 | Settings page | `frontend/src/components/Settings/WhatsAppSettings.vue` | A generic desk form: `<SettingsPage doctype="WhatsApp Settings" />` — any app that provides the doctype gets the settings UI free |

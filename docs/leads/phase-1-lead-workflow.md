@@ -39,7 +39,7 @@ Response includes:
 
 - `src/lib/leads/lead.ts` validates lead input, masks phone numbers, creates idempotent lead records, and attaches audit metadata.
 - `app/api/leads/route.ts` exposes the POST endpoint.
-- `src/pages/ListingPage.tsx` submits the dialog to the API and requires explicit consent.
+- `src/screens/ListingPage.tsx` submits the dialog to the API and requires explicit consent.
 
 ## Database handoff
 

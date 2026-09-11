@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import PlanAdmin from "@/pages/PlanAdmin";
+import PlanAdmin from "@/screens/PlanAdmin";
 
 /* Owner-only plan administration (spec §7). NOT wrapped in RequireSession:
    that guard redirects to /login, but the super-admin surface signs in with

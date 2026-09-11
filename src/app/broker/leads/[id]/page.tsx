@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import BrokerLeadDetail from "@/pages/BrokerLeadDetail";
+import BrokerLeadDetail from "@/screens/BrokerLeadDetail";
 import RequireSession from "@/components/architech/RequireSession";
 
 /* Lead detail — the mobile calling surface.

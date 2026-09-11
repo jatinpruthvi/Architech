@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import ResultsPage from "@/pages/ResultsPage";
+import ResultsPage from "@/screens/ResultsPage";
 import { getCities } from "@/lib/repositories/cities";
 import { popularQueries } from "@/lib/search/suggest";
 import { searchUrl } from "@/lib/seo/urls";

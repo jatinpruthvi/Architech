@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import GuideArticle from "@/pages/GuideArticle";
+import GuideArticle from "@/screens/GuideArticle";
 import { getGuideByScope, getScopedGuideStaticParams } from "@/lib/repositories";
 import { guideJsonLd, guideMetadata } from "@/lib/seo/guide-jsonld";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";

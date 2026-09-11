@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Home from "@/pages/Home";
+import Home from "@/screens/Home";
 import { getCities, getLocalities } from "@/lib/repositories";
 import { getFeaturedListingsForServer, getListingsForServer } from "@/lib/repositories/server/prisma";
 import { exampleQuery, popularQueries } from "@/lib/search/suggest";

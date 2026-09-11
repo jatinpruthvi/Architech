@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ModerationQueue from "@/pages/ModerationQueue";
+import ModerationQueue from "@/screens/ModerationQueue";
 import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";

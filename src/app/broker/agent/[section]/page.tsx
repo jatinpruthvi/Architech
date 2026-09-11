@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import AgentWorkspace, { type AgentSection } from "@/pages/AgentWorkspace";
+import AgentWorkspace, { type AgentSection } from "@/screens/AgentWorkspace";
 import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";

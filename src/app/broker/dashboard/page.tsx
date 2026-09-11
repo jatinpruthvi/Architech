@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import BrokerDashboard from "@/pages/BrokerDashboard";
+import BrokerDashboard from "@/screens/BrokerDashboard";
 import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";

@@ -13,7 +13,7 @@ TypeScript code (aliased `@/…`), and cross-boundary constants (`shared/`).
   `seo/`, `governance/`, `location/`, `filters/`, `auth/`, `db/`, `analytics/`,
   `i18n`, `search/`, `dashboard/`, …
 - `hooks/`, `contexts/` — React hooks and providers
-- `pages/` — shared page-level compositions used by routes
+- `screens/` — shared page-level compositions used by routes
 - `stories/` — Storybook stories (`.storybook/` at repo root configures it)
 - `shared/` — constants shared across the server/client boundary (aliased `@shared/`)
 - `test/` — test helpers/stubs; `theme.css` — design tokens

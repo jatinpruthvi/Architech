@@ -35,7 +35,7 @@ type SearchResponse = {
 
 - `src/lib/search/search.ts` applies the existing deterministic parser, filters, and sort over repository-backed listings.
 - `app/api/search/route.ts` exposes the contract through a Next.js route handler.
-- `src/pages/ResultsPage.tsx` now fetches from `/api/search` and uses the backend response for result cards/counts.
+- `src/screens/ResultsPage.tsx` now fetches from `/api/search` and uses the backend response for result cards/counts.
 
 ## PostgreSQL search migration
 

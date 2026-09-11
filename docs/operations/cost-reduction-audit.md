@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-05 (updated for second-pass, in-depth audit)
 **Scope:** Whole repo — runtime, hosting, data, search, media, observability, CI, external calls, schedulers, and documented operational posture.
-**Method:** Reviewed **docs** (`docs/architecture`, `docs/data`, `docs/search`, `docs/observability`, `docs/operations`, `docs/performance`, `docs/media`) and **code** (`app/*`, `src/lib/*`, `src/pages/*`, `src/components/*`, `next.config.ts`, `db/*`, `ops/scripts/*`, `.github/workflows/*`, `ops/config/governance/*`).
+**Method:** Reviewed **docs** (`docs/architecture`, `docs/data`, `docs/search`, `docs/observability`, `docs/operations`, `docs/performance`, `docs/media`) and **code** (`app/*`, `src/lib/*`, `src/screens/*`, `src/components/*`, `next.config.ts`, `db/*`, `ops/scripts/*`, `.github/workflows/*`, `ops/config/governance/*`).
 **Status:** Findings; P0/P1 first batch implemented (see status table below).
 
 ## 0. Execution status (first batch, 2026-09-05)
@@ -263,9 +263,9 @@ This audit covers the rest of the app beyond media.
 
 - `src/components/broker/BrokerChannelPanel.tsx`
   - `loadChannel()` fires `Promise.all` of **6** `no-store` fetches: dashboard, requests, matches, requirements, deals, notifications.
-- `src/pages/BrokerChannel.tsx`
+- `src/screens/BrokerChannel.tsx`
   - `load()` fires **2** `no-store` fetches (requests + matches) even when the page already shows other panels.
-- `src/pages/RoleDashboard.tsx`
+- `src/screens/RoleDashboard.tsx`
   - Fires up to **4** parallel panel fetches (`requirements`, `saved-searches`, `listings`, `leads`).
 
 **Why it costs money**
@@ -660,9 +660,9 @@ This audit covers the rest of the app beyond media.
 - `app/sitemap/[segment]/route.ts`
 
 ### Client
-- `src/pages/ResultsPage.tsx`
-- `src/pages/BrokerChannel.tsx`
-- `src/pages/RoleDashboard.tsx`
+- `src/screens/ResultsPage.tsx`
+- `src/screens/BrokerChannel.tsx`
+- `src/screens/RoleDashboard.tsx`
 - `src/components/broker/BrokerChannelPanel.tsx`
 - `src/components/architech/Pic.tsx`
 - `src/components/architech/MapListSync.tsx`

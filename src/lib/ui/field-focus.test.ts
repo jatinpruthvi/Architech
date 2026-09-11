@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
  */
 const css = readFileSync("src/theme.css", "utf8");
 const home = readFileSync("src/components/architech/HeroSearch.tsx", "utf8");
-const results = readFileSync("src/pages/ResultsPage.tsx", "utf8");
+const results = readFileSync("src/screens/ResultsPage.tsx", "utf8");
 
 describe("composed field focus styling", () => {
   it("cancels the base focus outline on controls inside a field shell", () => {

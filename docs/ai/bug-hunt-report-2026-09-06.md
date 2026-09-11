@@ -63,7 +63,7 @@
 
 1. **Per-match alert quota race (P3):** the daily quota in `onListingPublished` is check-then-act (`count` then send, no transaction). Two concurrent publish events can both pass the quota check → the cap can be exceeded by ~N−1 emails per watcher in a burst. Mitigations: count+mark inside `$transaction`, or a per-watcher daily-counter row. Current publish cadence makes this unlikely but not impossible.
 2. **RERA refresh batch abort (P3):** `refreshStaleReraRecordsForServer` (P1.7) catches provider errors per row, but a throw from the `upsert`/`auditEvent.create` (e.g. an invalid `retrievedAt` from a malformed snapshot) aborts the whole cron batch; remaining STALE rows wait for the next run. Recommendation: per-row try/catch around the write half.
-3. **Coverage copy / Mumbai (P3, policy):** `app/buy/page.tsx:12` ("Architech covers 12 metros … Mumbai, Delhi …") and `src/pages/Home.tsx:48` (same 12-city claim). Per the repo policy in `free-first-design-mcp-workflow.md`, Mumbai is historical context only, and unverified coverage claims violate the "never invent" domain constraint. Product/copy decision — flag to the content owner, do not "fix" by inventing coverage data.
+3. **Coverage copy / Mumbai (P3, policy):** `app/buy/page.tsx:12` ("Architech covers 12 metros … Mumbai, Delhi …") and `src/screens/Home.tsx:48` (same 12-city claim). Per the repo policy in `free-first-design-mcp-workflow.md`, Mumbai is historical context only, and unverified coverage claims violate the "never invent" domain constraint. Product/copy decision — flag to the content owner, do not "fix" by inventing coverage data.
 
 ## Audited and found clean
 

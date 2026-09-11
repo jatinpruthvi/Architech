@@ -33,7 +33,7 @@ const read = (rel: string) => readFileSync(join(repoRoot, rel), "utf8");
 const NAV_SURFACES = [
   { name: "header nav", file: "src/components/architech/Header.tsx" },
   { name: "footer", file: "src/components/architech/Footer.tsx" },
-  { name: "HTML sitemap", file: "src/pages/PublicParity.tsx" },
+  { name: "HTML sitemap", file: "src/screens/PublicParity.tsx" },
 ] as const;
 
 describe("intent navigation parity", () => {

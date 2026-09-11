@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import BrokerLeadInbox from "@/pages/BrokerLeadInbox";
+import BrokerLeadInbox from "@/screens/BrokerLeadInbox";
 import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";

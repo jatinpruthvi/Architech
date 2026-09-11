@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import InvestmentPage from "@/pages/InvestmentPage";
+import InvestmentPage from "@/screens/InvestmentPage";
 import { homeUrl, SITE_URL } from "@/lib/seo/urls";
 import { defaultSocialImage } from "@/lib/seo/social";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";

@@ -428,12 +428,12 @@ Built so the calling ergonomics can be felt on a phone **before** committing to 
 | Calling domain logic — outcomes, stages, §3 mapping, reveal gate, IST calling hours | `src/lib/leads/calling.ts` | **Ships.** Pure and server-safe; Phase 3 moves `decideReveal` behind the reveal endpoint. |
 | Tests for the above (20) | `src/lib/leads/calling.test.ts` | **Ships.** |
 | Prototype fixtures — 5 leads covering hot / follow-up-due / attempt-limit / suppressed / not-stored | `src/lib/leads/calling-prototype-data.ts` | **Deleted 10 Sep 2026** — fixture mode runs the real lead store + call parity instead. |
-| Prototype controls panel (plan switch / closed-hours toggle / lead picker) | `src/pages/BrokerLeadDetail.tsx` | **Deleted 10 Sep 2026** — the server is the only gate authority. |
+| Prototype controls panel (plan switch / closed-hours toggle / lead picker) | `src/screens/BrokerLeadDetail.tsx` | **Deleted 10 Sep 2026** — the server is the only gate authority. |
 | Duplicate catalog (env allow-list drift source behind the PR #70 CI failure) | `src/lib/leads/hygiene.ts` | **Deleted 10 Sep 2026** — `operations/hygiene.ts` is the single catalog. |
 | Post-call result sheet (vaul drawer, dynamically imported) | `src/components/broker/CallResultSheet.tsx` | **Ships.** |
-| Lead detail surface + thumb-anchored call bar | `src/pages/BrokerLeadDetail.tsx` | **Ships**, minus the prototype control panel. |
+| Lead detail surface + thumb-anchored call bar | `src/screens/BrokerLeadDetail.tsx` | **Ships**, minus the prototype control panel. |
 | Route `/broker/leads/[id]/` | `app/broker/leads/[id]/page.tsx` | **Ships.** Fixes M4. |
-| Inbox row → detail link + primary Call action | `src/pages/BrokerLeadInbox.tsx` | **Ships.** |
+| Inbox row → detail link + primary Call action | `src/screens/BrokerLeadInbox.tsx` | **Ships.** |
 | Measurement harness, `pnpm audit:mobile` | `ops/scripts/audit/mobile-audit.mjs` | **Ships.** Produced §2. |
 
 Verified: `tsc --noEmit` clean; `eslint` clean on every new/changed file; **2052 tests pass** (baseline was 2029); the design-token ratchet passes with the new files at **zero** debt — no `text-ink/NN`, no `!text-[10px]`, no `!text-[9px]`, using `.ink-2`/`.ink-3`/`.stamp` instead. The `clay-fill` dark-mode contract and the env-catalog allow-list are both satisfied.

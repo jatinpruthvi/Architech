@@ -1,7 +1,7 @@
 /* About-page FAQ copy.
  *
  * Deliberately in its own module with no "use client" and no React import, so
- * BOTH the client component that renders it (`pages/PublicParity.tsx`) and the
+ * BOTH the client component that renders it (`screens/PublicParity.tsx`) and the
  * server component that emits its FAQPage schema (`app/about-us/page.tsx`) can
  * import the same constant.
  *

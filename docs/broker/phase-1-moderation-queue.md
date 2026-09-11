@@ -10,7 +10,7 @@ The moderation queue is now live rather than a static contract shell. It reads d
 ```text
 app/api/admin/moderation/listings/route.ts          (GET queue)
 app/api/admin/moderation/listings/[draftId]/route.ts (POST decision)
-src/pages/ModerationQueue.tsx
+src/screens/ModerationQueue.tsx
 ```
 
 ## Design rules
