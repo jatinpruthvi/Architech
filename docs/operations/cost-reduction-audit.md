@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-05 (updated for second-pass, in-depth audit)
 **Scope:** Whole repo — runtime, hosting, data, search, media, observability, CI, external calls, schedulers, and documented operational posture.
-**Method:** Reviewed **docs** (`docs/architecture`, `docs/data`, `docs/search`, `docs/observability`, `docs/operations`, `docs/performance`, `docs/media`) and **code** (`app/*`, `client/src/lib/*`, `client/src/pages/*`, `client/src/components/*`, `next.config.ts`, `prisma/*`, `scripts/*`, `.github/workflows/*`, `governance/*`).
+**Method:** Reviewed **docs** (`docs/architecture`, `docs/data`, `docs/search`, `docs/observability`, `docs/operations`, `docs/performance`, `docs/media`) and **code** (`app/*`, `client/src/lib/*`, `client/src/pages/*`, `client/src/components/*`, `next.config.ts`, `prisma/*`, `scripts/*`, `.github/workflows/*`, `config/governance/*`).
 **Status:** Findings; P0/P1 first batch implemented (see status table below).
 
 ## 0. Execution status (first batch, 2026-09-05)
@@ -505,7 +505,7 @@ This audit covers the rest of the app beyond media.
 
 **Plan**
 
-- Keep JS budgets in `performance/budgets.json`.
+- Keep JS budgets in `config/performance/budgets.json`.
 - Add a budget gate for any new route before launch.
 
 #### P2.5 Static assets / repo size
@@ -528,7 +528,7 @@ This audit covers the rest of the app beyond media.
 **Where**
 
 - `docs/operations/backup-restore-cost-readiness.md`
-- `governance/operations/phase-1-operational-readiness.json`
+- `config/governance/operations/phase-1-operational-readiness.json`
 
 **What it says**
 
@@ -586,7 +586,7 @@ This audit covers the rest of the app beyond media.
 - `/api/search/suggest`, `/api/locations/*`, and `/api/sitemap*` already use sensible public cache headers — use them as the pattern for other read endpoints.
 - Bounded search (`MAX_UNSCOPED_LISTING_ROWS`) prevents unbounded table reads.
 - Postgres FTS/trigram indexes and `queryPlan` scaffolding already exist for the SQL search migration.
-- `performance/budgets.json` and `docs/performance/phase-1-baseline.md` enforce JS/image budgets.
+- `config/performance/budgets.json` and `docs/performance/phase-1-baseline.md` enforce JS/image budgets.
 - Mutation safety + origin checks are cheap and free-tier friendly.
 - The repo already documents media/video architecture and the R2 decision.
 
@@ -692,13 +692,13 @@ This audit covers the rest of the app beyond media.
 - `.env.example`
 - `.github/workflows/ci.yml`
 - `.github/workflows/quality.yml`
-- `governance/operations/phase-1-operational-readiness.json`
+- `config/governance/operations/phase-1-operational-readiness.json`
 - `scripts/build-publish.mjs`
 - `scripts/privacy/purge-expired-requirements.mjs`
 - `public/images/*`
 
 ### Docs
-- `docs/architecture/normative/final-three-phase-architecture.md`
+- `docs/docs/architecture/normative/final-three-phase-architecture.md`
 - `docs/data/india-location-operations.md`
 - `docs/data/phase-1-saved-searches.md`
 - `docs/data/prisma-backed-repositories.md`

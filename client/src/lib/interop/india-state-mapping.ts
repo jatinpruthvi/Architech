@@ -60,7 +60,7 @@ export type IndiaStateInterop = {
 };
 
 /* Keyed by LGD name exactly as it appears in
-   data/location/official/lgd-state-ut-2026-08-30.json. Verified against
+   config/data/location/official/lgd-state-ut-2026-08-30.json. Verified against
    india-compliance v16.9.0 (071b544) STATE_NUMBERS. */
 const BY_LGD_NAME: Record<string, IndiaStateInterop> = {
   "Andaman And Nicobar Islands": { lgdCode: "35", lgdName: "Andaman And Nicobar Islands", erpnextState: "Andaman and Nicobar Islands", gstStateCode: "35" },

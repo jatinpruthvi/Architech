@@ -16,7 +16,7 @@
 
 ### Gate result: **PASS** — all budgets green
 
-| Budget (performance/budgets.json) | Limit | Measured | Headroom |
+| Budget (config/performance/budgets.json) | Limit | Measured | Headroom |
 |---|---:|---:|---:|
 | Shared first-load JS baseline (most routes) | ≤ 770.0 KiB raw / 240.0 KiB gzip | 642.4 / 197.0 KiB | 16.6% / 17.9% |
 | `/search` first-load JS | ≤ 820.0 raw / 245.0 gzip | **737.9 / 228.4 KiB** | 10.0% / **6.8%** |
@@ -91,7 +91,7 @@ Every finding above was actioned on the same day; each entry names the change an
 | # | Status | What changed | Measured result |
 |---|---|---|---|
 | F1 | **Implemented** | (a) Root `Toaster` now `dynamic(..., {ssr:false})` in `Providers.tsx` (CompareTray precedent); (b) new `client/src/lib/lazy-toast.ts` — fire-and-forget dynamic `import("sonner")` used by the two universal importers (`CompareContext`, `PropertyCard`); (c) new reproducible attribution tool `pnpm perf:shell` (`scripts/performance/shell-report.mjs`). | Universal shell **642.4 → 609.1 KiB raw (-5.2%)** and **197.0 → 188.0 KiB gzip (-4.6%)**; sonner verified **ejected** from all-route chunks. Remaining ~86% of shell is React/Next framework floor — not splittable; `better-auth` signature persists via `lib/auth` module chain and is logged as a separate reviewed refactor (auth surgery is out of scope for a perf branch). |
-| F2 | **Implemented** | `performance/budgets.json`: `/search` raw ceiling **820000 → 780000** with measured before/after recorded in `why` (773.9@4f7a308 → 737.9@2a447df). | Budget gate passes with the tighter ceiling; /search measured **738.4 KiB raw** post-changes — guard margin restored. |
+| F2 | **Implemented** | `config/performance/budgets.json`: `/search` raw ceiling **820000 → 780000** with measured before/after recorded in `why` (773.9@4f7a308 → 737.9@2a447df). | Budget gate passes with the tighter ceiling; /search measured **738.4 KiB raw** post-changes — guard margin restored. |
 | F3 | **Resolved by measurement + decision** (watch item retained) | Anatomy measured: homepage 112.8 KiB = 87.4 KiB markup+text (77%) / 23.3 KiB RSC payloads / ~2 KiB scripts. Driver identified: 74 server-rendered inline `<svg>` (lucide) = 26.9 KiB raw — near-free over gzip, but they count against the raw cap. Decision: no sprite refactor now (wide JSX churn for accounting-only benefit); an icon `<use>`-sprite migration is the documented first lever when `/` approaches the cap. | No regression: HTML class still passes at 113.4/128 KiB; decision + anatomy recorded here as the baseline for the next content batch. |
 | F4 | **Implemented** | `next.config.ts` now vendors MapLibre to the version-pinned path `public/vendor/maplibre@6.5.0/` (+ self-cleanup of legacy flat files), injects `NEXT_PUBLIC_MAPLIBRE_VENDOR_PATH` at build time, and adds a matching headers rule `Cache-Control: public, max-age=31536000, immutable`; `MapListSync.tsx` loads JS+CSS from the injected path. | Verified: versioned files on disk, legacy files removed, header rule present; budget totals unchanged (vendor stays out of chunks). Repeat visits no longer revalidate 1.14 MB of map code. |
 | F5 | **Implemented** | `next.config.ts` comment drift fixed: fonts are credited to the actual `@fontsource` imports in `app/layout.tsx`; the media block now documents the intentional dual path (`image-loader.ts` pure module == `loaderFile`). | Comment-only change; no runtime effect, verified by inspection. |

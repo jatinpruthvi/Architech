@@ -18,7 +18,7 @@
    BUNDLE: this component is loaded with next/dynamic by BrokerLeadDetail.
    vaul + the sheet markup must not sit in the route's first-load JS — the same
    reason FilterSheet.tsx documents for the /search filter drawer, and the same
-   240 KB gzip ceiling in performance/budgets.json. */
+   240 KB gzip ceiling in config/performance/budgets.json. */
 
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
 import { AlertTriangle, PhoneOff } from "lucide-react";

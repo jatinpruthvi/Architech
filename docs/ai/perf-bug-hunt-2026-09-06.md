@@ -47,7 +47,7 @@ First-load posture after F1–F6 is stable with **zero drift** since the audit m
 
 ### 4.1 PERF-BUG-16-001 — governance list queries unbounded (P3, data class) — FIXED
 
-**Evidence.** `client/src/lib/governance/server.ts` contained three Prisma-style `findMany` calls with **no `take` and no pagination contract**:
+**Evidence.** `client/src/lib/config/governance/server.ts` contained three Prisma-style `findMany` calls with **no `take` and no pagination contract**:
 
 | Call site | Query | Before fix |
 |---|---|---|
@@ -59,7 +59,7 @@ First-load posture after F1–F6 is stable with **zero drift** since the audit m
 
 **Fix.** Single module-level constant `GOVERNANCE_LIST_PAGE_CAP = 500` (documented in-code: preserves newest-first semantics; zero behaviour change below the cap; bounds worst-case memory/serialization). Applied `take: GOVERNANCE_LIST_PAGE_CAP` at all three call sites.
 
-**Guard.** New `client/src/lib/governance/server-query-caps.test.ts` asserts at source level that (a) the cap constant exists and is positive, and (b) **every** `findMany` in `governance/server.ts` passes `take: GOVERNANCE_LIST_PAGE_CAP`. A source-level (filesystem) guard was chosen deliberately: `server.ts` begins with `import "server-only"`, which throws under plain vitest, so behavioural mocking of the Prisma client is impractical; the fs-regex pattern mirrors the proven `env-docs-parity.test.ts` guard from round 2 and makes the *class* of regression CI-visible.
+**Guard.** New `client/src/lib/config/governance/server-query-caps.test.ts` asserts at source level that (a) the cap constant exists and is positive, and (b) **every** `findMany` in `config/governance/server.ts` passes `take: GOVERNANCE_LIST_PAGE_CAP`. A source-level (filesystem) guard was chosen deliberately: `server.ts` begins with `import "server-only"`, which throws under plain vitest, so behavioural mocking of the Prisma client is impractical; the fs-regex pattern mirrors the proven `env-docs-parity.test.ts` guard from round 2 and makes the *class* of regression CI-visible.
 
 **Guard self-validation (failing-first).** The guard initially failed twice during authoring — first on a wrong relative path depth (governance is one directory deeper than `lib/`), then on a regex that truncated at the first `}` of a nested `orderBy` object. Both were fixed before the green run, confirming the guard actually executes its assertions rather than vacuously passing.
 

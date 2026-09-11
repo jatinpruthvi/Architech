@@ -11,8 +11,8 @@ railway.json
 docker-compose.production-like.yml
 .env.staging.example
 .env.production.example
-governance/environments/phase-1-environments.json
-governance/secrets/phase-1-secret-inventory.json
+config/governance/environments/phase-1-environments.json
+config/governance/secrets/phase-1-secret-inventory.json
 ```
 
 ## Local production-like rehearsal
@@ -69,7 +69,7 @@ pnpm test:perf
 
 1. Verify production domain property.
 2. Submit `/sitemap.xml`.
-3. Run URL inspection samples from `seo/monitoring/search-console.config.json`.
+3. Run URL inspection samples from `config/seo/search-console.config.json`.
 
 ## Launch block rule
 

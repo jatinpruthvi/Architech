@@ -759,7 +759,12 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 .vh-fill-dvh { min-height: 100vh; }
 .vh-sheet { max-height: 94vh; }
 .vh-cta { height: 62vh; }
-.rail-scroll { max-height: calc(100vh - 130px); }
+/* The rail is a column flex container, not just a max-height box: the filter
+   panel's `h-full` resolves to auto against a max-height-only ancestor, which
+   let the unconstrained panel spill over the footer (the inner scroll never
+   engaged). Flexbox clamps the panel item to the capped main size instead —
+   the same contract the mobile sheet gets by capping its own flex container. */
+.rail-scroll { display: flex; flex-direction: column; max-height: calc(100vh - 130px); }
 @supports (height: 100svh) {
   .vh-fill { min-height: 100svh; }
   .vh-sheet { max-height: 94svh; }
@@ -767,7 +772,7 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 }
 @supports (height: 100dvh) {
   .vh-fill-dvh { min-height: 100dvh; }
-  .rail-scroll { max-height: calc(100dvh - 130px); }
+  .rail-scroll { display: flex; flex-direction: column; max-height: calc(100dvh - 130px); }
 }
 @media (min-width: 1024px) {
   .vh-cta { height: calc(100vh - 190px); }

@@ -141,7 +141,7 @@ Every `lastmod` is a plain `YYYY-MM-DD` calendar date — never a clock timestam
 
 **Decision: Implemented as governance; publication is gated.**
 
-The authority and outreach contracts exist (`client/src/lib/governance/authority.ts`, `seo/authority/off-page-authority-google-first-appendix.md`), including methodology disclosure and outreach provenance. Creating the linkable assets the document lists (locality price reports, rent-vs-buy and stamp-duty calculators, metro-impact reports, RERA trackers) requires verified source data first.
+The authority and outreach contracts exist (`client/src/lib/config/governance/authority.ts`, `docs/seo/authority/off-page-authority-google-first-appendix.md`), including methodology disclosure and outreach provenance. Creating the linkable assets the document lists (locality price reports, rent-vs-buy and stamp-duty calculators, metro-impact reports, RERA trackers) requires verified source data first.
 
 **Rejected outright:** paid link packages, private blog networks, comment spam, expired-domain tricks, and fake reviews. These are recorded as unacceptable in both existing registers.
 

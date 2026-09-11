@@ -396,6 +396,27 @@ describe("viewport geometry is mobile-real", () => {
       expect(/\d[sd]vh\b/.test(modern), `.${utility} must be re-declared inside its @supports block`).toBe(true);
     }
   });
+
+  it("gives the search rail a definite-height chain, not just a max-height cap", () => {
+    /* `.rail-scroll` caps its BOX with max-height, but that does not constrain
+       its CONTENT: the panel root's `h-full` resolves to `auto` against a
+       max-height-only ancestor (CSS 2.1 §10.5 — percentage heights need a
+       definite parent height), so the panel lays out at full content height,
+       the inner `flex-1 overflow-y-auto` never engages, and the overflow
+       (visible by default) paints the filter over the footer. A column flex
+       container fixes the chain: flexbox clamps the item (the panel root
+       already carries `min-h-0`) to the max-height-clamped main size, which
+       gives the panel a definite used height — the same working pattern as the
+       mobile sheet, whose max-height sits on the flex container itself. */
+    for (const [rule, where] of [
+      [/^\.rail-scroll \{([^}]*)\}/m.exec(css)?.[1] ?? "", "top-level fallback rule"],
+      [new RegExp("\\.rail-scroll \\{([^}]*)\\}").exec(css.slice(css.indexOf("@supports (height: 100dvh)")))?.[1] ?? "", "@supports (height: 100dvh) rule"],
+    ] as const) {
+      expect(rule, `.rail-scroll ${where} is missing`).not.toBe("");
+      expect(rule, `.rail-scroll ${where} must be a column flex container so the h-full panel is clamped and scrolls internally`).toContain("display: flex");
+      expect(rule, `.rail-scroll ${where} must stack its panel vertically`).toContain("flex-direction: column");
+    }
+  });
 });
 
 /* ------------------------------------------------------------------

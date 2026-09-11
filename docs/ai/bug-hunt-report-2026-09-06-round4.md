@@ -309,7 +309,7 @@ const seenViews = new Set<string>();                      // key = `${listingId}
 
 **Why the CI guard missed it.** This round's own `unbounded-state-guard.test.ts` passed on this file because `resetListingStatsForTests()` calls `.clear()` — a helper that only ever runs under vitest. A test-reset helper is not an eviction path. The guard now strips `reset*`/`*ForTests` function bodies before checking, and treats a call to an `evict*` helper as a legitimate bound. **Verified by removing the eviction and watching the guard go red on both containers**, then restoring.
 
-The 12 demo-store maps that had been passing on the same false negative (`broker/channel.ts` ×7, `governance/registry.ts` ×2, `leads/lead.ts`, `requirements.ts`, `rera/rera.ts`) are now explicitly marked `bounded-state:` — they are fixture-mode only, selected by `getPersistenceMode()` when `ARCHITECH_DATA_SOURCE !== "prisma"`, and that gating is enforced by `pnpm production:plan:audit`.
+The 12 demo-store maps that had been passing on the same false negative (`broker/channel.ts` ×7, `config/governance/registry.ts` ×2, `leads/lead.ts`, `requirements.ts`, `rera/rera.ts`) are now explicitly marked `bounded-state:` — they are fixture-mode only, selected by `getPersistenceMode()` when `ARCHITECH_DATA_SOURCE !== "prisma"`, and that gating is enforced by `pnpm production:plan:audit`.
 
 **The fix.** `MAX_TRACKED_LISTINGS = 5_000`, `MAX_SEEN_VIEW_KEYS = 50_000`, insertion-order eviction (no sort, for the reason in `utils/bounded-window-map.ts`), plus `listingStatsStoreCounts()` for observability.
 

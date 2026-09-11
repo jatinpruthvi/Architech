@@ -30,7 +30,7 @@ import { LEAD_STAGE_LABELS, type CallOutcome, type LeadStage } from "@/lib/leads
 import type { LeadDetailRecord } from "@/lib/leads/lead";
 
 /* Dynamic on purpose: vaul plus the sheet's markup stays out of this route's
-   first-load JS, under the 240 KB gzip ceiling in performance/budgets.json.
+   first-load JS, under the 240 KB gzip ceiling in config/performance/budgets.json.
    Same rule FilterSheet.tsx documents for /search. */
 const CallResultSheet = dynamic(() => import("@/components/broker/CallResultSheet"), { ssr: false });
 

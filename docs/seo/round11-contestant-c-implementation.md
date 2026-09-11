@@ -106,7 +106,7 @@ Original street-level photography, resident interviews, distances to tech parks 
 
 **Decision: Already implemented, with one item rejected.**
 
-Next-gen formats (WebP/AVIF), lazy-loading below the fold, eager hero with priority, explicit image dimensions, a CDN, and minimised JavaScript all exist and are enforced by route budgets in `performance/budgets.json`.
+Next-gen formats (WebP/AVIF), lazy-loading below the fold, eager hero with priority, explicit image dimensions, a CDN, and minimised JavaScript all exist and are enforced by route budgets in `config/performance/budgets.json`.
 
 **Rejected: "aim for a PageSpeed Insights score of 90+".** A Lighthouse score is a lab diagnostic on a synthetic run, not a ranking factor and not a substitute for field data. The register is explicit: measure the 75th-percentile Core Web Vitals (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1) from real users. Chasing a lab score encourages optimising for the test rather than for users.
 

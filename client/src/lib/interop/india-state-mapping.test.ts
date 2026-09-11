@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import lgdSnapshot from "../../../../data/location/official/lgd-state-ut-2026-08-30.json";
+import lgdSnapshot from "../../../../config/data/location/official/lgd-state-ut-2026-08-30.json";
 import {
   GSTIN_FORMAT,
   PINCODE_FORMAT,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const evidence = JSON.parse(readFileSync("governance/release/phase-1-release-evidence.json", "utf8"));
+const evidence = JSON.parse(readFileSync("config/governance/release/phase-1-release-evidence.json", "utf8"));
 const report = readFileSync("docs/release/phase-1-release-report.md", "utf8");
 
 describe("Phase 1 release report", () => {

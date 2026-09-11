@@ -64,4 +64,4 @@ for (const chunkPath of shellChunks) {
 console.log(`\nShell total: ${formatKiB(rawTotal)} raw / ${formatKiB(gzipTotal)} gzip on every one of ${totalRoutes} routes.`);
 console.log("Known framework floor (react-dom + next runtime chunks) cannot be split further;");
 console.log("treat app-library signatures above as the only legitimate split candidates.");
-console.log("Advisory report — no budget enforced here; budgets live in performance/budgets.json.");
+console.log("Advisory report — no budget enforced here; budgets live in config/performance/budgets.json.");

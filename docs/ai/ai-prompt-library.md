@@ -60,8 +60,8 @@ IMMOVABLE RULES:
 
 SOURCE OF TRUTH READING ORDER:
 1. README.md → section "How an AI coding system should use this repository".
-2. architecture/normative/final-three-phase-architecture.md before production code.
-3. governance/contracts/DOMAIN-CONTRACTS.md and IMPLEMENTATION-MATRIX.md for
+2. docs/architecture/normative/final-three-phase-architecture.md before production code.
+3. config/governance/contracts/DOMAIN-CONTRACTS.md and IMPLEMENTATION-MATRIX.md for
    vocabulary and feature-to-code mapping.
 4. STATUS.md before declaring anything done.
 
@@ -84,8 +84,8 @@ QUALITY GATES (run before claiming completion):
 ```text
 CONTEXT: You have just joined the Architech repository. Read in this exact order and
 summarize each in one line as you go: README.md ("How an AI coding system should use
-this repository"), STATUS.md, architecture/normative/final-three-phase-architecture.md,
-governance/contracts/DOMAIN-CONTRACTS.md, governance/contracts/IMPLEMENTATION-MATRIX.md.
+this repository"), STATUS.md, docs/architecture/normative/final-three-phase-architecture.md,
+config/governance/contracts/DOMAIN-CONTRACTS.md, config/governance/contracts/IMPLEMENTATION-MATRIX.md.
 ROLE: Senior engineer taking ownership of a codebase they did not write.
 ACTION:
 1. State the canonical entity model, route grammar, SeoPage registry role, and
@@ -134,7 +134,7 @@ ACTION:
 2. Contract violations: invented facts, client-rendered public surface, fake anchors,
    broken localization fields, missing metadata, registry bypass.
 3. Security and privacy: input validation, auth boundaries, RLS-sensitive queries,
-   secrets handling, legal-gate surfaces (governance/legal/LEGAL-GATES.md).
+   secrets handling, legal-gate surfaces (config/governance/legal/LEGAL-GATES.md).
 4. Accessibility: semantic HTML, keyboard paths, contrast tokens.
 5. Tests: which gates cover the change; what is missing.
 FORMAT: Findings table — severity (blocker / should-fix / nit), file:line, the rule
@@ -283,7 +283,7 @@ FORMAT: Contract citation, schema diff, query diffs, migration steps, gate outpu
 
 ```text
 CONTEXT: Architech gates: pnpm security:headers, pnpm security:rls, pnpm legal:gates
-(combined: pnpm security:audit); governance/legal/LEGAL-GATES.md; privacy retention in
+(combined: pnpm security:audit); config/governance/legal/LEGAL-GATES.md; privacy retention in
 scripts/privacy. Change under review: {describe or paste diff}.
 ROLE: Application security reviewer for a consumer real-estate platform in India.
 ACTION:
@@ -414,7 +414,7 @@ alone, without rerunning your session.
 
 ```text
 CONTEXT: Proactive performance-bug hunt on the Architech repository (ARCH-CTX).
-Performance evidence is first-class here: performance/budgets.json caps,
+Performance evidence is first-class here: config/performance/budgets.json caps,
 scripts/performance/budget.mjs, pnpm perf:shell (universal-shell attribution),
 .next/diagnostics/route-bundle-stats.json after a build, the RUM reporter
 (WebVitalsReporter), and .github/workflows/lighthouse.yml for lab runs.
@@ -495,7 +495,7 @@ ACTION:
    documented constant (precedent: GOVERNANCE_LIST_PAGE_CAP, capped at 500).
    Guard the class so it cannot return: source-level Vitest guard for modules
    importing "server-only" (precedent:
-   client/src/lib/governance/server-query-caps.test.ts); behavioural tests
+   client/src/lib/config/governance/server-query-caps.test.ts); behavioural tests
    where the module is importable.
 6. Schema/index changes: require a migration and pnpm db:validate. If the
    migration cannot be verified in the sandbox, DO NOT ship it — flag the
@@ -647,5 +647,5 @@ TARGET AUDIENCE: reviewers re-verifying every claim from artifacts alone.
 - Community source: canonical prompts.chat dataset fetched and inspected directly; entries quoted above (Prompt Generator/CRAFT, Linux Terminal, JavaScript Console, SQL Terminal, Web Design Consultant, Tech Reviewer) were located and content-checked.
 - MCP path: the stdio bridge handshake and `tools/list` were tested live against the real server this date; tools available: `search_prompts`, `get_prompt` (server `prompts-chat` v1.0.9).
 - MCP transports (second pass, same date): editor-style HTTP POST (`initialize` + `tools/call`) and the unmodified local stdio bridge (`initialize`, `search_prompts`, `get_prompt`) both exercised end-to-end against a localhost stub emulating the upstream API, returning well-formed prompt results. The throwaway npx cache was patched back afterwards; no repo files touched.
-- Repo cross-check: every path, alias, script, and contract file named in ARCH-01..ARCH-13 was verified to exist in the repo at this date (incl. `pnpm check|lint|test|db:validate|test:a11y|audit:contrast|security:audit|test:seo|test:crawl|quality`, `client/src/lib/seo/pages-server.ts`, `governance/contracts/*`, `governance/legal/LEGAL-GATES.md`, `scripts/privacy`, `scripts/audit-surface-contrast.mjs`).
+- Repo cross-check: every path, alias, script, and contract file named in ARCH-01..ARCH-13 was verified to exist in the repo at this date (incl. `pnpm check|lint|test|db:validate|test:a11y|audit:contrast|security:audit|test:seo|test:crawl|quality`, `client/src/lib/seo/pages-server.ts`, `config/governance/contracts/*`, `config/governance/legal/LEGAL-GATES.md`, `scripts/privacy`, `scripts/audit-surface-contrast.mjs`).
 - Note: the authoring sandbox cannot reach prompts.chat over TLS (`SSL_ERROR_SYSCALL` on direct POST, `fetch failed` on the live bridge's `tools/call`) — a sandbox egress restriction, not a configuration problem. Live-upstream validation therefore used the canonical dataset fetch above; both transports return real prompt data on a normal developer machine. **For future sessions: don't try-and-fail the MCP in such environments — follow the validated retrieval playbook in Section C.**

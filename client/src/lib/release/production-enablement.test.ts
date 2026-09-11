@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const plan = JSON.parse(readFileSync("governance/release/production-enablement-plan.json", "utf8"));
+const plan = JSON.parse(readFileSync("config/governance/release/production-enablement-plan.json", "utf8"));
 
 describe("production enablement plan", () => {
   it("keeps production blocked until evidence gates pass", () => {

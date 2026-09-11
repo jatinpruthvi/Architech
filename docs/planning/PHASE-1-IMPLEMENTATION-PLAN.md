@@ -7,9 +7,9 @@
 
 This tracker is derived from:
 
-- `governance/contracts/IMPLEMENTATION-MATRIX.md`
-- `governance/contracts/REQUIREMENTS.md`
-- `architecture/normative/final-three-phase-architecture.md`
+- `config/governance/contracts/IMPLEMENTATION-MATRIX.md`
+- `config/governance/contracts/REQUIREMENTS.md`
+- `docs/architecture/normative/final-three-phase-architecture.md`
 - Current merged implementation through PR #2: Next.js 16 migration, dark mode, Hindi foundation, and SSR/SEO prototype foundation.
 
 ---
@@ -401,7 +401,7 @@ For docs-only changes, TypeScript/build validation is optional unless package/co
 
 ### Evidence
 
-- Added `performance/budgets.json` with Phase 1 budgets for route first-load JS, gzip JS, HTML, static chunks, image assets, and Core Web Vitals targets.
+- Added `config/performance/budgets.json` with Phase 1 budgets for route first-load JS, gzip JS, HTML, static chunks, image assets, and Core Web Vitals targets.
 - Added `scripts/performance/budget.mjs`.
 - Added `docs/performance/phase-1-baseline.md`.
 - Added `pnpm test:perf`.

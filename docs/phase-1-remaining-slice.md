@@ -15,7 +15,7 @@
 | 6 | P1-OBS-001 | `client/src/lib/observability/slo.ts` + `trace.ts` | `/api/observability/slo` route | `slo.test.ts` |
 | 7 | P1-MEDIA-001, P1-DATA-002 | `client/src/lib/media/retention.ts` | media pipeline contract | `retention.test.ts` |
 | 8 | P1-SEO-004 | `client/src/lib/seo/gsc.ts` | provider-abstracted GSC ingestion | `gsc.test.ts` |
-| 9 | P1-OFF-001 | `client/src/lib/governance/authority.ts` | outreach/disclosure governance | `authority.test.ts` |
+| 9 | P1-OFF-001 | `client/src/lib/config/governance/authority.ts` | outreach/disclosure governance | `authority.test.ts` |
 | 10 | P1-PLAT-001 | `client/src/lib/operations/hygiene.ts` | secret/remote-env/rollback checks | `hygiene.test.ts` |
 
 ## Industrial practices applied

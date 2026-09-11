@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 
-const config = JSON.parse(fs.readFileSync("governance/operations/phase-1-operational-readiness.json", "utf8"));
+const config = JSON.parse(fs.readFileSync("config/governance/operations/phase-1-operational-readiness.json", "utf8"));
 const failures = [];
 
 function positiveNumber(field) {
