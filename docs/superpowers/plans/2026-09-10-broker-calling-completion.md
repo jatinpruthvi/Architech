@@ -2161,7 +2161,7 @@ Reviewed 11 Sep 2026. The feature work is already in `main` via merged PR #72, s
 2. `client/src/lib/repositories/server/prisma.ts` (+4): adds `marketplaceSubscription` to the structural `PrismaClientLike` type so the new prisma queries are type-safe.
 3. `client/src/pages/ListingSubmission.tsx` (−4): removes a public page's link to `/admin/moderation/listings` — a public→admin link, part of the crawl/typo-link CI fix; consistent with "admin pages are unlinked by design".
 
-- [ ] **Step 4: Push and update the PR**
+- [x] **Step 4: Push and update the PR**
 
 ```bash
 git push origin arena/01a08b50-architech
@@ -2169,15 +2169,21 @@ git push origin arena/01a08b50-architech
 
 Update PR #71 (or open a follow-up PR if the two CI fixes have merged separately by then) with a description covering: the two CI fixes (env catalog parity, crawl/typo link) AND this feature completion — spec path, what was built (routes, gate, super admin, plan admin, purge), the deliberate behaviour change (prisma orgs without a plan cannot call until activated — activation steps: `node scripts/auth/make-super-admin-hash.mjs` → set `ARCHITECH_SUPER_ADMIN_PASSWORD_HASH` + `BETTER_AUTH_SECRET` in the deployment → sign in at `/admin/plans` → enter the broker's login id → grant a plan), and the verification evidence from Step 1.
 
-- [ ] **Step 5: Watch CI to green**
+Done 11 Sep 2026: the feature work already reached `main` via merged PR #72 (its original push target `arena/01a08b50-architech` was consumed by that merge), so this session's branch `arena/01a08e68-architech` was pushed to origin with the verification commits, and the PR record was added as a comment on the merged PR — https://github.com/jatinpruthvi/Architech/pull/72#issuecomment-5628926928 — covering the spec path, what was built (routes, gate, super admin, plan admin, purge), the deliberate behaviour change with the manual activation steps, and the Step 1/2/3 verification evidence.
+
+- [x] **Step 5: Watch CI to green**
 
 Poll `gh pr checks` until the `verify` job completes. If any step fails, return to systematic debugging (no symptom fixes) and loop. Expected remaining CI-only risk: the playwright a11y/ui jobs (browser-based) — they were passing before this branch and this branch adds no public-surface markup.
 
-- [ ] **Step 6: Close out the documentation**
+Confirmed 11 Sep 2026: PR #72 is merged and its CI `verify` job on merge commit `183b7de` is SUCCESS (4m46s, completed 2026-09-11T02:36:16Z, before the merge) — the job covers `db:validate`, the full test suite, build, e2e, perf, and the playwright a11y/ui jobs flagged as the only CI-only risk. No debugging loop needed.
+
+- [x] **Step 6: Close out the documentation**
 
 - `docs/business-suite/mobile-calling-implementation-plan.md` — already updated in Task 4; verify the checkboxes match reality.
 - Add a one-paragraph "Status (10 Sep 2026)" note at the top of the plan doc's §11: Phases 2–4 complete per `docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md`; M1/M5/Phase 5 remain; plan activation is manual via `/admin/plans` (no payment gateway, by owner decision).
 - Commit any doc-only tweaks with `docs: refresh mobile-calling plan status after Phases 2–4 completion`.
+
+Done 11 Sep 2026: verified `docs/business-suite/mobile-calling-implementation-plan.md` against the merged code — D3 row already carried the final mechanism; ticked the Phase 2 purge item (landed as `scripts/privacy/purge-expired-leads.mjs`) and the Phase 5 waMeLink item (shipped with the reveal); corrected the stale Phase 1 note (call action reveals through the server endpoint, not fixtures); added the Status (10 Sep 2026) paragraph at the top of §11. Committed as `docs: refresh mobile-calling plan status after Phases 2–4 completion`.
 
 ## Self-Review Notes (plan author)
 
