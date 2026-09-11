@@ -199,3 +199,27 @@ for (const r of results) {
   for (const t of r.tapRisks.slice(0, 5)) console.log(`   TAP       <${t.tag}> ${t.label || t.cls}`);
   for (const g of r.grids.slice(0, 4)) console.log(`   GRID      <${g.tag}> grid-cols-${g.cols} (no mobile-first variant)  ${g.cls}`);
 }
+
+/* Exit status. This script had none: every route could fail to fetch and it
+   still exited 0, so "server down" and "audit clean" were indistinguishable to
+   a caller. A route we could not audit is never a pass — it is the one thing
+   this script cannot vouch for. Mirrors pwa-audit.mjs, which already does this.
+
+   Advisory findings (overflow / tapRisk / grid) are deliberately NOT fatal:
+   they are review signals, not breakage. Only unauditable routes and non-200
+   responses fail the run. */
+const errored = results.filter((r) => r.status === "ERROR");
+const badStatus = results.filter((r) => r.status !== "ERROR" && Number(r.status) !== 200);
+const findings = results.reduce(
+  (total, r) => total + (r.overflowCount ?? 0) + (r.tapRiskCount ?? 0) + (r.gridCount ?? 0),
+  0
+);
+console.log(
+  `\n${results.length - errored.length - badStatus.length}/${results.length} routes audited at ${BASE}; ` +
+    `${findings} advisory finding(s).`
+);
+if (errored.length || badStatus.length) {
+  if (errored.length) console.error(`✗ ${errored.length} route(s) could not be audited`);
+  if (badStatus.length) console.error(`✗ ${badStatus.length} route(s) returned a non-200 status`);
+  process.exit(1);
+}
