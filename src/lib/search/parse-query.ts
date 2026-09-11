@@ -49,12 +49,12 @@ const INTENT_WORDS: { intent: MarketIntent; words: string[] }[] = [
 ];
 
 const CATEGORY_WORDS: { category: Exclude<MarketCategory, "all">; words: string[] }[] = [
-  { category: "commercial", words: ["commercial", "office", "offices", "shop", "showroom", "retail"] },
+  { category: "commercial", words: ["commercial", "office", "offices", "shop", "showroom", "retail", "दुकान"] },
   { category: "pg", words: ["pg", "hostel", "coliving", "co-living"] },
-  { category: "plot", words: ["plot", "plots"] },
+  { category: "plot", words: ["plot", "plots", "प्लॉट", "प्लाट"] },
   { category: "land", words: ["land", "farmland", "agricultural"] },
   { category: "auction", words: ["auction", "auctions", "repossessed"] },
-  { category: "residential", words: ["residential", "home", "homes", "house", "houses", "flat", "flats", "apartment", "apartments"] },
+  { category: "residential", words: ["residential", "home", "homes", "house", "houses", "flat", "flats", "apartment", "apartments", "घर", "मकान"] },
 ];
 
 const FILTER_PHRASES: { id: string; phrases: string[] }[] = [
@@ -62,8 +62,8 @@ const FILTER_PHRASES: { id: string; phrases: string[] }[] = [
   { id: "availability-ready", phrases: ["ready to move", "ready-to-move", "ready possession", "move in ready"] },
   { id: "availability-new", phrases: ["new launch", "new-launch", "newly launched", "pre launch"] },
   { id: "availability-resale", phrases: ["resale", "re-sale"] },
-  { id: "type-apartment", phrases: ["apartment", "flat"] },
-  { id: "type-villa", phrases: ["villa", "bungalow"] },
+  { id: "type-apartment", phrases: ["apartment", "flat", "फ्लैट"] },
+  { id: "type-villa", phrases: ["villa", "bungalow", "बंगला", "कोठी"] },
   { id: "type-rowhouse", phrases: ["rowhouse", "row house"] },
 ];
 
@@ -72,6 +72,11 @@ const STOP_WORDS = new Set([
   "in", "at", "near", "nearby", "around", "the", "a", "an", "for", "with", "and", "of", "to",
   "me", "my", "property", "properties", "bhk", "under", "below", "upto", "up", "budget",
   "within", "cr", "crore", "crores", "lakh", "lakhs", "lac", "l",
+  /* Hindi function words — the same "no scope on their own" class, in the
+     script a Hindi-first searcher types. Without them "अमदावाद में घर" leaks
+     "में" into the residual, which the matcher then ANDs against nothing. */
+  "में", "मे", "पर", "के", "की", "का", "को", "से", "है", "हैं", "और", "आसपास", "पास",
+  "नज़दीक", "नजदीक", "निकट", "ढूंढ", "चाहिए",
 ]);
 
 /* ---------- Number parsing ---------- */

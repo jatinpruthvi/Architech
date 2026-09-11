@@ -16,6 +16,7 @@
 
    Pure and server-safe: no request, no clock, no I/O. */
 import { getPublishableSeoPages, sitemapSegmentForPage, type SeoPage, type SeoSitemapSegment } from "./pages";
+import { sitemapActionForLifecycle } from "./lifecycle";
 import { isPublicIndexingEnabled, type RuntimeEnvironment } from "./runtime";
 import { imageSitemapUrl, sitemapSegmentUrl } from "./urls";
 
@@ -59,13 +60,30 @@ export function isSitemapSegment(value: string): value is SeoSitemapSegment {
   return SEGMENT_IDS.has(value);
 }
 
+/** Drop listing pages whose lifecycle is no longer ACTIVE (P1-SEO-003).
+
+    Defense-in-depth: the registry's indexability gate already keeps non-ACTIVE
+    listings out of the publishable set, but a sitemap is a submission to
+    Google — it must not trust an upstream filter. A regression that re-marked
+    an EXPIRED/REMOVED/DUPLICATE listing indexable would otherwise submit a
+    404/410/301 URL. Non-listing pages carry no lifecycle and are always kept. */
+export function pruneLifecycleExpiredPages(pages: SeoPage[]): SeoPage[] {
+  return pages.filter(
+    (page) => page.routeType !== "listing" || (page.lifecycle && sitemapActionForLifecycle(page.lifecycle) === "keep"),
+  );
+}
+
 /** Published pages in one segment, in registry order.
 
-    "Published" is registry-indexable **and** quality-gate approved. A page the
-    gate holds back stays useful to users but is never submitted to Google —
-    which is exactly what makes programmatic page generation safe. */
+    "Published" is registry-indexable **and** quality-gate approved, **and**
+    — for listing pages — still ACTIVE (lifecycle-expired URLs are pruned, see
+    `pruneLifecycleExpiredPages`). A page the gate holds back stays useful to
+    users but is never submitted to Google — which is exactly what makes
+    programmatic page generation safe. */
 export function getSegmentPages(segment: SeoSitemapSegment, pages?: SeoPage[]): SeoPage[] {
-  return (pages ?? getPublishableSeoPages()).filter((page) => sitemapSegmentForPage(page) === segment);
+  return pruneLifecycleExpiredPages(pages ?? getPublishableSeoPages()).filter(
+    (page) => sitemapSegmentForPage(page) === segment,
+  );
 }
 
 /** Every page must land in exactly one child sitemap — a page in two is a

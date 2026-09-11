@@ -79,6 +79,7 @@ export const demoBrokerSession: AuthSession = {
     "listing.review.moderate",
     "media.moderation.write",
     "rera.corrections.write",
+    "content.guides.write",
     "media.upload.write",
     "saved-search.read",
     "saved-search.write",
@@ -116,6 +117,7 @@ const ROLE_PERMISSIONS_SOURCE: string[] = [
   "moderation.queue.read",
   "moderation.listings.write",
   "listing.review.moderate",
+  "content.guides.write",
   "rera.corrections.write",
   "saved-search.read",
   "saved-search.write",
@@ -163,6 +165,7 @@ const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
     "authority.registry.read",
     "authority.registry.write",
     "rera.corrections.write",
+    "content.guides.write",
   ],
   /* ADMIN bypasses checks via `requirePermission`; the list exists so a
      session introspection shows the role's surface. */
