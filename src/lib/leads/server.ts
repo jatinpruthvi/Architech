@@ -5,6 +5,7 @@ import { buildLeadIdempotencyKey, validateCallerIdempotencyKey, IdempotencyKeyEr
 import { enqueueLeadWhatsAppAcknowledgement } from "@/lib/whatsapp/dispatch";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import { withTenantPrisma, type PrismaTenantClient } from "@/lib/repositories/server/tenant";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import { encryptContact } from "@/lib/interop/contact-crypto";
 import { normalizeIndianPhone } from "@/lib/interop/phone";
@@ -105,7 +106,17 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
      in `organizationId` is discarded -- that field decides which inbox the
      lead lands in. The opaque key is carried into every public contract. */
   const owning = { ...input, organizationId: listing.brokerOrgId ?? null, idempotencyKey: key };
-  const existing = await prisma.lead.findUnique({ where: { idempotencyKey: key } });
+  /* Lead, AuditEvent, and the WhatsApp dispatch tables are FORCE RLS. The
+     public listing lookup above is intentionally unscoped, but every broker
+     lead read/write below must enter the listing's organization transaction
+     before touching tenant-owned rows. */
+  const readExistingLead = async () => {
+    if (!listing.brokerOrgId) return prisma.lead.findUnique({ where: { idempotencyKey: key } });
+    return withTenantPrisma(prisma as unknown as PrismaTenantClient, listing.brokerOrgId, async (tenantTx) => {
+      return (tenantTx as unknown as PrismaLeadClient).lead.findUnique({ where: { idempotencyKey: key } });
+    });
+  };
+  const existing = await readExistingLead();
   if (existing && typeof existing === "object") {
     // Avoid exposing raw DB rows; return deterministic contract shape.
     const lead = dbLeadContract(owning, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);
@@ -114,7 +125,7 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
 
   let result: { dbLead: { id: string; createdAt: Date }; audit: { id: string } };
   try {
-    result = await prisma.$transaction(async (tx) => {
+    const writeLead = async (tx: PrismaLeadClient) => {
       const dbLead = await tx.lead.create({
         data: {
           listingId: listing.id,
@@ -158,14 +169,21 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
         expiresAt: new Date(Date.now() + 15 * 60 * 1000),
       });
       return { dbLead, audit };
-    });
+    };
+    result = listing.brokerOrgId
+      ? await withTenantPrisma(prisma as unknown as PrismaTenantClient, listing.brokerOrgId, (tenantTx) => writeLead(tenantTx as unknown as PrismaLeadClient))
+      : await prisma.$transaction(writeLead);
   } catch (error) {
     /* B-5: two concurrent identical posts (double-click, retry, two tabs) can
        both pass the findUnique above; the second must not become a 500. The
        unique constraint is the arbiter — return the winner as a duplicate. */
     if (isUniqueViolation(error)) {
-      const winner = (await prisma.lead.findUnique({ where: { idempotencyKey: key } })) as { id: string } | null;
-      const row = winner ? await refetchLeadOrNotFound(prisma, winner.id) : null;
+      const winner = (await readExistingLead()) as { id: string } | null;
+      const row = winner
+        ? listing.brokerOrgId
+          ? await withTenantPrisma(prisma as unknown as PrismaTenantClient, listing.brokerOrgId, (tenantTx) => refetchLeadOrNotFound(tenantTx as unknown as PrismaLeadClient, winner.id))
+          : await refetchLeadOrNotFound(prisma, winner.id)
+        : null;
       const lead = row
         ? dbLeadRowToContract(row)
         : dbLeadContract(owning, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);

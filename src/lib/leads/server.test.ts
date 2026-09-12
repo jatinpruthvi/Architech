@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => {
     lead: { findUnique: vi.fn(), create: vi.fn(), findMany: vi.fn(), update: vi.fn() },
     auditEvent: { create: vi.fn(), findMany: vi.fn() },
     $transaction: vi.fn(),
+    $executeRawUnsafe: vi.fn(async () => 0),
   };
   database.$transaction.mockImplementation(async (work: (tx: typeof database) => Promise<unknown>) => work(database));
   return { database, enqueue: vi.fn() };
@@ -50,6 +51,7 @@ describe("Prisma lead WhatsApp enqueue seam", () => {
     expect(first.ok && first.duplicate).toBe(false);
     expect(mocks.enqueue).toHaveBeenCalledTimes(1);
     expect(mocks.enqueue.mock.invocationCallOrder[0]).toBeGreaterThan(mocks.database.auditEvent.create.mock.invocationCallOrder[0]);
+    expect(mocks.database.$executeRawUnsafe).toHaveBeenCalledWith("SELECT set_config($1, $2, true)", "app.current_org_id", "org_1");
 
     const replay = await createLeadForServer(input);
     expect(replay.ok && replay.duplicate).toBe(true);
