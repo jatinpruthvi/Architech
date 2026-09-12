@@ -390,12 +390,13 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 /* ---- Warm amber shadow on card hover (replaces the cool default hover shadow
    so a hovered card reads as catching golden-hour light) ---- */
-.card-warm-hover { transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) ease; }
+.card-warm-hover { transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) var(--ease-spring), border-color var(--dur-2) ease; }
 .card-warm-hover:hover {
-  transform: translateY(-5px);
+  transform: translateY(-6px) scale(1.01);
+  border-color: color-mix(in srgb, var(--brick) 40%, transparent);
   box-shadow:
-    0 22px 44px -14px color-mix(in srgb, var(--brick) 40%, transparent),
-    0 10px 22px -10px rgba(0, 0, 0, 0.4);
+    0 24px 48px -12px color-mix(in srgb, var(--brick) 35%, transparent),
+    0 12px 24px -8px rgba(0, 0, 0, 0.45);
 }
 
 /* ---- Map pin pulse: a saffron radial glow that swells around the live pin,
@@ -591,8 +592,8 @@ button.btn-primary, a.btn-primary { border-radius: 9999px; }
 
 /* image hover treatment */
 .img-hover { overflow: hidden; }
-.img-hover img { transition: transform 900ms cubic-bezier(0.19, 1, 0.22, 1), filter 500ms ease; }
-.img-hover:hover img { transform: scale(1.05); }
+.img-hover img { transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 500ms ease; }
+.img-hover:hover img { transform: scale(1.08); filter: brightness(1.05); }
 /* ------------------------------------------------------------------
    Reveal — the entrance primitive in components/architech/Reveal.tsx.
    It was wired to NOTHING: it emitted `architech-reveal` +

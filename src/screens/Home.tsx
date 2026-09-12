@@ -99,8 +99,8 @@ export default function Home({
         <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
             <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>
-            <h1 className="display mt-5 text-[clamp(38px,6.4vw,84px)] leading-[0.94] text-cream md:mt-6">
-              <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="font-normal not-italic text-cream/90">{t.hero.h1em}</em></span></span>
+            <h1 className="display mt-5 text-[clamp(38px,6.4vw,84px)] leading-[0.94] text-transparent bg-clip-text bg-gradient-to-br from-cream via-cream/95 to-ember/85 md:mt-6">
+              <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="font-normal not-italic text-transparent bg-clip-text bg-gradient-to-r from-cream/90 to-cream/70">{t.hero.h1em}</em></span></span>
               <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
             </h1>
             <p className="fade-rise mt-4 max-w-[520px] text-[14px] leading-6 text-cream/80 md:mt-5 md:text-[15px]" style={{ "--d": "480ms" } as React.CSSProperties}>
@@ -227,7 +227,7 @@ export default function Home({
             <p className="kicker text-brick">{t.list.kicker}</p>
             <h2 className="display mt-5 max-w-[640px] text-[clamp(30px,4vw,54px)]">{t.list.title} <em className="text-brick">{t.list.titleEm}</em>{t.list.titleSuffix}</h2>
             <p className="mt-4 max-w-[520px] text-[15px] leading-7 text-ink/65">{t.list.copy}</p>
-            <Link href="/list-property/" className="night-fill btn-sweep motion-press mt-8 inline-flex items-center gap-2 bg-night px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
+            <Link href="/list-property/" className="night-fill btn-sweep motion-press mt-8 inline-flex items-center gap-2 rounded-[0.875rem] bg-night px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
           </Reveal>
           <Reveal delay={120}>
             <figure>
@@ -250,8 +250,10 @@ export default function Home({
             <h2 className="display mt-6 max-w-[620px] text-[clamp(40px,6vw,84px)] text-cream">{t.cta.title1}<em>{t.cta.title2}</em>.</h2>
           </Reveal>
           <Reveal delay={150} className="flex flex-col gap-4 sm:flex-row">
-            <Link href="/search" className="paper-fill shimmer-btn motion-press inline-flex items-center gap-3 bg-paper px-8 py-5 stamp !text-[12px] font-semibold text-ink transition-transform hover:-translate-y-1">{t.cta.start} <ArrowUpRight size={16} className="text-brick" /></Link>
-            <Link href="/buy/" className="motion-press inline-flex items-center gap-3 border border-cream/40 px-8 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:border-cream hover:bg-paper/10">{t.cta.browse}</Link>
+            <div className="border-beam rounded-[0.875rem]">
+              <Link href="/search" className="paper-fill shimmer-btn motion-press inline-flex items-center gap-3 bg-paper px-8 py-5 stamp !text-[12px] font-semibold text-ink transition-transform hover:-translate-y-1 w-full sm:w-auto">{t.cta.start} <ArrowUpRight size={16} className="text-brick" /></Link>
+            </div>
+            <Link href="/buy/" className="motion-press inline-flex items-center gap-3 border border-cream/40 rounded-[0.875rem] px-8 py-5 stamp !text-[12px] font-semibold text-cream transition-all hover:border-cream hover:bg-paper/10">{t.cta.browse}</Link>
           </Reveal>
         </div>
       </section>

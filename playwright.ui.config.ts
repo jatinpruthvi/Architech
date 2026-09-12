@@ -5,7 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
    palette journeys in a real browser. See tests/ui/visual-i18n.spec.ts for
    why these are layout facts instead of pixel-diff screenshots. */
 export default defineConfig({
-  testDir: "./tests/ui",
+  testDir: "./tests/e2e-ui",
   timeout: 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
