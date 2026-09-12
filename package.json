@@ -31,6 +31,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:setup:sandbox": "node ops/scripts/sandbox/setup-local-db.mjs",
+    "baseline:worktree": "node ops/scripts/sandbox/baseline-worktree.mjs",
     "location:fetch:ogd": "node ops/scripts/location/fetch-ogd-snapshot.mjs",
     "location:fetch:india-post": "node ops/scripts/location/fetch-ogd-snapshot.mjs --resource india-post --output tmp/location/india-post.csv",
     "location:fetch:lgd": "node ops/scripts/location/fetch-ogd-snapshot.mjs --resource lgd-local-bodies --output tmp/location/lgd-local-bodies.csv",
@@ -46,11 +47,15 @@
     "seo:gsc:audit": "node ops/scripts/seo/search-console-audit.mjs",
     "security:headers": "node ops/scripts/security/header-audit.mjs",
     "security:rls": "node ops/scripts/security/rls-audit.mjs",
+    "security:rls:proof": "node ops/scripts/security/rls-isolation-proof.mjs",
+    "security:channel:proof": "node ops/scripts/security/channel-integrity-proof.mjs",
     "legal:gates": "node ops/scripts/security/legal-gate-audit.mjs",
     "security:audit": "pnpm security:headers && pnpm security:rls && pnpm legal:gates",
     "ops:audit": "node ops/scripts/operations/readiness-audit.mjs",
     "release:audit": "node ops/scripts/release/phase-1-release-audit.mjs",
     "quality": "pnpm check && pnpm lint && pnpm test && pnpm db:validate",
+    "verify": "node ops/scripts/verify.mjs",
+    "docs:index": "node ops/scripts/generate-md-index.mjs",
     "build:ci": "node ops/scripts/build-ci.mjs",
     "production:plan:audit": "node ops/scripts/release/production-enablement-audit.mjs",
     "env:audit": "node ops/scripts/operations/environment-audit.mjs",
@@ -59,7 +64,10 @@
     "provisioning:smoke": "node ops/scripts/operations/provisioning-smoke.mjs",
     "start:next": "node node_modules/next/dist/bin/next start",
     "start:static": "node dist/index.js",
+    "whatsapp:setup": "node ops/scripts/whatsapp/evolution-setup.mjs",
+    "ops:test": "node --test \"ops/scripts/**/*.test.mjs\"",
     "whatsapp:worker": "node ops/scripts/whatsapp/outbox-worker.mjs",
+    "whatsapp:test": "node --test ops/scripts/whatsapp/*.test.mjs",
     "test:a11y:broker": "playwright test --config playwright.a11y.broker.config.ts",
     "icons:maskable": "node ops/scripts/media/generate-maskable-icon.mjs",
     "audit:pwa:ci": "node ops/scripts/audit/run-pwa-audit.mjs"
@@ -120,6 +128,9 @@
     "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
+  "engines": {
+    "node": ">=20"
+  },
   "prisma": {
     "seed": "node db/seed.mjs"
   },

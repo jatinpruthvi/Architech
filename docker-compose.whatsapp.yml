@@ -35,6 +35,20 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:8080:8080"
+    healthcheck:
+      # Evolution's root route is its documented health endpoint and needs no apikey,
+      # so a failure here means "still booting", never "wrong key". Probed with the
+      # image's own Node runtime because the image ships no curl or wget.
+      #
+      # The 30s timeout is deliberate: in evolution-api 2.3.7 (cd800f2) the root
+      # handler calls fetchLatestWaWebVersion(), which does an unbounded axios GET
+      # to https://web.whatsapp.com/sw.js before responding. A slow upstream can
+      # therefore make this route far slower than a local health probe should be.
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080').then((r)=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 30s
+      retries: 10
+      start_period: 60s
     environment:
       SERVER_NAME: evolution
       SERVER_TYPE: http

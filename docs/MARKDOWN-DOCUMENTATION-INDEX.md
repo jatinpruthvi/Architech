@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated on 2026-09-11 from the repository Markdown tree.
+Generated from the repository Markdown tree (211 files, digest 4669b1b0d06f).
 
 ## Recommended Reading Order
 
@@ -59,7 +59,9 @@ Generated on 2026-09-11 from the repository Markdown tree.
 - [Decision](../docs/broker-suite/decision.md)
 - [Erpnext Consumability Schema Constraints](../docs/broker-suite/erpnext-consumability-schema-constraints.md)
 - [Evolution Api Adoption Assessment](../docs/broker-suite/evolution-api-adoption-assessment.md)
+- [Evolution Api Setup](../docs/broker-suite/evolution-api-setup.md)
 - [Frappe Crm Whatsapp Tab Integration](../docs/broker-suite/frappe-crm-whatsapp-tab-integration.md)
+- [Local Whatsapp Development](../docs/broker-suite/local-whatsapp-development.md)
 - [Open Source Ecosystem Evaluation](../docs/broker-suite/open-source-ecosystem-evaluation.md)
 - [Repositories And Db Sharing Design](../docs/broker-suite/repositories-and-db-sharing-design.md)
 - [Studyarena Round6 Contestant A](../docs/broker-suite/studyarena-round6-contestant-a.md)
@@ -215,6 +217,8 @@ Generated on 2026-09-11 from the repository Markdown tree.
 - [Online Booking Ui Audit](../docs/audits/online-booking-ui-audit.md)
 - [REPOSITORY IMPROVEMENT AUDIT](../docs/audits/REPOSITORY-IMPROVEMENT-AUDIT.md)
 - [Browser Findings](../docs/findings/browser-findings.md)
+- [Consistency And False Green Audit 2026 09 11](../docs/findings/consistency-and-false-green-audit-2026-09-11.md)
+- [Evolution Api Adapter Contract Audit 2026 09 12](../docs/findings/evolution-api-adapter-contract-audit-2026-09-12.md)
 - [Hero Search Findings](../docs/findings/hero-search-findings.md)
 - [Hydration Fix Findings](../docs/findings/hydration-fix-findings.md)
 - [Theme Contrast Findings](../docs/findings/theme-contrast-findings.md)
@@ -230,10 +234,13 @@ Generated on 2026-09-11 from the repository Markdown tree.
 
 - [2026 09 10 Broker Calling Completion](../docs/superpowers/plans/2026-09-10-broker-calling-completion.md)
 - [2026 09 11 Repository Restructure](../docs/superpowers/plans/2026-09-11-repository-restructure.md)
+- [2026 09 12 Automatic Whatsapp Lead Ack](../docs/superpowers/plans/2026-09-12-automatic-whatsapp-lead-ack.md)
 - [2026 09 10 Broker Calling Completion Design](../docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md)
 - [2026 09 10 Repo Restructure Src Layout Design](../docs/superpowers/specs/2026-09-10-repo-restructure-src-layout-design.md)
+- [2026 09 11 Admin Plan Lifecycle Extension Design](../docs/superpowers/specs/2026-09-11-admin-plan-lifecycle-extension-design.md)
 - [2026 09 11 Pwa Installability Design](../docs/superpowers/specs/2026-09-11-pwa-installability-design.md)
 - [2026 09 11 Repository Restructure Design](../docs/superpowers/specs/2026-09-11-repository-restructure-design.md)
+- [2026 09 12 Automatic Whatsapp Lead Ack Design](../docs/superpowers/specs/2026-09-12-automatic-whatsapp-lead-ack-design.md)
 
 ## Historical Recommendations and Reviews
 
