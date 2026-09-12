@@ -46,6 +46,7 @@ export type PrismaClientLike = {
   whatsappAccount: PrismaModelDelegate;
   whatsappTemplate: PrismaModelDelegate;
   whatsappDispatch: PrismaModelDelegate;
+  interopInboundEvent: PrismaModelDelegate;
 };
 
 declare global {
