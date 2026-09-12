@@ -14,6 +14,7 @@ const sections: AgentSection[] = [
   "subscriptions",
   "leads",
   "channel",
+  "whatsapp",
   "my-listings",
   "newspaper",
   "agent-listings",

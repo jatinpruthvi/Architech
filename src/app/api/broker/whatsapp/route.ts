@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   if (!organizationId) return NextResponse.json({ ok: false, errors: ["A broker organization is required."] }, { status: 403, headers: { "Cache-Control": "no-store" } });
   try {
     const settings = await readWhatsAppSettings(organizationId);
-    return NextResponse.json({ ok: true, ...settings }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ok: true, ...settings, canManage: access.session.permissions.includes("broker.whatsapp.manage") || access.session.user.role === "ADMIN" }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ ok: false, errors: ["WhatsApp settings are unavailable."] }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
