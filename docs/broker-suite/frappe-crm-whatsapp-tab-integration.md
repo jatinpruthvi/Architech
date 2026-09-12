@@ -176,7 +176,7 @@ The tab does not replace the automated first message:
 
 Per the governance change procedure, this feature requires an amendment stating affected decisions, evidence, rollout and reversal triggers:
 
-1. **§7 rule 5 (minimal markers)** — replaced for WhatsApp by: full message bodies/media are stored in the business's own Frappe site (single-tenant DB, encrypted backups, retention-limited, restore-tested — §10). Reversal trigger: privacy/legal review or abuse.
+1. **§7 rule 5 (minimal markers)** — replaced for WhatsApp by: text message bodies are stored in the business's own Frappe site (single-tenant DB). **Media is dropped at the gateway** to prevent storage bloat. An auto-purge background job deletes old messages based on a configurable `WHATSAPP_RETENTION_DAYS` setting (e.g., 30 or 60 days). Reversal trigger: privacy/legal review or abuse.
 2. **§12 (vendor payment)** — unchanged if Path B is default; Path A becomes a per-business, separately-approved opt-in where that business accepts Meta billing under its own account.
 3. **§4 (no shared inbox)** — re-affirmed, not changed: the pane is scoped to one lead/deal record with ownership checks; there is still no cross-conversation inbox.
 4. New evidence obligations: the §8 test matrix below.
