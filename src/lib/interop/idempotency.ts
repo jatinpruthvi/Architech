@@ -28,6 +28,13 @@ export const IDEMPOTENCY_KEY_MAX = 128;
    passed through unencoded. */
 const SAFE_KEY = /^[A-Za-z0-9._:-]+$/;
 
+function containsControlCharacters(value: string): boolean {
+  return [...value].some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 0x1f || code === 0x7f;
+  });
+}
+
 export class IdempotencyKeyError extends Error {
   constructor(message: string) {
     super(message);
@@ -64,7 +71,7 @@ export function validateCallerIdempotencyKey(
   secret = process.env.ARCHITECH_IDEMPOTENCY_HMAC_KEY,
 ): string {
   const value = typeof raw === "string" ? raw.trim() : "";
-  if (!value || value.length > IDEMPOTENCY_KEY_MAX || /[\u0000-\u001f\u007f]/.test(value)) {
+  if (!value || value.length > IDEMPOTENCY_KEY_MAX || containsControlCharacters(value)) {
     throw new IdempotencyKeyError("caller idempotency key is empty, oversized, or contains control characters.");
   }
   const resolvedSecret = secret?.trim() || (process.env.ARCHITECH_DATA_SOURCE === "prisma" ? "" : "fixture-lead-idempotency-hmac-key");

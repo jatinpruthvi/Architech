@@ -119,12 +119,19 @@ function stableId(prefix: string, key: string): string {
   return `${prefix}_${hash.toString(36)}`;
 }
 
+function containsControlCharacters(value: string): boolean {
+  return [...value].some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 0x1f || code === 0x7f;
+  });
+}
+
 export function validateWhatsAppOptIn(input: Partial<LeadInput>): string[] {
   if (input.whatsappOptIn !== true) return [];
   const copy = typeof input.whatsappOptInText === "string" ? input.whatsappOptInText.trim() : "";
   const errors: string[] = [];
   if (copy.length < 12 || copy.length > 240) errors.push("WhatsApp opt-in text must be between 12 and 240 characters.");
-  if (/[\u0000-\u001f\u007f]/.test(copy)) errors.push("WhatsApp opt-in text contains invalid control characters.");
+  if (containsControlCharacters(copy)) errors.push("WhatsApp opt-in text contains invalid control characters.");
   return errors;
 }
 

@@ -18,7 +18,6 @@ export const ACKNOWLEDGEMENT_PREVIEW_VALUES = {
 
 const TEMPLATE_VALUE_MAX = 240;
 const PLACEHOLDER_PATTERN = /\{\{([^{}]*)\}\}/g;
-const DISALLOWED_CONTROL_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const ALLOWED_PLACEHOLDER_SET = new Set<string>(ALLOWED_ACKNOWLEDGEMENT_PLACEHOLDERS);
 
 export class WhatsAppTemplateError extends Error {
@@ -34,6 +33,20 @@ export type AcknowledgementTemplateValidation =
 
 function normalizeBody(value: string): string {
   return value.replace(/\r\n?/g, "\n").trim();
+}
+
+function containsDisallowedControlCharacters(value: string): boolean {
+  return [...value].some((character) => {
+    const code = character.charCodeAt(0);
+    return (code <= 0x1f && code !== 0x09 && code !== 0x0a) || code === 0x7f;
+  });
+}
+
+function stripReplacementControls(value: string): string {
+  return [...value].map((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 0x1f || code === 0x7f ? " " : character;
+  }).join("");
 }
 
 function extractPlaceholders(body: string): { placeholders: string[]; errors: string[] } {
@@ -62,7 +75,7 @@ export function validateAcknowledgementTemplate(body: unknown): AcknowledgementT
   const errors: string[] = [];
   if (!normalized || !/\S/.test(normalized)) errors.push("Acknowledgement template cannot be empty.");
   if (normalized.length > ACKNOWLEDGEMENT_BODY_MAX) errors.push(`Acknowledgement template must be at most ${ACKNOWLEDGEMENT_BODY_MAX} characters.`);
-  if (DISALLOWED_CONTROL_PATTERN.test(normalized)) errors.push("Acknowledgement template contains disallowed control characters.");
+  if (containsDisallowedControlCharacters(normalized)) errors.push("Acknowledgement template contains disallowed control characters.");
   errors.push(...extractPlaceholders(normalized).errors);
   if (errors.length) return { ok: false, errors: [...new Set(errors)] };
   const { placeholders } = extractPlaceholders(normalized);
@@ -71,8 +84,7 @@ export function validateAcknowledgementTemplate(body: unknown): AcknowledgementT
 
 function normalizeReplacement(name: WhatsAppTemplatePlaceholder, value: unknown): string {
   if (typeof value !== "string") throw new WhatsAppTemplateError(`Missing value for {{${name}}}.`);
-  const normalized = value
-    .replace(/[\u0000-\u001F\u007F]/g, " ")
+  const normalized = stripReplacementControls(value)
     .replace(/\s+/g, " ")
     .trim();
   if (normalized.length > TEMPLATE_VALUE_MAX) {
