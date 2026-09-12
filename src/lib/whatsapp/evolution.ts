@@ -105,7 +105,12 @@ class EvolutionWhatsAppProvider implements WhatsAppProvider {
         webhook: {
           enabled: true,
           url: input.webhookUrl,
-          byEvents: true,
+          /* Must stay false. Evolution's WebhookController.emit() appends the
+             event slug when webhookByEvents is set: `${url}/${transformedWe}`,
+             which would POST to /webhook/qrcode-updated and 404 against the
+             single webhook route this app exposes. Verified against upstream
+             evolution-api 2.3.7 (cd800f2). */
+          byEvents: false,
           base64: false,
           headers: { jwt_key: input.webhookJwtKey },
           events: [...input.events],

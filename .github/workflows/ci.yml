@@ -1,5 +1,16 @@
 name: CI
 
+# Least privilege, matching lighthouse.yml. This workflow only reads the repo.
+permissions:
+  contents: read
+
+# A force-push or extra commit on an open PR cancels the run it supersedes
+# instead of queueing a second full pass. Main-branch runs always finish, so
+# history keeps a trustworthy green/red per commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   push:
     branches: [main]
@@ -8,12 +19,17 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # Bounds a hung step (browser suites and the build are the usual suspects)
+    # instead of letting it idle to the 6-hour default.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Single source of truth: .nvmrc. Keep it in step with package.json
+          # "engines" and the Node version named in docs.
+          node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Prisma schema validate
@@ -30,6 +46,31 @@ jobs:
         run: pnpm audit:contrast
       - name: Unit tests
         run: pnpm test
+      # ops/scripts tests use the Node test runner, not vitest, so `pnpm test`
+      # does not reach them. These are the checks ops/config/governance declares
+      # as required for staging and production (privacy:requirements:test and
+      # the WhatsApp worker test in particular), so they have to actually run.
+      # Cheap and dependency-free — kept ahead of the build for fast feedback.
+      - name: Ops script tests (node --test)
+        run: |
+          pnpm privacy:leads:test
+          pnpm privacy:requirements:test
+          pnpm location:import:test
+          pnpm whatsapp:test
+      # generate-md-index.mjs must be re-run whenever a markdown file is added
+      # or moved. Enforcing it here means a stale index fails CI rather than
+      # relying on the author remembering.
+      - name: Documentation index is up to date
+        run: |
+          node ops/scripts/generate-md-index.mjs
+          git diff --exit-code docs/MARKDOWN-DOCUMENTATION-INDEX.md
+      # Both Evolution API compose files must stay parseable and fully
+      # interpolated. Every variable carries a :- default, so this needs no .env
+      # and no secrets. The whatsapp profile is the staging/production scaffold.
+      - name: Compose files valid
+        run: |
+          docker compose -f docker-compose.whatsapp.yml config --quiet
+          docker compose -f docker-compose.production-like.yml --profile whatsapp config --quiet
       - name: Production build
         run: pnpm build
       # Boots the static publisher (dist/index.js) on an ephemeral port and

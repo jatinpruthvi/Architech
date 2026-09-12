@@ -59,7 +59,9 @@
     "provisioning:smoke": "node ops/scripts/operations/provisioning-smoke.mjs",
     "start:next": "node node_modules/next/dist/bin/next start",
     "start:static": "node dist/index.js",
+    "whatsapp:setup": "node ops/scripts/whatsapp/evolution-setup.mjs",
     "whatsapp:worker": "node ops/scripts/whatsapp/outbox-worker.mjs",
+    "whatsapp:test": "node --test ops/scripts/whatsapp/*.test.mjs",
     "test:a11y:broker": "playwright test --config playwright.a11y.broker.config.ts",
     "icons:maskable": "node ops/scripts/media/generate-maskable-icon.mjs",
     "audit:pwa:ci": "node ops/scripts/audit/run-pwa-audit.mjs"
@@ -120,6 +122,9 @@
     "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
+  "engines": {
+    "node": ">=20"
+  },
   "prisma": {
     "seed": "node db/seed.mjs"
   },

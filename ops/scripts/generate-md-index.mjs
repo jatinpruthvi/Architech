@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -66,7 +67,11 @@ const lines = [
   "",
   "> This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).",
   "",
-  `Generated on ${new Date().toISOString().slice(0, 10)} from the repository Markdown tree.`,
+  // Deliberately a content digest, not a date: CI regenerates this file and
+  // fails on any diff, so the output must be a pure function of the doc tree.
+  // A timestamp would turn that check red on every day nobody happened to
+  // regenerate, which is a false failure rather than a stale index.
+  `Generated from the repository Markdown tree (${files.length} files, digest ${createHash("sha256").update(files.join("\n")).digest("hex").slice(0, 12)}).`,
   "",
   "## Recommended Reading Order",
   "",

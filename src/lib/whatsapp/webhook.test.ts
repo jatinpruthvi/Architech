@@ -50,6 +50,21 @@ describe("Evolution webhook verification", () => {
     expect(event).not.toHaveProperty("apikey");
   });
 
+  it("accepts a token shaped exactly like upstream evolution-api 2.3.7 signs it", () => {
+    /* Upstream WebhookController.generateJwtToken() (commit cd800f2) signs
+       { iat, exp: iat + 600, app: 'evolution', action: 'webhook' } with HS256
+       under the instance's jwt_key and sends it as Authorization: Bearer.
+       The app/action claims are ignored here; exp/iat are the ones enforced. */
+    const now = Math.floor(Date.now() / 1000);
+    const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+    const header = encode({ alg: "HS256", typ: "JWT" });
+    const payload = encode({ iat: now, exp: now + 600, app: "evolution", action: "webhook" });
+    const signature = createHmac("sha256", "jwt-secret").update(`${header}.${payload}`).digest("base64url");
+
+    const event = verifyEvolutionWebhookRequest(body, `Bearer ${header}.${payload}.${signature}`);
+    expect(event).toEqual(expect.objectContaining({ eventType: "CONNECTION_UPDATE", instanceName: "wa_a" }));
+  });
+
   it("rejects missing/malformed, wrong algorithm, bad signature, expired tokens, and oversized bodies", () => {
     expect(() => verifyEvolutionWebhookRequest(body, null)).toThrowError(new EvolutionWebhookError("AUTH", "WEBHOOK_AUTH_REQUIRED"));
     expect(() => verifyEvolutionWebhookRequest(body, "Basic secret")).toThrow(EvolutionWebhookError);

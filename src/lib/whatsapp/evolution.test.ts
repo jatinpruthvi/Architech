@@ -48,7 +48,7 @@ describe("server-only Evolution provider", () => {
       instanceName: "wa_org_1",
       integration: "WHATSAPP-BAILEYS",
       qrcode: true,
-      webhook: expect.objectContaining({ url: "https://architech.test/webhook", byEvents: true, base64: false, headers: { jwt_key: "jwt-secret" } }),
+      webhook: expect.objectContaining({ url: "https://architech.test/webhook", byEvents: false, base64: false, headers: { jwt_key: "jwt-secret" } }),
     }));
     expect(JSON.parse(String((fetchMock.mock.calls[3]?.[1] as RequestInit).body)).text).toBe("Hi Asha");
     expect(JSON.parse(String((fetchMock.mock.calls[3]?.[1] as RequestInit).body)).number).toBe("919876543210");
