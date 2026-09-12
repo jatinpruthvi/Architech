@@ -139,12 +139,14 @@ describe("one-time WhatsApp vertical flow", () => {
     expect(acceptedAgain.scanned).toBe(0);
     expect(mocks.provider.sendText).toHaveBeenCalledTimes(2);
 
-    mocks.accounts.get("org_a").status = "DISCONNECTED";
+    const accountA = mocks.accounts.get("org_a");
+    if (!accountA) throw new Error("org_a account fixture missing");
+    accountA.status = "DISCONNECTED";
     await createLead("org_a", "lead_disconnected");
     expect(mocks.rows.find((row) => row.leadId === "lead_disconnected")?.status).toBe("SKIPPED");
     expect(mocks.provider.sendText).toHaveBeenCalledTimes(2);
 
-    mocks.accounts.get("org_a").status = "CONNECTED";
+    accountA.status = "CONNECTED";
     await createLead("org_a", "lead_unknown");
     mocks.provider.sendText.mockRejectedValueOnce(new WhatsAppProviderError("AMBIGUOUS", "PROVIDER_TIMEOUT"));
     const unknown = await processWhatsAppDispatchBatch({ organizationId: "org_a", now: new Date("2026-09-12T00:03:00.000Z") });
