@@ -16,6 +16,7 @@ const lead = (over: Partial<LeadRecord>): LeadRecord => ({
   status: "NEW",
   consentText: "I consent.",
   idempotencyKey: over.id ?? "k",
+  whatsappOptIn: false,
   auditEvent: { id: "audit_x", action: "lead.created", entityType: "Lead", metadata: { masked: true, source: "api.leads.fixture-store" } },
   statusHistory: [],
   createdAt: over.createdAt ?? "2026-09-05T09:00:00.000Z",

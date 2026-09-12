@@ -94,6 +94,16 @@ export const ALLOWED_ENV_KEYS = [
   /* Owner-only super-admin login (app/api/auth/super/sign-in) — scrypt hash
      of the owner's password; the plaintext never enters the repo or DB. */
   "ARCHITECH_SUPER_ADMIN_PASSWORD_HASH",
+  /* WhatsApp automation is server-only and remains disabled by default. */
+  "ARCHITECH_WHATSAPP_ENABLED",
+  "ARCHITECH_WHATSAPP_REAL_NUMBERS_ENABLED",
+  "ARCHITECH_EVOLUTION_API_URL",
+  "ARCHITECH_EVOLUTION_API_KEY",
+  "ARCHITECH_EVOLUTION_WEBHOOK_JWT_KEY",
+  "ARCHITECH_EVOLUTION_WEBHOOK_URL",
+  "ARCHITECH_WHATSAPP_WORKER_SECRET",
+  "WHATSAPP_WORKER_TARGET_URL",
+  "ARCHITECH_IDEMPOTENCY_HMAC_KEY",
 ] as const;
 
 /** Risk keywords that reveal a stray secret in source or a rendered URL. */

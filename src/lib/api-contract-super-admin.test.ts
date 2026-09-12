@@ -113,6 +113,43 @@ describe("admin plans routes", () => {
     expect(database.auditEvent.create).toHaveBeenCalled();
   });
 
+  it("POST stores an active plan expiry date through the end of the selected day", async () => {
+    const cookie = await signedInCookie();
+    database.user.findUnique.mockResolvedValue({ id: "user-1", brokerMemberships: [{ organization: { id: "org-1", name: "Nivasa", slug: "nivasa" } }] });
+    database.marketplacePlan.findUnique.mockResolvedValue({ id: "plan-1", code: "broker-pro", name: "Broker Pro" });
+    database.marketplaceSubscription.findFirst.mockResolvedValue(null);
+    database.marketplaceSubscription.create.mockResolvedValue({ id: "sub-2", status: "ACTIVE", expiresAt: new Date("2099-01-01T23:59:59.999Z") });
+
+    const response = await plansPost(
+      new Request("http://localhost/api/admin/plans", { method: "POST", headers: { "Content-Type": "application/json", cookie: `${SUPER_ADMIN_COOKIE}=${cookie}` }, body: JSON.stringify({ email: "owner@nivasa.in", planId: "plan-1", status: "ACTIVE", expiresAt: "2099-01-01" }) }),
+    );
+    expect(response.status).toBe(200);
+    expect(database.marketplaceSubscription.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ expiresAt: new Date("2099-01-01T23:59:59.999Z") }) }));
+  });
+
+  it("POST deactivates with EXPIRED and clears any supplied expiry date", async () => {
+    const cookie = await signedInCookie();
+    database.user.findUnique.mockResolvedValue({ id: "user-1", brokerMemberships: [{ organization: { id: "org-1", name: "Nivasa", slug: "nivasa" } }] });
+    database.marketplacePlan.findUnique.mockResolvedValue({ id: "plan-1", code: "broker-pro", name: "Broker Pro" });
+    database.marketplaceSubscription.findFirst.mockResolvedValue({ id: "sub-1", status: "ACTIVE" });
+    database.marketplaceSubscription.update.mockResolvedValue({ id: "sub-1", status: "EXPIRED", expiresAt: null });
+
+    const response = await plansPost(
+      new Request("http://localhost/api/admin/plans", { method: "POST", headers: { "Content-Type": "application/json", cookie: `${SUPER_ADMIN_COOKIE}=${cookie}` }, body: JSON.stringify({ email: "owner@nivasa.in", planId: "plan-1", status: "EXPIRED", expiresAt: "2099-01-01" }) }),
+    );
+    expect(response.status).toBe(200);
+    expect(database.marketplaceSubscription.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "EXPIRED", expiresAt: null }) }));
+  });
+
+  it("POST rejects an expiry date in the past for an active plan", async () => {
+    const cookie = await signedInCookie();
+    const response = await plansPost(
+      new Request("http://localhost/api/admin/plans", { method: "POST", headers: { "Content-Type": "application/json", cookie: `${SUPER_ADMIN_COOKIE}=${cookie}` }, body: JSON.stringify({ email: "owner@nivasa.in", planId: "plan-1", status: "ACTIVE", expiresAt: "2000-01-01" }) }),
+    );
+    expect(response.status).toBe(400);
+    expect(database.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it("POST rejects an invalid status with 400", async () => {
     const cookie = await signedInCookie();
     const response = await plansPost(

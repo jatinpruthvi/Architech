@@ -4,7 +4,9 @@ import {
   IDEMPOTENCY_KEY_MAX,
   IdempotencyKeyError,
   buildIdempotencyKey,
+  buildLeadIdempotencyKey,
   payloadHash,
+  validateCallerIdempotencyKey,
 } from "./idempotency";
 
 const key = (parts: string[], event = "channel.deal.closed", version = 1) =>
@@ -63,6 +65,30 @@ describe("outbound idempotency keys", () => {
 
   it("rejects a non-positive version", () => {
     expect(() => key(["a"], "e", 0)).toThrow(/positive integer/);
+  });
+});
+
+describe("lead idempotency keys", () => {
+  it("does not put phone or message text in the server-generated key", () => {
+    const key = buildLeadIdempotencyKey({
+      listingId: "listing-1",
+      normalizedPhone: "+919876543210",
+      normalizedMessage: "Please call me tomorrow",
+    }, "test-secret");
+    expect(key).toMatch(/^lead\.v1\.[a-f0-9]{64}$/);
+    expect(key).not.toContain("9876543210");
+    expect(key).not.toContain("Please");
+  });
+
+  it("hashes a caller retry token before persisting it", () => {
+    const key = validateCallerIdempotencyKey("+919876543210", "test-secret");
+    expect(key).toMatch(/^lead\.client\.v1\.[a-f0-9]{64}$/);
+    expect(key).not.toContain("9876543210");
+  });
+
+  it("rejects unsafe caller retry tokens", () => {
+    expect(() => validateCallerIdempotencyKey("\u0000bad", "test-secret")).toThrow(IdempotencyKeyError);
+    expect(() => validateCallerIdempotencyKey("", "test-secret")).toThrow(IdempotencyKeyError);
   });
 });
 

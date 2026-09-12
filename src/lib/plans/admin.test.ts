@@ -9,7 +9,7 @@ const database = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/repositories/server/prisma", () => ({ getPrismaClient: () => database }));
-import { applyPlanToOrganization, createPlanDefinition, lookupOrganizationForLogin } from "./admin";
+import { applyPlanToOrganization, createPlanDefinition, effectiveAdminPlanStatus, lookupOrganizationForLogin } from "./admin";
 
 const ORG = { id: "org-1", name: "Nivasa Partners", slug: "nivasa-partners", cityId: "city-ahmedabad" };
 const USER_ROW = (email: string) => ({ id: "user-1", name: "Owner Person", email, role: "BROKER_ADMIN", brokerMemberships: [{ organizationId: ORG.id, organization: ORG }] });
@@ -34,6 +34,15 @@ describe("lookupOrganizationForLogin", () => {
   });
 });
 
+describe("effectiveAdminPlanStatus", () => {
+  it("matches the effective server gate for a date-lapsed active plan", () => {
+    const now = new Date("2026-09-12T12:00:00.000Z").getTime();
+    expect(effectiveAdminPlanStatus("ACTIVE", new Date("2026-09-12T11:59:59.999Z"), now)).toBe("EXPIRED");
+    expect(effectiveAdminPlanStatus("ACTIVE", new Date("2026-09-12T12:00:00.001Z"), now)).toBe("ACTIVE");
+    expect(effectiveAdminPlanStatus("PAUSED", new Date("2026-09-12T11:00:00.000Z"), now)).toBe("PAUSED");
+  });
+});
+
 describe("applyPlanToOrganization", () => {
   it("creates a subscription for an org with none and audits the change", async () => {
     database.user.findUnique.mockResolvedValue(USER_ROW("owner@nivasa.in"));
@@ -50,11 +59,29 @@ describe("applyPlanToOrganization", () => {
     database.user.findUnique.mockResolvedValue(USER_ROW("owner@nivasa.in"));
     database.marketplacePlan.findUnique.mockResolvedValue({ id: "plan-1", code: "broker-pro", name: "Broker Pro" });
     database.marketplaceSubscription.findFirst.mockResolvedValue({ id: "sub-1", status: "TRIAL" });
-    database.marketplaceSubscription.update.mockResolvedValue({ id: "sub-1", status: "EXPIRED", expiresAt: new Date("2026-09-01T00:00:00Z") });
+    database.marketplaceSubscription.update.mockResolvedValue({ id: "sub-1", status: "EXPIRED", expiresAt: null });
     const result = await applyPlanToOrganization(database, { email: "owner@nivasa.in", planId: "plan-1", status: "EXPIRED", expiresAt: new Date("2026-09-01T00:00:00Z"), ipHash: "ip-hash-1" });
-    expect(result).toMatchObject({ ok: true, previousStatus: "TRIAL", subscription: { status: "EXPIRED" } });
-    expect(database.marketplaceSubscription.update).toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: true, previousStatus: "TRIAL", subscription: { status: "EXPIRED", expiresAt: null } });
+    expect(database.marketplaceSubscription.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "EXPIRED", expiresAt: null }) }));
     expect(database.marketplaceSubscription.create).not.toHaveBeenCalled();
+  });
+
+  it("persists a future expiry date for an active plan", async () => {
+    database.user.findUnique.mockResolvedValue(USER_ROW("owner@nivasa.in"));
+    database.marketplacePlan.findUnique.mockResolvedValue({ id: "plan-1", code: "broker-pro", name: "Broker Pro" });
+    database.marketplaceSubscription.findFirst.mockResolvedValue(null);
+    const expiresAt = new Date("2099-01-01T23:59:59.999Z");
+    database.marketplaceSubscription.create.mockResolvedValue({ id: "sub-future", status: "ACTIVE", expiresAt });
+
+    const result = await applyPlanToOrganization(database, { email: "owner@nivasa.in", planId: "plan-1", status: "ACTIVE", expiresAt, ipHash: "ip" });
+    expect(result).toMatchObject({ ok: true, subscription: { status: "ACTIVE", expiresAt: expiresAt.toISOString() } });
+    expect(database.marketplaceSubscription.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "ACTIVE", expiresAt }) }));
+  });
+
+  it("rejects a past expiry for active or trial plans before writing", async () => {
+    const result = await applyPlanToOrganization(database, { email: "owner@nivasa.in", planId: "plan-1", status: "ACTIVE", expiresAt: new Date(Date.now() - 1), ipHash: "ip" });
+    expect(result).toEqual({ ok: false, error: "EXPIRY_INVALID" });
+    expect(database.user.findUnique).not.toHaveBeenCalled();
   });
 
   it("seeds the default Broker Pro plan when the plan table is empty", async () => {

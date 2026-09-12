@@ -45,6 +45,7 @@ import type { ListingDraft } from "@/lib/broker/workflow";
 import type { LeadRecord, LeadStatus } from "@/lib/leads/lead";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import { BrokerChannelPanel } from "@/components/broker/BrokerChannelPanel";
+import { BrokerWhatsAppPanel } from "@/components/broker/BrokerWhatsAppPanel";
 import useTitle from "@/hooks/useTitle";
 
 export type AgentSection =
@@ -53,6 +54,7 @@ export type AgentSection =
   | "subscriptions"
   | "leads"
   | "channel"
+  | "whatsapp"
   | "my-listings"
   | "newspaper"
   | "agent-listings"
@@ -74,6 +76,7 @@ const nav: NavItem[] = [
   { section: "subscriptions", label: "Entitlements", icon: WalletCards },
   { section: "leads", label: "Lead inbox", icon: ContactRound },
   { section: "channel", label: "Broker channel", icon: UsersRound },
+  { section: "whatsapp", label: "WhatsApp", icon: MessageSquareText },
   { section: "my-listings", label: "My listings", icon: BriefcaseBusiness },
   { section: "newspaper", label: "Newspaper source", icon: Newspaper },
   { section: "agent-listings", label: "Agent inventory", icon: BriefcaseBusiness },
@@ -91,6 +94,7 @@ const deskMeta: Record<AgentSection, DeskMeta> = {
   subscriptions: { label: "Entitlements", role: "Access register", intro: "Every capability is named, scoped, and gated before a provider or payment flow is introduced.", index: "03" },
   leads: { label: "Lead inbox", role: "Lead ledger", intro: "A source-aware lead desk where contact access follows consent, provenance, and organization scope.", index: "04" },
   channel: { label: "Broker channel", role: "Cross-broker exchange", intro: "Publish sanitized demand and supply, match with verified counterparties, and close commission-split deals without exposing customer contact data.", index: "05" },
+  whatsapp: { label: "WhatsApp", role: "One-touch acknowledgement", intro: "Connect a company-owned number and configure the one acknowledgement sent after an eligible lead is created.", index: "06" },
   "my-listings": { label: "My listings", role: "Submission register", intro: "Manage private drafts and moderated submissions without confusing a draft with public inventory.", index: "06" },
   newspaper: { label: "Newspaper source", role: "Source rail", intro: "A provenance-aware view for properties sourced from newspaper campaigns.", index: "06" },
   "agent-listings": { label: "Agent inventory", role: "Partner rail", intro: "Search the city-scoped partner network while keeping source and contact rights visible.", index: "07" },
@@ -372,6 +376,7 @@ export default function AgentWorkspace({ section = "dashboard" }: { section?: Ag
     if (section === "subscriptions") return <Subscriptions />;
     if (section === "leads") return <Leads leads={leads} leadsState={leadsState} />;
     if (section === "channel") return <BrokerChannelPanel drafts={drafts} />;
+    if (section === "whatsapp") return <BrokerWhatsAppPanel />;
     if (section === "my-listings") return <MyListings drafts={drafts} onChanged={() => void loadDrafts()} />;
     if (section === "newspaper" || section === "agent-listings" || section === "owner-listings") return <ListingsSource section={section} />;
     if (section === "ai") return <AiSuite />;

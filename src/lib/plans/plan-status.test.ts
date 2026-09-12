@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, type Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 const database = vi.hoisted(() => ({
   marketplaceSubscription: { findFirst: vi.fn() as Mock },
@@ -9,6 +9,16 @@ vi.mock("@/lib/repositories/server/prisma", () => ({ getPrismaClient: () => data
 import { resolvePlanStatusForOrg } from "./plan-status";
 
 vi.stubEnv("ARCHITECH_DATA_SOURCE", "prisma");
+
+beforeEach(() => {
+  database.marketplaceSubscription.findFirst.mockReset();
+  vi.stubEnv("ARCHITECH_DATA_SOURCE", "prisma");
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
+});
 
 describe("resolvePlanStatusForOrg", () => {
   it("honors an explicit env override regardless of source", async () => {
@@ -45,5 +55,19 @@ describe("resolvePlanStatusForOrg", () => {
     database.marketplaceSubscription.findFirst.mockResolvedValueOnce(null);
     vi.stubEnv("ARCHITECH_DATA_SOURCE", "demo");
     expect(await resolvePlanStatusForOrg("org_fixture")).toBe("ACTIVE");
+  });
+
+  it("treats an active or trial plan at or past its expiry as expired", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-12T12:00:00.000Z"));
+
+    database.marketplaceSubscription.findFirst.mockResolvedValueOnce({ status: "ACTIVE", expiresAt: new Date("2026-09-13T00:00:00.000Z") });
+    expect(await resolvePlanStatusForOrg("org_future")).toBe("ACTIVE");
+
+    database.marketplaceSubscription.findFirst.mockResolvedValueOnce({ status: "ACTIVE", expiresAt: new Date("2026-09-12T12:00:00.000Z") });
+    expect(await resolvePlanStatusForOrg("org_now")).toBe("EXPIRED");
+
+    database.marketplaceSubscription.findFirst.mockResolvedValueOnce({ status: "TRIAL", expiresAt: new Date("2026-09-11T23:59:59.999Z") });
+    expect(await resolvePlanStatusForOrg("org_past")).toBe("EXPIRED");
   });
 });

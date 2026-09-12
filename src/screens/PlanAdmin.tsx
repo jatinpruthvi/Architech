@@ -26,6 +26,7 @@ type Payload = { ok: true; plans: Plan[]; subscriptions: Subscription[]; lookup?
 
 const STATUS_OPTIONS = ["TRIAL", "ACTIVE", "EXPIRED"] as const;
 type StatusOption = (typeof STATUS_OPTIONS)[number];
+const STATUS_LABELS: Record<StatusOption, string> = { TRIAL: "trial", ACTIVE: "active", EXPIRED: "deactivated / expired" };
 
 const FIELD = "w-full border border-ink/18 bg-paper px-3.5 py-3 text-sm text-ink outline-none transition focus:border-brick focus:ring-2 focus:ring-brick/25";
 const LABEL = "stamp block mb-2 ink-3";
@@ -34,7 +35,7 @@ const GHOST_BTN = "touch-44 inline-flex items-center justify-center gap-2 border
 
 function StatusPill({ status }: { status: string }) {
   const tone = status === "ACTIVE" ? "border-trust/40 bg-trust/10 text-trust" : status === "TRIAL" ? "border-ink/20 bg-sand ink-2" : "border-ember/40 bg-ember/10 text-ember";
-  return <span className={`stamp inline-flex px-2.5 py-1 font-semibold ${tone}`}>{status.toLowerCase()}</span>;
+  return <span className={`stamp inline-flex px-2.5 py-1 font-semibold ${tone}`}>{status === "EXPIRED" ? "deactivated / expired" : status.toLowerCase()}</span>;
 }
 
 export default function PlanAdmin() {
@@ -122,7 +123,16 @@ export default function PlanAdmin() {
         return;
       }
       const payload = (await response.json()) as Payload;
-      setLookup(payload.lookup ?? { found: false });
+      const nextLookup = payload.lookup ?? { found: false as const };
+      setLookup(nextLookup);
+      if (nextLookup.found && nextLookup.currentSubscription) {
+        const currentStatus = nextLookup.currentSubscription.status as StatusOption;
+        setStatusSel(STATUS_OPTIONS.includes(currentStatus) ? currentStatus : "ACTIVE");
+        setExpiresAt(nextLookup.currentSubscription.expiresAt?.slice(0, 10) ?? "");
+      } else {
+        setStatusSel("ACTIVE");
+        setExpiresAt("");
+      }
     } finally {
       setFinding(false);
     }
@@ -148,7 +158,7 @@ export default function PlanAdmin() {
         return;
       }
       toast(payload.previousStatus ? "Plan updated." : "Plan granted.", {
-        description: `Status is now ${statusSel.toLowerCase()}${statusSel !== "EXPIRED" && expiresAt ? ` until ${expiresAt}` : ""}.`,
+        description: `Status is now ${STATUS_LABELS[statusSel]}${statusSel !== "EXPIRED" && expiresAt ? ` until ${expiresAt}` : ""}.`,
       });
       await load();
       setLookup(null);
@@ -257,8 +267,8 @@ export default function PlanAdmin() {
       <p className="kicker text-brick">Owner surface</p>
       <h1 className="display mt-6 text-4xl">Broker plans</h1>
       <p className="mt-4 max-w-[640px] text-[15px] leading-7 ink-2">
-        Grant and manage calling plans by login id. Activation is manual by design — no payment gateway. Every change is written to the
-        audit ledger with the previous status.
+        Grant and manage plans by login id. Activate with active, deactivate with deactivated / expired, and optionally set a date that
+        automatically blocks access after it passes. Every change is written to the audit ledger with the previous status.
       </p>
 
       {loadError && !data && <p role="alert" className="mt-6 border-l-2 border-ember bg-ember/8 px-3 py-2.5 text-xs leading-5 text-ember">{loadError}</p>}
@@ -315,7 +325,7 @@ export default function PlanAdmin() {
                 <select id="plan-status" value={statusSel} onChange={(event) => setStatusSel(event.target.value as StatusOption)} className={FIELD}>
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option} value={option}>
-                      {option.toLowerCase()}
+                      {STATUS_LABELS[option]}
                     </option>
                   ))}
                 </select>
@@ -325,6 +335,7 @@ export default function PlanAdmin() {
                   Expires <span className="ink-3">optional</span>
                 </label>
                 <input id="plan-expires" type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} disabled={statusSel === "EXPIRED"} className={`${FIELD} disabled:opacity-50`} />
+                <p className="mt-1 text-[11px] leading-4 ink-3">Access remains available through this date.</p>
               </div>
             </div>
 

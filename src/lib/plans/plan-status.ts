@@ -10,7 +10,8 @@ export type OrgPlanStatus = "TRIAL" | "ACTIVE" | "EXPIRED" | "NONE";
  * 1. An explicit ARCHITECH_BROKER_PLAN_STATUS is an operator override and wins everywhere.
  * 2. Fixture mode: organizations are ACTIVE (calling works out of the box in demos).
  * 3. Prisma: the organization's most recent MarketplaceSubscription — TRIAL/ACTIVE pass;
- *    PAUSED/EXPIRED/CANCELLED map to EXPIRED; no subscription is NONE.
+ *    PAUSED/EXPIRED/CANCELLED map to EXPIRED; no subscription is NONE. An
+ *    ACTIVE/TRIAL row whose expiresAt has passed also resolves to EXPIRED.
  *
  * NOTE: `prisma` with no active subscription returns NONE by design — the owner's first
  * act after activating an org is opening /admin/plans and setting its plan (spec §3,
@@ -30,9 +31,11 @@ export async function resolvePlanStatusForOrg(organizationId: string): Promise<O
   const subscription = (await prisma.marketplaceSubscription.findFirst({
     where: { organizationId },
     orderBy: [{ startsAt: "desc" }, { id: "desc" }],
-  })) as { status: string } | null;
+  })) as { status: string; expiresAt?: Date | string | null } | null;
   if (!subscription) return "NONE";
-  if (subscription.status === "TRIAL") return "TRIAL";
-  if (subscription.status === "ACTIVE") return "ACTIVE";
+  const expiresAt = subscription.expiresAt == null ? null : new Date(subscription.expiresAt).getTime();
+  const dateExpired = expiresAt !== null && Number.isFinite(expiresAt) && expiresAt <= Date.now();
+  if (subscription.status === "TRIAL") return dateExpired ? "EXPIRED" : "TRIAL";
+  if (subscription.status === "ACTIVE") return dateExpired ? "EXPIRED" : "ACTIVE";
   return "EXPIRED";
 }

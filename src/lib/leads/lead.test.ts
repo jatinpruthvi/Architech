@@ -41,6 +41,23 @@ describe("lead consent/audit workflow", () => {
     expect(errors.length).toBeGreaterThanOrEqual(4);
   });
 
+  it("defaults automated WhatsApp eligibility off and keeps the retry key opaque", () => {
+    const result = createLead({ listingId: "garden-courtyard", name: "Opt Out Buyer", phone: "+91 98765 43210", message: "I would like more details about this home.", consentText: "I consent to masked contact for this enquiry." });
+    expect(result.ok && result.lead.whatsappOptIn).toBe(false);
+    expect(result.ok && result.lead.idempotencyKey).toMatch(/^lead\.v1\.[a-f0-9]{64}$/);
+    expect(result.ok && result.lead.idempotencyKey).not.toContain("9876543210");
+  });
+
+  it("stores bounded WhatsApp opt-in copy and a server capture time", () => {
+    const result = createLead({ listingId: "garden-courtyard", name: "Opt In Buyer", phone: "+91 98765 43210", message: "I would like more details about this home.", consentText: "I consent to masked contact for this enquiry.", whatsappOptIn: true, whatsappOptInText: "Please send one acknowledgement about this enquiry." });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.lead.whatsappOptIn).toBe(true);
+      expect(result.lead.whatsappOptInText).toContain("one acknowledgement");
+      expect(result.lead.whatsappOptInAt).toMatch(/^20/);
+    }
+  });
+
   it("creates idempotent masked leads with audit metadata", () => {
     const input = { listingId: "garden-courtyard", name: "Kinjal Shah", phone: "+91 98765 43210", message: "I would like to visit this home this week.", consentText: "I consent to masked contact for this enquiry.", idempotencyKey: "lead-test-1" };
     const first = createLead(input);

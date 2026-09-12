@@ -66,6 +66,8 @@ export const demoBrokerSession: AuthSession = {
   },
   permissions: [
     "broker.dashboard.read",
+    "broker.whatsapp.read",
+    "broker.whatsapp.manage",
     "listing.draft.create",
     "lead.inbox.read",
     "lead.inbox.write",
@@ -100,6 +102,8 @@ export const demoBrokerSession: AuthSession = {
    role so guarded APIs behave identically in both modes. */
 const ROLE_PERMISSIONS_SOURCE: string[] = [
   "broker.dashboard.read",
+  "broker.whatsapp.read",
+  "broker.whatsapp.manage",
   "listing.draft.create",
   "lead.inbox.read",
   /* Writes are not reads: reply/close/delete/consent-revoke on a lead require
@@ -135,6 +139,7 @@ const ROLE_PERMISSIONS: Record<AuthRole, string[]> = {
   BUYER: ["saved-search.read", "saved-search.write"],
   BROKER_MEMBER: [
     "broker.dashboard.read",
+    "broker.whatsapp.read",
     "listing.draft.create",
     "lead.inbox.read",
     "lead.inbox.write",

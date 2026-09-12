@@ -59,6 +59,7 @@
     "provisioning:smoke": "node ops/scripts/operations/provisioning-smoke.mjs",
     "start:next": "node node_modules/next/dist/bin/next start",
     "start:static": "node dist/index.js",
+    "whatsapp:worker": "node ops/scripts/whatsapp/outbox-worker.mjs",
     "test:a11y:broker": "playwright test --config playwright.a11y.broker.config.ts",
     "icons:maskable": "node ops/scripts/media/generate-maskable-icon.mjs",
     "audit:pwa:ci": "node ops/scripts/audit/run-pwa-audit.mjs"

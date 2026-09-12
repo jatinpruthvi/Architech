@@ -1,8 +1,11 @@
 import "server-only";
-import { createLead, findLeadForOrganization, listActiveLeads, maskPhone, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
+import { createLead, findLeadForOrganization, listActiveLeads, maskPhone, revokeLeadConsent, softDeleteLead, updateLeadStatus, validateLeadInput, validateWhatsAppOptIn, type LeadInput, type LeadMode, type LeadRecord, type LeadResult, type LeadStatus } from "./lead";
 import { emitLeadEvent } from "./events";
+import { buildLeadIdempotencyKey, validateCallerIdempotencyKey, IdempotencyKeyError } from "@/lib/interop/idempotency";
+import { enqueueLeadWhatsAppAcknowledgement } from "@/lib/whatsapp/dispatch";
 import { isPrismaLeadStorage } from "./source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import { withTenantPrisma, type PrismaTenantClient } from "@/lib/repositories/server/tenant";
 import { demoBrokerSession } from "@/lib/auth/roles";
 import { encryptContact } from "@/lib/interop/contact-crypto";
 import { normalizeIndianPhone } from "@/lib/interop/phone";
@@ -43,6 +46,7 @@ function baseErrors(input: Partial<LeadInput>) {
   if (!input.consentText || input.consentText.trim().length < 12) errors.push("Consent text is required.");
   if (input.email && !/^\S+@\S+\.\S+$/.test(input.email)) errors.push("Email must be valid when provided.");
   if (input.mode && input.mode !== "MASKED" && input.mode !== "DIRECT_CONSENTED") errors.push("Lead mode is invalid.");
+  errors.push(...validateWhatsAppOptIn(input));
   return errors;
 }
 
@@ -81,15 +85,38 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
   }) as { id: string; title: string; brokerOrgId?: string | null; brokerOrg?: { name: string } | null } | null;
   if (!listing) return { ok: false, status: 400, errors: ["Choose a valid listing."] };
 
-  const key = input.idempotencyKey?.trim() || `${input.listingId}:${input.phone.replace(/\D/g, "")}:${input.message.trim().toLowerCase()}`;
   const normalizedPhone = normalizeIndianPhone(input.phone);
   const phoneForStorage = normalizedPhone.ok ? normalizedPhone.e164 : input.phone.replace(/\D/g, "");
+  let key: string;
+  try {
+    const callerKey = typeof input.idempotencyKey === "string" ? input.idempotencyKey.trim() : "";
+    key = callerKey
+      ? validateCallerIdempotencyKey(callerKey)
+      : buildLeadIdempotencyKey({
+          listingId: listing.id,
+          normalizedPhone: phoneForStorage,
+          normalizedMessage: input.message,
+        });
+  } catch (error) {
+    if (error instanceof IdempotencyKeyError) return { ok: false, status: 503, errors: ["Lead retry protection is not configured."] };
+    throw error;
+  }
   const organizationName = listing.brokerOrg?.name ?? "Verified partner";
   /* The owning organization is read off the LISTING. Anything the caller sent
      in `organizationId` is discarded -- that field decides which inbox the
-     lead lands in. */
-  const owning = { ...input, organizationId: listing.brokerOrgId ?? null };
-  const existing = await prisma.lead.findUnique({ where: { idempotencyKey: key } });
+     lead lands in. The opaque key is carried into every public contract. */
+  const owning = { ...input, organizationId: listing.brokerOrgId ?? null, idempotencyKey: key };
+  /* Lead, AuditEvent, and the WhatsApp dispatch tables are FORCE RLS. The
+     public listing lookup above is intentionally unscoped, but every broker
+     lead read/write below must enter the listing's organization transaction
+     before touching tenant-owned rows. */
+  const readExistingLead = async () => {
+    if (!listing.brokerOrgId) return prisma.lead.findUnique({ where: { idempotencyKey: key } });
+    return withTenantPrisma(prisma as unknown as PrismaTenantClient, listing.brokerOrgId, async (tenantTx) => {
+      return (tenantTx as unknown as PrismaLeadClient).lead.findUnique({ where: { idempotencyKey: key } });
+    });
+  };
+  const existing = await readExistingLead();
   if (existing && typeof existing === "object") {
     // Avoid exposing raw DB rows; return deterministic contract shape.
     const lead = dbLeadContract(owning, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);
@@ -98,7 +125,7 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
 
   let result: { dbLead: { id: string; createdAt: Date }; audit: { id: string } };
   try {
-    result = await prisma.$transaction(async (tx) => {
+    const writeLead = async (tx: PrismaLeadClient) => {
       const dbLead = await tx.lead.create({
         data: {
           listingId: listing.id,
@@ -116,6 +143,9 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
           email: input.email?.trim() || undefined,
           message: input.message.trim(),
           consentText: input.consentText.trim(),
+          whatsappOptIn: input.whatsappOptIn === true,
+          whatsappOptInAt: input.whatsappOptIn === true ? new Date() : null,
+          whatsappOptInText: input.whatsappOptIn === true ? input.whatsappOptInText!.trim() : null,
           idempotencyKey: key,
         },
       });
@@ -130,15 +160,30 @@ export async function createLeadForServer(input: LeadInput): Promise<LeadResult>
           metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source: "api.leads.prisma" },
         },
       });
+      await enqueueLeadWhatsAppAcknowledgement(tx, {
+        leadId: dbLead.id,
+        organizationId: listing.brokerOrgId ?? null,
+        whatsappOptIn: input.whatsappOptIn === true,
+        whatsappOptInText: input.whatsappOptIn === true ? input.whatsappOptInText!.trim() : null,
+        consentClass: input.consentClass ?? "first-party-form",
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      });
       return { dbLead, audit };
-    });
+    };
+    result = listing.brokerOrgId
+      ? await withTenantPrisma(prisma as unknown as PrismaTenantClient, listing.brokerOrgId, (tenantTx) => writeLead(tenantTx as unknown as PrismaLeadClient))
+      : await prisma.$transaction(writeLead);
   } catch (error) {
     /* B-5: two concurrent identical posts (double-click, retry, two tabs) can
        both pass the findUnique above; the second must not become a 500. The
        unique constraint is the arbiter — return the winner as a duplicate. */
     if (isUniqueViolation(error)) {
-      const winner = (await prisma.lead.findUnique({ where: { idempotencyKey: key } })) as { id: string } | null;
-      const row = winner ? await refetchLeadOrNotFound(prisma, winner.id) : null;
+      const winner = (await readExistingLead()) as { id: string } | null;
+      const row = winner
+        ? listing.brokerOrgId
+          ? await withTenantPrisma(prisma as unknown as PrismaTenantClient, listing.brokerOrgId, (tenantTx) => refetchLeadOrNotFound(tenantTx as unknown as PrismaLeadClient, winner.id))
+          : await refetchLeadOrNotFound(prisma, winner.id)
+        : null;
       const lead = row
         ? dbLeadRowToContract(row)
         : dbLeadContract(owning, listing.title, stableId("lead", key), stableId("audit", `${key}:lead.created`), true, new Date().toISOString(), "api.leads.prisma", organizationName);
@@ -169,7 +214,11 @@ function dbLeadContract(input: LeadInput, listingTitle: string, id: string, audi
     status: "NEW",
     consentText: input.consentText.trim(),
     consentClass: input.consentClass,
-    idempotencyKey: input.idempotencyKey?.trim() || `${input.listingId}:${input.phone.replace(/\D/g, "")}:${input.message.trim().toLowerCase()}`,
+    idempotencyKey: input.idempotencyKey ?? "",
+    whatsappOptIn: input.whatsappOptIn === true,
+    ...(input.whatsappOptIn === true
+      ? { whatsappOptInAt: createdAt, whatsappOptInText: input.whatsappOptInText?.trim() }
+      : {}),
     auditEvent: { id: auditId, action: "lead.created", entityType: "Lead", metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source } },
     statusHistory: [{ id: auditId, action: "lead.created", at: createdAt, metadata: { masked: (input.mode ?? "MASKED") === "MASKED", source } }],
     createdAt,
@@ -196,6 +245,10 @@ function dbLeadRowToContract(row: Record<string, unknown>, organizationName = "V
     consentText: String(row.consentText ?? ""),
     consentClass: typeof row.consentClass === "string" ? row.consentClass : undefined,
     idempotencyKey: String(row.idempotencyKey ?? ""),
+    whatsappOptIn: row.whatsappOptIn === true,
+    ...(row.whatsappOptIn === true
+      ? { whatsappOptInAt: safeIso(row.whatsappOptInAt), whatsappOptInText: typeof row.whatsappOptInText === "string" ? row.whatsappOptInText : undefined }
+      : {}),
     auditEvent: { id: stableId("audit", `${id}:lead.created`), action: "lead.created", entityType: "Lead", metadata: { masked: true, source: "api.leads.prisma" } },
     statusHistory,
     createdAt,

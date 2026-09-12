@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-08-30",
+  "lastUpdated": "2026-09-11",
   "status": "provisioning_plan_ready_external_account_access_required",
   "environments": [
     {
@@ -33,7 +33,11 @@
         "Sentry",
         "Cloudflare R2",
         "Resend",
-        "Requirement retention purge"
+        "Requirement retention purge",
+        "Private Evolution API",
+        "Dedicated Evolution PostgreSQL",
+        "Dedicated Evolution Redis",
+        "WhatsApp outbox worker"
       ],
       "requiredChecks": [
         "pnpm db:migrate",
@@ -44,7 +48,10 @@
         "pnpm build",
         "pnpm security:audit",
         "pnpm ops:audit",
-        "pnpm release:audit"
+        "pnpm release:audit",
+        "node --test ops/scripts/whatsapp/outbox-worker.test.mjs",
+        "pnpm secrets:audit",
+        "pnpm env:audit"
       ],
       "requiredSecrets": [
         "NEXT_PUBLIC_SITE_URL",
@@ -55,9 +62,14 @@
         "NEXT_PUBLIC_SENTRY_DSN",
         "R2_ACCESS_KEY_ID",
         "R2_SECRET_ACCESS_KEY",
-        "RESEND_API_KEY"
+        "RESEND_API_KEY",
+        "ARCHITECH_EVOLUTION_API_KEY",
+        "ARCHITECH_EVOLUTION_WEBHOOK_JWT_KEY",
+        "ARCHITECH_WHATSAPP_WORKER_SECRET",
+        "ARCHITECH_IDEMPOTENCY_HMAC_KEY"
       ],
-      "provisioningStatus": "blocked_external_account_access"
+      "provisioningStatus": "blocked_external_account_access",
+      "whatsappFeatureStatus": "disabled_pending_provider_image_privacy_secret_and_canary_gates"
     },
     {
       "name": "production",
@@ -71,7 +83,11 @@
         "Cloudflare R2/Stream",
         "Resend",
         "Google Search Console",
-        "Requirement retention purge"
+        "Requirement retention purge",
+        "Private Evolution API",
+        "Dedicated Evolution PostgreSQL",
+        "Dedicated Evolution Redis",
+        "WhatsApp outbox worker"
       ],
       "requiredChecks": [
         "pnpm check",
@@ -86,7 +102,10 @@
         "pnpm build",
         "pnpm test:perf",
         "pnpm test:seo",
-        "pnpm test:a11y"
+        "pnpm test:a11y",
+        "node --test ops/scripts/whatsapp/outbox-worker.test.mjs",
+        "pnpm secrets:audit",
+        "pnpm env:audit"
       ],
       "requiredSecrets": [
         "NEXT_PUBLIC_SITE_URL",
@@ -98,9 +117,14 @@
         "R2_ACCESS_KEY_ID",
         "R2_SECRET_ACCESS_KEY",
         "RESEND_API_KEY",
-        "GSC_CREDENTIALS"
+        "GSC_CREDENTIALS",
+        "ARCHITECH_EVOLUTION_API_KEY",
+        "ARCHITECH_EVOLUTION_WEBHOOK_JWT_KEY",
+        "ARCHITECH_WHATSAPP_WORKER_SECRET",
+        "ARCHITECH_IDEMPOTENCY_HMAC_KEY"
       ],
-      "provisioningStatus": "blocked_external_account_access"
+      "provisioningStatus": "blocked_external_account_access",
+      "whatsappFeatureStatus": "disabled_pending_provider_image_privacy_secret_and_canary_gates"
     }
   ]
 }

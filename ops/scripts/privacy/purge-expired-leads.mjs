@@ -9,6 +9,9 @@
  *   - only the RECOVERABLE contact data is cleared: phoneCiphertext and
  *     phoneLast4. The masked record, consent text, stage and call logs stay
  *     as the non-sensitive audit tombstone.
+ *   - pending, in-flight, and ambiguous WhatsApp dispatches are made terminal
+ *     in the same transaction before the lead tombstone is written. A worker
+ *     cannot claim an expired lead while this transaction is in progress.
  *   - billing state never drives this: a lapsed plan does not purge, and an
  *     active plan does not extend retention (consent class + retentionUntil
  *     are the only authorities).
@@ -28,9 +31,25 @@ export function expiredLeadWhere(asOf) {
 export async function purgeExpiredLeads(prisma, { apply, asOf }) {
   const where = expiredLeadWhere(asOf);
   const eligible = await prisma.lead.count({ where });
-  if (!apply) return { mode: "DRY_RUN", asOf: asOf.toISOString(), eligible, purged: 0 };
-  const result = await prisma.lead.updateMany({ where, data: { phoneCiphertext: null, phoneLast4: null, deletedAt: asOf } });
-  return { mode: "APPLY", asOf: asOf.toISOString(), eligible, purged: result.count };
+  if (!apply) return { mode: "DRY_RUN", asOf: asOf.toISOString(), eligible, purged: 0, dispatchesTerminal: 0 };
+
+  const work = async (tx) => {
+    const expired = await tx.lead.findMany({ where, select: { id: true } });
+    const leadIds = expired.map((lead) => lead.id).filter((id) => typeof id === "string" && id.length > 0);
+    let dispatchesTerminal = 0;
+    if (leadIds.length > 0) {
+      const dispatches = await tx.whatsappDispatch.updateMany({
+        where: { leadId: { in: leadIds }, status: { in: ["PENDING", "IN_FLIGHT", "UNKNOWN"] } },
+        data: { status: "SKIPPED", skipReason: "LEAD_EXPIRED", lastErrorCode: "LEAD_EXPIRED", completedAt: asOf },
+      });
+      dispatchesTerminal = dispatches.count;
+    }
+    const result = await tx.lead.updateMany({ where, data: { phoneCiphertext: null, phoneLast4: null, deletedAt: asOf } });
+    return { purged: result.count, dispatchesTerminal };
+  };
+
+  const result = typeof prisma.$transaction === "function" ? await prisma.$transaction(work) : await work(prisma);
+  return { mode: "APPLY", asOf: asOf.toISOString(), eligible, purged: result.purged, dispatchesTerminal: result.dispatchesTerminal };
 }
 
 function usage() {
