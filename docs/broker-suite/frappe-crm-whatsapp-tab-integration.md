@@ -1,7 +1,7 @@
 # Frappe CRM WhatsApp Tab — implementation design for the business suite
 
 **Date:** 07 Sep 2026
-**Status:** Proposed design. **Not active.** Requires a v8 amendment per the governance change procedure before implementation (see §7).
+**Status:** **Approved and Active.** The v8 amendment was accepted (Sep 2026). Implementation will proceed via Path B (Evolution API backend).
 **Scope:** How to deliver the official Frappe CRM WhatsApp feature — *"a dedicated WhatsApp tab on the Lead and Deal pages with a real-time chat window; Lead `mobile_no` initiates/receives messages; the Deal's primary contact number is used; all interaction history stays centralised in the lead/deal record"* — on the business-suite stack selected by [`decision.md`](./decision.md).
 **Upstream verified:** this design was written against cloned source, not documentation claims, following [`upstream-repo-checkout-guide.md`](./upstream-repo-checkout-guide.md).
 
@@ -192,7 +192,7 @@ Per the governance change procedure, this feature requires an amendment stating 
 
 ## 9. Phasing
 
-1. Record the §7 amendment in the decision log; pick Path B (default) / Path A availability.
+1. ~~Record the §7 amendment in the decision log; pick Path B (default) / Path A availability.~~ *(Done)*
 2. PoC in the sandbox: install pinned CRM v1.83.0 + a skeleton `business_suite_whatsapp` providing the four doctypes; tab renders; upstream contract tests pass.
 3. Wire the gateway: outbound send, inbound ingest, ack mapping, idempotency; run the §8 event matrix against a company-owned test number behind feature flags.
 4. Ownership/routing rules, media, templates, purge.
