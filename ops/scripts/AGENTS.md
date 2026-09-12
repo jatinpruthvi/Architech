@@ -6,7 +6,8 @@ npm scripts; update `package.json` in the same change.**
 
 ## Layout
 
-- Root: `build-ci.mjs`, `build-publish.mjs`, `materialize-static-publish.mjs`,
+- Root: `verify.mjs` (whole local gate, CI parity minus build/browser),
+  `build-ci.mjs`, `build-publish.mjs`, `materialize-static-publish.mjs`,
   `publish-server.mjs`, `generate-md-index.mjs`, `audit-surface-contrast.mjs`
 - `operations/` — env/secrets/provisioning/readiness audits (read `ops/config/governance/`)
 - `security/` — header, RLS, and legal-gate audits
@@ -23,6 +24,13 @@ npm scripts; update `package.json` in the same change.**
 - Scripts that validate configuration read from `ops/config/` — keep paths in sync
   with that tree (see `../config/AGENTS.md`).
 - Test scripts in this folder use the Node test runner (`node --test`), not vitest.
+  `pnpm ops:test` runs all of them; the glob in `package.json` **must stay
+  quoted** — unquoted, `sh` expands `**` as `*` and silently skips test files
+  sitting directly under `ops/scripts/`. `ops/scripts/verify.test.mjs` asserts
+  the glob still reaches every file on disk.
+- Before adding a suite here, confirm it is reachable from `pnpm ops:test`, and
+  decide whether it belongs in `verify.mjs`'s `CHECKS` list too. A script that
+  nothing runs is how the ops suites went unrun in CI in the first place.
 - `generate-md-index.mjs` regenerates `docs/MARKDOWN-DOCUMENTATION-INDEX.md` —
   rerun it after adding/moving any markdown file. CI enforces this, so its output
   must stay deterministic: do not reintroduce a timestamp into the generated file.
