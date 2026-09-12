@@ -24,7 +24,7 @@ pnpm db:migrate
 pnpm whatsapp:worker -- --once
 ```
 
-Set the server-only values in the local environment before using a QR flow. At minimum, use a random `ARCHITECH_EVOLUTION_API_KEY`, `ARCHITECH_EVOLUTION_WEBHOOK_JWT_KEY`, `ARCHITECH_WHATSAPP_WORKER_SECRET`, and `ARCHITECH_IDEMPOTENCY_HMAC_KEY`; do not put them in source control. `ARCHITECH_EVOLUTION_API_URL` is `http://127.0.0.1:8080` for the local server, while `WHATSAPP_WORKER_TARGET_URL` points to the Architech server (normally `http://127.0.0.1:3000`).
+Set the server-only values in the local environment before using a QR flow. For the isolated synthetic run, explicitly set `ARCHITECH_WHATSAPP_ENABLED=true` and `ARCHITECH_WHATSAPP_REAL_NUMBERS_ENABLED=true`; leave both false everywhere else until the operational gates are approved. Use a random `ARCHITECH_EVOLUTION_API_KEY`, `ARCHITECH_EVOLUTION_WEBHOOK_JWT_KEY`, `ARCHITECH_WHATSAPP_WORKER_SECRET`, and `ARCHITECH_IDEMPOTENCY_HMAC_KEY`; do not put them in source control. Set `ARCHITECH_EVOLUTION_WEBHOOK_URL=http://host.docker.internal:3000/api/internal/providers/evolution/webhook` so the container can call the host Architech server; the local compose file maps `host.docker.internal` to the host gateway. `ARCHITECH_EVOLUTION_API_URL` is `http://127.0.0.1:8080` for the local server, while `WHATSAPP_WORKER_TARGET_URL` points to the Architech server (normally `http://127.0.0.1:3000`).
 
 The polling process is only a driver. It claims no rows and does not decrypt contacts or render messages itself. The server route performs tenant-scoped claims, safety checks, rendering, provider calls, and durable status transitions. A scheduled deployment must provide `ARCHITECH_WHATSAPP_WORKER_SECRET` through its secret store.
 

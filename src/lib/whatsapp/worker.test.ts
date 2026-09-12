@@ -46,6 +46,7 @@ const baseRow = () => ({
     deletedAt: null,
     retentionUntil: new Date("2026-12-12T00:00:00.000Z"),
     whatsappOptIn: true,
+    whatsappOptInText: "Please send one acknowledgement.",
     consentClass: "first-party-form",
     phoneCiphertext: Buffer.from("ciphertext"),
     name: "Asha Buyer",
@@ -69,6 +70,9 @@ function setup(rowOverrides: Record<string, unknown> = {}) {
   mocks.database.whatsappDispatch.updateMany.mockImplementation(async (args: { where?: { status?: string }; data?: Record<string, unknown> }) => {
     const next = args.data?.status;
     if (next === "IN_FLIGHT" && args.where?.status === "PENDING" && status === "PENDING") {
+      const lead = row.lead;
+      const retentionUntil = lead && lead.retentionUntil instanceof Date ? lead.retentionUntil.getTime() : Number.POSITIVE_INFINITY;
+      if (lead?.deletedAt || retentionUntil <= new Date("2026-09-12T00:01:00.000Z").getTime()) return { count: 0 };
       status = "IN_FLIGHT";
       attemptCount += 1;
       return { count: 1 };
@@ -127,7 +131,8 @@ describe("WhatsApp dispatch worker", () => {
     ]) {
       setup(override);
       const result = await processWhatsAppDispatchBatch({ organizationId: "org_1", now: new Date("2026-09-12T00:01:00.000Z") });
-      expect(result.skipped).toBe(1);
+      const lead = override.lead as { whatsappOptIn?: boolean; deletedAt?: unknown; retentionUntil?: unknown } | undefined;
+      expect(result.skipped).toBe(lead?.deletedAt || lead?.retentionUntil instanceof Date && lead.retentionUntil.getTime() <= new Date("2026-09-12T00:01:00.000Z").getTime() ? 0 : 1);
       expect(mocks.decrypt).not.toHaveBeenCalled();
       expect(mocks.provider.sendText).not.toHaveBeenCalled();
       vi.clearAllMocks();

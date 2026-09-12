@@ -49,6 +49,7 @@ type DispatchRow = {
     deletedAt?: unknown;
     retentionUntil?: unknown;
     whatsappOptIn?: boolean;
+    whatsappOptInText?: string | null;
     consentClass?: string | null;
     phoneCiphertext?: Uint8Array | null;
     name?: string | null;
@@ -156,7 +157,13 @@ async function recoverAmbiguousInFlight(organizationId: string, now: Date): Prom
 async function claim(organizationId: string, id: string, now: Date): Promise<boolean> {
   return withOrganization(organizationId, async (tx) => {
     const result = await tx.whatsappDispatch.updateMany({
-      where: { id, organizationId, status: "PENDING", OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }] },
+      where: {
+        id,
+        organizationId,
+        status: "PENDING",
+        OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }],
+        lead: { is: { organizationId, deletedAt: null, retentionUntil: { gt: now } } },
+      },
       data: { status: "IN_FLIGHT", attemptCount: { increment: 1 } },
     });
     return result.count === 1;
@@ -205,7 +212,7 @@ async function processClaimedRow(row: DispatchRow, now: Date): Promise<keyof Pic
     await markSkipped(row, asTime(row.lead.retentionUntil) !== null && (asTime(row.lead.retentionUntil) as number) <= now.getTime() ? "LEAD_EXPIRED" : "LEAD_DELETED");
     return "skipped";
   }
-  if (row.lead.whatsappOptIn !== true) {
+  if (row.lead.whatsappOptIn !== true || typeof row.lead.whatsappOptInText !== "string" || row.lead.whatsappOptInText.trim().length < 12) {
     await markSkipped(row, "NO_WHATSAPP_OPT_IN");
     return "skipped";
   }

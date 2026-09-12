@@ -32,6 +32,12 @@ describe("lead WhatsApp dispatch enqueue", () => {
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "SKIPPED", skipReason: "NO_WHATSAPP_OPT_IN" }) }));
   });
 
+  it("requires opt-in evidence text before a row can be queued", async () => {
+    const { client, create } = fakeClient();
+    await enqueueLeadWhatsAppAcknowledgement(client, { ...input, whatsappOptInText: "" });
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "SKIPPED", skipReason: "NO_WHATSAPP_OPT_IN" }) }));
+  });
+
   it("requires literal ACTIVE subscription status and queues only eligible leads", async () => {
     const { client, create } = fakeClient({ subscription: { id: "sub_1", status: "TRIAL" } });
     await enqueueLeadWhatsAppAcknowledgement(client, input);

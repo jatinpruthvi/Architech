@@ -109,7 +109,8 @@ export function verifyEvolutionWebhookRequest(rawBody: string, authorization: st
   if (!instanceName) throw new EvolutionWebhookError("BAD_REQUEST", "WEBHOOK_INSTANCE_INVALID");
   const data = eventData(body);
   const messageId = providerMessageId(body, data);
-  const externalId = safeId(body.id ?? body.eventId ?? data.eventId ?? data.id) ?? (event === "SEND_MESSAGE" || event === "SEND_MESSAGE_UPDATE" ? messageId : undefined);
+  const eventIdentity = event === "SEND_MESSAGE" || event === "SEND_MESSAGE_UPDATE" ? data.id : undefined;
+  const externalId = safeId(body.id ?? body.eventId ?? data.eventId ?? eventIdentity) ?? (event === "SEND_MESSAGE" || event === "SEND_MESSAGE_UPDATE" ? messageId : undefined);
   if ((event === "SEND_MESSAGE" || event === "SEND_MESSAGE_UPDATE") && !messageId) throw new EvolutionWebhookError("BAD_REQUEST", "WEBHOOK_MESSAGE_ID_MISSING");
   const connectionState = event === "QRCODE_UPDATED"
     ? "QR_READY"

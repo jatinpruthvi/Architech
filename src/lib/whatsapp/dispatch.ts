@@ -94,7 +94,7 @@ export async function enqueueLeadWhatsAppAcknowledgement(
   const db = tx as DispatchClient;
   const common = { status: "SKIPPED" as const };
 
-  if (input.whatsappOptIn !== true) {
+  if (input.whatsappOptIn !== true || typeof input.whatsappOptInText !== "string" || input.whatsappOptInText.trim().length < 12) {
     await createDispatch(db, input, { ...common, skipReason: "NO_WHATSAPP_OPT_IN" });
     return;
   }

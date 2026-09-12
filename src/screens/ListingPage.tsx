@@ -82,7 +82,7 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
       <DialogContent className="rounded-2xl border-ink/15 bg-paper sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-medium tracking-[-0.02em]">{t.listing.dialogTitle}</DialogTitle>
-          <DialogDescription className="text-sm leading-6 text-ink/60">
+          <DialogDescription className="text-sm leading-6 ink-2">
             {t.listing.dialogCopy}
           </DialogDescription>
         </DialogHeader>
