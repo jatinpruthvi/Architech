@@ -47,16 +47,13 @@ jobs:
       - name: Unit tests
         run: pnpm test
       # ops/scripts tests use the Node test runner, not vitest, so `pnpm test`
-      # does not reach them. These are the checks ops/config/governance declares
-      # as required for staging and production (privacy:requirements:test and
-      # the WhatsApp worker test in particular), so they have to actually run.
-      # Cheap and dependency-free — kept ahead of the build for fast feedback.
+      # does not reach them. This glob covers every ops suite at once, so a new
+      # *.test.mjs is picked up automatically instead of needing a CI edit —
+      # several suites were silently unrun before, including ones that
+      # ops/config/governance already declared as required for staging and
+      # production. Cheap and dependency-free, so it runs ahead of the build.
       - name: Ops script tests (node --test)
-        run: |
-          pnpm privacy:leads:test
-          pnpm privacy:requirements:test
-          pnpm location:import:test
-          pnpm whatsapp:test
+        run: pnpm ops:test
       # generate-md-index.mjs must be re-run whenever a markdown file is added
       # or moved. Enforcing it here means a stale index fails CI rather than
       # relying on the author remembering.

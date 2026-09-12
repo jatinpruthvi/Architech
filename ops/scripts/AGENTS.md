@@ -15,7 +15,8 @@ npm scripts; update `package.json` in the same change.**
 - `performance/` — perf budget enforcement (reads `ops/config/performance/budgets.json`)
 - `location/` — India Post / LGD fetch+import pipelines (read/write `ops/config/data/location/`)
 - `privacy/` — lead/requirement purge jobs (+ `*.test.mjs`, run with `node --test`)
-- `auth/`, `data/`, `audit/`, `sandbox/` — auth tooling, data prep, surface audits, local DB setup
+- `auth/`, `data/`, `audit/`, `sandbox/` — auth tooling, data prep, surface audits, local DB setup,
+  baseline worktree provisioning (`baseline-worktree.mjs`)
 
 ## Rules
 
@@ -23,7 +24,32 @@ npm scripts; update `package.json` in the same change.**
   with that tree (see `../config/AGENTS.md`).
 - Test scripts in this folder use the Node test runner (`node --test`), not vitest.
 - `generate-md-index.mjs` regenerates `docs/MARKDOWN-DOCUMENTATION-INDEX.md` —
-  rerun it after adding/moving any markdown file.
+  rerun it after adding/moving any markdown file. CI enforces this, so its output
+  must stay deterministic: do not reintroduce a timestamp into the generated file.
+
+## Gotchas
+
+**Never symlink `node_modules` into a git worktree.** Next.js 16 builds with
+Turbopack, which resolves the project root to the worktree and panics on a link
+pointing outside it:
+
+```
+Symlink [project]/node_modules is invalid, it points out of the filesystem root
+```
+
+The knock-on error is misleading — `ops/scripts/performance/budget.mjs` then
+reports `Missing .next diagnostics`, which looks like a broken script. Run a real
+`pnpm install --frozen-lockfile` in the worktree instead; with a warm store it
+takes seconds. `pnpm baseline:worktree` does this correctly:
+
+```bash
+pnpm baseline:worktree                        # provision at origin/main
+pnpm baseline:worktree -- --script test:perf  # run a check in both, compare
+pnpm baseline:worktree -- --remove            # clean up
+```
+
+Use it before blaming a branch for a red check — several audits have been red on
+`main` independently of the change under review.
 
 ## See also
 
