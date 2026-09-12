@@ -178,7 +178,7 @@ Required rules:
 2. One lead/purpose/template gets at most one initial acknowledgement.
 3. The destination is decrypted only by the worker; no raw contact in logs/idempotency.
 4. Provider acceptance, delivery, read, failure and unknown remain separate.
-5. Evolution events write message text and status markers to the business's own Frappe site (single-tenant DB). **Heavy media (photos, videos, documents) is explicitly ignored at the gateway to prevent storage bloat**; the CRM tab displays a placeholder (e.g., *"Media received - view on phone"*), and the employee views the media in their native company WhatsApp app. Furthermore, a configurable background job automatically purges synced messages older than `N` days to keep the database lightweight.
+5. Evolution events write message text and status markers to the business's own Frappe site (single-tenant DB). **Heavy media (photos, videos, documents) is explicitly ignored at the gateway to prevent storage bloat**; the CRM tab displays a placeholder (e.g., *"Media received - view on phone"*), and the employee views the media in their native company WhatsApp app. Furthermore, a configurable background job automatically purges synced messages older than `N` days (default **60 days**) to keep the database lightweight.
 6. Before launch, prove that API sends appear on the employee phone, customer replies appear there, employee native replies emit the expected provider event, and reconnect/replay does not duplicate CRM activity.
 7. Text is the required baseline; lists/buttons are capability-gated with fallback.
 8. Genuine Meta Flows remain outside the hosting-only baseline.
