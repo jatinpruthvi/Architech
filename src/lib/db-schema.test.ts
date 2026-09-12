@@ -19,15 +19,31 @@ describe("Phase 1 Prisma schema contract", () => {
       "Lead",
       "AuditEvent",
       "SavedSearch",
+      "WhatsAppAccount",
+      "WhatsAppTemplate",
+      "WhatsAppDispatch",
     ]) {
       expect(schema).toContain(`model ${model} {`);
     }
   });
 
   it("declares lifecycle, verification, localization, and media moderation enums", () => {
-    for (const enumName of ["ListingLifecycle", "VerificationStatus", "TranslationStatus", "MediaModerationStatus", "LeadMode", "LeadStatus"]) {
+    for (const enumName of ["ListingLifecycle", "VerificationStatus", "TranslationStatus", "MediaModerationStatus", "LeadMode", "LeadStatus", "WhatsAppAccountStatus", "WhatsAppDispatchStatus"]) {
       expect(schema).toContain(`enum ${enumName} {`);
     }
+  });
+
+  it("declares the one-time WhatsApp acknowledgement contract", () => {
+    expect(schema).toMatch(/whatsappOptIn\s+Boolean\s+@default\(false\)/);
+    expect(schema).toContain("whatsappOptInAt");
+    expect(schema).toContain("whatsappOptInText");
+    expect(schema).toContain("@@unique([leadId, purpose])");
+    for (const field of ["expiresAt", "providerMessageId", "payloadHash", "attemptCount"]) {
+      expect(schema).toContain(field);
+    }
+    const dispatch = schema.slice(schema.indexOf("model WhatsAppDispatch {"), schema.indexOf("model Requirement {"));
+    expect(dispatch).not.toMatch(/\bphone\b/);
+    expect(dispatch).not.toMatch(/\bbody\b/);
   });
 
   it("ships an initial migration for the schema", () => {

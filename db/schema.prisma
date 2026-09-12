@@ -153,6 +153,23 @@ enum LeadStatus {
   DELETED
 }
 
+enum WhatsAppAccountStatus {
+  PROVISIONING
+  QR_READY
+  CONNECTING
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum WhatsAppDispatchStatus {
+  PENDING
+  IN_FLIGHT
+  ACCEPTED
+  FAILED
+  UNKNOWN
+  SKIPPED
+}
 
 enum ChannelRequestType {
   DEMAND
@@ -686,6 +703,9 @@ model BrokerOrganization {
   collaborationRequestsTo BrokerCollaborationRequest[] @relation("CollaborationRecipientOrg")
   reports             ListingReport[]
   reviewedListings    ListingVerification[]
+  whatsappAccounts    WhatsAppAccount[]
+  whatsappTemplates   WhatsAppTemplate[]
+  whatsappDispatches  WhatsAppDispatch[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1125,6 +1145,9 @@ model Lead {
   email          String?
   message        String
   consentText    String
+  whatsappOptIn  Boolean  @default(false)
+  whatsappOptInAt DateTime?
+  whatsappOptInText String? @db.VarChar(240)
   idempotencyKey String?    @unique
   deletedAt      DateTime?
 
@@ -1148,6 +1171,7 @@ model Lead {
   organization BrokerOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   audits       AuditEvent[]
   callLogs     LeadCallLog[]
+  whatsappDispatches WhatsAppDispatch[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1178,6 +1202,75 @@ model LeadCallLog {
 
   @@index([leadId, createdAt])
   @@index([organizationId, nextActionAt])
+}
+
+model WhatsAppAccount {
+  id                 String                @id @default(cuid())
+  organizationId     String                @unique
+  provider           String                @default("EVOLUTION_BAILEYS") @db.VarChar(32)
+  instanceName       String                @unique @db.VarChar(100)
+  providerInstanceId String?               @db.VarChar(140)
+  status             WhatsAppAccountStatus @default(PROVISIONING)
+  phoneLast4         String?               @db.VarChar(4)
+  connectedAt        DateTime?
+  lastObservedAt     DateTime?
+  lastErrorCode      String?               @db.VarChar(64)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  dispatches   WhatsAppDispatch[]
+
+  @@index([organizationId, status])
+  @@index([status, lastObservedAt])
+}
+
+model WhatsAppTemplate {
+  id             String   @id @default(cuid())
+  organizationId String
+  version        Int
+  body           String   @db.VarChar(1200)
+  isActive       Boolean  @default(true)
+  createdById    String?
+  createdAt      DateTime @default(now())
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  dispatches   WhatsAppDispatch[]
+
+  @@unique([organizationId, version])
+  @@index([organizationId, isActive, version])
+}
+
+model WhatsAppDispatch {
+  id                String                 @id @default(cuid())
+  organizationId    String
+  leadId            String
+  accountId         String?
+  templateId        String?
+  purpose           String                 @default("lead-ack") @db.VarChar(48)
+  templateVersion   Int?
+  status            WhatsAppDispatchStatus @default(PENDING)
+  skipReason        String?                @db.VarChar(64)
+  providerMessageId String?                @db.VarChar(140)
+  payloadHash       String?                @db.VarChar(64)
+  attemptCount      Int                    @default(0)
+  lastErrorCode     String?                @db.VarChar(64)
+  nextAttemptAt     DateTime?
+  expiresAt         DateTime?
+  acceptedAt        DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  organization BrokerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  account      WhatsAppAccount?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  template     WhatsAppTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@unique([leadId, purpose])
+  @@index([organizationId, status, nextAttemptAt])
+  @@index([accountId, status])
+  @@index([providerMessageId])
 }
 
 model Requirement {
