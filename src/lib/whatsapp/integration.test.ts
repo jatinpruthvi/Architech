@@ -1,12 +1,60 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { PrismaClientLike } from "@/lib/repositories/server/prisma";
 
 vi.mock("server-only", () => ({}));
 
+type FixtureRecord = Record<string, unknown>;
+type LeadFixture = {
+  id: string;
+  organizationId: string;
+  deletedAt: Date | null;
+  retentionUntil: Date;
+  whatsappOptIn: boolean;
+  whatsappOptInText: string;
+  consentClass: string;
+  phoneCiphertext: Buffer;
+  name: string;
+  listing: { title: string; city: { name: string } };
+};
+type AccountFixture = { id: string; organizationId: string; instanceName: string; status: string };
+type TemplateFixture = { id: string; organizationId: string; version: number; body: string };
+type DispatchFixture = FixtureRecord & {
+  id: string;
+  organizationId: string;
+  leadId: string;
+  accountId: string | null;
+  templateId: string | null;
+  purpose: string;
+  status: string;
+  attemptCount: number;
+  expiresAt: Date;
+  updatedAt: Date;
+  lead: LeadFixture;
+  account: AccountFixture | null;
+  template: TemplateFixture | null;
+  organization: { id: string; name: string };
+};
+type DispatchData = FixtureRecord & {
+  organizationId: string;
+  leadId: string;
+  purpose: string;
+  accountId?: string | null;
+  templateId?: string | null;
+  status?: string;
+  attemptCount?: { increment?: number };
+};
+type DispatchWhere = {
+  id?: string;
+  organizationId?: string;
+  status?: string | { in?: string[] };
+  lead?: { is?: unknown };
+};
+
 const mocks = vi.hoisted(() => {
-  const rows: Array<Record<string, any>> = [];
-  const leads = new Map<string, Record<string, any>>();
-  const accounts = new Map<string, Record<string, any>>();
-  const templates = new Map<string, Record<string, any>>();
+  const rows: DispatchFixture[] = [];
+  const leads = new Map<string, LeadFixture>();
+  const accounts = new Map<string, AccountFixture>();
+  const templates = new Map<string, TemplateFixture>();
   const database = {
     $transaction: vi.fn(),
     $executeRawUnsafe: vi.fn(async () => 0),
@@ -42,15 +90,21 @@ function resetState() {
   mocks.database.marketplaceSubscription.findFirst.mockResolvedValue({ id: "sub_active", status: "ACTIVE" });
   mocks.database.whatsappAccount.findUnique.mockImplementation(async (args: { where: { organizationId?: string } }) => mocks.accounts.get(args.where.organizationId ?? "") ?? null);
   mocks.database.whatsappTemplate.findFirst.mockImplementation(async (args: { where: { organizationId?: string } }) => mocks.templates.get(args.where.organizationId ?? "") ?? null);
-  mocks.database.whatsappDispatch.create.mockImplementation(async (args: { data: Record<string, any> }) => {
+  mocks.database.whatsappDispatch.create.mockImplementation(async (args: { data: DispatchData }) => {
     if (mocks.rows.some((row) => row.leadId === args.data.leadId && row.purpose === args.data.purpose)) throw { code: "P2002" };
-    const account = args.data.accountId ? [...mocks.accounts.values()].find((candidate) => candidate.id === args.data.accountId) : null;
-    const template = args.data.templateId ? [...mocks.templates.values()].find((candidate) => candidate.id === args.data.templateId) : null;
+    const account = typeof args.data.accountId === "string" ? [...mocks.accounts.values()].find((candidate) => candidate.id === args.data.accountId) ?? null : null;
+    const template = typeof args.data.templateId === "string" ? [...mocks.templates.values()].find((candidate) => candidate.id === args.data.templateId) ?? null : null;
     const lead = mocks.leads.get(args.data.leadId);
-    const row = {
+    if (!lead) throw new Error("lead fixture missing");
+    const row: DispatchFixture = {
       id: `dispatch_${mocks.rows.length + 1}`,
       ...args.data,
+      accountId: args.data.accountId ?? null,
+      templateId: args.data.templateId ?? null,
+      purpose: args.data.purpose,
+      status: args.data.status ?? "PENDING",
       attemptCount: 0,
+      expiresAt: new Date("2026-09-12T00:15:00.000Z"),
       updatedAt: now,
       lead,
       account,
@@ -65,15 +119,18 @@ function resetState() {
     return mocks.rows.filter((row) => row.organizationId === args.where.organizationId && row.status === "PENDING").map((row) => ({ id: row.id, attemptCount: row.attemptCount, expiresAt: row.expiresAt }));
   });
   mocks.database.whatsappDispatch.findUnique.mockImplementation(async (args: { where: { id: string } }) => mocks.rows.find((row) => row.id === args.where.id) ?? null);
-  mocks.database.whatsappDispatch.updateMany.mockImplementation(async (args: { where: Record<string, any>; data: Record<string, any> }) => {
+  mocks.database.whatsappDispatch.updateMany.mockImplementation(async (args: { where: DispatchWhere; data: DispatchData }) => {
     const row = mocks.rows.find((candidate) => candidate.id === args.where.id && candidate.organizationId === args.where.organizationId);
     if (!row) return { count: 0 };
     const statusFilter = args.where.status;
-    const statusMatches = typeof statusFilter === "string" ? row.status === statusFilter : statusFilter?.in?.includes(row.status);
+    const statusMatches = typeof statusFilter === "string"
+      ? row.status === statusFilter
+      : Boolean(statusFilter?.in?.includes(row.status));
     if (!statusMatches) return { count: 0 };
     if (args.where.lead?.is && (row.lead.deletedAt || row.lead.retentionUntil <= now)) return { count: 0 };
-    row.status = args.data.status ?? row.status;
-    if (args.data.attemptCount?.increment) row.attemptCount += args.data.attemptCount.increment;
+    if (typeof args.data.status === "string") row.status = args.data.status;
+    const attemptCount = args.data.attemptCount;
+    if (attemptCount?.increment) row.attemptCount += attemptCount.increment;
     for (const [key, value] of Object.entries(args.data)) if (key !== "status" && key !== "attemptCount") row[key] = value;
     return { count: 1 };
   });
@@ -89,7 +146,7 @@ function configureOrganization(organizationId: string) {
 }
 
 async function createLead(organizationId: string, leadId: string, name = "Asha Buyer") {
-  const lead = {
+  const lead: LeadFixture = {
     id: leadId,
     organizationId,
     deletedAt: null,
@@ -102,7 +159,7 @@ async function createLead(organizationId: string, leadId: string, name = "Asha B
     listing: { title: organizationId === "org_a" ? "Garden Court" : "River View", city: { name: organizationId === "org_a" ? "Ahmedabad" : "Surat" } },
   };
   mocks.leads.set(leadId, lead);
-  await enqueueLeadWhatsAppAcknowledgement(mocks.database as any, { leadId, organizationId, whatsappOptIn: true, whatsappOptInText: lead.whatsappOptInText, consentClass: lead.consentClass, expiresAt: new Date("2026-09-12T00:15:00.000Z") });
+  await enqueueLeadWhatsAppAcknowledgement(mocks.database as unknown as PrismaClientLike, { leadId, organizationId, whatsappOptIn: true, whatsappOptInText: lead.whatsappOptInText, consentClass: lead.consentClass, expiresAt: new Date("2026-09-12T00:15:00.000Z") });
   return lead;
 }
 
@@ -116,7 +173,7 @@ beforeEach(() => {
 describe("one-time WhatsApp vertical flow", () => {
   it("keeps both organizations isolated, claims a duplicate concurrently once, pins template v1, and never retries UNKNOWN", async () => {
     await createLead("org_a", "lead_a");
-    await enqueueLeadWhatsAppAcknowledgement(mocks.database as any, { leadId: "lead_a", organizationId: "org_a", whatsappOptIn: true, whatsappOptInText: "Please send one acknowledgement.", consentClass: "first-party-form", expiresAt: new Date("2026-09-12T00:15:00.000Z") });
+    await enqueueLeadWhatsAppAcknowledgement(mocks.database as unknown as PrismaClientLike, { leadId: "lead_a", organizationId: "org_a", whatsappOptIn: true, whatsappOptInText: "Please send one acknowledgement.", consentClass: "first-party-form", expiresAt: new Date("2026-09-12T00:15:00.000Z") });
     await createLead("org_b", "lead_b", "Bina Buyer");
     expect(mocks.rows).toHaveLength(2);
 
