@@ -64,7 +64,7 @@ export default function Header() {
 
   return (
     <header suppressHydrationWarning className={`fixed inset-x-0 top-0 z-50 px-3 transition-all duration-300 md:px-5 ${onDark ? "bg-transparent text-cream" : "text-ink"}`}>
-      <div className={`container flex h-[68px] items-center justify-between gap-3 transition-all duration-300 ${onDark ? "" : "mt-3 rounded-2xl border border-ink/10 bg-paper/90 px-4 shadow-lg shadow-ink/5 backdrop-blur-xl md:px-6"}`}>
+      <div className={`container flex h-[68px] items-center justify-between gap-3 transition-all duration-300 ${onDark ? "" : "mt-3 rounded-[1.25rem] border border-ink/15 bg-paper/70 px-4 shadow-xl shadow-ink/5 backdrop-blur-3xl backdrop-saturate-150 md:px-6"}`}>
         <Link href="/" className="group flex items-center gap-3" aria-label="Architech home">
           <span className="arch-mark grid h-12 w-12 place-items-center" aria-hidden="true"><span className="arch-mark-arch" /></span>
           <span className="font-display text-[26px] font-medium tracking-[-0.04em]">Architech<span className="text-brick">.</span></span>

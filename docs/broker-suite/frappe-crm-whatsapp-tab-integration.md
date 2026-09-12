@@ -1,7 +1,7 @@
 # Frappe CRM WhatsApp Tab — implementation design for the business suite
 
 **Date:** 07 Sep 2026
-**Status:** Proposed design. **Not active.** Requires a v8 amendment per the governance change procedure before implementation (see §7).
+**Status:** **Approved and Active.** The v8 amendment was accepted (Sep 2026). Implementation will proceed via Path B (Evolution API backend).
 **Scope:** How to deliver the official Frappe CRM WhatsApp feature — *"a dedicated WhatsApp tab on the Lead and Deal pages with a real-time chat window; Lead `mobile_no` initiates/receives messages; the Deal's primary contact number is used; all interaction history stays centralised in the lead/deal record"* — on the business-suite stack selected by [`decision.md`](./decision.md).
 **Upstream verified:** this design was written against cloned source, not documentation claims, following [`upstream-repo-checkout-guide.md`](./upstream-repo-checkout-guide.md).
 
@@ -176,7 +176,7 @@ The tab does not replace the automated first message:
 
 Per the governance change procedure, this feature requires an amendment stating affected decisions, evidence, rollout and reversal triggers:
 
-1. **§7 rule 5 (minimal markers)** — replaced for WhatsApp by: full message bodies/media are stored in the business's own Frappe site (single-tenant DB, encrypted backups, retention-limited, restore-tested — §10). Reversal trigger: privacy/legal review or abuse.
+1. **§7 rule 5 (minimal markers)** — replaced for WhatsApp by: text message bodies are stored in the business's own Frappe site (single-tenant DB). **Media is dropped at the gateway** to prevent storage bloat. An auto-purge background job deletes old messages based on a configurable `WHATSAPP_RETENTION_DAYS` setting (default **60 days**). Reversal trigger: privacy/legal review or abuse.
 2. **§12 (vendor payment)** — unchanged if Path B is default; Path A becomes a per-business, separately-approved opt-in where that business accepts Meta billing under its own account.
 3. **§4 (no shared inbox)** — re-affirmed, not changed: the pane is scoped to one lead/deal record with ownership checks; there is still no cross-conversation inbox.
 4. New evidence obligations: the §8 test matrix below.
@@ -192,7 +192,7 @@ Per the governance change procedure, this feature requires an amendment stating 
 
 ## 9. Phasing
 
-1. Record the §7 amendment in the decision log; pick Path B (default) / Path A availability.
+1. ~~Record the §7 amendment in the decision log; pick Path B (default) / Path A availability.~~ *(Done)*
 2. PoC in the sandbox: install pinned CRM v1.83.0 + a skeleton `business_suite_whatsapp` providing the four doctypes; tab renders; upstream contract tests pass.
 3. Wire the gateway: outbound send, inbound ingest, ack mapping, idempotency; run the §8 event matrix against a company-owned test number behind feature flags.
 4. Ownership/routing rules, media, templates, purge.

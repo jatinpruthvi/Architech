@@ -100,7 +100,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  // Horizontal variant: image left, content right.
  if (variant === "horizontal") {
  return (
-    <article className="card-warm-hover group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm">
+    <article className="card-warm-hover group relative overflow-hidden rounded-2xl border border-ink/12 bg-card shadow-sm hover:z-10">
  <div className="flex">
  <Link href={`/listing/${property.id}`} className="relative block w-[200px] shrink-0 overflow-hidden bg-sand" aria-label={`View ${property.title}`}>
  <div className="img-hover relative aspect-[4/3]">
@@ -128,7 +128,7 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  }
 
   return (
-    <article className="card-warm-hover group relative overflow-hidden rounded-[1.5rem] border border-ink/15 border-t-2 border-t-brick/70 bg-card shadow-sm">
+    <article className="card-warm-hover group relative overflow-hidden rounded-[1.5rem] border border-ink/15 border-t-2 border-t-brick/70 bg-card shadow-sm hover:z-10">
  <Link href={`/listing/${property.id}`} className="block" aria-label={`View ${property.title}, ${property.price}, ${property.locality}`}>
  <div className={`img-hover relative bg-sand ${arch ? "arch-frame-sm overflow-hidden" : "rounded-t-2xl"}`}>
  {/* 3:2 — the widest crop a 2-up grid can hold. v4 used

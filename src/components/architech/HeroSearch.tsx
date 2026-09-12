@@ -136,7 +136,7 @@ export default function HeroSearch({
 
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}
-        className="search-composer field-shell [--field-focus:var(--ember)] search-glass mt-4 flex items-stretch rounded-2xl transition-all duration-300"
+        className="search-composer field-shell [--field-focus:var(--ember)] search-glass mt-4 flex items-stretch rounded-2xl transition-all duration-300 shadow-2xl hover:shadow-[0_20px_50px_rgba(180,77,20,0.15)]"
         role="search" aria-label={`Search ${intentLabel} across India`}>
         <span className="grid w-14 shrink-0 place-items-center border-r border-cream/20 text-cream/80 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="hero-read block stamp !text-[12px] text-cream/95">{searchContext}</span><span className="hero-read mt-1 block font-display text-sm text-cream/95">All India</span></span><Search size={19} className="sm:hidden" /></span>
         <input
