@@ -19,11 +19,23 @@
 
 import { readFileSync, existsSync } from "node:fs";
 
-const MIGRATION = "db/migrations/202609030004_row_level_security/migration.sql";
+const RLS_MIGRATIONS = [
+  "db/migrations/202609030004_row_level_security/migration.sql",
+  "db/migrations/202609120002_whatsapp_rls/migration.sql",
+];
 
 /* Tables holding one tenant's private data. Adding a tenant-owned table
    without adding it here is itself the bug this list prevents. */
-const PROTECTED_TABLES = ["Lead", "BrokerUser", "InteropOutbox", "InteropInboundEvent", "AuditEvent"];
+const PROTECTED_TABLES = [
+  "Lead",
+  "BrokerUser",
+  "InteropOutbox",
+  "InteropInboundEvent",
+  "AuditEvent",
+  "WhatsAppAccount",
+  "WhatsAppTemplate",
+  "WhatsAppDispatch",
+];
 
 const failures = [];
 const notes = [];
@@ -35,54 +47,74 @@ function check(condition, message, detail = "") {
 }
 
 // ---------------------------------------------------------------------------
-// Static: the migration exists and says what it must
+// Static: the migrations exist and say what they must
 // ---------------------------------------------------------------------------
-if (!existsSync(MIGRATION)) {
-  failures.push(`RLS migration is missing: ${MIGRATION}`);
-} else {
-  const sql = readFileSync(MIGRATION, "utf8");
+const migrationSql = [];
+for (const migration of RLS_MIGRATIONS) {
+  if (!existsSync(migration)) {
+    failures.push(`RLS migration is missing: ${migration}`);
+    continue;
+  }
+  migrationSql.push({ path: migration, sql: readFileSync(migration, "utf8") });
+}
+const sql = migrationSql.map(({ sql: text }) => text).join("\n");
 
-  check(sql.includes("architech_current_org_id"), "tenant helper function is defined");
-  check(
-    sql.includes("current_setting('app.current_org_id', true)"),
-    "GUC is read with missing_ok=true so an unset tenant denies instead of erroring",
-  );
-  check(sql.includes("NULLIF"), "empty-string tenant is normalised to NULL");
-  /* Inspect the function body, not the whole file: the word IMMUTABLE also
-     appears in the migration's explanatory comments, and matching prose would
-     make this check meaningless. */
-  const helperBody = sql.slice(
-    sql.indexOf("CREATE OR REPLACE FUNCTION architech_current_org_id"),
-    sql.indexOf("COMMENT ON FUNCTION"),
-  );
-  check(
-    /^\s*STABLE\s*$/m.test(helperBody) && !/^\s*IMMUTABLE\s*$/m.test(helperBody),
-    "helper is STABLE, not IMMUTABLE",
-    "IMMUTABLE would let the planner cache a tenant across a switch on a pooled connection",
-  );
+check(sql.includes("architech_current_org_id"), "tenant helper function is defined");
+check(
+  sql.includes("current_setting('app.current_org_id', true)"),
+  "GUC is read with missing_ok=true so an unset tenant denies instead of erroring",
+);
+check(sql.includes("NULLIF"), "empty-string tenant is normalised to NULL");
+/* Inspect the function body, not the whole file: the word IMMUTABLE also
+   appears in the migration's explanatory comments, and matching prose would
+   make this check meaningless. */
+const helperStart = sql.indexOf("CREATE OR REPLACE FUNCTION architech_current_org_id");
+const helperEnd = sql.indexOf("COMMENT ON FUNCTION");
+const helperBody = helperStart >= 0 && helperEnd > helperStart ? sql.slice(helperStart, helperEnd) : "";
+check(
+  /^\s*STABLE\s*$/m.test(helperBody) && !/^\s*IMMUTABLE\s*$/m.test(helperBody),
+  "helper is STABLE, not IMMUTABLE",
+  "IMMUTABLE would let the planner cache a tenant across a switch on a pooled connection",
+);
 
-  for (const table of PROTECTED_TABLES) {
+for (const table of PROTECTED_TABLES) {
+  check(
+    sql.includes(`ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY`),
+    `${table}: RLS enabled`,
+  );
+  check(
+    sql.includes(`ALTER TABLE "${table}" FORCE ROW LEVEL SECURITY`),
+    `${table}: RLS forced`,
+    "without FORCE the table owner silently bypasses every policy",
+  );
+  if (table.startsWith("WhatsApp")) {
     check(
-      sql.includes(`ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY`),
-      `${table}: RLS enabled`,
-    );
-    check(
-      sql.includes(`ALTER TABLE "${table}" FORCE ROW LEVEL SECURITY`),
-      `${table}: RLS forced`,
-      "without FORCE the table owner silently bypasses every policy",
+      new RegExp(`CREATE POLICY[^;]*ON \"${table}\"[^;]*(USING|WITH CHECK)`, "s").test(sql),
+      `${table}: tenant policy exists`,
     );
   }
+}
 
-  // The audit trail must not be rewritable by the tenant that is being audited.
+// New WhatsApp policies must be fail-closed; TRUE would turn one into a
+// cross-organization wildcard even though RLS is enabled.
+for (const table of ["WhatsAppAccount", "WhatsAppTemplate", "WhatsAppDispatch"]) {
+  const tableStart = sql.indexOf(`ALTER TABLE "${table}" ENABLE`);
+  const tableSql = tableStart >= 0 ? sql.slice(tableStart) : "";
   check(
-    !/CREATE POLICY[^;]*ON "AuditEvent"[^;]*FOR UPDATE/s.test(sql),
-    "AuditEvent has no UPDATE policy (append-only)",
-  );
-  check(
-    !/CREATE POLICY[^;]*ON "AuditEvent"[^;]*FOR DELETE/s.test(sql),
-    "AuditEvent has no DELETE policy (append-only)",
+    !new RegExp(`CREATE POLICY[^;]*ON \"${table}\"[^;]*(USING|WITH CHECK)\\s*\\(\\s*TRUE\\s*\\)`, "si").test(tableSql),
+    `${table}: no wildcard TRUE tenant predicate`,
   );
 }
+
+// The audit trail must not be rewritable by the tenant that is being audited.
+check(
+  !/CREATE POLICY[^;]*ON "AuditEvent"[^;]*FOR UPDATE/s.test(sql),
+  "AuditEvent has no UPDATE policy (append-only)",
+);
+check(
+  !/CREATE POLICY[^;]*ON "AuditEvent"[^;]*FOR DELETE/s.test(sql),
+  "AuditEvent has no DELETE policy (append-only)",
+);
 
 // ---------------------------------------------------------------------------
 // Live: what the database actually enforces

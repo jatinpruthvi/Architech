@@ -1,4 +1,5 @@
 import { getListingById } from "@/lib/repositories";
+import { buildLeadIdempotencyKey, validateCallerIdempotencyKey } from "@/lib/interop/idempotency";
 import { OUTCOME_RULES, type CallOutcome, type OutcomeRule } from "./calling";
 
 export type LeadMode = "MASKED" | "DIRECT_CONSENTED";
@@ -28,6 +29,11 @@ export type LeadInput = {
   consentText: string;
   consentClass?: LeadConsentClass;
   idempotencyKey?: string;
+  /** Explicit opt-in for one acknowledgement only; absent means false. */
+  whatsappOptIn?: boolean;
+  /** Accepted for input-shape compatibility but never trusted for capture time. */
+  whatsappOptInAt?: string;
+  whatsappOptInText?: string;
 };
 
 export type LeadRecord = {
@@ -47,6 +53,9 @@ export type LeadRecord = {
   consentText: string;
   consentClass?: string;
   idempotencyKey: string;
+  whatsappOptIn: boolean;
+  whatsappOptInAt?: string;
+  whatsappOptInText?: string;
   auditEvent: {
     id: string;
     action: "lead.created";
@@ -110,6 +119,15 @@ function stableId(prefix: string, key: string): string {
   return `${prefix}_${hash.toString(36)}`;
 }
 
+export function validateWhatsAppOptIn(input: Partial<LeadInput>): string[] {
+  if (input.whatsappOptIn !== true) return [];
+  const copy = typeof input.whatsappOptInText === "string" ? input.whatsappOptInText.trim() : "";
+  const errors: string[] = [];
+  if (copy.length < 12 || copy.length > 240) errors.push("WhatsApp opt-in text must be between 12 and 240 characters.");
+  if (/[\u0000-\u001f\u007f]/.test(copy)) errors.push("WhatsApp opt-in text contains invalid control characters.");
+  return errors;
+}
+
 export function validateLeadInput(input: Partial<LeadInput>): string[] {
   const errors: string[] = [];
   if (!input.listingId || !getListingById(input.listingId)) errors.push("Choose a valid listing.");
@@ -120,6 +138,7 @@ export function validateLeadInput(input: Partial<LeadInput>): string[] {
   if (input.email && !/^\S+@\S+\.\S+$/.test(input.email)) errors.push("Email must be valid when provided.");
   if (input.mode && input.mode !== "MASKED" && input.mode !== "DIRECT_CONSENTED") errors.push("Lead mode is invalid.");
   if (input.consentClass && !LEAD_CONSENT_CLASSES.includes(input.consentClass as LeadConsentClass)) errors.push("Consent class is invalid.");
+  errors.push(...validateWhatsAppOptIn(input));
   return errors;
 }
 
@@ -128,11 +147,24 @@ export function createLead(input: LeadInput): LeadResult {
   if (errors.length) return { ok: false, status: 400, errors };
 
   const listing = getListingById(input.listingId)!;
-  const key = input.idempotencyKey?.trim() || `${input.listingId}:${input.phone.replace(/\D/g, "")}:${input.message.trim().toLowerCase()}`;
+  let key: string;
+  try {
+    key = input.idempotencyKey?.trim()
+      ? validateCallerIdempotencyKey(input.idempotencyKey)
+      : buildLeadIdempotencyKey({
+          listingId: input.listingId,
+          normalizedPhone: input.phone.replace(/\D/g, ""),
+          normalizedMessage: input.message,
+        });
+  } catch (error) {
+    return { ok: false, status: 400, errors: [error instanceof Error ? error.message : "Invalid idempotency key."] };
+  }
   const existing = leadsByKey.get(key);
   if (existing) return { ok: true, lead: existing, duplicate: true };
 
   const now = new Date().toISOString();
+  const whatsappOptIn = input.whatsappOptIn === true;
+  const whatsappOptInText = whatsappOptIn ? input.whatsappOptInText!.trim() : undefined;
   const lead: LeadRecord = {
     id: stableId("lead", key),
     listingId: input.listingId,
@@ -150,6 +182,8 @@ export function createLead(input: LeadInput): LeadResult {
        consentClass to first-party-form; the fixture store must match. */
     consentClass: input.consentClass ?? "first-party-form",
     idempotencyKey: key,
+    whatsappOptIn,
+    ...(whatsappOptInText ? { whatsappOptInText, whatsappOptInAt: now } : {}),
     auditEvent: {
       id: stableId("audit", `${key}:lead.created`),
       action: "lead.created",

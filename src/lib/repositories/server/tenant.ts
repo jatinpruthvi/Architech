@@ -1,4 +1,5 @@
 import "server-only";
+import type { PrismaClientLike } from "./prisma";
 
 /* Tenant scoping for row-level security.
 
@@ -64,6 +65,28 @@ export type TenantCapableClient = {
 export type TenantTransactionClient = {
   $executeRawUnsafe(query: string, ...values: unknown[]): Promise<number>;
 };
+
+/** Prisma's full client surface is intentionally kept out of the shared
+ * narrowed repository type. Tenant callers opt into the transaction/raw
+ * methods explicitly at this server-only boundary. */
+export type PrismaTenantClient = PrismaClientLike & {
+  $transaction<T>(fn: (tx: PrismaTenantTransactionClient) => Promise<T>): Promise<T>;
+};
+
+export type PrismaTenantTransactionClient = PrismaClientLike & TenantTransactionClient;
+
+/** Run a Prisma transaction under the same fail-closed tenant GUC contract. */
+export async function withTenantPrisma<T>(
+  client: PrismaTenantClient,
+  organizationId: string,
+  work: (tx: PrismaClientLike) => Promise<T>,
+): Promise<T> {
+  return withTenant(
+    client as unknown as TenantCapableClient,
+    organizationId,
+    (tx) => work(tx as unknown as PrismaClientLike),
+  );
+}
 
 /* Run `work` inside a transaction scoped to one organization.
 
