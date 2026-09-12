@@ -36,6 +36,7 @@ export type PrismaClientLike = {
   brokerOrganization: {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
+    update(args: unknown): Promise<unknown>;
   };
   marketplaceSubscription: {
     findMany(args: unknown): Promise<unknown[]>;

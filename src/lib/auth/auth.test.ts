@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET } from "../../app/api/auth/session/route";
-import { canAccessBrokerDashboard, demoBrokerSession, hasRoleAtLeast, requirePermission } from "./roles";
+import { canAccessBrokerDashboard, demoBrokerSession, hasRoleAtLeast, permissionsForRole, requirePermission } from "./roles";
 import { mapBetterAuthClaimsToSession } from "./live";
 import { getAuthSourceMode, validateBetterAuthEnvironment } from "./source";
 
@@ -20,7 +20,15 @@ describe("auth and broker organization contract", () => {
 
   it("checks permissions", () => {
     expect(requirePermission(demoBrokerSession, "lead.inbox.read")).toBe(true);
+    expect(requirePermission(demoBrokerSession, "broker.whatsapp.read")).toBe(true);
+    expect(requirePermission(demoBrokerSession, "broker.whatsapp.manage")).toBe(true);
     expect(requirePermission(demoBrokerSession, "platform.admin")).toBe(false);
+  });
+
+  it("separates WhatsApp read and management permissions", () => {
+    expect(permissionsForRole("BROKER_MEMBER")).toContain("broker.whatsapp.read");
+    expect(permissionsForRole("BROKER_MEMBER")).not.toContain("broker.whatsapp.manage");
+    expect(permissionsForRole("BROKER_ADMIN")).toEqual(expect.arrayContaining(["broker.whatsapp.read", "broker.whatsapp.manage"]));
   });
 
   it("maps Better Auth claims to the stable Architech session shape", () => {
