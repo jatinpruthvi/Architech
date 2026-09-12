@@ -29,6 +29,29 @@ export function isAdminPlanStatus(value: unknown): value is AdminPlanStatus {
   return typeof value === "string" && (PLAN_STATUSES as readonly string[]).includes(value);
 }
 
+/** The value shown to the owner must match the server-side gate. A stored
+    ACTIVE/TRIAL row becomes effectively expired as soon as its optional date
+    passes; no background job is required to flip the database enum. */
+export function effectiveAdminPlanStatus(status: string, expiresAt: unknown, now = Date.now()): string {
+  if ((status !== "ACTIVE" && status !== "TRIAL") || expiresAt == null) return status;
+  const timestamp = expiresAt instanceof Date ? expiresAt.getTime() : new Date(String(expiresAt)).getTime();
+  return Number.isFinite(timestamp) && timestamp <= now ? "EXPIRED" : status;
+}
+
+function asDate(value: unknown): Date | null {
+  if (value == null) return null;
+  const parsed = value instanceof Date ? new Date(value.getTime()) : new Date(String(value));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function nullableIsoDate(value: unknown): string | null {
+  return asDate(value)?.toISOString() ?? null;
+}
+
+function isoDate(value: unknown): string {
+  return asDate(value)?.toISOString() ?? "";
+}
+
 function slugify(name: string): string {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 }
@@ -60,7 +83,7 @@ export async function lookupOrganizationForLogin(
     user: { name: String(user.name ?? user.email), email: String(user.email), role: String(user.role ?? "BUYER") },
     organization,
     currentSubscription: sub
-      ? { id: String(sub.id), status: String(sub.status), expiresAt: sub.expiresAt == null ? null : new Date(String(sub.expiresAt)).toISOString(), plan: { name: String((sub.plan as { name?: string })?.name ?? ""), code: String((sub.plan as { code?: string })?.code ?? "") } }
+      ? { id: String(sub.id), status: effectiveAdminPlanStatus(String(sub.status), sub.expiresAt), expiresAt: nullableIsoDate(sub.expiresAt), plan: { name: String((sub.plan as { name?: string })?.name ?? ""), code: String((sub.plan as { code?: string })?.code ?? "") } }
       : null,
   };
 }
@@ -77,14 +100,21 @@ export async function listPlanAdministration(
   ]);
   return {
     plans: plans.map((row) => ({ id: String(row.id), code: String(row.code), name: String(row.name), monthlyCredits: Number(row.monthlyCredits ?? 0), teamSeats: Number(row.teamSeats ?? 1) })),
-    subscriptions: subscriptions.map((row) => ({ id: String(row.id), status: String(row.status), expiresAt: row.expiresAt == null ? null : new Date(String(row.expiresAt)).toISOString(), updatedAt: new Date(String(row.updatedAt)).toISOString(), plan: { name: String((row.plan as { name?: string })?.name ?? "") }, organization: { name: String((row.organization as { name?: string })?.name ?? ""), slug: String((row.organization as { slug?: string })?.slug ?? "") } })),
+    subscriptions: subscriptions.map((row) => ({ id: String(row.id), status: effectiveAdminPlanStatus(String(row.status), row.expiresAt), expiresAt: nullableIsoDate(row.expiresAt), updatedAt: isoDate(row.updatedAt), plan: { name: String((row.plan as { name?: string })?.name ?? "") }, organization: { name: String((row.organization as { name?: string })?.name ?? ""), slug: String((row.organization as { slug?: string })?.slug ?? "") } })),
   };
 }
 
 export async function applyPlanToOrganization(
   prisma: Db,
   input: { email: string; planId: string | undefined; status: AdminPlanStatus; expiresAt: Date | null; ipHash: string | undefined },
-): Promise<{ ok: true; organization: { id: string; name: string; slug: string }; subscription: { id: string; status: string; expiresAt: string | null }; previousStatus: string | null } | { ok: false; error: "ORG_NOT_FOUND" | "PLAN_NOT_FOUND" }> {
+): Promise<{ ok: true; organization: { id: string; name: string; slug: string }; subscription: { id: string; status: string; expiresAt: string | null }; previousStatus: string | null } | { ok: false; error: "ORG_NOT_FOUND" | "PLAN_NOT_FOUND" | "EXPIRY_INVALID" }> {
+  const expiresAt = input.status === "EXPIRED" ? null : input.expiresAt;
+  if (expiresAt) {
+    const timestamp = expiresAt.getTime();
+    if (!Number.isFinite(timestamp) || ((input.status === "ACTIVE" || input.status === "TRIAL") && timestamp <= Date.now())) {
+      return { ok: false as const, error: "EXPIRY_INVALID" as const };
+    }
+  }
   return (await prisma.$transaction(async (tx) => {
     /* Organization first: an unknown login id is ORG_NOT_FOUND regardless of
        the plan asked for (uniform "that thing does not exist", no oracle). */
@@ -110,10 +140,10 @@ export async function applyPlanToOrganization(
     const current = (await tx.marketplaceSubscription.findFirst({ where: { organizationId: organization.id }, orderBy: [{ startsAt: "desc" }, { id: "desc" }], select: { id: true, status: true } })) as Record<string, unknown> | null;
     const previousStatus = current ? String(current.status) : null;
     const subscription = (current
-      ? await tx.marketplaceSubscription.update({ where: { id: String(current.id) }, data: { planId: String(plan!.id), status: input.status, expiresAt: input.expiresAt } })
-      : await tx.marketplaceSubscription.create({ data: { planId: String(plan!.id), organizationId: organization.id, status: input.status, expiresAt: input.expiresAt } })) as Record<string, unknown>;
-    await tx.auditEvent.create({ data: { organizationId: organization.id, action: "admin.plan.updated", entityType: "MarketplaceSubscription", entityId: String(subscription.id), ipHash: input.ipHash, metadata: { loginEmail: input.email.trim().toLowerCase(), planCode: String(plan!.code), previousStatus, status: input.status, expiresAt: input.expiresAt ? input.expiresAt.toISOString() : null } } });
-    return { ok: true as const, organization: { id: organization.id, name: organization.name, slug: organization.slug }, subscription: { id: String(subscription.id), status: String(subscription.status), expiresAt: subscription.expiresAt == null ? null : new Date(String(subscription.expiresAt)).toISOString() }, previousStatus };
+      ? await tx.marketplaceSubscription.update({ where: { id: String(current.id) }, data: { planId: String(plan!.id), status: input.status, expiresAt } })
+      : await tx.marketplaceSubscription.create({ data: { planId: String(plan!.id), organizationId: organization.id, status: input.status, expiresAt } })) as Record<string, unknown>;
+    await tx.auditEvent.create({ data: { organizationId: organization.id, action: "admin.plan.updated", entityType: "MarketplaceSubscription", entityId: String(subscription.id), ipHash: input.ipHash, metadata: { loginEmail: input.email.trim().toLowerCase(), planCode: String(plan!.code), previousStatus, status: input.status, expiresAt: expiresAt ? expiresAt.toISOString() : null } } });
+    return { ok: true as const, organization: { id: organization.id, name: organization.name, slug: organization.slug }, subscription: { id: String(subscription.id), status: effectiveAdminPlanStatus(String(subscription.status), subscription.expiresAt), expiresAt: nullableIsoDate(subscription.expiresAt) }, previousStatus };
   })) as Awaited<ReturnType<typeof applyPlanToOrganization>>;
 }
 

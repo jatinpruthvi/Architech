@@ -17,7 +17,7 @@
       it, in a system whose entire premise is that customer contact data does
       not cross the boundary. */
 
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 /** Frappe's varchar limit; our own bound sits below it deliberately. */
 export const FRAPPE_DATA_MAX = 140;
@@ -27,6 +27,13 @@ export const IDEMPOTENCY_KEY_MAX = 128;
    without escaping. Deliberately excludes '+' and '/' so base64 is never
    passed through unencoded. */
 const SAFE_KEY = /^[A-Za-z0-9._:-]+$/;
+
+function containsControlCharacters(value: string): boolean {
+  return [...value].some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 0x1f || code === 0x7f;
+  });
+}
 
 export class IdempotencyKeyError extends Error {
   constructor(message: string) {
@@ -43,6 +50,34 @@ export type IdempotencyKeyParts = {
   /** Opaque internal ids only -- never a phone, email, or name. */
   parts: string[];
 };
+
+/** Build an opaque, stable fallback key without persisting customer contact text. */
+export function buildLeadIdempotencyKey(
+  input: { listingId: string; normalizedPhone: string; normalizedMessage: string },
+  secret = process.env.ARCHITECH_IDEMPOTENCY_HMAC_KEY,
+): string {
+  const resolvedSecret = secret?.trim() || (process.env.ARCHITECH_DATA_SOURCE === "prisma" ? "" : "fixture-lead-idempotency-hmac-key");
+  if (!resolvedSecret) throw new IdempotencyKeyError("ARCHITECH_IDEMPOTENCY_HMAC_KEY is required for server-generated lead keys.");
+  if (!input.listingId || !input.normalizedPhone || !input.normalizedMessage.trim()) {
+    throw new IdempotencyKeyError("listingId, normalizedPhone, and normalizedMessage are required for a lead key.");
+  }
+  const material = [input.listingId, input.normalizedPhone, input.normalizedMessage.trim().toLowerCase()].join("\u0000");
+  return `lead.v1.${createHmac("sha256", resolvedSecret).update(material).digest("hex")}`;
+}
+
+/** Hash a caller-owned retry token before it can enter a lead row or logs. */
+export function validateCallerIdempotencyKey(
+  raw: string,
+  secret = process.env.ARCHITECH_IDEMPOTENCY_HMAC_KEY,
+): string {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (!value || value.length > IDEMPOTENCY_KEY_MAX || containsControlCharacters(value)) {
+    throw new IdempotencyKeyError("caller idempotency key is empty, oversized, or contains control characters.");
+  }
+  const resolvedSecret = secret?.trim() || (process.env.ARCHITECH_DATA_SOURCE === "prisma" ? "" : "fixture-lead-idempotency-hmac-key");
+  if (!resolvedSecret) throw new IdempotencyKeyError("ARCHITECH_IDEMPOTENCY_HMAC_KEY is required for caller keys.");
+  return `lead.client.v1.${createHmac("sha256", resolvedSecret).update(value).digest("hex")}`;
+}
 
 /* Build a bounded, collision-resistant idempotency key.
 

@@ -3,7 +3,7 @@
    responsive images, locality-linked breadcrumbs. */
 import { ArrowUpRight, BedDouble, Check, Clock3, Heart, MapPin, MessageCircle, Ruler, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -41,12 +41,15 @@ const sectionAnchors: SectionAnchor[] = [
 ];
 
 function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propertyId: string; propertyTitle: string; open: boolean; onOpenChange: (open: boolean) => void }) {  const [submitting, setSubmitting] = useState(false);
+  const retryIdempotencyKey = useRef<string | null>(null);
   const { t } = useLang();
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setSubmitting(true);
+    retryIdempotencyKey.current ??= crypto.randomUUID?.() ?? `${propertyId}-${Date.now()}`;
     try {
+      const whatsappOptInText = t.listing.whatsappOptInText;
       const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -58,11 +61,14 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
           mode: "MASKED",
           consentText: t.listing.consentText,
           consentClass: "first-party-form",
-          idempotencyKey: crypto.randomUUID?.() ?? `${propertyId}-${Date.now()}`,
+          whatsappOptIn: form.get("whatsappOptIn") === "on",
+          whatsappOptInText,
+          idempotencyKey: retryIdempotencyKey.current,
         }),
       });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "Lead failed");
+      retryIdempotencyKey.current = null;
       onOpenChange(false);
       toast(t.listing.querySent, { description: `${t.listing.querySentDescription} · ${payload.lead.phoneMasked}` });
     } catch {
@@ -76,7 +82,7 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
       <DialogContent className="rounded-2xl border-ink/15 bg-paper sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-medium tracking-[-0.02em]">{t.listing.dialogTitle}</DialogTitle>
-          <DialogDescription className="text-sm leading-6 text-ink/60">
+          <DialogDescription className="text-sm leading-6 ink-2">
             {t.listing.dialogCopy}
           </DialogDescription>
         </DialogHeader>
@@ -96,6 +102,10 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
           <label className="flex items-start gap-3 border border-ink/15 bg-sand/50 p-3 text-xs leading-5 text-ink/65">
             <input required type="checkbox" className="mt-1 accent-[var(--brick)]" />
             <span>{t.listing.consentText}</span>
+          </label>
+          <label className="flex items-start gap-3 border border-ink/15 bg-sand/30 p-3 text-xs leading-5 text-ink/65">
+            <input name="whatsappOptIn" type="checkbox" className="mt-1 accent-[var(--brick)]" />
+            <span>{t.listing.whatsappOptInText}</span>
           </label>
           <button type="submit" disabled={submitting} className="night-fill btn-sweep btn-solid touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">{submitting ? t.listing.sending : t.listing.send}</button>
           <p className="stamp text-center !text-[9px] text-ink/60">{t.listing.noRealMessage}</p>

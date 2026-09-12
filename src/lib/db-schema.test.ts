@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const schema = readFileSync("db/schema.prisma", "utf8");
 const migration = readFileSync("db/migrations/202608240001_phase1_domain_schema/migration.sql", "utf8");
 const searchMigration = readFileSync("db/migrations/202608240002_search_indexes/migration.sql", "utf8");
+const whatsappRlsMigration = readFileSync("db/migrations/202609120002_whatsapp_rls/migration.sql", "utf8");
 
 describe("Phase 1 Prisma schema contract", () => {
   it("declares the required production domain models", () => {
@@ -19,15 +20,41 @@ describe("Phase 1 Prisma schema contract", () => {
       "Lead",
       "AuditEvent",
       "SavedSearch",
+      "WhatsAppAccount",
+      "WhatsAppTemplate",
+      "WhatsAppDispatch",
     ]) {
       expect(schema).toContain(`model ${model} {`);
     }
   });
 
   it("declares lifecycle, verification, localization, and media moderation enums", () => {
-    for (const enumName of ["ListingLifecycle", "VerificationStatus", "TranslationStatus", "MediaModerationStatus", "LeadMode", "LeadStatus"]) {
+    for (const enumName of ["ListingLifecycle", "VerificationStatus", "TranslationStatus", "MediaModerationStatus", "LeadMode", "LeadStatus", "WhatsAppAccountStatus", "WhatsAppDispatchStatus"]) {
       expect(schema).toContain(`enum ${enumName} {`);
     }
+  });
+
+  it("declares the one-time WhatsApp acknowledgement contract", () => {
+    expect(schema).toMatch(/whatsappOptIn\s+Boolean\s+@default\(false\)/);
+    expect(schema).toContain("whatsappOptInAt");
+    expect(schema).toContain("whatsappOptInText");
+    expect(schema).toContain("@@unique([leadId, purpose])");
+    for (const field of ["expiresAt", "providerMessageId", "payloadHash", "attemptCount"]) {
+      expect(schema).toContain(field);
+    }
+    const dispatch = schema.slice(schema.indexOf("model WhatsAppDispatch {"), schema.indexOf("model Requirement {"));
+    expect(dispatch).not.toMatch(/\bphone\b/);
+    expect(dispatch).not.toMatch(/\bbody\b/);
+  });
+
+  it("protects every WhatsApp table with fail-closed forced RLS", () => {
+    for (const table of ["WhatsAppAccount", "WhatsAppTemplate", "WhatsAppDispatch"]) {
+      expect(whatsappRlsMigration).toContain(`ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY`);
+      expect(whatsappRlsMigration).toContain(`ALTER TABLE "${table}" FORCE ROW LEVEL SECURITY`);
+      expect(whatsappRlsMigration).toContain(`"organizationId" = architech_current_org_id()`);
+    }
+    expect(whatsappRlsMigration).not.toMatch(/USING\s*\(\s*TRUE\s*\)/i);
+    expect(whatsappRlsMigration).not.toMatch(/WITH CHECK\s*\(\s*TRUE\s*\)/i);
   });
 
   it("ships an initial migration for the schema", () => {

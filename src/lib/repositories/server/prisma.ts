@@ -11,7 +11,17 @@ import {
 } from "@/lib/agent/directory";
 import { isPrismaDataSource } from "@/lib/repositories/source";
 
-type PrismaClientLike = {
+export type PrismaModelDelegate = {
+  findMany(args?: unknown): Promise<unknown[]>;
+  findFirst(args?: unknown): Promise<unknown | null>;
+  findUnique(args?: unknown): Promise<unknown | null>;
+  create(args: unknown): Promise<unknown>;
+  update(args: unknown): Promise<unknown>;
+  updateMany(args: unknown): Promise<{ count: number }>;
+  count(args?: unknown): Promise<number>;
+};
+
+export type PrismaClientLike = {
   listing: {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
@@ -26,11 +36,17 @@ type PrismaClientLike = {
   brokerOrganization: {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
+    findUnique(args: unknown): Promise<unknown | null>;
+    update(args: unknown): Promise<unknown>;
   };
   marketplaceSubscription: {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
   };
+  whatsappAccount: PrismaModelDelegate;
+  whatsappTemplate: PrismaModelDelegate;
+  whatsappDispatch: PrismaModelDelegate;
+  interopInboundEvent: PrismaModelDelegate;
 };
 
 declare global {

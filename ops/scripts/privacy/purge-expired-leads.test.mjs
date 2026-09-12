@@ -20,22 +20,35 @@ test("dry run counts without writing", async () => {
     },
   };
   const result = await purgeExpiredLeads(prisma, { apply: false, asOf });
-  assert.deepEqual(result, { mode: "DRY_RUN", asOf: asOf.toISOString(), eligible: 2, purged: 0 });
+  assert.deepEqual(result, { mode: "DRY_RUN", asOf: asOf.toISOString(), eligible: 2, purged: 0, dispatchesTerminal: 0 });
   assert.equal(updates, 0);
 });
 
-test("apply clears the recoverable contact data and keeps the tombstone", async () => {
+test("apply clears contact data and terminally closes sendable dispatches in one transaction", async () => {
   const calls = [];
   const prisma = {
+    $transaction: async (work) => work(prisma),
     lead: {
       count: async (args) => { calls.push(["count", args]); return 2; },
-      updateMany: async (args) => { calls.push(["updateMany", args]); return { count: 2 }; },
+      findMany: async (args) => { calls.push(["findMany", args]); return [{ id: "lead_1" }, { id: "lead_2" }]; },
+      updateMany: async (args) => { calls.push(["lead.updateMany", args]); return { count: 2 }; },
+    },
+    whatsappDispatch: {
+      updateMany: async (args) => { calls.push(["dispatch.updateMany", args]); return { count: 1 }; },
     },
   };
   const result = await purgeExpiredLeads(prisma, { apply: true, asOf });
-  assert.deepEqual(result, { mode: "APPLY", asOf: asOf.toISOString(), eligible: 2, purged: 2 });
+  assert.deepEqual(result, { mode: "APPLY", asOf: asOf.toISOString(), eligible: 2, purged: 2, dispatchesTerminal: 1 });
   assert.deepEqual(calls, [
     ["count", { where: expiredLeadWhere(asOf) }],
-    ["updateMany", { where: expiredLeadWhere(asOf), data: { phoneCiphertext: null, phoneLast4: null, deletedAt: asOf } }],
+    ["findMany", { where: expiredLeadWhere(asOf), select: { id: true } }],
+    ["dispatch.updateMany", { where: { leadId: { in: ["lead_1", "lead_2"] }, status: { in: ["PENDING", "IN_FLIGHT", "UNKNOWN"] } }, data: { status: "SKIPPED", skipReason: "LEAD_EXPIRED", lastErrorCode: "LEAD_EXPIRED", completedAt: asOf } }],
+    ["lead.updateMany", { where: expiredLeadWhere(asOf), data: { phoneCiphertext: null, phoneLast4: null, deletedAt: asOf } }],
   ]);
+});
+
+test("purge output never contains contact, template, or provider fields", async () => {
+  const result = await purgeExpiredLeads({ lead: { count: async () => 0 } }, { apply: false, asOf });
+  const serialized = JSON.stringify(result);
+  for (const forbidden of ["phone", "template", "provider", "ciphertext", "message"]) assert.equal(serialized.includes(forbidden), false);
 });
