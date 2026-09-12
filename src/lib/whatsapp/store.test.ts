@@ -28,6 +28,7 @@ vi.mock("./access", () => ({ resolveWhatsAppPlanGate: mocks.gate }));
 vi.mock("./evolution", () => ({ getEvolutionProvider: () => mocks.provider }));
 
 import { connectWhatsAppAccount, readWhatsAppQr, readWhatsAppSettings, refreshWhatsAppConnectionState, saveWhatsAppTemplate } from "./store";
+import { WhatsAppProviderError } from "./provider";
 
 beforeEach(() => {
   vi.stubEnv("ARCHITECH_EVOLUTION_WEBHOOK_URL", "https://architech.test/webhook");
@@ -85,6 +86,17 @@ describe("tenant-scoped WhatsApp store", () => {
     expect(result).toEqual({ ok: true, account: { status: "CONNECTING" }, seededTemplate: true });
     expect(mocks.provider.createInstance).toHaveBeenCalledWith(expect.objectContaining({ instanceName: "wa_random", webhookUrl: expect.any(String), webhookJwtKey: expect.any(String) }));
     expect(JSON.stringify(result)).not.toContain("wa_random");
+  });
+
+  it("recreates an instance only after Evolution definitively reports it missing", async () => {
+    mocks.database.whatsappAccount.findUnique.mockResolvedValueOnce({ id: "account_1", instanceName: "wa_random", status: "ERROR" });
+    mocks.database.whatsappTemplate.findFirst.mockResolvedValueOnce({ id: "template_2", version: 2, body: "Hi {{firstName}}" });
+    mocks.provider.getConnectionState.mockRejectedValueOnce(new WhatsAppProviderError("DEFINITIVE", "INSTANCE_NOT_FOUND"));
+
+    const result = await connectWhatsAppAccount({ organizationId: "org_1", actorUserId: "user_1", companyOwnedAcknowledged: true });
+
+    expect(result).toEqual({ ok: true, account: { status: "CONNECTING" }, seededTemplate: false });
+    expect(mocks.provider.createInstance).toHaveBeenCalledTimes(1);
   });
 
   it("returns QR only as a short-lived response and refreshes observed state", async () => {

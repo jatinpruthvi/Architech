@@ -237,18 +237,30 @@ export async function connectWhatsAppAccount(input: {
     const provider = getEvolutionProvider();
     let state: string;
     let providerInstanceId: string | null = null;
+    const createProviderInstance = async () => provider.createInstance({
+      instanceName: account.instanceName,
+      webhookUrl: process.env.ARCHITECH_EVOLUTION_WEBHOOK_URL!,
+      webhookJwtKey: process.env.ARCHITECH_EVOLUTION_WEBHOOK_JWT_KEY!,
+      events: EVOLUTION_EVENTS,
+    });
     if (prepared.created) {
-      const result = await provider.createInstance({
-        instanceName: account.instanceName,
-        webhookUrl: process.env.ARCHITECH_EVOLUTION_WEBHOOK_URL!,
-        webhookJwtKey: process.env.ARCHITECH_EVOLUTION_WEBHOOK_JWT_KEY!,
-        events: EVOLUTION_EVENTS,
-      });
+      const result = await createProviderInstance();
       state = result.state;
       providerInstanceId = result.providerInstanceId;
     } else {
-      const result = await provider.getConnectionState({ instanceName: account.instanceName });
-      state = result.state;
+      try {
+        const result = await provider.getConnectionState({ instanceName: account.instanceName });
+        state = result.state;
+      } catch (error) {
+        /* A failed first create can leave the local registry ahead of
+           Evolution, while a removed instance leaves the reverse mismatch.
+           Recreate only on the provider's definitive not-found response; an
+           ambiguous transport failure must never trigger a duplicate create. */
+        if (!(error instanceof WhatsAppProviderError) || error.code !== "INSTANCE_NOT_FOUND") throw error;
+        const result = await createProviderInstance();
+        state = result.state;
+        providerInstanceId = result.providerInstanceId;
+      }
     }
     const status = mapProviderState(state, accountStatus(account.status));
     await recordAccountState(input.organizationId, account.id, status, input.actorUserId, {
