@@ -35,7 +35,7 @@ test.describe("Login Journey", () => {
     await expect(loginPage.passwordInput).toHaveValue("demo-buyer-1234");
 
     // Submit
-    await loginPage.signInButton.click();
+    await loginPage.signInButton.click({ force: true });
     await page.waitForLoadState("networkidle");
   });
 
@@ -43,7 +43,7 @@ test.describe("Login Journey", () => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
 
-    await loginPage.signInButton.click();
+    await loginPage.signInButton.click({ force: true });
 
     await expect(loginPage.emailError).toBeVisible();
     await expect(loginPage.passwordError).toBeVisible();

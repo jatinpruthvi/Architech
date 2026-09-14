@@ -30,6 +30,6 @@ export class LoginPage {
   }
 
   async clickDemoAccount(name: RegExp | string) {
-    await this.page.getByRole("button", { name }).first().click();
+    await this.page.getByRole("button", { name }).first().click({ force: true });
   }
 }

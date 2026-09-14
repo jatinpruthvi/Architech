@@ -6,7 +6,7 @@ test.describe("Search Results Journey", () => {
     const searchPage = new SearchPage(page);
 
     // Mock search API to return a predictable property card result
-    await page.route("**/api/search*", async (route) => {
+    await page.route("**/api/search**", async (route) => {
       const json = {
         query: "bangalore",
         city: "bangalore",
@@ -41,6 +41,7 @@ test.describe("Search Results Journey", () => {
     });
 
     await searchPage.goto("bangalore");
+    await page.waitForLoadState("networkidle");
 
     await expect(searchPage.titleHeading).toContainText(/Bangalore/i);
 
@@ -57,7 +58,7 @@ test.describe("Search Results Journey", () => {
     const searchPage = new SearchPage(page);
 
     // Mock search API to return zero results
-    await page.route("**/api/search*", async (route) => {
+    await page.route("**/api/search**", async (route) => {
       const json = {
         query: "nowhere",
         city: "all",
@@ -81,6 +82,7 @@ test.describe("Search Results Journey", () => {
     });
 
     await searchPage.goto("nowhere");
+    await page.waitForLoadState("networkidle");
     
     // Explicitly verify the zero state is visible
     await expect(searchPage.noResultsMessage).toBeVisible();
