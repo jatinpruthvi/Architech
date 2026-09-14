@@ -25,6 +25,7 @@ export type PrismaClientLike = {
   listing: {
     findMany(args: unknown): Promise<unknown[]>;
     findFirst(args: unknown): Promise<unknown | null>;
+    groupBy(args: unknown): Promise<Array<{ cityId: string; transactionType: "BUY" | "RENT"; _count: { _all: number } }>>;
   };
   locality: {
     findMany(args: unknown): Promise<unknown[]>;
@@ -142,6 +143,33 @@ export async function getListingStaticParamsForServer(): Promise<Array<{ id: str
  * i.e. one unbounded table read per search, growing with the feed. The city is
  * now pushed into the query and an explicit ceiling caps the nationwide case.
  */
+export async function getCityListingCountsForServer() {
+  if (!isPrismaDataSource()) {
+    const map = new Map<string, { buy: number; rent: number }>();
+    for (const listing of getListings()) {
+      const counts = map.get(listing.citySlug) ?? { buy: 0, rent: 0 };
+      if (listing.transaction === "rent") counts.rent++;
+      else counts.buy++;
+      map.set(listing.citySlug, counts);
+    }
+    return map;
+  }
+  const prisma = getPrismaClient();
+  const grouped = await prisma.listing.groupBy({
+    by: ["cityId", "transactionType"],
+    where: { lifecycle: "ACTIVE" },
+    _count: { _all: true },
+  });
+  const map = new Map<string, { buy: number; rent: number }>();
+  for (const group of grouped) {
+    const counts = map.get(group.cityId) ?? { buy: 0, rent: 0 };
+    if (group.transactionType === "RENT") counts.rent += group._count._all;
+    else counts.buy += group._count._all;
+    map.set(group.cityId, counts);
+  }
+  return map;
+}
+
 export async function getListingsForServer(scope: ListingScope & { narrowToIds?: string[] } = {}) {
   /* Every read — city-scoped or not — gets the same ceiling and the same
      stable ordering. Before this, a city-scoped read omitted `take` entirely
