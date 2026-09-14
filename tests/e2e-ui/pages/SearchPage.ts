@@ -9,9 +9,9 @@ export class SearchPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.filtersButton = page.getByRole("button", { name: /Filters/i }).first();
+    this.filtersButton = page.getByRole("button", { name: /Filters/i });
     this.propertyCards = page.locator("article");
-    this.noResultsMessage = page.getByText(/Field note \/ inventory watch/i);
+    this.noResultsMessage = page.getByText(/We couldn't find any homes matching/i);
     this.titleHeading = page.locator("h1");
   }
 

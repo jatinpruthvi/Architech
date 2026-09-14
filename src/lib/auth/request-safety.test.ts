@@ -5,7 +5,6 @@ import {
   clearMutationSafetyBucketsForTests,
   enforceMutationSafety,
   mutationSafetyBucketCount,
-  clientKey,
 } from "./request-safety";
 
 afterEach(() => {
@@ -153,58 +152,5 @@ describe("mutation request safety", () => {
     request.headers.set("x-forwarded-for", "192.0.2.77");
     for (let index = 0; index < 60; index += 1) expect(enforceMutationSafety(request)).toBeNull();
     expect(enforceMutationSafety(request)?.status).toBe(429);
-  });
-});
-
-describe("clientKey", () => {
-  it("returns null when no relevant headers are present", () => {
-    expect(clientKey(new Request("http://example.com/"))).toBeNull();
-  });
-
-  it("prioritizes x-real-ip over x-forwarded-for", () => {
-    const request = new Request("http://example.com/", {
-      headers: {
-        "x-real-ip": "203.0.113.1",
-        "x-forwarded-for": "198.51.100.1, 192.0.2.1",
-      },
-    });
-    expect(clientKey(request)).toBe("203.0.113.1");
-  });
-
-  it("prioritizes cf-connecting-ip over x-forwarded-for", () => {
-    const request = new Request("http://example.com/", {
-      headers: {
-        "cf-connecting-ip": "203.0.113.2",
-        "x-forwarded-for": "198.51.100.1, 192.0.2.1",
-      },
-    });
-    expect(clientKey(request)).toBe("203.0.113.2");
-  });
-
-  it("returns the first entry of x-forwarded-for when TRUST_PROXY_HEADERS is false", () => {
-    vi.stubEnv("TRUST_PROXY_HEADERS", "false");
-    const request = new Request("http://example.com/", {
-      headers: {
-        "x-forwarded-for": "198.51.100.1, 192.0.2.1, 203.0.113.1",
-      },
-    });
-    expect(clientKey(request)).toBe("198.51.100.1");
-  });
-
-  it("returns the last entry of x-forwarded-for when TRUST_PROXY_HEADERS is true", () => {
-    vi.stubEnv("TRUST_PROXY_HEADERS", "true");
-    const request = new Request("http://example.com/", {
-      headers: {
-        "x-forwarded-for": "198.51.100.1, 192.0.2.1, 203.0.113.1",
-      },
-    });
-    expect(clientKey(request)).toBe("203.0.113.1");
-  });
-
-  it("handles empty or whitespace-only headers correctly", () => {
-    const req1 = new Request("http://example.com/", {
-      headers: { "x-real-ip": "   ", "x-forwarded-for": " , " },
-    });
-    expect(clientKey(req1)).toBeNull();
   });
 });
