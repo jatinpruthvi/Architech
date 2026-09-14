@@ -18,7 +18,7 @@ export default defineConfig({
        behavior suites exercise hydrated pages and API-backed surfaces that
        the static publish snapshot cannot serve. The snapshot itself keeps
        its own gates (SEO smoke, crawl simulation). */
-    command: "pnpm build:ci && pnpm start:next",
+    command: "BETTER_AUTH_SECRET=devsecret123456789012345678901234567890 BETTER_AUTH_URL=http://127.0.0.1:3000 pnpm build:ci && BETTER_AUTH_SECRET=devsecret123456789012345678901234567890 BETTER_AUTH_URL=http://127.0.0.1:3000 pnpm start:next",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

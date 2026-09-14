@@ -2,6 +2,18 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
+
+-- CreateEnum
+CREATE TYPE "ListingVisibility" AS ENUM ('PUBLIC', 'OWNER_DIRECT', 'BROKER_SHAREABLE', 'PRIVATE');
+
+-- CreateEnum
+CREATE TYPE "AddressVisibility" AS ENUM ('LOCALITY_ONLY', 'REQUEST_AFTER_LEAD', 'APPOINTMENT_ONLY', 'PUBLIC_EXACT');
+
+-- CreateEnum
+CREATE TYPE "ContactVisibility" AS ENUM ('RELAY_ONLY', 'REQUEST_APPROVAL', 'PUBLIC_BUSINESS');
+
+
+-- CreateEnum
 CREATE TYPE "ListingLifecycle" AS ENUM ('DRAFT', 'IN_REVIEW', 'ACTIVE', 'SOLD', 'EXPIRED', 'REMOVED', 'DUPLICATE', 'ARCHIVED');
 
 -- CreateEnum
@@ -145,6 +157,12 @@ CREATE TABLE "Listing" (
     "verification" "VerificationStatus" NOT NULL DEFAULT 'DEMO',
     "translationStatus" "TranslationStatus" NOT NULL DEFAULT 'ENGLISH_ONLY',
     "propertyType" "PropertyType" NOT NULL DEFAULT 'APARTMENT',
+
+    "visibility" "ListingVisibility" NOT NULL DEFAULT 'PUBLIC',
+    "addressVisibility" "AddressVisibility" NOT NULL DEFAULT 'LOCALITY_ONLY',
+    "contactVisibility" "ContactVisibility" NOT NULL DEFAULT 'RELAY_ONLY',
+    "brokerShareNote" VARCHAR(500),
+
     "priceInr" INTEGER NOT NULL,
     "priceLabel" TEXT NOT NULL,
     "pricePerSqft" TEXT,

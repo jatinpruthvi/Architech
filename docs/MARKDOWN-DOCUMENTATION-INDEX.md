@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated from the repository Markdown tree (211 files, digest 4669b1b0d06f).
+Generated from the repository Markdown tree (213 files, digest eb8b6862b1f8).
 
 ## Recommended Reading Order
 
@@ -264,6 +264,8 @@ Generated from the repository Markdown tree (211 files, digest 4669b1b0d06f).
 
 - [AGENTS](../src/AGENTS.md)
 - [AGENTS](../src/app/AGENTS.md)
+- [Error Context](../test-results/tests-e2e-ui-search-Search-81c93-h-results-deterministically/error-context.md)
+- [Error Context](../test-results/tests-e2e-ui-search-Search-f119d-lts-state-deterministically/error-context.md)
 - [AGENTS](../tests/AGENTS.md)
 - [README](../tests/e2e/README.md)
 
