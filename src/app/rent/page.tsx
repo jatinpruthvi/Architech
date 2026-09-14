@@ -17,7 +17,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getCities, getCitiesByState, getLocalities } from "@/lib/repositories";
-import { getListingsForServer } from "@/lib/repositories/server/prisma";
+import { getCityListingCountsForServer } from "@/lib/repositories/server/prisma";
 import { canonicalUrl, cityUrl, homeUrl } from "@/lib/seo/urls";
 import { intentVocabulary } from "@/lib/seo/intent";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
@@ -43,11 +43,11 @@ export default async function RentIndiaHub() {
      same read because the cross-intent link needs the buy figure too. */
   const rentCountByCity = new Map<string, number>();
   const buyCountByCity = new Map<string, number>();
-  const allListings = await getListingsForServer();
+  const counts = await getCityListingCountsForServer();
   for (const city of getCities()) {
-    const cityListings = allListings.filter((listing) => listing.citySlug === city.slug);
-    rentCountByCity.set(city.slug, cityListings.filter((listing) => listing.transaction === "rent").length);
-    buyCountByCity.set(city.slug, cityListings.filter((listing) => listing.transaction !== "rent").length);
+    const cityCounts = counts.get(city.slug);
+    rentCountByCity.set(city.slug, cityCounts?.rent ?? 0);
+    buyCountByCity.set(city.slug, cityCounts?.buy ?? 0);
   }
 
   const cities = getCities();
