@@ -43,10 +43,11 @@ export default async function RentIndiaHub() {
      same read because the cross-intent link needs the buy figure too. */
   const rentCountByCity = new Map<string, number>();
   const buyCountByCity = new Map<string, number>();
+  const allListings = await getListingsForServer();
   for (const city of getCities()) {
-    const all = await getListingsForServer({ citySlug: city.slug });
-    rentCountByCity.set(city.slug, all.filter((listing) => listing.transaction === "rent").length);
-    buyCountByCity.set(city.slug, all.filter((listing) => listing.transaction !== "rent").length);
+    const cityListings = allListings.filter((listing) => listing.citySlug === city.slug);
+    rentCountByCity.set(city.slug, cityListings.filter((listing) => listing.transaction === "rent").length);
+    buyCountByCity.set(city.slug, cityListings.filter((listing) => listing.transaction !== "rent").length);
   }
 
   const cities = getCities();

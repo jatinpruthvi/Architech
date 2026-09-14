@@ -24,10 +24,11 @@ export default async function BuyIndiaHub() {
      gets no rent link, because its /rent/ hub is held back by the quality gate
      and linking to a page the sitemap omits would strand the crawler. */
   const rentCountByCity = new Map<string, number>();
+  const allListings = await getListingsForServer();
   for (const city of getCities()) {
-    const all = await getListingsForServer({ citySlug: city.slug });
-    listingCountByCity.set(city.slug, all.filter((listing) => listing.transaction !== "rent").length);
-    rentCountByCity.set(city.slug, all.filter((listing) => listing.transaction === "rent").length);
+    const cityListings = allListings.filter((listing) => listing.citySlug === city.slug);
+    listingCountByCity.set(city.slug, cityListings.filter((listing) => listing.transaction !== "rent").length);
+    rentCountByCity.set(city.slug, cityListings.filter((listing) => listing.transaction === "rent").length);
   }
   const cities = getCities();
   const groups = getCitiesByState();
