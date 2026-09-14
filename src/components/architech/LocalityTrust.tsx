@@ -22,19 +22,19 @@ export function LocalityTrust({ summary }: { summary: LocalityTrustSummary }) {
 
         <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-4">
           <div>
-            <dt className="stamp !text-[10px] text-ink/55">{t.locality.trust.coverage}</dt>
+            <dt className="stamp-sm text-ink/55">{t.locality.trust.coverage}</dt>
             <dd className="mt-1 font-display text-3xl font-semibold tracking-[-0.02em] text-trust">{summary.reraCoveragePct}%</dd>
           </div>
           <div>
-            <dt className="stamp !text-[10px] text-ink/55">{t.locality.trust.verified}</dt>
+            <dt className="stamp-sm text-ink/55">{t.locality.trust.verified}</dt>
             <dd className="mt-1 font-display text-3xl font-semibold tracking-[-0.02em]">{summary.reraVerified}</dd>
           </div>
           <div>
-            <dt className="stamp !text-[10px] text-ink/55">{t.locality.trust.sourceReviewed}</dt>
+            <dt className="stamp-sm text-ink/55">{t.locality.trust.sourceReviewed}</dt>
             <dd className="mt-1 font-display text-3xl font-semibold tracking-[-0.02em]">{summary.sourceReviewed}</dd>
           </div>
           <div>
-            <dt className="stamp !text-[10px] text-ink/55">{t.locality.trust.avgScore}</dt>
+            <dt className="stamp-sm text-ink/55">{t.locality.trust.avgScore}</dt>
             <dd className={`mt-1 font-display text-3xl font-semibold tracking-[-0.02em] ${gradeClass}`}>{summary.avgScore}<span className="text-base text-ink/40">/100</span></dd>
           </div>
         </dl>
@@ -43,7 +43,7 @@ export function LocalityTrust({ summary }: { summary: LocalityTrustSummary }) {
       </div>
 
       <div className="border-l border-ink/12 pl-6 md:pl-8">
-        <Link href="/guide/rera/india/how-we-verify-rera" className="stamp inline-flex items-center gap-2 !text-[11px] font-semibold text-brick">
+        <Link href="/guide/rera/india/how-we-verify-rera" className="stamp-sm inline-flex items-center gap-2 font-semibold text-brick">
           <ShieldCheck size={14} className="text-trust" /> {t.locality.verifyCta}
         </Link>
       </div>

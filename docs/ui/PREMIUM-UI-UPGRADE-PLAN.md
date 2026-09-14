@@ -4,13 +4,18 @@
 **Scope:** Whole public site (homepage, discovery, listing dossier, shared primitives)
 **Status:** Phase 1 (reference-independent) ready to implement · Phase 2 (reference-matching) blocked
 
-## 0. Open item
+## 0. Status
 
-The reference image this pass is meant to match **has not been received** — no attachment reached
-the workspace, and the follow-up URL was not supplied. Phase 2 cannot start without it.
+**Reference received** (2 screenshots) and Phase 1 is **delivered** — see
+[`aurora-glass-theme.md`](./aurora-glass-theme.md) for the implemented visual world.
 
-Phase 1 below is deliberately **reference-independent**: every item is a defect or anti-pattern
-that will need fixing under any target design, so none of it is wasted work.
+Direction selected: *match the reference closely*, overriding the previous palette and type
+system where they conflicted. The reference is a light, luminous aurora field with frosted glass
+panels, so the product moved from night-first to day-first.
+
+The findings below were audited before any code changed, and are kept as the record of what was
+wrong. Items F1–F7 and F9–F11 are fixed or superseded; the "known follow-ups" at the end of
+`aurora-glass-theme.md` list what is still outstanding.
 
 ## 1. Skills applied
 

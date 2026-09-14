@@ -1,14 +1,15 @@
 "use client";
-/* ARCHITECH — Home v2 "Amdavad Modern". Hero rule: preserve the centered search hierarchy,
-   use locally grounded right-weighted architecture, a calm text-safe zone, responsive art direction,
-   real HTML copy, and reduced-motion-safe movement. */
-import { ArrowDown, ArrowUpRight, TrendingUp } from "lucide-react";
+/* ARCHITECH — Home v3 "Aurora Glass".
+   Reference world: a luminous multi-colour aurora canvas with frosted glass
+   panels floating on it. Hero rule: keep the centred search hierarchy, put it
+   on one clean glass surface, and let the canvas carry the colour — no stacked
+   gradient scrims, no glowing bloom, no photo card floating in the corner. */
+import { ArrowUpRight, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import PropertyCard from "../components/architech/PropertyCard";
 import Reveal from "../components/architech/Reveal";
 import NumberTicker from "../components/magicui/NumberTicker";
-import TiltCard from "../components/magicui/TiltCard";
 import Pic from "../components/architech/Pic";
 import HeroSearch, { type HeroPreset, type HeroSearchCity } from "../components/architech/HeroSearch";
 import type { MarketLocalityLink, MarketProject } from "../components/architech/MarketDirectory";
@@ -65,78 +66,72 @@ export default function Home({
   useTitle("");
   const { t } = useLang();
   return (
-    <div className="bg-paper text-ink">
+    /* No page-level background: the aurora canvas lives on body::before and has
+       to show through every section for the glass to have anything to refract. */
+    <div className="text-ink">
 
       {/* ================= HERO =================
-           Warm saffron-brown gradient matching uploaded reference:
-           dark #1a0902 → burnt #5e2210 → saffron #b84d12 → amber #e8a84a.
-           No photo — pure gradient with ember bloom, grain, and glow sweep. */}
-      <section className="relative min-h-[560px] overflow-hidden bg-[#1a0902] text-cream md:min-h-[640px]">
-        <div className="absolute inset-0">
-          {/* Core gradient — dark left to warm saffron/amber right, like screenshot */}
-          <div className="absolute inset-0 bg-[radial-gradient(110%_140%_at_22%_20%,#2d1206_0%,#5e2210_18%,#8c2e0a_32%,#b84d12_52%,#d87a1e_72%,#e8a84a_90%)]" />
-          {/* Soft depth scrim to keep text safe on left, glow open on right */}
-          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(12,4,1,0.88)_0%,rgba(28,12,6,0.70)_28%,rgba(60,24,10,0.34)_55%,rgba(110,48,16,0.10)_78%,rgba(180,100,30,0.05)_100%)]" />
-          {/* Extra warm wash bottom-right to mimic uploaded orange haze */}
-          <div className="absolute inset-0 bg-[radial-gradient(70%_80%_at_85%_75%,rgba(232,168,74,0.38)_0%,rgba(216,122,30,0.18)_35%,transparent_70%)]" />
-        </div>
-        <div className="grain absolute inset-0 opacity-35" aria-hidden="true" />
-        {/* Ember bloom + glow sweep — keeps golden-hour lift from v2 */}
-        <div className="ember-bloom -right-24 top-1/4 h-[460px] w-[460px] opacity-60 md:-right-10 md:h-[580px] md:w-[580px]" aria-hidden="true" />
-        <div className="glow-sweep right-0 opacity-70" aria-hidden="true" />
-        {/* A quiet architectural anchor keeps the hero from feeling like a generic search page.
-            It is decorative only; all listing facts remain in the search and directory below. */}
-        <div className="pointer-events-none absolute right-[5%] top-[17%] hidden h-[390px] w-[255px] rotate-[4deg] overflow-hidden rounded-[1.75rem] border border-cream/25 bg-night/30 p-2 shadow-2xl shadow-black/20 lg:block">
-          <div className="relative h-full overflow-hidden rounded-[1.25rem]">
-            <Pic name="hero-ahmedabad" alt="Warm architectural street scene in Ahmedabad" className="h-full w-full object-cover opacity-80 mix-blend-screen" sizes="255px" />
-            <div className="absolute inset-0 bg-gradient-to-t from-night/90 via-transparent to-transparent" />
-            <div className="absolute bottom-5 left-5 right-5 text-left">
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ember">Field note 01</p>
-              <p className="mt-2 font-display text-lg leading-tight text-cream">Find the right<br />corner of the city.</p>
-            </div>
-          </div>
-        </div>
-        <div className="relative z-10 container flex min-h-[540px] flex-col justify-start pb-7 pt-14 md:min-h-[620px] md:pb-9 md:pt-[clamp(4.5rem,7vh,5.5rem)]">
-          <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-            <p className="kicker fade-rise text-ember" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>
-            <h1 className="display mt-5 text-[clamp(38px,6.4vw,84px)] leading-[0.94] text-transparent bg-clip-text bg-gradient-to-br from-cream via-cream/95 to-ember/85 md:mt-6">
-              <span className="mask-line"><span style={{ "--d": "250ms" } as React.CSSProperties}>{t.hero.h1a}<em className="font-normal not-italic text-transparent bg-clip-text bg-gradient-to-r from-cream/90 to-cream/70">{t.hero.h1em}</em></span></span>
-              <span className="mask-line"><span style={{ "--d": "380ms" } as React.CSSProperties}>{t.hero.h1b}</span></span>
+           One canvas, one focal control. The old hero stacked nine layers (two
+           radial gradients, a linear scrim, a warm wash, grain, an ember bloom,
+           a glow sweep and a photograph) and ran two of them on infinite loops;
+           the reference gets its depth from the canvas alone. */}
+      <section className="relative overflow-hidden pb-16 pt-28 md:pb-24 md:pt-36">
+        <div className="container">
+          <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
+            <p className="kicker fade-rise text-brick" style={{ "--d": "120ms" } as React.CSSProperties}>India · locality-first discovery</p>
+            <h1 className="display fade-rise mt-7 text-[clamp(40px,6.2vw,78px)] text-balance text-ink" style={{ "--d": "220ms" } as React.CSSProperties}>
+              {t.hero.h1a}<em>{t.hero.h1em}</em>{t.hero.h1b}
             </h1>
-            <p className="fade-rise mt-4 max-w-[520px] text-[14px] leading-6 text-cream/80 md:mt-5 md:text-[15px]" style={{ "--d": "480ms" } as React.CSSProperties}>
+            <p className="fade-rise mt-5 max-w-[560px] text-[15px] leading-7 text-ink/70 md:text-base" style={{ "--d": "340ms" } as React.CSSProperties}>
               {t.hero.sub}
             </p>
-            <div className="search-spring-in mt-5 w-full max-w-[760px] rounded-[2rem] p-2 md:mt-6 md:p-2.5" style={{ "--d": "620ms" } as React.CSSProperties}>
-              <div className="mx-auto flex justify-center">
-                <HeroSearch cities={cities} popularSearches={popularSearches} heroPresets={heroPresets} example={example} />
+          </div>
+
+          {/* The search IS the panel — no p-2 wrapper box around it (the old hero
+              nested a padded container around the composer, boxing the single most
+              important control on the site). */}
+          <div className="search-spring-in mx-auto mt-10 w-full max-w-[760px]" style={{ "--d": "460ms" } as React.CSSProperties}>
+            <HeroSearch cities={cities} popularSearches={popularSearches} heroPresets={heroPresets} example={example} />
+          </div>
+
+          {/* Real registry counts only. This block previously hardcoded
+              `<NumberTicker value={100} suffix="%" />` under the label
+              "RERA-checked" — a fabricated verification claim with no
+              denominator, on a page whose own FAQ calls its dates demo data. */}
+          <dl className="glass fade-rise mx-auto mt-14 grid max-w-3xl grid-cols-1 gap-px overflow-hidden text-center sm:grid-cols-3" style={{ "--d": "620ms" } as React.CSSProperties}>
+            {[
+              { value: listingCount, label: t.hero.stats[0] },
+              { value: localityCount, label: t.hero.stats[1] },
+              { value: cityCount, label: t.hero.stats[2] },
+            ].map((stat) => (
+              <div key={stat.label} className="px-6 py-7">
+                <dt className="sr-only">{stat.label}</dt>
+                <dd>
+                  <span className="block font-display text-[34px] font-medium leading-none tracking-[-0.03em] text-ink"><NumberTicker value={stat.value} /></span>
+                  <span className="stamp-sm mt-3 block text-ink/60">{stat.label}</span>
+                </dd>
               </div>
-            </div>
-          </div>
-          <div className="fade-rise mt-7 flex flex-wrap items-end justify-between gap-6 border-t border-cream/20 pt-4 md:mt-9" style={{ "--d": "760ms" } as React.CSSProperties}>
-            <div className="flex gap-10 md:gap-16">
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={listingCount} /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[0]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={localityCount} /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[1]}</p></div>
-              <div><p className="font-display text-3xl font-medium tracking-[-0.02em] text-cream md:text-4xl"><NumberTicker value={100} suffix="%" /></p><p className="stamp mt-1 !text-[12px] text-cream/90">{t.hero.stats[2]}</p></div>
-            </div>
-            <p className="hidden items-center gap-2 stamp !text-[11px] text-cream/80 md:flex"><ArrowDown size={13} className="animate-bounce" /> {t.hero.scroll}</p>
-          </div>
-          <p className="fade-rise mt-2 stamp !text-[12px] text-cream/85" style={{ "--d": "860ms" } as React.CSSProperties}>{t.hero.demoNote}</p>
+            ))}
+          </dl>
+          <p className="fade-rise mt-5 text-center text-sm text-ink/55" style={{ "--d": "700ms" } as React.CSSProperties}>{t.hero.demoNote}</p>
         </div>
       </section>
 
-      {/* ================= FEATURED HOMES (tilt cards) ================= */}
-      <section className="container py-24 md:py-32">
+      {/* ================= FEATURED HOMES ================= */}
+      <section className="container py-20 md:py-28">
         <Reveal className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
           <div>
             <p className="kicker text-brick">{t.sections.curatedKicker}</p>
-            <h2 className="display mt-6 max-w-[640px] text-[clamp(34px,4.4vw,60px)]">Homes worth <em className="text-brick">returning</em> to.</h2>
+            <h2 className="display mt-7 max-w-[640px] text-[clamp(32px,4.2vw,56px)] text-balance">Homes worth <em>returning</em> to.</h2>
           </div>
-          <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.sections.all281Homes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
+          <Link href="/search" className="group inline-flex items-center gap-2 stamp font-semibold text-brick">{t.sections.all281Homes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
         </Reveal>
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {featured.map((property, i) => (
             <Reveal key={property.id} delay={i * 90}>
-              <TiltCard><PropertyCard property={property} index={i} arch={i === 0} /></TiltCard>
+              {/* No 3D tilt: the reference gets depth from the canvas and the glass
+                  edge, and a tilting card fought the flat frosted material. */}
+              <PropertyCard property={property} index={i} />
             </Reveal>
           ))}
         </div>
@@ -145,75 +140,82 @@ export default function Home({
       {/* ================= MARKET DIRECTORY ================= */}
       <MarketDirectory projects={marketProjects} localityLinks={marketLocalityLinks} />
 
-      {/* ================= CITY INDEX (real OSM coords) ================= */}
-      <section className="contour-field border-t border-ink/12 py-24 md:py-32">
-        <div className="container relative">
-          <Reveal className="flex items-end justify-between gap-6">
+      {/* ================= CITY INDEX ================= */}
+      <section className="py-20 md:py-28">
+        <div className="container">
+          <Reveal className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <p className="kicker text-brick">{t.sections.localityKicker}</p>
-              <h2 className="display mt-6 max-w-[680px] text-[clamp(34px,4.4vw,60px)]">{t.sections.localityTitle}</h2>
+              <h2 className="display mt-7 max-w-[680px] text-balance text-[clamp(32px,4.2vw,56px)]">{t.sections.localityTitle}</h2>
             </div>
-            <p className="stamp hidden !text-[10px] text-ink/60 md:block">Coordinates © OpenStreetMap contributors</p>
+            <p className="stamp-sm text-ink/55">Coordinates © OpenStreetMap contributors</p>
           </Reveal>
-          <div className="mt-14 border-t border-ink/15">
+          {/* One glass panel holding ruled rows, rather than a bordered stack on a
+              contour field. Rows are separated by hairlines, so the panel stays
+              open instead of becoming a card-inside-a-card grid. */}
+          <div className="glass mt-12 overflow-hidden">
             {cities.map((city, i) => (
               <Reveal key={city.slug} delay={i * 40}>
-                <Link href={`/buy/${city.slug}/`} className="group grid grid-cols-[48px_1fr_auto] items-center gap-4 border-b border-ink/15 py-6 transition-colors hover:bg-paper md:grid-cols-[90px_1.1fr_0.9fr_auto] md:gap-8 md:py-7">
-                  <span className="index-num text-[28px] text-ink/25 transition-colors group-hover:text-brick md:text-[44px]">{String(i + 1).padStart(2, "0")}</span>
+                <Link href={`/buy/${city.slug}/`} className="group grid grid-cols-[44px_1fr_auto] items-center gap-4 border-b border-ink/10 px-5 py-6 transition-colors last:border-b-0 hover:bg-white/45 md:grid-cols-[80px_1.1fr_0.9fr_auto] md:gap-8 md:px-8 md:py-7">
+                  <span className="font-display text-[26px] font-light tabular-nums leading-none tracking-[-0.04em] text-ink/25 transition-colors group-hover:text-brick md:text-[40px]">{String(i + 1).padStart(2, "0")}</span>
                   <div>
-                    <p className="font-display text-[26px] font-medium tracking-[-0.02em] transition-transform duration-300 group-hover:translate-x-2 md:text-[34px]">{city.name} <span className="ml-2 align-middle font-sans text-sm text-ink/55">{city.hindi}</span></p>
-                    <p className="stamp mt-1 !text-[10px] text-ink/60">{city.state} · {city.coords}</p>
+                    <p className="font-display text-[24px] font-medium tracking-[-0.02em] transition-transform duration-300 group-hover:translate-x-1.5 md:text-[30px]">{city.name} <span className="ml-2 align-middle font-sans text-sm text-ink/55">{city.hindi}</span></p>
+                    <p className="stamp-sm mt-1.5 text-ink/55">{city.state} · {city.coords}</p>
                   </div>
-                  <p className="hidden text-sm text-ink/55 md:block">{city.tagline}</p>
+                  <p className="hidden text-sm text-ink/60 md:block">{city.tagline}</p>
                   <div className="flex items-center gap-4">
-                    <span className="stamp !text-[11px] text-ink/60">{city.localityCount} localities</span>
-                    <span className="clay-fill group-hover:border-brick group-hover:bg-brick grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300"><ArrowUpRight size={16} /></span>
+                    <span className="stamp-sm hidden text-ink/55 sm:block">{city.localityCount} localities</span>
+                    <span className="grid h-10 w-10 place-items-center rounded-full border border-ink/15 text-ink transition-all duration-300 group-hover:border-brick group-hover:bg-brick group-hover:text-cream"><ArrowUpRight size={16} /></span>
                   </div>
                 </Link>
               </Reveal>
             ))}
           </div>
-          <p className="mt-8 text-sm text-ink/60">
+          <p className="mt-7 text-sm text-ink/60">
             <Link href="/buy/" className="link-rail text-brick">See every city and locality Architech covers</Link>
           </p>
         </div>
       </section>
 
-      {/* ================= FEEDBACK / EVIDENCE ================= */}
-      <section className="border-b border-ink/12 bg-sand/60 py-20 md:py-28">
-        <div className="container grid gap-10 md:grid-cols-[0.8fr_1.2fr] md:items-end">
-          <Reveal>
-            <p className="kicker text-brick">Signal, not theatre</p>
-            <h2 className="display mt-6 text-[clamp(30px,3.8vw,52px)]">Trust is measured by the <em className="text-brick">trail.</em></h2>
-            <figure className="mt-8">
-              <div className="arch-frame-sm img-hover grain editorial-shadow">
-                <Pic name="stepwell" alt="Descending stone steps of the Adalaj stepwell, each level cut and recorded in sequence" className="aspect-[4/5] w-full object-cover" sizes="(max-width: 768px) 100vw, 32vw" />
+      {/* ================= EVIDENCE ================= */}
+      <section className="pb-20 md:pb-28">
+        <div className="container">
+          <Reveal className="glass grid gap-10 p-7 md:grid-cols-[0.8fr_1.2fr] md:items-center md:p-10">
+            <figure className="m-0">
+              <div className="arch-frame-sm">
+                <Pic name="stepwell" alt="Descending stone steps of the Adalaj stepwell, each level cut and recorded in sequence" className="aspect-[4/3] w-full object-cover md:aspect-[4/5]" sizes="(max-width: 768px) 100vw, 32vw" />
               </div>
-              <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Adalaj — evidence, level by level</span><span>Study frame</span></figcaption>
+              <figcaption className="stamp-sm mt-4 text-ink/55">Adalaj — evidence, level by level</figcaption>
             </figure>
-          </Reveal>
-          <Reveal delay={100} className="survey-corner border-l-2 border-brick pl-6 pt-4 md:pl-8 md:pt-6">
-            <p className="max-w-2xl text-[15px] leading-7 text-ink/70">We do not publish invented reviews, ratings, or partner praise. The useful signal is already on the page: source, freshness, RERA context, and a clear next action.</p>
-            <div className="mt-7 flex flex-wrap gap-3"><Link href="/guide/" className="night-fill inline-flex items-center gap-2 bg-night px-5 py-3 stamp !text-[11px] font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link><Link href="/review/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link></div>
+            <div>
+              <p className="kicker text-brick">Signal, not theatre</p>
+              <h2 className="display mt-7 text-balance text-[clamp(30px,3.8vw,50px)]">Trust is measured by the <em>trail.</em></h2>
+              <p className="mt-6 max-w-2xl text-[15px] leading-7 text-ink/70">We do not publish invented reviews, ratings, or partner praise. The useful signal is already on the page: source, freshness, RERA context, and a clear next action.</p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/guide/" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 rounded-full bg-brick px-6 py-3.5 stamp font-semibold text-cream">Read the evidence method <ArrowUpRight size={14} /></Link>
+                <Link href="/review/" className="motion-press inline-flex items-center gap-2 rounded-full border border-ink/20 px-6 py-3.5 stamp font-semibold text-ink transition-colors hover:border-brick hover:text-brick">Give feedback <ArrowUpRight size={14} /></Link>
+              </div>
+            </div>
           </Reveal>
         </div>
       </section>
 
-      {/* ================= FAQ (shadcn Accordion) ================= */}
-      <section className="container grid gap-12 py-20 md:grid-cols-[0.8fr_1.2fr] md:py-28">
+      {/* ================= FAQ ================= */}
+      <section className="container grid gap-12 pb-20 md:grid-cols-[0.8fr_1.2fr] md:pb-28">
         <Reveal>
           <p className="kicker text-brick">Fair questions</p>
-          <h2 className="display mt-6 max-w-[380px] text-[clamp(30px,3.8vw,52px)]">Asked often, answered <em className="text-brick">plainly</em>.</h2>
+          <h2 className="display mt-7 max-w-[380px] text-balance text-[clamp(30px,3.8vw,50px)]">Asked often, answered <em>plainly</em>.</h2>
           <p className="mt-6 flex items-center gap-2 text-sm text-ink/60"><TrendingUp size={15} className="text-trust" /> Answers reviewed with every product release.</p>
         </Reveal>
         <Reveal delay={120}>
-          <div className="border-t border-ink/15">
+          <div className="glass overflow-hidden px-6 md:px-8">
             {faqsFor(cityCount, localityCount).map((f, i) => (
-              <details key={i} className="border-b border-ink/15">
-                <summary className="cursor-pointer list-none py-6 text-left font-display text-lg font-medium tracking-[-0.01em] hover:text-brick md:text-xl [&::-webkit-details-marker]:hidden">
+              <details key={i} className="group border-b border-ink/10 last:border-b-0">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6 text-left font-display text-lg font-medium tracking-[-0.01em] transition-colors hover:text-brick md:text-xl [&::-webkit-details-marker]:hidden">
                   {f.q}
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-ink/15 text-ink/60 transition-transform duration-300 group-open:rotate-45">+</span>
                 </summary>
-                <p className="pb-6 text-[15px] leading-7 text-ink/65">{f.a}</p>
+                <p className="pb-6 pr-10 text-[15px] leading-7 text-ink/65">{f.a}</p>
               </details>
             ))}
           </div>
@@ -221,39 +223,39 @@ export default function Home({
       </section>
 
       {/* ================= List your property ================= */}
-      <section className="border-t border-ink/12 bg-sand/40 py-16 md:py-24">
-        <div className="container grid gap-10 md:grid-cols-[1.15fr_0.85fr] md:items-center">
-          <Reveal>
-            <p className="kicker text-brick">{t.list.kicker}</p>
-            <h2 className="display mt-5 max-w-[640px] text-[clamp(30px,4vw,54px)]">{t.list.title} <em className="text-brick">{t.list.titleEm}</em>{t.list.titleSuffix}</h2>
-            <p className="mt-4 max-w-[520px] text-[15px] leading-7 text-ink/65">{t.list.copy}</p>
-            <Link href="/list-property/" className="night-fill btn-sweep motion-press mt-8 inline-flex items-center gap-2 rounded-[0.875rem] bg-night px-8 py-5 stamp !text-[12px] font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
-          </Reveal>
-          <Reveal delay={120}>
-            <figure>
-              <div className="arch-frame-sm img-hover grain editorial-shadow">
+      <section className="pb-20 md:pb-28">
+        <div className="container">
+          <Reveal className="glass grid gap-10 p-7 md:grid-cols-[1.15fr_0.85fr] md:items-center md:p-10">
+            <div>
+              <p className="kicker text-brick">{t.list.kicker}</p>
+              <h2 className="display mt-6 max-w-[640px] text-balance text-[clamp(30px,4vw,52px)]">{t.list.title} <em>{t.list.titleEm}</em>{t.list.titleSuffix}</h2>
+              <p className="mt-5 max-w-[520px] text-[15px] leading-7 text-ink/65">{t.list.copy}</p>
+              <Link href="/list-property/" className="clay-fill btn-sweep motion-press mt-8 inline-flex items-center gap-2 rounded-full bg-brick px-7 py-4 stamp font-semibold text-cream">{t.list.cta} <ArrowUpRight size={16} /></Link>
+            </div>
+            <figure className="m-0">
+              <div className="arch-frame-sm">
                 <Pic name="prop-courtyard" alt="Sunlit inner courtyard of an Ahmedabad home, brick walls opening to a planted verandah" className="aspect-[4/3] w-full object-cover" sizes="(max-width: 768px) 100vw, 40vw" />
               </div>
-              <figcaption className="mt-4 flex items-center justify-between stamp !text-[10px] text-ink/60"><span>Courtyard study · Ahmedabad context</span><span>Concept-preview imagery</span></figcaption>
+              <figcaption className="stamp-sm mt-4 text-ink/55">Courtyard study · Ahmedabad context</figcaption>
             </figure>
           </Reveal>
         </div>
       </section>
 
       {/* ================= CTA ================= */}
-      <section className="clay-fill grain relative overflow-hidden bg-brick py-24 text-cream md:py-32">
-        <span className="ember-bloom -right-16 -top-32 h-[480px] w-[300px] opacity-40 md:-right-6" aria-hidden="true" />
-        <span className="glow-sweep right-0" aria-hidden="true" />
-        <div className="container relative z-10 flex flex-col items-start gap-10 md:flex-row md:items-end md:justify-between">
-          <Reveal>
-            <p className="kicker text-ember">{t.cta.kicker}</p>
-            <h2 className="display mt-6 max-w-[620px] text-[clamp(40px,6vw,84px)] text-cream">{t.cta.title1}<em>{t.cta.title2}</em>.</h2>
-          </Reveal>
-          <Reveal delay={150} className="flex flex-col gap-4 sm:flex-row">
-            <div className="border-beam rounded-[0.875rem]">
-              <Link href="/search" className="paper-fill shimmer-btn motion-press inline-flex items-center gap-3 bg-paper px-8 py-5 stamp !text-[12px] font-semibold text-ink transition-transform hover:-translate-y-1 w-full sm:w-auto">{t.cta.start} <ArrowUpRight size={16} className="text-brick" /></Link>
+      <section className="pb-24 md:pb-32">
+        <div className="container">
+          <Reveal className="glass-lg glass relative overflow-hidden p-8 md:p-14">
+            <div className="flex flex-col items-start gap-10 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="kicker text-brick">{t.cta.kicker}</p>
+                <h2 className="display mt-7 max-w-[620px] text-balance text-[clamp(38px,5.6vw,76px)] text-ink">{t.cta.title1}<em>{t.cta.title2}</em>.</h2>
+              </div>
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                <Link href="/search" className="clay-fill btn-sweep motion-press inline-flex items-center justify-center gap-3 rounded-full bg-brick px-8 py-5 stamp font-semibold text-cream">{t.cta.start} <ArrowUpRight size={16} /></Link>
+                <Link href="/buy/" className="motion-press inline-flex items-center justify-center gap-3 rounded-full border border-ink/20 px-8 py-5 stamp font-semibold text-ink transition-colors hover:border-brick hover:text-brick">{t.cta.browse}</Link>
+              </div>
             </div>
-            <Link href="/buy/" className="motion-press inline-flex items-center gap-3 border border-cream/40 rounded-[0.875rem] px-8 py-5 stamp !text-[12px] font-semibold text-cream transition-all hover:border-cream hover:bg-paper/10">{t.cta.browse}</Link>
           </Reveal>
         </div>
       </section>

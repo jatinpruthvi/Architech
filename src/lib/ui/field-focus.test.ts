@@ -43,7 +43,13 @@ describe("search bars opt into the shared field shell", () => {
   it("uses the shell on the hero search composer without stacking an extra ring", () => {
     const composer = home.split("\n").find((line) => line.includes("search-composer")) ?? "";
     expect(composer).toContain("field-shell");
-    expect(composer).toContain("[--field-focus:var(--ember)]");
+    /* Pinned to --ember while the hero was a dark golden-hour band, where an
+       amber ring was the lit affordance. In the aurora-glass world --ember is
+       the magenta tag colour and --brick is the action colour, so the hero's
+       focus edge follows --brick to stay identical to the global focus ring
+       (theme.css: `color-mix(in srgb, var(--brick) 60%, white)`). Ember focus
+       would now read as a tag, not as focus. */
+    expect(composer).toContain("[--field-focus:var(--brick)]");
     expect(composer).not.toContain("focus-within:ring");
   });
 

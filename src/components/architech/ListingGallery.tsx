@@ -77,10 +77,10 @@ export function ListingGallery({ property }: { property: Property }) {
         {/* Lead slide */}
         <div className="img-hover grain relative min-h-[230px] overflow-hidden bg-sand sm:min-h-[280px] md:min-h-[360px]">
           <Pic name={slides[0].name} src={srcFor(slides[0], 1600)} alt={slides[0].alt} className="absolute inset-0 h-full w-full object-cover" sizes="(max-width: 768px) 100vw, 62vw" eager />
-          <span className="stamp absolute left-5 top-5 z-10 rounded-full bg-paper/95 px-3 py-1.5 !text-[10px] font-semibold">{t.listing.verifiedView}</span>
+          <span className="stamp-sm absolute left-5 top-5 z-10 rounded-full bg-paper/95 px-3 py-1.5 font-semibold">{t.listing.verifiedView}</span>
           <button
             onClick={() => setLightbox(true)}
-            className="clay-fill absolute bottom-4 right-4 z-10 inline-flex touch-44 items-center gap-2 rounded-full bg-night/80 px-4 py-2 stamp !text-[10px] font-semibold text-cream backdrop-blur transition-colors hover:bg-brick"
+            className="clay-fill absolute bottom-4 right-4 z-10 inline-flex touch-44 items-center gap-2 rounded-full bg-night/80 px-4 py-2 stamp-sm font-semibold text-cream backdrop-blur transition-colors hover:bg-brick"
             aria-label={`${t.listing.gallery.openGallery} (${imageCountLabel(slides.length)})`}
           >
             <Maximize2 size={13} /> {imageCountLabel(slides.length)} · {t.listing.gallery.photos}
@@ -98,7 +98,7 @@ export function ListingGallery({ property }: { property: Property }) {
               aria-label={`${slide.label} — ${t.listing.gallery.openGallery}`}
             >
               <Pic name={slide.name} src={srcFor(slide, 800)} alt={slide.alt} className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.025]" sizes="(max-width: 768px) 100vw, 34vw" />
-              <span className="stamp absolute bottom-3 left-4 z-10 rounded-full bg-paper/95 px-2.5 py-1 !text-[9px] font-semibold">{slide.label}</span>
+              <span className="stamp-sm absolute bottom-3 left-4 z-10 rounded-full bg-paper/95 px-2.5 py-1 font-semibold">{slide.label}</span>
             </button>
           ))}
         </div>
@@ -122,14 +122,14 @@ export function ListingGallery({ property }: { property: Property }) {
           ))}
         </div>
         <button onClick={() => move(1)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-brick hover:text-brick" aria-label={t.listing.gallery.next}><ChevronRight size={16} /></button>
-        <span className="stamp hidden shrink-0 !text-[10px] text-ink/55 sm:block">{active + 1} / {slides.length}</span>
+        <span className="stamp-sm hidden shrink-0 text-ink/55 sm:block">{active + 1} / {slides.length}</span>
       </div>
 
       {/* Fullscreen lightbox */}
       {lightbox && (
         <div className="fixed inset-0 z-50 flex flex-col bg-night" role="dialog" aria-modal="true" aria-label={t.listing.gallery.openGallery}>
           <div className="flex items-center justify-between p-4">
-            <p className="stamp !text-[10px] font-semibold text-cream/80">{slides[active].label} · {active + 1} / {slides.length}</p>
+            <p className="stamp-sm font-semibold text-cream/80">{slides[active].label} · {active + 1} / {slides.length}</p>
             <button onClick={() => setLightbox(false)} className="grid h-11 w-11 touch-44 place-items-center rounded-full text-cream/80 hover:text-cream" aria-label={t.listing.gallery.close}><X size={22} /></button>
           </div>
           <div className="relative flex flex-1 items-center justify-center overflow-hidden px-16">

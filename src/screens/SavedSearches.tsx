@@ -46,7 +46,7 @@ export default function SavedSearches() {
     <div className="bg-paper pt-[78px] text-ink">
       <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
-          <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
+          <nav className="flex flex-wrap items-center gap-2 stamp-sm text-ink/60" aria-label="Breadcrumb">
             <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
             <span className="text-ink/80">Saved searches</span>
           </nav>
@@ -65,7 +65,7 @@ export default function SavedSearches() {
             title="No saved searches yet"
             description="Run a search, then tap “Save this search” — it will wait here and alert you when a matching home arrives."
             icon={<BellRing size={24} />}
-            action={<Link href="/search" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Search homes <Search size={15} /></Link>}
+            action={<Link href="/search" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp font-semibold text-cream">Search homes <Search size={15} /></Link>}
           />
         )}
 
@@ -78,10 +78,10 @@ export default function SavedSearches() {
                     {saved.query || "All homes"}
                     {saved.filters?.length ? <span className="ml-2 text-sm text-ink/55">· {saved.filters.join(" + ")}</span> : null}
                   </p>
-                  <p className="stamp mt-1 !text-[10px] text-ink/55">Updated {new Date(saved.updatedAt).toLocaleDateString("en-IN")}{saved.notify ? " · Notify on" : ""}</p>
+                  <p className="stamp-sm mt-1 text-ink/55">Updated {new Date(saved.updatedAt).toLocaleDateString("en-IN")}{saved.notify ? " · Notify on" : ""}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Link href={savedSearchRunUrl(saved)} className="clay-fill btn-sweep touch-44 inline-flex items-center gap-2 bg-brick px-5 py-3 stamp !text-[11px] font-semibold text-cream">Run <Search size={13} /></Link>
+                  <Link href={savedSearchRunUrl(saved)} className="clay-fill btn-sweep touch-44 inline-flex items-center gap-2 bg-brick px-5 py-3 stamp-sm font-semibold text-cream">Run <Search size={13} /></Link>
                   <button onClick={() => void remove(saved.id)} aria-label={`Delete saved search ${saved.query || "all homes"}`} className="touch-44 grid h-11 w-11 place-items-center border border-ink/20 text-ink/60 hover:border-brick hover:text-brick"><Trash2 size={15} /></button>
                 </div>
               </article>

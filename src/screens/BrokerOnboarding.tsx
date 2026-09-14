@@ -20,7 +20,7 @@ export default function BrokerOnboarding() {
         <aside className="h-fit border border-ink/12 bg-card p-7">
           <Building2 size={24} className="text-brick" />
           <h2 className="mt-5 font-display text-3xl font-medium tracking-[-0.02em]">{demoBrokerSession.organization?.name}</h2>
-          <p className="stamp mt-2 !text-[10px] text-trust">{demoBrokerSession.organization?.verificationStatus.replaceAll("_", " ")}</p>
+          <p className="stamp-sm mt-2 text-trust">{demoBrokerSession.organization?.verificationStatus.replaceAll("_", " ")}</p>
           <p className="mt-5 text-sm leading-6 text-ink/60">Your partner profile keeps identity, city coverage, source commitments, and contact permissions together before a home is submitted.</p>
         </aside>
 
@@ -36,7 +36,7 @@ export default function BrokerOnboarding() {
               <p className="mt-2 text-sm leading-6 text-ink/60">{body as string}</p>
             </article>
           ))}
-          <Link href="/broker/listings/new" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Create listing draft <ArrowUpRight size={15} /></Link>
+          <Link href="/broker/listings/new" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp font-semibold text-cream">Create listing draft <ArrowUpRight size={15} /></Link>
         </div>
       </section>
     </div>

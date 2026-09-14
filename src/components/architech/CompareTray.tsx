@@ -98,14 +98,14 @@ export default function CompareTray() {
               <button onClick={() => toggle(p.id)} className="grid h-8 w-8 place-items-center text-cream/60 hover:text-ember" aria-label={`Remove ${p.title} from compare`}><X size={13} /></button>
             </span>
           ))}
-          {homes.length < 2 && <span className="stamp hidden !text-[10px] text-cream/60 md:block">Pick one more home…</span>}
+          {homes.length < 2 && <span className="stamp-sm hidden text-cream/60 md:block">Pick one more home…</span>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button onClick={share} className="touch-44 hidden items-center gap-1.5 px-2 stamp !text-[10px] text-cream/70 hover:text-ember sm:inline-flex" aria-label="Copy comparison link">{copied ? "Copied" : "Share"}</button>
-          <button onClick={clear} className="hidden px-2 stamp !text-[10px] text-cream/60 underline underline-offset-4 hover:text-ember sm:block">Clear</button>
+          <button onClick={share} className="touch-44 hidden items-center gap-1.5 px-2 stamp-sm text-cream/70 hover:text-ember sm:inline-flex" aria-label="Copy comparison link">{copied ? "Copied" : "Share"}</button>
+          <button onClick={clear} className="hidden px-2 stamp-sm text-cream/60 underline underline-offset-4 hover:text-ember sm:block">Clear</button>
           <Drawer>
             <DrawerTrigger asChild>
-              <button disabled={homes.length < 2} className="clay-fill btn-solid touch-44 bg-brick px-5 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed">Compare {homes.length >= 2 ? `${homes.length} homes` : ""}</button>
+              <button disabled={homes.length < 2} className="clay-fill btn-solid touch-44 bg-brick px-5 stamp-sm font-semibold text-cream disabled:cursor-not-allowed">Compare {homes.length >= 2 ? `${homes.length} homes` : ""}</button>
             </DrawerTrigger>
             <DrawerContent className="border-t-2 border-brick bg-paper text-ink">
               <DrawerHeader className="text-left">
@@ -122,7 +122,7 @@ export default function CompareTray() {
                   ))}
                   {rows.map(([label, get]) => (
                     <div key={label} className="contents">
-                      <div className="border-t border-ink/10 py-3 stamp !text-[10px] text-ink/60">{label}</div>
+                      <div className="border-t border-ink/10 py-3 stamp-sm text-ink/60">{label}</div>
                       {homes.map((p) => <div key={`${label}-${p.id}`} className={`border-t border-ink/10 py-3 text-sm ${label === "Price" ? "font-display text-lg font-semibold" : "text-ink/80"}`}>{get(p)}</div>)}
                     </div>
                   ))}

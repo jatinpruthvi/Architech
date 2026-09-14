@@ -32,10 +32,10 @@ export function OwnershipCost({ property, state }: { property: Property; state?:
       </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="block text-xs text-ink/60"><span className="stamp !text-[10px]">{t.listing.cost.tenureLabel}</span>
+        <label className="block text-xs text-ink/60"><span className="stamp-sm">{t.listing.cost.tenureLabel}</span>
           <input type="number" min={5} max={30} value={cash.tenorYears ?? 20} onChange={(e) => setCash((c) => ({ ...c, tenorYears: Number(e.target.value) }))} className={fieldCls} aria-label={t.listing.cost.tenureLabel} />
         </label>
-        <label className="block text-xs text-ink/60"><span className="stamp !text-[10px]">{t.listing.cost.rateLabel}</span>
+        <label className="block text-xs text-ink/60"><span className="stamp-sm">{t.listing.cost.rateLabel}</span>
           <input type="number" min={5} max={15} step={0.1} value={cash.annualRatePct ?? 8.5} onChange={(e) => setCash((c) => ({ ...c, annualRatePct: Number(e.target.value) }))} className={fieldCls} aria-label={t.listing.cost.rateLabel} />
         </label>
       </div>
@@ -50,7 +50,7 @@ export function OwnershipCost({ property, state }: { property: Property; state?:
       <div className="mt-4 border-l-2 border-ink/20 pl-3 text-[11px] leading-5 text-ink/60">
         <p>{cost.charges?.note ?? `Architech has no reviewed transfer-charge rule for ${state ?? "this listing's state"}. Statutory costs are withheld rather than estimated using another state's rates.`}</p>
         {cost.charges?.sourceUrl && <p className="mt-1"><a href={cost.charges.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-brick underline underline-offset-2">Official {cost.charges.state} registration service</a> · reviewed {cost.charges.reviewedAt}</p>}
-        <p className="stamp mt-2 !text-[9px]">{t.listing.cost.note}</p>
+        <p className="stamp-sm mt-2">{t.listing.cost.note}</p>
       </div>
     </section>
   );
@@ -59,7 +59,7 @@ export function OwnershipCost({ property, state }: { property: Property; state?:
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
-      <dt className="stamp !text-[9px] text-ink/55">{label}</dt>
+      <dt className="stamp-sm text-ink/55">{label}</dt>
       <dd className={`mt-1 font-display text-2xl font-semibold tracking-[-0.02em] ${accent ? "text-brick" : ""}`}>{value}</dd>
     </div>
   );

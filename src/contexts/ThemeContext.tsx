@@ -1,9 +1,10 @@
 "use client";
 /* Theme context: light/dark via `.dark` on <html>, persisted. The product is
-   **night-first**: it reserves "dark" as its default and landing state — a
-   fresh visitor, or one with no stored choice and no matching system
-   preference, opens on the night atlas. Light is the deliberate toggle, not
-   the default. A stored preference always wins so the choice survives.
+   **day-first** since the aurora-glass pass: the reference world is a luminous
+   high-key canvas with frosted white panels, so a fresh visitor, or one with no
+   stored choice, opens on the light aurora. Dark is the deliberate toggle — the
+   same mesh at night, deep indigo with a saturated aurora. A stored preference
+   always wins so the choice survives.
    The initial theme is applied in a layout effect, which runs synchronously
    before the browser paints — the same flash-prevention the old pre-paint
    inline <script> in the root layout provided, but without rendering any
@@ -15,7 +16,7 @@ const KEY = "architech.theme";
 type Theme = "light" | "dark";
 
 type ThemeCtx = { theme: Theme; toggle: () => void };
-const Ctx = createContext<ThemeCtx>({ theme: "dark", toggle: () => {} });
+const Ctx = createContext<ThemeCtx>({ theme: "light", toggle: () => {} });
 
 /* Layout effects run before paint on the client, so the stored/system theme
    is applied with no visible flash. On the server the fallback is useEffect,
@@ -23,16 +24,18 @@ const Ctx = createContext<ThemeCtx>({ theme: "dark", toggle: () => {} });
 const usePrePaintEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  /* Night-first: "dark" on server AND client first render, so the night atlas
+  /* Day-first: "light" on server AND client first render, so the aurora canvas
      is the landing state. The real preference is read after mount: a stored
-     choice always wins; otherwise we bias to dark (the brand default) rather
-     than to the system, because this product is deliberately a night survey. */
-  const [theme, setTheme] = useState<Theme>("dark");
+     choice always wins; otherwise we stay on light (the brand default) rather
+     than following the system, because the light aurora is the reference world
+     and a dark-scheme OS should not silently relocate a first-time visitor
+     into the night variant. */
+  const [theme, setTheme] = useState<Theme>("light");
 
   usePrePaintEffect(() => {
     let stored: string | null = null;
     try { stored = window.localStorage.getItem(KEY); } catch { /* private mode */ }
-    setTheme(stored === "light" || stored === "dark" ? stored : "dark");
+    setTheme(stored === "light" || stored === "dark" ? stored : "light");
   }, []);
 
   usePrePaintEffect(() => {

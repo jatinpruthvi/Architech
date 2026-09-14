@@ -25,7 +25,7 @@ function SignalRow({ signal, confirmed, label }: { signal: TrustSignal; confirme
       </span>
       <span>
         <span className="text-sm font-medium leading-5 text-ink/85">{signal.label}</span>
-        <span className="stamp block !text-[9px] leading-4 text-ink/55">
+        <span className="stamp-sm block leading-4 text-ink/55">
           {signal.met ? confirmed : label}
         </span>
       </span>
@@ -50,19 +50,19 @@ export function TrustPanel({ property }: { property: Property }) {
         </div>
         <div className="flex items-center gap-4 border-l-4 border-brick pl-5">
           <div>
-            <p className="stamp !text-[10px] text-ink/60">{t.listing.trust.scoreLabel}</p>
+            <p className="stamp-sm text-ink/60">{t.listing.trust.scoreLabel}</p>
             <p className={`font-display text-[44px] font-semibold leading-none tracking-[-0.03em] ${gradeColor(trust)}`}>
               {trust.score}
               <span className="text-xl text-ink/40">/100</span>
             </p>
           </div>
-          <div className={`stamp !text-[10px] font-semibold ${gradeColor(trust)}`}>{trustGradeLabel(trust.grade)}</div>
+          <div className={`stamp-sm font-semibold ${gradeColor(trust)}`}>{trustGradeLabel(trust.grade)}</div>
         </div>
       </div>
 
       <div className="mt-7 grid gap-8 md:grid-cols-[1fr_0.8fr]">
         <div>
-          <p className="stamp !text-[11px] text-ink/60">{t.listing.trust.summaryHeader}</p>
+          <p className="stamp-sm text-ink/60">{t.listing.trust.summaryHeader}</p>
           <ul role="list" className="mt-4 space-y-3">
             {trust.signals.map((signal) => (
               <SignalRow
@@ -76,13 +76,13 @@ export function TrustPanel({ property }: { property: Property }) {
           <p className="mt-5 text-sm leading-6 text-ink/60">{trust.reasons.join(" ")}</p>
         </div>
         <div className="border-l border-ink/12 pl-6 md:pl-8">
-          <p className="stamp !text-[11px] text-ink/60">
+          <p className="stamp-sm text-ink/60">
             {metCount} / {trust.signals.length} {t.listing.trust.confirmed.toLowerCase()}
           </p>
           <p className="mt-3 text-sm leading-6 text-ink/65">{t.listing.trust.disclaimer}</p>
           <Link
             href="/guide/rera/india/how-we-verify-rera"
-            className="group mt-5 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick"
+            className="group mt-5 inline-flex items-center gap-2 stamp-sm font-semibold text-brick"
           >
             <ShieldCheck size={14} className="text-trust" /> {t.listing.trust.howWeVerify}
           </Link>

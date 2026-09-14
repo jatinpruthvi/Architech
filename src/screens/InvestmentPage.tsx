@@ -33,7 +33,7 @@ export default function InvestmentPage() {
           </div>
         </div>
       </section>
-      <section className="container py-20 md:py-28"><div className="border border-ink/15 bg-paper p-7 md:p-10"><div className="flex items-start gap-4"><Check size={20} className="mt-1 text-trust" /><div><h2 className="font-display text-3xl font-medium">Continue with verified context.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-ink/65">Explore localities across India, inspect listing source trails, and use the requirement brief when you need a human partner to help narrow the search.</p><div className="mt-6 flex flex-wrap gap-4"><Link href="/buy/" className="clay-fill inline-flex items-center gap-2 bg-brick px-5 py-3 stamp !text-[11px] font-semibold text-cream">Explore localities <ArrowUpRight size={14} /></Link><Link href="/guide/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp !text-[11px] font-semibold text-ink/70 hover:border-brick hover:text-brick">Read field notes <ArrowUpRight size={14} /></Link></div></div></div></div></section>
+      <section className="container py-20 md:py-28"><div className="border border-ink/15 bg-paper p-7 md:p-10"><div className="flex items-start gap-4"><Check size={20} className="mt-1 text-trust" /><div><h2 className="font-display text-3xl font-medium">Continue with verified context.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-ink/65">Explore localities across India, inspect listing source trails, and use the requirement brief when you need a human partner to help narrow the search.</p><div className="mt-6 flex flex-wrap gap-4"><Link href="/buy/" className="clay-fill inline-flex items-center gap-2 bg-brick px-5 py-3 stamp-sm font-semibold text-cream">Explore localities <ArrowUpRight size={14} /></Link><Link href="/guide/" className="inline-flex items-center gap-2 border border-ink/20 px-5 py-3 stamp-sm font-semibold text-ink/70 hover:border-brick hover:text-brick">Read field notes <ArrowUpRight size={14} /></Link></div></div></div></div></section>
     </div>
   );
 }
@@ -59,7 +59,7 @@ function InvestmentCalculator() {
           ["Annual expenses (INR)", "annualExpensesInr", 0, 10000000, 10000, 0],
           ["Down payment (INR)", "downPaymentInr", 0, 100000000, 50000, 0],
         ] as [string, keyof InvestmentAssumptions, number, number, number, number][]).map(([label, key, min, max, step]) => (
-          <label key={key} className="stamp !text-[10px] font-semibold text-ink/60">{label}
+          <label key={key} className="stamp-sm font-semibold text-ink/60">{label}
             <input type="number" min={min} max={max} step={step} value={assumptions[key]} onChange={(e) => set(key, Number(e.target.value))} className={fieldCls} />
           </label>
         ))}
@@ -70,7 +70,7 @@ function InvestmentCalculator() {
         <Metric label="Cap rate" value={metrics.capRatePct === null ? "—" : `${metrics.capRatePct.toFixed(1)}%`} />
         <Metric label="Cash-on-cash" value={metrics.cashOnCashPct === null ? "—" : `${metrics.cashOnCashPct.toFixed(1)}%`} />
       </div>
-      <p className="stamp mt-5 flex items-center gap-1.5 !text-[9px] text-ink/55"><TrendingUp size={11} /> Illustrative from your assumptions; not projection or advice.</p>
+      <p className="stamp-sm mt-5 flex items-center gap-1.5 text-ink/55"><TrendingUp size={11} /> Illustrative from your assumptions; not projection or advice.</p>
     </div>
   );
 }
@@ -78,7 +78,7 @@ function InvestmentCalculator() {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-t-2 border-brick pt-3">
-      <p className="stamp !text-[9px] text-ink/55">{label}</p>
+      <p className="stamp-sm text-ink/55">{label}</p>
       <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.02em]">{value}</p>
     </div>
   );

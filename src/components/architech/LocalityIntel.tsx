@@ -65,7 +65,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
               <h2 id="intel-price-title" className="font-display text-3xl font-medium tracking-[-0.02em]">
                 {name} — <span className="text-ink/40">{t.intel.pricePosition}</span>
               </h2>
-              <p className="stamp !text-[10px] text-ink/55">
+              <p className="stamp-sm text-ink/55">
                 {t.intel.basedOn.replace("{n}", String(intel.buyCount))} · {t.intel.updatedOn}{" "}
                 {intel.asOfLabel}
               </p>
@@ -75,25 +75,25 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
           <div className="grid gap-6 p-6 md:grid-cols-[1fr_260px] md:p-8">
             <dl className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
               <div>
-                <dt className="stamp !text-[10px] text-ink/55">{t.intel.activeBuy}</dt>
+                <dt className="stamp-sm text-ink/55">{t.intel.activeBuy}</dt>
                 <dd className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em] text-ink">
                   {intel.buyCount}
                 </dd>
               </div>
               <div>
-                <dt className="stamp !text-[10px] text-ink/55">{t.intel.medianAsking}</dt>
+                <dt className="stamp-sm text-ink/55">{t.intel.medianAsking}</dt>
                 <dd className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em] text-ink">
                   {compactInr(intel.medianPriceInr)}
                 </dd>
               </div>
               <div>
-                <dt className="stamp !text-[10px] text-ink/55">{t.intel.avgPsf}</dt>
+                <dt className="stamp-sm text-ink/55">{t.intel.avgPsf}</dt>
                 <dd className="mt-2 font-display text-3xl font-semibold tracking-[-0.02em] text-ink">
                   {formatPsf(intel.avgPricePerSqftInr)}
                 </dd>
               </div>
               <div>
-                <dt className="stamp !text-[10px] text-ink/55">{t.intel.vsCity}</dt>
+                <dt className="stamp-sm text-ink/55">{t.intel.vsCity}</dt>
                 <dd
                   className={`mt-2 font-display text-3xl font-semibold tracking-[-0.02em] ${
                     intel.position.deltaPct === null
@@ -110,7 +110,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
 
             {/* Price-position scale (decorative; the number above is the signal) */}
             <div className="border-t border-ink/10 pt-5 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-              <p className="stamp !text-[10px] text-ink/55">{deltaLabel}</p>
+              <p className="stamp-sm text-ink/55">{deltaLabel}</p>
               <div
                 className="relative mt-5 h-2 overflow-hidden rounded-full bg-ink/10"
                 role="img"
@@ -125,7 +125,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
                   aria-hidden="true"
                 />
               </div>
-              <p className="mt-4 flex items-center gap-2 stamp !text-[10px] text-ink/55">
+              <p className="mt-4 flex items-center gap-2 stamp-sm text-ink/55">
                 <Star size={12} className="text-ember" /> {t.intel.cityBaseline}
               </p>
             </div>
@@ -153,10 +153,10 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
                   <li key={band.bhk} className="flex items-center justify-between border-b border-ink/10 py-3.5">
                     <span className="text-sm text-ink/75">{band.label}</span>
                     <span className="flex items-center gap-3">
-                      <span className="stamp !text-[11px] font-semibold text-ink">{band.count}</span>
+                      <span className="stamp-sm font-semibold text-ink">{band.count}</span>
                       <Link
                         href={localitySearchUrl(bhkFilter(band.bhk))}
-                        className="touch-44 inline-flex items-center gap-1 stamp !text-[10px] font-semibold text-brick hover:underline"
+                        className="touch-44 inline-flex items-center gap-1 stamp-sm font-semibold text-brick hover:underline"
                         aria-label={`${t.intel.viewConfig} ${band.label}`}
                       >
                         {t.intel.view} <ArrowUpRight size={12} />
@@ -181,10 +181,10 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
                   <li key={band.id} className="flex items-center justify-between border-b border-ink/10 py-3.5">
                     <span className="text-sm text-ink/75">{band.label}</span>
                     <span className="flex items-center gap-3">
-                      <span className="stamp !text-[11px] font-semibold text-ink">{band.count}</span>
+                      <span className="stamp-sm font-semibold text-ink">{band.count}</span>
                       <Link
                         href={localitySearchUrl(budgetFilter(band))}
-                        className="touch-44 inline-flex items-center gap-1 stamp !text-[10px] font-semibold text-brick hover:underline"
+                        className="touch-44 inline-flex items-center gap-1 stamp-sm font-semibold text-brick hover:underline"
                         aria-label={`${t.intel.viewBudget} ${band.label}`}
                       >
                         {t.intel.view} <ArrowUpRight size={12} />
@@ -218,10 +218,10 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
                       <Route size={14} className="shrink-0 text-ember" aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block truncate">{stop.place}</span>
-                        <span className="stamp !text-[9px] text-ink/50">{CATEGORY_LABEL[stop.category]}</span>
+                        <span className="stamp-sm text-ink/50">{CATEGORY_LABEL[stop.category]}</span>
                       </span>
                     </span>
-                    <span className="stamp !text-[11px] font-semibold text-brick">{stop.distance}</span>
+                    <span className="stamp-sm font-semibold text-brick">{stop.distance}</span>
                   </li>
                 ))}
               </ul>
@@ -233,18 +233,18 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
           </div>
           <div className="flex flex-col justify-between border-t border-ink/12 bg-card p-6 md:border-l md:border-t-0 md:p-8">
             <div>
-              <p className="stamp !text-[10px] text-ink/55">{t.intel.essentialsKicker}</p>
+              <p className="stamp-sm text-ink/55">{t.intel.essentialsKicker}</p>
               <h4 className="mt-3 font-display text-lg font-medium tracking-[-0.02em]">{t.intel.essentialsTitle}</h4>
               <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-ink/65">
                 <TrainFront size={16} className="mt-0.5 shrink-0 text-ember" aria-hidden="true" />
                 {t.intel.essentialsCopy}
               </p>
-              <p className="mt-4 flex items-start gap-2 stamp !text-[10px] text-ink/60">
+              <p className="mt-4 flex items-start gap-2 stamp-sm text-ink/60">
                 <Check size={13} className="mt-0.5 shrink-0 text-trust" aria-hidden="true" />
                 {t.intel.essentialsHonest}
               </p>
             </div>
-            <Link href="/guide" className="mt-6 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick">
+            <Link href="/guide" className="mt-6 inline-flex items-center gap-2 stamp-sm font-semibold text-brick">
               {t.intel.readStudy} <ArrowUpRight size={13} />
             </Link>
           </div>
@@ -261,7 +261,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
                 {t.intel.projectsTitle} {name}
               </h3>
             </div>
-            <Link href={localitySearchUrl(["availability-new"])} className="group inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick">
+            <Link href={localitySearchUrl(["availability-new"])} className="group inline-flex items-center gap-2 stamp-sm font-semibold text-brick">
               {t.intel.allNewProjects} <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
             </Link>
           </div>
@@ -279,7 +279,7 @@ export default function LocalityIntel({ intel, locality, newProjects }: Props) {
               <div>
                 <p className="font-display text-xl font-medium tracking-[-0.015em]">{t.intel.noProjectsTitle}</p>
                 <p className="mt-2 max-w-[640px] text-sm leading-6 text-ink/60">{t.intel.noProjectsCopy}</p>
-                <p className="mt-3 flex items-center gap-2 stamp !text-[10px] text-ink/55">
+                <p className="mt-3 flex items-center gap-2 stamp-sm text-ink/55">
                   <Clock3 size={12} className="text-ember" /> {t.intel.noProjectsNote}
                 </p>
               </div>

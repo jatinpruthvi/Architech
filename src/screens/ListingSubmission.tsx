@@ -337,9 +337,9 @@ export default function ListingSubmission() {
 
       <section className="listing-dossier-body container grid gap-8 py-14 lg:grid-cols-[1fr_360px] md:py-20">
         <div className="listing-packet border border-ink/12 bg-card p-7">
-          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink/12 pb-5"><div><p className="kicker text-brick !text-[10px]">Draft fields</p><p className="mt-2 text-sm text-ink/55">Packet 01 · editorial facts and source context</p></div><span className="stamp text-ink/45">PRIVATE UNTIL REVIEW</span></div>
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink/12 pb-5"><div><p className="kicker text-brick">Draft fields</p><p className="mt-2 text-sm text-ink/55">Packet 01 · editorial facts and source context</p></div><span className="stamp-sm text-ink/45">PRIVATE UNTIL REVIEW</span></div>
           <div className="mt-6 grid gap-5">
-            <div className="listing-field-note flex items-center gap-2 border-l-2 border-brick/50 bg-sand/40 px-3 py-2 stamp !text-[10px] text-ink/55"><FileCheck2 size={13} className="text-brick" /> Every value becomes part of the reviewable source packet.</div>
+            <div className="listing-field-note flex items-center gap-2 border-l-2 border-brick/50 bg-sand/40 px-3 py-2 stamp-sm text-ink/55"><FileCheck2 size={13} className="text-brick" /> Every value becomes part of the reviewable source packet.</div>
             <div className="border border-ink/12 bg-paper/45 p-4" aria-live="polite">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div><p className="kicker text-brick !text-[10px]">Packet readiness</p><p className="mt-1 text-sm text-ink/60">Complete the required facts before creating a draft.</p></div>
@@ -406,7 +406,7 @@ export default function ListingSubmission() {
                 <Field label="Floor"><div className="grid grid-cols-2 gap-2"><input type="number" min={0} value={draft.details?.floorNumber ?? ""} onChange={(e) => setDetail("floorNumber", e.target.value === "" ? undefined : Number(e.target.value))} className={inputCls} placeholder="This floor" /><input type="number" min={1} value={draft.details?.totalFloors ?? ""} onChange={(e) => setDetail("totalFloors", e.target.value === "" ? undefined : Number(e.target.value))} className={inputCls} placeholder="Total floors" /></div></Field>
                 <Field label="Possession"><input value={draft.details?.possessionLabel ?? ""} onChange={(e) => setDetail("possessionLabel", e.target.value)} className={inputCls} placeholder="Ready to move" /></Field>
               </div>
-              <fieldset className="mt-5 border-t border-ink/12 pt-4"><legend className="stamp !text-[10px] text-ink/60">Amenities · select all that apply</legend><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{AMENITY_OPTIONS.map((amenity) => { const selected = draft.details?.amenities?.includes(amenity) ?? false; return <label key={amenity} className={`flex min-h-11 cursor-pointer items-center gap-3 border px-3 py-2.5 text-sm transition-colors ${selected ? "border-brick bg-brick/10 text-ink" : "border-ink/12 bg-paper/45 text-ink/65 hover:border-brick/45"}`}><input type="checkbox" checked={selected} onChange={() => toggleAmenity(amenity)} className="h-4 w-4 accent-[var(--brick)]" /> <span>{amenity}</span></label>; })}</div></fieldset>
+              <fieldset className="mt-5 border-t border-ink/12 pt-4"><legend className="stamp-sm text-ink/60">Amenities · select all that apply</legend><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{AMENITY_OPTIONS.map((amenity) => { const selected = draft.details?.amenities?.includes(amenity) ?? false; return <label key={amenity} className={`flex min-h-11 cursor-pointer items-center gap-3 border px-3 py-2.5 text-sm transition-colors ${selected ? "border-brick bg-brick/10 text-ink" : "border-ink/12 bg-paper/45 text-ink/65 hover:border-brick/45"}`}><input type="checkbox" checked={selected} onChange={() => toggleAmenity(amenity)} className="h-4 w-4 accent-[var(--brick)]" /> <span>{amenity}</span></label>; })}</div></fieldset>
             </section>
             <Field label="Description / source context" required>
               <textarea value={draft.description} onChange={(e) => set("description", e.target.value)} rows={4} className={inputCls} placeholder="Old trees, kota stone floors, and a courtyard that carries the whole house." />
@@ -451,16 +451,16 @@ export default function ListingSubmission() {
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-[180px_1fr]">
                 <div className="aspect-[4/3] overflow-hidden border border-ink/12 bg-sand/60">
-                  {mediaPreviewUrl && mediaFile?.type.startsWith("video/") ? <video src={mediaPreviewUrl} controls muted playsInline className="h-full w-full object-cover" aria-label="Selected media preview" /> : mediaPreviewUrl ? <img src={mediaPreviewUrl} alt={`Local preview of ${mediaFile?.name ?? "selected media"}`} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center p-4 text-center stamp !text-[10px] text-ink/45">{videoUploadsEnabled ? "Choose an image or video to preview it here." : "Choose an image to preview it here."}</div>}
+                  {mediaPreviewUrl && mediaFile?.type.startsWith("video/") ? <video src={mediaPreviewUrl} controls muted playsInline className="h-full w-full object-cover" aria-label="Selected media preview" /> : mediaPreviewUrl ? <img src={mediaPreviewUrl} alt={`Local preview of ${mediaFile?.name ?? "selected media"}`} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center p-4 text-center stamp-sm text-ink/45">{videoUploadsEnabled ? "Choose an image or video to preview it here." : "Choose an image to preview it here."}</div>}
                 </div>
                 <div className="grid gap-4">
-                  <label className="stamp !text-[10px] text-ink/60">{videoUploadsEnabled ? "Image or video" : "Image"}<input type="file" accept={mediaAccept} onChange={(e) => onMediaFile(e.target.files?.[0] ?? null)} className="mt-1.5 block w-full border border-ink/20 bg-paper/35 px-3 py-2 text-sm file:mr-3 file:border-0 file:bg-night file:px-3 file:py-2 file:text-xs file:text-cream" /></label>
-                  <label className="stamp !text-[10px] text-ink/60">Rights evidence<input value={mediaLicenseEvidence} onChange={(e) => setMediaLicenseEvidence(e.target.value)} className={inputCls} placeholder="Owner authorization or partner agreement reference" /></label>
+                  <label className="stamp-sm text-ink/60">{videoUploadsEnabled ? "Image or video" : "Image"}<input type="file" accept={mediaAccept} onChange={(e) => onMediaFile(e.target.files?.[0] ?? null)} className="mt-1.5 block w-full border border-ink/20 bg-paper/35 px-3 py-2 text-sm file:mr-3 file:border-0 file:bg-night file:px-3 file:py-2 file:text-xs file:text-cream" /></label>
+                  <label className="stamp-sm text-ink/60">Rights evidence<input value={mediaLicenseEvidence} onChange={(e) => setMediaLicenseEvidence(e.target.value)} className={inputCls} placeholder="Owner authorization or partner agreement reference" /></label>
                   <label className="flex items-start gap-3 text-xs leading-5 text-ink/65"><input type="checkbox" checked={mediaRightsConfirmed} onChange={(e) => setMediaRightsConfirmed(e.target.checked)} className="mt-1 accent-[var(--brick)]" /><span>I confirm I own or am authorised to publish this specific file.</span></label>
-                  <button type="button" onClick={() => void prepareMediaUpload()} disabled={!draftId || !mediaFile || mediaSubmitting} className="night-fill btn-sweep btn-solid touch-44 w-fit bg-night px-4 py-3 stamp !text-[11px] font-semibold text-cream disabled:cursor-not-allowed">{mediaSubmitting ? "Preparing…" : "Sign & attach media"}</button>
+                  <button type="button" onClick={() => void prepareMediaUpload()} disabled={!draftId || !mediaFile || mediaSubmitting} className="night-fill btn-sweep btn-solid touch-44 w-fit bg-night px-4 py-3 stamp-sm font-semibold text-cream disabled:cursor-not-allowed">{mediaSubmitting ? "Preparing…" : "Sign & attach media"}</button>
                 </div>
               </div>
-              {mediaUpload && <div className="mt-4 border-l-2 border-trust bg-trust/10 p-3 text-xs leading-5 text-ink/70"><div className="flex flex-wrap items-center justify-between gap-3"><span><strong className="font-semibold text-trust">Pending moderation.</strong> Rights evidence recorded; EXIF policy: {mediaUpload.exifPolicy}.</span><button type="button" onClick={() => void detachMedia()} className="stamp !text-[10px] font-semibold text-brick underline underline-offset-4">Detach</button></div><p className="mt-1 text-ink/55">Packet ID {mediaUpload.id} · {mediaUpload.licenseEvidence}</p></div>}
+              {mediaUpload && <div className="mt-4 border-l-2 border-trust bg-trust/10 p-3 text-xs leading-5 text-ink/70"><div className="flex flex-wrap items-center justify-between gap-3"><span><strong className="font-semibold text-trust">Pending moderation.</strong> Rights evidence recorded; EXIF policy: {mediaUpload.exifPolicy}.</span><button type="button" onClick={() => void detachMedia()} className="stamp-sm font-semibold text-brick underline underline-offset-4">Detach</button></div><p className="mt-1 text-ink/55">Packet ID {mediaUpload.id} · {mediaUpload.licenseEvidence}</p></div>}
             </section>
           </div>
 
@@ -471,11 +471,11 @@ export default function ListingSubmission() {
           )}
 
           <div className="mt-7 flex flex-wrap gap-4">
-            <button onClick={() => void onDraft()} disabled={submitting} className="night-fill btn-sweep btn-solid touch-44 bg-night px-6 py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">
+            <button onClick={() => void onDraft()} disabled={submitting} className="night-fill btn-sweep btn-solid touch-44 bg-night px-6 py-4 stamp font-semibold text-cream disabled:cursor-wait">
               <span className="flex items-center gap-2">{submitting ? <Loader2 size={14} className="animate-spin" /> : <FileCheck2 size={14} />} Create draft</span>
             </button>
             {draftId && !submitted && (
-              <button onClick={() => void submitForReview()} disabled={submitting} className="clay-fill btn-sweep btn-solid touch-44 bg-brick px-6 py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">
+              <button onClick={() => void submitForReview()} disabled={submitting} className="clay-fill btn-sweep btn-solid touch-44 bg-brick px-6 py-4 stamp font-semibold text-cream disabled:cursor-wait">
                 <span className="flex items-center gap-2">{submitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Submit for review</span>
               </button>
             )}
@@ -510,7 +510,7 @@ const inputCls = "mt-1.5 w-full border border-ink/20 bg-paper/35 px-4 py-3 text-
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="stamp !text-[10px] text-ink/60">{label}{required ? " ·" : ""}</span>
+      <span className="stamp-sm text-ink/60">{label}{required ? " ·" : ""}</span>
       {children}
     </label>
   );

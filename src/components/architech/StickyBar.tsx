@@ -25,7 +25,7 @@ export function StickyBar({ property, saved, onSave, onAsk }: { property: Proper
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 text-ink shadow-[0_-8px_30px_rgba(17,24,39,0.12)] backdrop-blur-md motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-safe:ease-out translate-y-0 opacity-100">
       <div className="safe-bottom container flex items-center justify-between gap-4 pt-3">
         <div className="min-w-0">
-          <p className="stamp !text-[9px] text-ink/55">{t.listing.stickyBar.price} · {property.locality}</p>
+          <p className="stamp-sm text-ink/55">{t.listing.stickyBar.price} · {property.locality}</p>
           <p className="truncate font-display text-lg font-semibold leading-tight tracking-[-0.01em]">{property.price}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -37,7 +37,7 @@ export function StickyBar({ property, saved, onSave, onAsk }: { property: Proper
           >
             <Heart size={17} fill={saved ? "currentColor" : "none"} />
           </button>
-          <button onClick={onAsk} className="clay-fill btn-sweep touch-44 inline-flex items-center gap-2 rounded-xl bg-brick px-5 py-3 stamp !text-[11px] font-semibold text-cream">
+          <button onClick={onAsk} className="clay-fill btn-sweep touch-44 inline-flex items-center gap-2 rounded-xl bg-brick px-5 py-3 stamp-sm font-semibold text-cream">
             <MessageCircle size={14} /> {t.listing.stickyBar.ask}
           </button>
         </div>

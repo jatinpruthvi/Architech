@@ -63,7 +63,7 @@ export default async function BuyIndiaHub() {
       <div className="bg-paper pt-[78px] text-ink">
         <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
           <div className="container">
-            <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
+            <nav className="flex flex-wrap items-center gap-2 stamp-sm text-ink/60" aria-label="Breadcrumb">
               <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
               <span className="text-ink/80">Buy property in India</span>
             </nav>
@@ -78,7 +78,7 @@ export default async function BuyIndiaHub() {
         <section className="container py-14 md:py-20">
           {groups.map((group) => (
             <div key={group.stateSlug} className="mb-12">
-              <h2 className="stamp !text-[11px] text-ink/60">{group.state}</h2>
+              <h2 className="stamp-sm text-ink/60">{group.state}</h2>
               <div className="mt-4 border-t border-ink/15">
                 {group.cities.map((city) => {
                   const localityCount = getLocalities(city.slug).length;
@@ -94,11 +94,11 @@ export default async function BuyIndiaHub() {
                         <p className="font-display text-[26px] font-medium tracking-[-0.02em] transition-transform duration-300 group-hover:translate-x-2 md:text-[34px]">
                           {city.name} <span className="ml-2 align-middle font-sans text-sm text-ink/55">{city.hindi}</span>
                         </p>
-                        <p className="stamp mt-1 !text-[10px] text-ink/60">{city.coords} · {city.reraAuthority}</p>
+                        <p className="stamp-sm mt-1 text-ink/60">{city.coords} · {city.reraAuthority}</p>
                       </div>
                       <p className="hidden text-sm text-ink/55 md:block">{city.tagline}</p>
                       <div className="flex items-center gap-4">
-                        <span className="stamp !text-[11px] text-ink/60">{localityCount} localities · {listingCount} homes</span>
+                        <span className="stamp-sm text-ink/60">{localityCount} localities · {listingCount} homes</span>
                         <span className="clay-fill group-hover:border-brick group-hover:bg-brick grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300">
                           <ArrowUpRight size={16} />
                         </span>
@@ -119,7 +119,7 @@ export default async function BuyIndiaHub() {
               </div>
             </div>
           ))}
-          <p className="stamp !text-[10px] text-ink/60">
+          <p className="stamp-sm text-ink/60">
             Coordinates © OpenStreetMap contributors · counts are illustrative for this concept preview · RERA authority shown is the state regulator that governs listings in that city
           </p>
         </section>

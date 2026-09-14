@@ -93,7 +93,7 @@ export default function BrokerLeadInbox() {
       <section className="container py-14 md:py-20">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-3xl font-medium tracking-[-0.02em]">Inbox <span className="text-brick">{leads.length}</span></h2>
-          <button onClick={() => void load()} className="stamp !text-[11px] font-semibold text-brick underline underline-offset-4">Refresh</button>
+          <button onClick={() => void load()} className="stamp-sm font-semibold text-brick underline underline-offset-4">Refresh</button>
         </div>
 
         {metrics && <div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="border border-ember/25 bg-ember/8 p-4"><p className="stamp ink-3">Overdue follow-ups</p><p className="mt-2 font-display text-3xl">{metrics.overdue}</p></div><div className="border border-ink/12 bg-card p-4"><p className="stamp ink-3">Calls logged</p><p className="mt-2 font-display text-3xl">{Object.values(metrics.outcomes).reduce((sum, value) => sum + value, 0)}</p></div><div className="border border-ink/12 bg-card p-4"><p className="stamp ink-3">Lost reasons</p><p className="mt-2 font-display text-3xl">{Object.values(metrics.lostReasons).reduce((sum, value) => sum + value, 0)}</p></div></div>}
@@ -126,16 +126,16 @@ export default function BrokerLeadInbox() {
 
               <div className="mt-5 grid gap-4 md:grid-cols-3">
                 <div className="border-l-2 border-brick pl-4">
-                  <p className="stamp !text-[9px] text-ink/55 flex items-center gap-1.5"><Phone size={11} /> Masked contact</p>
+                  <p className="stamp-sm text-ink/55 flex items-center gap-1.5"><Phone size={11} /> Masked contact</p>
                   <p className="mt-1 font-mono text-sm text-ink/80">{lead.phoneMasked}</p>
                 </div>
                 <div className="md:col-span-2">
-                  <p className="stamp !text-[9px] text-ink/55">Message</p>
+                  <p className="stamp-sm text-ink/55">Message</p>
                   <p className="mt-1 text-sm leading-6 text-ink/80">{lead.message}</p>
                 </div>
               </div>
 
-              <p className="stamp mt-4 !text-[9px] text-ink/55">Consent: {lead.consentText}</p>
+              <p className="stamp-sm mt-4 text-ink/55">Consent: {lead.consentText}</p>
 
               <div className="mt-5 flex flex-wrap gap-3 border-t border-ink/12 pt-5">
                 {/* Primary action on mobile: the broker's whole job from an
@@ -154,7 +154,7 @@ export default function BrokerLeadInbox() {
                     key={action}
                     onClick={() => void advance(lead.id, action)}
                     disabled={lead.status === action}
-                    className="btn-sweep btn-solid touch-44 px-4 py-2 stamp !text-[10px] font-semibold text-cream disabled:cursor-not-allowed"
+                    className="btn-sweep btn-solid touch-44 px-4 py-2 stamp-sm font-semibold text-cream disabled:cursor-not-allowed"
                   >
                     <span className="flex items-center gap-2">
                       {action === "REPLIED" ? <MessageCircle size={12} /> : action === "CLOSED" ? <CheckCheck size={12} /> : null}
@@ -165,14 +165,14 @@ export default function BrokerLeadInbox() {
                 <span aria-hidden="true" className="mx-1 hidden self-center border-l border-ink/15 sm:block" />
                 <button
                   onClick={() => void removeLead(lead.id, "consent")}
-                  className="touch-44 inline-flex items-center gap-1.5 px-3 py-2 stamp !text-[10px] font-semibold text-ink/60 hover:text-brick"
+                  className="touch-44 inline-flex items-center gap-1.5 px-3 py-2 stamp-sm font-semibold text-ink/60 hover:text-brick"
                   title="Revoke buyer consent (privacy/right to be forgotten)"
                 >
                   <ShieldOff size={12} /> Revoke consent
                 </button>
                 <button
                   onClick={() => void removeLead(lead.id, "delete")}
-                  className="touch-44 inline-flex items-center gap-1.5 px-3 py-2 stamp !text-[10px] font-semibold text-ink/60 hover:text-brick"
+                  className="touch-44 inline-flex items-center gap-1.5 px-3 py-2 stamp-sm font-semibold text-ink/60 hover:text-brick"
                   title="Remove this lead"
                 >
                   <Trash2 size={12} /> Remove

@@ -21,7 +21,7 @@ export default function TermsPage() {
   return (
     <div className="bg-paper pt-[78px] text-ink">
       <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20"><div className="container"><p className="kicker text-brick">Terms · responsible prototype use</p><h1 className="display mt-6 max-w-[780px] text-[clamp(40px,6vw,78px)]">Trust needs clear boundaries.</h1><p className="mt-6 max-w-[620px] text-base leading-8 text-ink/65">These terms define the Phase 1 product/legal assumptions before public production enablement.</p></div></section>
-      <section className="container py-14 md:py-20"><div className="space-y-4">{terms.map(([title, body]) => <article key={title} className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl tracking-[-0.02em]">{title}</h2><p className="mt-3 text-sm leading-6 text-ink/60">{body}</p></article>)}</div><Link href="/privacy" className="mt-8 inline-flex stamp !text-[12px] font-semibold text-brick">Read privacy notice →</Link></section>
+      <section className="container py-14 md:py-20"><div className="space-y-4">{terms.map(([title, body]) => <article key={title} className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl tracking-[-0.02em]">{title}</h2><p className="mt-3 text-sm leading-6 text-ink/60">{body}</p></article>)}</div><Link href="/privacy" className="mt-8 inline-flex stamp font-semibold text-brick">Read privacy notice →</Link></section>
     </div>
   );
 }
