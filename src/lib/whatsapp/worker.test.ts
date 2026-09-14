@@ -108,7 +108,7 @@ describe("WhatsApp dispatch worker", () => {
 
   it("marks unknown if provider resolves without a message ID", async () => {
     setup();
-    mocks.provider.sendText.mockResolvedValueOnce({ providerMessageId: undefined });
+    mocks.provider.sendText.mockResolvedValueOnce({ providerMessageId: undefined as unknown as string });
     const result = await processWhatsAppDispatchBatch({ organizationId: "org_1", now: new Date("2026-09-12T00:01:00.000Z") });
     expect(result.unknown).toBe(1);
     expect(mocks.provider.sendText).toHaveBeenCalledTimes(1);
