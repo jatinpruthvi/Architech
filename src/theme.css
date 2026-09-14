@@ -72,8 +72,11 @@
   --ink: #221c2e;
   --paper: #f7f4fc;
   --sand: #e7e1f4;
-  --brick: #6d28d9;      /* violet action — 6.53:1 on paper, 7.10:1 with white label */
-  --brick-deep: #5b21b6; /* pressed violet surface */
+  --brick: #4c1d95;      /* violet action. Deepened from the reference's #6d28d9, which
+                            clears AA on flat paper (6.5:1) but falls to 4.33:1 as TEXT
+                            once the vivid aurora sits behind it. Verified over a 21x13
+                            grid of the whole canvas: 5.28:1 worst case, 10.95 white-on-fill. */
+  --brick-deep: #3f1288; /* pressed violet surface — 6.12:1 on canvas, 12.70 white-on-fill */
   --ember: #b01baf;      /* magenta tag — 5.33:1 on paper, 5.80:1 white-on-fill */
   --trust: #0f766e;      /* teal verification */
   --gold: #a16207;       /* warm gold tag — 4.92:1 white-on-fill */
@@ -99,23 +102,24 @@
   --secondary: var(--sand);
   --secondary-foreground: var(--ink);
   --muted: #efeaf8;
-  --muted-foreground: #5b5270;   /* 6.69:1 on paper — body-copy floor */
+  --muted-foreground: #403852;   /* 5.31:1 worst case over the WHOLE canvas, not just over
+                                    paper — secondary text frequently sits on the aurora */
   --accent: #efeaf8;
   --accent-foreground: var(--ink);
   --destructive: #b3261e;
   --destructive-foreground: #ffffff;
   --border: rgba(34, 28, 46, 0.12);
   --input: rgba(34, 28, 46, 0.18);
-  --ring: #6d28d9;
+  --ring: var(--brick);
   --shadow-editorial: 0 18px 40px -18px rgba(46, 26, 120, 0.30);
   /* Glass tint + line weights for the aurora canvas. Kept out of the contrast
      audit's token map on purpose: these are translucent by design, and the
      audit resolves opaque hex only — it would silently skip them. */
   --glass-tint: #ffffff;
   --glass-edge: rgba(255, 255, 255, 0.62);
-  --line-soft: rgba(109, 40, 217, 0.10);
-  --line-grid: rgba(109, 40, 217, 0.06);
-  --blueprint-grid: rgba(109, 40, 217, 0.05);
+  --line-soft: rgba(91, 33, 182, 0.10);
+  --line-grid: rgba(91, 33, 182, 0.06);
+  --blueprint-grid: rgba(91, 33, 182, 0.05);
   --field-focus: var(--brick);
 }
 
@@ -149,7 +153,7 @@
   --secondary: #241f45;
   --secondary-foreground: var(--ink);
   --muted: #201b3d;
-  --muted-foreground: #a99fc4;   /* 7.38:1 on paper */
+  --muted-foreground: #cfc8e1;   /* 4.9:1 worst case over the night aurora */
   --accent: #2a2450;
   --accent-foreground: var(--ink);
   --border: rgba(237, 233, 254, 0.16);
@@ -168,8 +172,16 @@
 /* The aurora field: the canvas itself is the artwork. A fixed pseudo-element
    (not `background-attachment: fixed`, which forces a full-canvas repaint every
    scroll frame on mobile) so the mesh stays put while content scrolls over it.
-   Colour is concentrated at the edges and washes out through the middle — that
-   pale centre is what keeps body copy readable and what the glass sits on. */
+   Colour peaks at the corners, which extend past the viewport, and falls away
+   toward the middle so the content band stays pale.
+
+   The hues are PASTELISED — each saturated primary blended ~42% toward white —
+   and then laid down at high alpha. That is what makes the mesh read as vivid
+   while keeping it light enough to carry text: contrast is a luminance problem,
+   so tinting toward white buys colour without spending legibility. The
+   saturated originals (#ee5edb, #985cff) measured 4.2:1 for 70%-ink body copy
+   at the left band, under AA; these measure 5.0:1 or better. Re-measure before
+   changing any alpha here — the numbers below are the shipped contract. */
 body::before {
   content: "";
   position: fixed;
@@ -178,22 +190,23 @@ body::before {
   pointer-events: none;
   background-color: var(--paper);
   background-image:
-    radial-gradient(58% 52% at 4% 6%,    rgba(238, 94, 219, 0.50) 0%, rgba(238, 94, 219, 0) 62%),
-    radial-gradient(52% 46% at 96% 2%,   rgba(255, 195, 64, 0.52) 0%, rgba(255, 195, 64, 0) 60%),
-    radial-gradient(62% 56% at 99% 84%,  rgba(45, 212, 191, 0.46) 0%, rgba(45, 212, 191, 0) 64%),
-    radial-gradient(56% 52% at 2% 94%,   rgba(152, 92, 255, 0.44) 0%, rgba(152, 92, 255, 0) 62%),
-    radial-gradient(78% 68% at 48% 44%,  rgba(96, 134, 246, 0.34) 0%, rgba(96, 134, 246, 0) 68%),
-    linear-gradient(158deg, #fcfaff 0%, #f3eeff 50%, #f7f4fc 100%);
+    radial-gradient(68% 63% at -2% 0%,   rgba(245, 162, 234, 1) 0%, rgba(245, 162, 234, 0) 100%),
+    radial-gradient(68% 63% at 102% -2%, rgba(255, 220, 144, 1) 0%, rgba(255, 220, 144, 0) 100%),
+    radial-gradient(73% 68% at 103% 90%, rgba(133, 230, 218, 1) 0%, rgba(133, 230, 218, 0) 100%),
+    radial-gradient(68% 63% at -3% 100%, rgba(195, 160, 255, 1) 0%, rgba(195, 160, 255, 0) 100%),
+    radial-gradient(66% 58% at 50% 46%,  rgba(163, 185, 250, 0.46) 0%, rgba(163, 185, 250, 0) 100%);
 }
-/* Night aurora: same field, deeper and more saturated, on an indigo base. */
+/* Night aurora: the same geometry, saturated (not pastelised) on a dark base —
+   dark surfaces need glow, and light text keeps its contrast against them.
+   `--muted-foreground` is correspondingly lightened for dark mode, because a
+   mid-tone glow under a mid-tone grey is where muted text failed at 3.19:1. */
 .dark body::before {
   background-image:
-    radial-gradient(58% 52% at 4% 6%,    rgba(214, 55, 190, 0.40) 0%, rgba(214, 55, 190, 0) 62%),
-    radial-gradient(52% 46% at 96% 2%,   rgba(233, 166, 30, 0.30) 0%, rgba(233, 166, 30, 0) 60%),
-    radial-gradient(62% 56% at 99% 84%,  rgba(20, 170, 155, 0.34) 0%, rgba(20, 170, 155, 0) 64%),
-    radial-gradient(56% 52% at 2% 94%,   rgba(120, 62, 235, 0.42) 0%, rgba(120, 62, 235, 0) 62%),
-    radial-gradient(78% 68% at 48% 44%,  rgba(72, 104, 226, 0.30) 0%, rgba(72, 104, 226, 0) 68%),
-    linear-gradient(158deg, #191536 0%, #100e24 52%, #14112b 100%);
+    radial-gradient(54% 50% at -2% 0%,   rgba(214, 55, 190, 0.51) 0%, rgba(214, 55, 190, 0) 100%),
+    radial-gradient(50% 46% at 102% -2%, rgba(233, 166, 30, 0.34) 0%, rgba(233, 166, 30, 0) 100%),
+    radial-gradient(58% 54% at 103% 90%, rgba(20, 170, 155, 0.42) 0%, rgba(20, 170, 155, 0) 100%),
+    radial-gradient(54% 50% at -3% 100%, rgba(120, 62, 235, 0.53) 0%, rgba(120, 62, 235, 0) 100%),
+    radial-gradient(82% 72% at 50% 46%,  rgba(72, 104, 226, 0.39) 0%, rgba(72, 104, 226, 0) 100%);
 }
 .dark .map-frame { filter: sepia(0.16) saturate(0.9) contrast(0.92) brightness(0.86); }
 .dark .grain::after { opacity: 0.26; }
@@ -201,10 +214,14 @@ body::before {
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--background); color-scheme: light; }
 html.dark { color-scheme: dark; }
+/* NO background-color here. `body::before` carries the aurora at `z-index: -1`,
+   and a negative-z child paints BEFORE an in-flow element's own background —
+   so the moment body painted an opaque `--background`, it buried the aurora and
+   every page rendered as flat colour. The base fill lives on `html` and inside
+   the pseudo-element instead. Do not reintroduce a background on body. */
 body {
   margin: 0;
   min-width: 320px;
-  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   font-size: 16px;
@@ -378,7 +395,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    section heading repeat the same violet device — the flattened "section rhythm"
    anti-pattern. Weight alone carries the emphasis now; colour is reserved for
    the kicker pill, actions, and status. */
-.display em { font-style: normal; font-weight: 560; color: inherit; }
+.display em { font-style: normal; font-weight: 620; color: inherit; }
 
 /* ---------- Motion ---------- */
 
@@ -404,12 +421,10 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .survey-drift { animation: survey-drift 5200ms cubic-bezier(0.19, 1, 0.22, 1) both; }
 }
 
-/* Emergent contour reveal on the display heading: the em accent draws in after
-   the word settles, like a highlighted contour line picking out the place. */
-@media (prefers-reduced-motion: no-preference) {
-  .display em { background: linear-gradient(90deg, var(--brick), var(--brick)) 0 100% / 0 0.1em no-repeat; animation: em-reveal 720ms cubic-bezier(0.19, 1, 0.22, 1) 640ms both; }
-}
-@keyframes em-reveal { from { background-size: 0 0.1em; } to { background-size: 100% 0.1em; } }
+/* The em accent used to draw a violet underline beneath the emphasised word.
+   That belonged to the old world, where `em` was the coloured word; heading
+   emphasis is weight-only now, so the underline rendered as a stray violet bar
+   cutting through the headline. Removed, along with its reduced-motion opt-out. */
 
 /* Gentle floating on the survey-corner tick, so the registration mark reads as
    alive without shouting. Reduced-motion disables it below. */
@@ -1060,14 +1075,13 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
   .motion-lift, .img-hover img, .btn-sweep::before, .link-rail::after, .arch-mark-arch { transition: none; }
   .skeleton { animation: none; }
   .kicker::before { animation: none; transform: none; }
-  .survey-drift, .display em, .survey-corner::after { animation: none; }
+  .survey-drift, .survey-corner::after { animation: none; }
   .ember-bloom, .glow-sweep { animation: none; opacity: 0; }
   .hero-golden-hour { animation: none; filter: none; }
   .search-spring-in { animation: none; opacity: 1; }
   .segment-glow::after { transition: none; transform: scaleX(1); }
   .card-warm-hover, .section-rail-link::after, .link-rail::after, .motion-lift, .img-hover img { transition: none; }
   .arch-map-marker.is-selected, .arch-map-marker:hover { animation: none; }
-  .display em { background-size: 0; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
 
