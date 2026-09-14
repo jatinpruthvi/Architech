@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Home from "@/screens/Home";
 import { getCities, getLocalities } from "@/lib/repositories";
-import { getFeaturedListingsForServer, getListingsForServer } from "@/lib/repositories/server/prisma";
+import {
+  getFeaturedListingsForServer,
+  getListingsForServer,
+} from "@/lib/repositories/server/prisma";
 import { exampleQuery, popularQueries } from "@/lib/search/suggest";
 import { formatBudget } from "@/lib/search/parse-query";
 import { homeUrl } from "@/lib/seo/urls";
@@ -17,15 +20,26 @@ const showcaseCities = ["mumbai", "bengaluru", "ahmedabad"];
 
 function heroPresets(listings: Property[]) {
   const buyPrices = listings
-    .filter((listing) => (listing.transaction ?? "buy") === "buy")
-    .map((listing) => listing.priceNum)
+    .filter(listing => (listing.transaction ?? "buy") === "buy")
+    .map(listing => listing.priceNum)
     .sort((a, b) => a - b);
-  const at = (fraction: number) => buyPrices[Math.floor(buyPrices.length * fraction)] ?? 0;
-  const round = (value: number) => Math.max(5_000_000, Math.round(value / 2_500_000) * 2_500_000);
+  const at = (fraction: number) =>
+    buyPrices[Math.floor(buyPrices.length * fraction)] ?? 0;
+  const round = (value: number) =>
+    Math.max(5_000_000, Math.round(value / 2_500_000) * 2_500_000);
   const cheap = round(at(0.25));
   const mid = round(at(0.6));
-  const presets = [{ query: `under ${cheap / 10_000_000} cr`, label: `Under ${formatBudget(cheap)}` }];
-  if (mid > cheap) presets.push({ query: `under ${mid / 10_000_000} cr`, label: `Under ${formatBudget(mid)}` });
+  const presets = [
+    {
+      query: `under ${cheap / 10_000_000} cr`,
+      label: `Under ${formatBudget(cheap)}`,
+    },
+  ];
+  if (mid > cheap)
+    presets.push({
+      query: `under ${mid / 10_000_000} cr`,
+      label: `Under ${formatBudget(mid)}`,
+    });
   presets.push({ query: "ready to move", label: "Ready to move" });
   return presets;
 }
@@ -37,9 +51,18 @@ export default async function Page() {
   const allListings = await getListingsForServer({});
   const showcaseListingsByCity = new Map<string, Property[]>();
   for (const citySlug of showcaseCities) {
-    showcaseListingsByCity.set(citySlug, await getListingsForServer({ citySlug }));
+    showcaseListingsByCity.set(citySlug, []);
   }
-  const cities = getCities().map((city) => ({
+  const showcaseListings = await getListingsForServer({
+    citySlugs: showcaseCities,
+    limit: showcaseCities.length * 100,
+  });
+  for (const listing of showcaseListings) {
+    if (showcaseListingsByCity.has(listing.citySlug)) {
+      showcaseListingsByCity.get(listing.citySlug)!.push(listing);
+    }
+  }
+  const cities = getCities().map(city => ({
     slug: city.slug,
     name: city.name,
     hindi: city.hindi,
@@ -58,16 +81,29 @@ export default async function Page() {
       popularSearches={popularQueries({}, 4)}
       heroPresets={heroPresets(allListings)}
       example={exampleQuery()}
-      marketProjects={showcaseCities.flatMap((citySlug) => (showcaseListingsByCity.get(citySlug) ?? []).slice(0, 1)).map((listing) => ({
-        name: listing.project,
-        developer: listing.developer,
-        locality: `${listing.locality}, ${listing.city}`,
-        href: `/listing/${listing.id}/`,
-        label: listing.badge,
-      }))}
-      marketLocalityLinks={getCities().flatMap((city) => {
+      marketProjects={showcaseCities
+        .flatMap(citySlug =>
+          (showcaseListingsByCity.get(citySlug) ?? []).slice(0, 1)
+        )
+        .map(listing => ({
+          name: listing.project,
+          developer: listing.developer,
+          locality: `${listing.locality}, ${listing.city}`,
+          href: `/listing/${listing.id}/`,
+          label: listing.badge,
+        }))}
+      marketLocalityLinks={getCities().flatMap(city => {
         const locality = getLocalities(city.slug)[0];
-        return locality ? [{ slug: locality.slug, name: locality.name, citySlug: city.slug, cityName: city.name }] : [];
+        return locality
+          ? [
+              {
+                slug: locality.slug,
+                name: locality.name,
+                citySlug: city.slug,
+                cityName: city.name,
+              },
+            ]
+          : [];
       })}
     />
   );

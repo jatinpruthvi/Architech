@@ -1,7 +1,19 @@
 import "server-only";
 import { createRequire } from "node:module";
-import { dbListingToProperty, dbLocalityToLocality } from "@/lib/repositories/mappers";
-import { getListings, getListingById, getListingsByLocality, getListingStaticParams, getLocalities, getLocalityBySlug, getCities, type City } from "@/lib/repositories";
+import {
+  dbListingToProperty,
+  dbLocalityToLocality,
+} from "@/lib/repositories/mappers";
+import {
+  getListings,
+  getListingById,
+  getListingsByLocality,
+  getListingStaticParams,
+  getLocalities,
+  getLocalityBySlug,
+  getCities,
+  type City,
+} from "@/lib/repositories";
 import {
   dbOrganizationToPublicAgent,
   demoDirectoryAgents,
@@ -53,11 +65,17 @@ declare global {
   var __architechPrisma: PrismaClientLike | undefined;
 }
 
-function loadPrismaClientConstructor(): new (options?: unknown) => PrismaClientLike {
+function loadPrismaClientConstructor(): new (
+  options?: unknown
+) => PrismaClientLike {
   const require = createRequire(import.meta.url);
-  const clientModule = require("@prisma/client") as { PrismaClient?: new (options?: unknown) => PrismaClientLike };
+  const clientModule = require("@prisma/client") as {
+    PrismaClient?: new (options?: unknown) => PrismaClientLike;
+  };
   if (!clientModule.PrismaClient) {
-    throw new Error("PrismaClient is not generated. Run `pnpm db:generate` before using ARCHITECH_DATA_SOURCE=prisma.");
+    throw new Error(
+      "PrismaClient is not generated. Run `pnpm db:generate` before using ARCHITECH_DATA_SOURCE=prisma."
+    );
   }
   return clientModule.PrismaClient;
 }
@@ -73,9 +91,13 @@ export function getPrismaClient() {
     };
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
-      throw new Error("DATABASE_URL is required when ARCHITECH_DATA_SOURCE=prisma.");
+      throw new Error(
+        "DATABASE_URL is required when ARCHITECH_DATA_SOURCE=prisma."
+      );
     }
-    globalThis.__architechPrisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+    globalThis.__architechPrisma = new PrismaClient({
+      adapter: new PrismaPg({ connectionString }),
+    });
   }
   return globalThis.__architechPrisma;
 }
@@ -92,6 +114,8 @@ export const listingInclude = {
 export type ListingScope = {
   /** Narrow to one city slug. Unscoped reads are the expensive case. */
   citySlug?: string;
+  /** Narrow to multiple city slugs. */
+  citySlugs?: string[];
   /**
    * Hard ceiling on rows read. A nationwide search with no scope must not be
    * able to pull the whole table into memory; when the ceiling is reached the
@@ -112,7 +136,9 @@ export const MAX_UNSCOPED_LISTING_ROWS = 5000;
  * edge deploys) must not fail: the lookup is best-effort and falls back to
  * the fixture ids, which keeps `dynamicParams` serving unknown ids on demand.
  */
-export async function getListingStaticParamsForServer(): Promise<Array<{ id: string }>> {
+export async function getListingStaticParamsForServer(): Promise<
+  Array<{ id: string }>
+> {
   const fallback = getListingStaticParams();
   if (!isPrismaDataSource()) return fallback;
   try {
@@ -122,13 +148,15 @@ export async function getListingStaticParamsForServer(): Promise<Array<{ id: str
        row), and the read already has the fixture fallback documented above.
        Watchlist SQL-PERF-17 if inventory growth ever turns this into
        build-latency pain. */
-    const rows = (await prisma.listing.findMany({ select: { stableId: true, slug: true } })) as Array<{ stableId: string; slug: string }>;
+    const rows = (await prisma.listing.findMany({
+      select: { stableId: true, slug: true },
+    })) as Array<{ stableId: string; slug: string }>;
     const ids = new Set<string>();
     for (const row of rows) {
       if (row.stableId) ids.add(row.stableId);
       if (row.slug) ids.add(row.slug);
     }
-    return ids.size > 0 ? [...ids].map((id) => ({ id })) : fallback;
+    return ids.size > 0 ? [...ids].map(id => ({ id })) : fallback;
   } catch {
     return fallback;
   }
@@ -142,7 +170,9 @@ export async function getListingStaticParamsForServer(): Promise<Array<{ id: str
  * i.e. one unbounded table read per search, growing with the feed. The city is
  * now pushed into the query and an explicit ceiling caps the nationwide case.
  */
-export async function getListingsForServer(scope: ListingScope & { narrowToIds?: string[] } = {}) {
+export async function getListingsForServer(
+  scope: ListingScope & { narrowToIds?: string[] } = {}
+) {
   /* Every read — city-scoped or not — gets the same ceiling and the same
      stable ordering. Before this, a city-scoped read omitted `take` entirely
      and could pull an entire city table into memory while the nationwide read
@@ -151,8 +181,18 @@ export async function getListingsForServer(scope: ListingScope & { narrowToIds?:
   const ceiling = scope.limit ?? MAX_UNSCOPED_LISTING_ROWS;
   if (!isPrismaDataSource()) {
     const all = getListings();
-    const narrowed = scope.narrowToIds ? all.filter((listing) => scope.narrowToIds!.includes(listing.id)) : all;
-    const cityScoped = scope.citySlug ? narrowed.filter((listing) => listing.citySlug === scope.citySlug) : narrowed;
+    const narrowed = scope.narrowToIds
+      ? all.filter(listing => scope.narrowToIds!.includes(listing.id))
+      : all;
+    let cityScoped = narrowed;
+    if (scope.citySlug)
+      cityScoped = cityScoped.filter(
+        listing => listing.citySlug === scope.citySlug
+      );
+    else if (scope.citySlugs)
+      cityScoped = cityScoped.filter(listing =>
+        scope.citySlugs!.includes(listing.citySlug)
+      );
     return cityScoped.slice(0, ceiling);
   }
   /* An executed SQL narrowing that produced ZERO candidates is authoritative
@@ -164,21 +204,30 @@ export async function getListingsForServer(scope: ListingScope & { narrowToIds?:
     where: {
       lifecycle: "ACTIVE",
       ...(scope.citySlug ? { city: { slug: scope.citySlug } } : {}),
+      ...(scope.citySlugs ? { city: { slug: { in: scope.citySlugs } } } : {}),
       ...(scope.narrowToIds ? { id: { in: scope.narrowToIds } } : {}),
     },
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
     take: ceiling,
   });
-  return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
+  return rows.map(row =>
+    dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0])
+  );
 }
 
 /** Featured-first selection, same contract as the fixture getFeaturedListings:
     featured homes lead, the rest fill to the limit. */
-export async function getFeaturedListingsForServer(limit = 8, citySlug?: string) {
+export async function getFeaturedListingsForServer(
+  limit = 8,
+  citySlug?: string
+) {
   const pool = await getListingsForServer({ citySlug });
-  const featured = pool.filter((property) => property.featured);
-  return [...featured, ...pool.filter((property) => !property.featured)].slice(0, limit);
+  const featured = pool.filter(property => property.featured);
+  return [...featured, ...pool.filter(property => !property.featured)].slice(
+    0,
+    limit
+  );
 }
 
 /* ---- public agent directory ------------------------------------------------ */
@@ -193,7 +242,9 @@ type DbOrganizationRow = {
   _count?: { listings?: number };
 };
 
-function organizationRowToPublicAgent(row: DbOrganizationRow): PublicAgentOrganization {
+function organizationRowToPublicAgent(
+  row: DbOrganizationRow
+): PublicAgentOrganization {
   return dbOrganizationToPublicAgent({
     slug: row.slug,
     name: row.name,
@@ -207,7 +258,9 @@ function organizationRowToPublicAgent(row: DbOrganizationRow): PublicAgentOrgani
 }
 
 /** Public directory: every organization whose verification tier is public. */
-export async function getAgentDirectoryForServer(): Promise<PublicAgentOrganization[]> {
+export async function getAgentDirectoryForServer(): Promise<
+  PublicAgentOrganization[]
+> {
   if (!isPrismaDataSource()) return demoDirectoryAgents();
   const prisma = getPrismaClient();
   /* SQL-PERF-17-006: the public-tier filter moved INTO the query — every
@@ -219,21 +272,34 @@ export async function getAgentDirectoryForServer(): Promise<PublicAgentOrganizat
      directory is a product decision (watchlist). */
   const rows = (await prisma.brokerOrganization.findMany({
     where: { verificationStatus: { in: [...PUBLIC_VERIFICATION_STATUSES] } },
-    include: { city: { select: { slug: true, name: true } }, _count: { select: { listings: true } } },
+    include: {
+      city: { select: { slug: true, name: true } },
+      _count: { select: { listings: true } },
+    },
     orderBy: { name: "asc" },
   })) as DbOrganizationRow[];
-  return rows.filter((row) => isPublicVerification(row.verificationStatus)).map(organizationRowToPublicAgent);
+  return rows
+    .filter(row => isPublicVerification(row.verificationStatus))
+    .map(organizationRowToPublicAgent);
 }
 
-export async function getAgentBySlugForServer(slug?: string): Promise<PublicAgentOrganization | undefined> {
+export async function getAgentBySlugForServer(
+  slug?: string
+): Promise<PublicAgentOrganization | undefined> {
   if (!slug) return undefined;
-  if (!isPrismaDataSource()) return demoDirectoryAgents().find((agent) => agent.slug === slug);
+  if (!isPrismaDataSource())
+    return demoDirectoryAgents().find(agent => agent.slug === slug);
   const prisma = getPrismaClient();
   const row = (await prisma.brokerOrganization.findFirst({
     where: { slug },
-    include: { city: { select: { slug: true, name: true } }, _count: { select: { listings: true } } },
+    include: {
+      city: { select: { slug: true, name: true } },
+      _count: { select: { listings: true } },
+    },
   })) as DbOrganizationRow | null;
-  return row && isPublicVerification(row.verificationStatus) ? organizationRowToPublicAgent(row) : undefined;
+  return row && isPublicVerification(row.verificationStatus)
+    ? organizationRowToPublicAgent(row)
+    : undefined;
 }
 
 /** Listings attributable to one organization. Fixture listings are attributed
@@ -252,7 +318,9 @@ export async function getListingsByAgentForServer(slug: string, limit = 12) {
     orderBy: { meaningfulUpdatedAt: "desc" },
     take: limit,
   });
-  return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
+  return rows.map(row =>
+    dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0])
+  );
 }
 
 export async function getListingByIdForServer(id?: string) {
@@ -263,20 +331,40 @@ export async function getListingByIdForServer(id?: string) {
      resolves; stableId and slug keep existing URLs working. No lifecycle
      filter here — the caller decides visibility via httpDecisionForListing,
      which is what makes the DUPLICATE redirect (and the 410s) reachable. */
-  const row = await prisma.listing.findFirst({ where: { OR: [{ stableId: id }, { slug: id }, { id }] }, include: listingInclude });
-  return row ? dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]) : undefined;
+  const row = await prisma.listing.findFirst({
+    where: { OR: [{ stableId: id }, { slug: id }, { id }] },
+    include: listingInclude,
+  });
+  return row
+    ? dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0])
+    : undefined;
 }
 
-export async function getListingsByLocalityForServer(localitySlug: string, citySlug?: string) {
-  if (!isPrismaDataSource()) return getListingsByLocality(localitySlug, citySlug).slice(0, MAX_UNSCOPED_LISTING_ROWS);
+export async function getListingsByLocalityForServer(
+  localitySlug: string,
+  citySlug?: string
+) {
+  if (!isPrismaDataSource())
+    return getListingsByLocality(localitySlug, citySlug).slice(
+      0,
+      MAX_UNSCOPED_LISTING_ROWS
+    );
   const prisma = getPrismaClient();
   const rows = await prisma.listing.findMany({
-    where: { lifecycle: "ACTIVE", locality: { slug: localitySlug, ...(citySlug ? { city: { slug: citySlug } } : {}) } },
+    where: {
+      lifecycle: "ACTIVE",
+      locality: {
+        slug: localitySlug,
+        ...(citySlug ? { city: { slug: citySlug } } : {}),
+      },
+    },
     include: listingInclude,
     orderBy: { meaningfulUpdatedAt: "desc" },
     take: MAX_UNSCOPED_LISTING_ROWS,
   });
-  return rows.map((row) => dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0]));
+  return rows.map(row =>
+    dbListingToProperty(row as Parameters<typeof dbListingToProperty>[0])
+  );
 }
 
 /** City rows as registry identities. The prisma City carries no editorial
@@ -286,17 +374,25 @@ export async function getListingsByLocalityForServer(localitySlug: string, cityS
     that needs the full `City` enrichment resolves it by slug from the
     reference registry, the same DB-facts/reference-data split the listing
     mappers use. */
-export async function getCitiesForServer(): Promise<Array<Pick<City, "slug" | "name" | "stateSlug">>> {
+export async function getCitiesForServer(): Promise<
+  Array<Pick<City, "slug" | "name" | "stateSlug">>
+> {
   if (!isPrismaDataSource()) return getCities();
   const prisma = getPrismaClient();
   /* sql-perf: intentionally-unbounded — the governed city registry (12 live
      cities today), three narrow columns, consumed by SEO surfaces that need
      the complete set. A cap would silently delete cities from the sitemap. */
-  const rows = await prisma.city.findMany({ select: { slug: true, name: true, state: true }, orderBy: { name: "asc" } });
-  return (rows as Array<Record<string, unknown>>).map((row) => ({
+  const rows = await prisma.city.findMany({
+    select: { slug: true, name: true, state: true },
+    orderBy: { name: "asc" },
+  });
+  return (rows as Array<Record<string, unknown>>).map(row => ({
     slug: String(row.slug),
     name: String(row.name),
-    stateSlug: String(row.state ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+    stateSlug: String(row.state ?? "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, ""),
   }));
 }
 
@@ -308,17 +404,39 @@ export async function getLocalitiesForServer() {
      SQL-PERF-17: the postalCodes include fans out per locality; if
      nationwide coverage makes this read heavy, scope it by page/city instead
      of capping it. */
-  const rows = await prisma.locality.findMany({ include: { city: true, postalCodes: { where: { validTo: null }, orderBy: [{ isPrimary: "desc" }, { postalCode: "asc" }] } }, orderBy: [{ city: { name: "asc" } }, { name: "asc" }] });
-  return rows.map((row) => dbLocalityToLocality(row as Parameters<typeof dbLocalityToLocality>[0]));
+  const rows = await prisma.locality.findMany({
+    include: {
+      city: true,
+      postalCodes: {
+        where: { validTo: null },
+        orderBy: [{ isPrimary: "desc" }, { postalCode: "asc" }],
+      },
+    },
+    orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
+  });
+  return rows.map(row =>
+    dbLocalityToLocality(row as Parameters<typeof dbLocalityToLocality>[0])
+  );
 }
 
-export async function getLocalityBySlugForServer(slug?: string, citySlug?: string) {
+export async function getLocalityBySlugForServer(
+  slug?: string,
+  citySlug?: string
+) {
   if (!isPrismaDataSource()) return getLocalityBySlug(slug, citySlug);
   if (!slug) return undefined;
   const prisma = getPrismaClient();
   const row = await prisma.locality.findFirst({
     where: { slug, ...(citySlug ? { city: { slug: citySlug } } : {}) },
-    include: { city: true, postalCodes: { where: { validTo: null }, orderBy: [{ isPrimary: "desc" }, { postalCode: "asc" }] } },
+    include: {
+      city: true,
+      postalCodes: {
+        where: { validTo: null },
+        orderBy: [{ isPrimary: "desc" }, { postalCode: "asc" }],
+      },
+    },
   });
-  return row ? dbLocalityToLocality(row as Parameters<typeof dbLocalityToLocality>[0]) : undefined;
+  return row
+    ? dbLocalityToLocality(row as Parameters<typeof dbLocalityToLocality>[0])
+    : undefined;
 }
