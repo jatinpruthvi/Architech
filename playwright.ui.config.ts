@@ -21,7 +21,7 @@ export default defineConfig({
     /* Run against the canonical Next runtime, not the static publish snapshot:
        palette journeys need /api/search/suggest, which only the runtime
        serves. Same choice as playwright.a11y.broker.config.ts. */
-    command: "pnpm build:ci && pnpm start:next",
+    command: "BETTER_AUTH_SECRET=devsecret123456789012345678901234567890 BETTER_AUTH_URL=http://127.0.0.1:3000 pnpm build:ci && BETTER_AUTH_SECRET=devsecret123456789012345678901234567890 BETTER_AUTH_URL=http://127.0.0.1:3000 pnpm start:next",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

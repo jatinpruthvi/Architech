@@ -8,7 +8,7 @@ export class HomePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.searchInput = page.getByPlaceholder(/City, locality, project, or developer/i);
+    this.searchInput = page.getByPlaceholder(/Try “3 BHK in Adajan”, a PIN/i);
     this.suggestionBox = page.getByRole("listbox");
     this.popularSearchLinks = page.getByRole("link", { name: /Popular/i });
   }
