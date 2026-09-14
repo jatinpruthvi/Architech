@@ -154,7 +154,12 @@ export default function PropertyCard({ property, arch = false, index, variant = 
  <ActionButton
  type="button"
  onClick={onCompare}
- className={`touch-44 rounded-full ${compared ? "bg-night text-ember" : "bg-paper/95 text-ink hover:bg-night hover:text-cream"}`}
+ /* The compared state sits on `--night`, which is a FIXED dark surface in both
+   themes. It used `text-ember`; once ember became the reference's magenta it
+   dropped to 3:1 against that dark chip — caught by `pnpm audit:contrast`.
+   Cream is theme-independent here and matches the uncompared hover preview, so
+   the active state and its hover affordance read as the same idea. */
+className={`touch-44 rounded-full ${compared ? "bg-night text-cream" : "bg-paper/95 text-ink hover:bg-night hover:text-cream"}`}
  aria-label={compared ? `${t.property.removeCompare} ${property.title}` : `${t.property.compare} ${property.title}`} aria-pressed={compared}>
  <Scale size={15} strokeWidth={1.8} />
  </ActionButton>

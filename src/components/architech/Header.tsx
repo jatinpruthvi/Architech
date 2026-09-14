@@ -32,7 +32,11 @@ export default function Header() {
   const { lang, setLang, t } = useLang();
   const { session, signOut } = useSession();
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
-  const onDark = pathname === "/" && !scrolled;
+  /* The header used to go transparent with cream text over the homepage hero,
+     because that hero was a dark golden-hour band. The hero is now the light
+     aurora canvas, where cream-on-light is invisible — so the bar is glass at
+     every scroll position and in every theme. `scrolled` still earns its keep:
+     it deepens the glass and the shadow once the page starts moving. */
 
   const navItems = [
     { href: "/buy/", label: t.nav.explore },
@@ -60,11 +64,11 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const iconBtn = `grid h-10 w-10 place-items-center rounded-xl border transition-colors ${onDark ? "border-cream/25 text-cream/85 hover:border-ember hover:text-ember" : "border-ink/15 text-ink/70 hover:border-brick hover:text-brick"}`;
+  const iconBtn = "grid h-10 w-10 place-items-center rounded-xl border border-ink/15 text-ink/70 transition-colors hover:border-brick hover:text-brick";
 
   return (
-    <header suppressHydrationWarning className={`fixed inset-x-0 top-0 z-50 px-3 transition-all duration-300 md:px-5 ${onDark ? "bg-transparent text-cream" : "text-ink"}`}>
-      <div className={`container flex h-[68px] items-center justify-between gap-3 transition-all duration-300 ${onDark ? "" : "mt-3 rounded-[1.25rem] border border-ink/15 bg-paper/70 px-4 shadow-xl shadow-ink/5 backdrop-blur-3xl backdrop-saturate-150 md:px-6"}`}>
+    <header suppressHydrationWarning className="fixed inset-x-0 top-0 z-50 px-3 text-ink transition-all duration-300 md:px-5">
+      <div className={`glass container flex h-[68px] items-center justify-between gap-3 rounded-[1.25rem] px-4 transition-all duration-300 md:px-6 ${scrolled ? "mt-2 shadow-lg shadow-ink/10" : "mt-3"}`}>
         <Link href="/" className="group flex items-center gap-3" aria-label="Architech home">
           <span className="arch-mark grid h-12 w-12 place-items-center" aria-hidden="true"><span className="arch-mark-arch" /></span>
           <span className="font-display text-[26px] font-medium tracking-[-0.04em]">Architech<span className="text-brick">.</span></span>
@@ -73,27 +77,27 @@ export default function Header() {
           {navItems.map((item) => {
             const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
             return (
-              <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`link-rail stamp !text-[12px] font-medium transition-colors ${active ? (onDark ? "text-ember" : "text-brick") : (onDark ? "text-cream/85" : "text-ink/75")} hover:opacity-100`}>{item.label}</Link>
+              <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`link-rail stamp font-medium transition-colors ${active ? "text-brick" : "text-ink/75"} hover:opacity-100`}>{item.label}</Link>
             );
           })}
         </nav>
         <div className="flex items-center gap-2.5 md:gap-3">
           <button onClick={() => setLang(lang === "en" ? "hi" : "en")} className={iconBtn} aria-label={lang === "en" ? "हिन्दी में देखें" : "Switch to English"} title={lang === "en" ? "हिन्दी" : "English"}>
-            <span className="flex items-center gap-1 stamp !text-[10px] font-bold"><Languages size={13} aria-hidden="true" />{lang === "en" ? "हिं" : "EN"}</span>
+            <span className="flex items-center gap-1 stamp-sm font-bold"><Languages size={13} aria-hidden="true" />{lang === "en" ? "हिं" : "EN"}</span>
           </button>
           <button suppressHydrationWarning onClick={toggleTheme} className={iconBtn} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-pressed={theme === "dark"}>
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
-          <Link href="/saved/" className={`relative hidden items-center gap-2 stamp !text-[12px] font-medium md:inline-flex ${onDark ? "text-cream/85" : "text-ink/75"} link-rail`}>
+          <Link href="/saved/" className="link-rail relative hidden items-center gap-2 stamp font-medium text-ink/75 md:inline-flex">
             <Bookmark size={14} strokeWidth={1.8} /> {t.nav.saved}
             {saved.length > 0 && <span className="clay-fill grid h-4.5 min-w-[18px] place-items-center rounded-full bg-brick px-1 text-[10px] font-bold text-cream">{saved.length}</span>}
           </Link>
-          <InstallAppButton onDark={onDark} />
-          <AccountMenu onDark={onDark} />
-          <CommandPaletteLauncher onDark={onDark} />
+          <InstallAppButton />
+          <AccountMenu />
+          <CommandPaletteLauncher />
           <RequirementCapture compact />
-          <Link href="/search/" className="clay-fill btn-sweep btn-primary motion-press hidden items-center gap-2 border border-white/15 bg-brick px-5 py-3 stamp !text-[12px] font-semibold text-cream md:inline-flex"><Search size={14} /> {t.nav.start}</Link>
-          <button className={`grid h-11 w-11 place-items-center lg:hidden ${onDark ? "text-cream" : "text-ink"}`} onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
+          <Link href="/search/" className="clay-fill btn-sweep btn-primary motion-press hidden items-center gap-2 border border-white/15 bg-brick px-5 py-3 stamp font-semibold text-cream md:inline-flex"><Search size={14} /> {t.nav.start}</Link>
+          <button className="grid h-11 w-11 place-items-center text-ink lg:hidden" onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
             {open ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>

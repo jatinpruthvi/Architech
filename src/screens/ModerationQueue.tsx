@@ -76,7 +76,7 @@ export default function ModerationQueue() {
       <section className="container py-14 md:py-20">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-3xl font-medium tracking-[-0.02em]">In review <span className="text-brick">{drafts.length}</span></h2>
-          <button onClick={() => void load()} className="stamp !text-[11px] font-semibold text-brick underline underline-offset-4">Refresh</button>
+          <button onClick={() => void load()} className="stamp-sm font-semibold text-brick underline underline-offset-4">Refresh</button>
         </div>
 
         {loading && <div className="mt-8 space-y-4" role="status" aria-label="Loading moderation queue"><LoadingSkeleton className="h-36 w-full" /><LoadingSkeleton className="h-36 w-full" /><span className="sr-only">Loading the queue…</span></div>}
@@ -101,10 +101,10 @@ export default function ModerationQueue() {
               </div>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-ink/70">{draft.description}</p>
-              <p className="mt-3 stamp flex items-center gap-1.5 !text-[9px] text-ink/55"><ShieldQuestion size={11} /> RERA number {draft.mediaRightsConfirmed ? "" : "not yet "}· media rights {draft.mediaRightsConfirmed ? "confirmed" : "unconfirmed"}</p>
+              <p className="mt-3 stamp-sm flex items-center gap-1.5 text-ink/55"><ShieldQuestion size={11} /> RERA number {draft.mediaRightsConfirmed ? "" : "not yet "}· media rights {draft.mediaRightsConfirmed ? "confirmed" : "unconfirmed"}</p>
 
               <div className="mt-5 border-t border-ink/12 pt-5">
-                <label className="stamp block !text-[10px] text-ink/55" htmlFor={`reason-${draft.id}`}>Reason (required unless approving)</label>
+                <label className="stamp-sm block text-ink/55" htmlFor={`reason-${draft.id}`}>Reason (required unless approving)</label>
                 <textarea
                   id={`reason-${draft.id}`}
                   value={reasons[draft.id] ?? ""}
@@ -115,7 +115,7 @@ export default function ModerationQueue() {
                 />
                 <div className="mt-4 flex flex-wrap gap-3">
                   {DECISIONS.map(({ value, label }) => (
-                    <button key={value} onClick={() => void decide(draft.id, value)} className="btn-sweep touch-44 px-5 py-2.5 stamp !text-[11px] font-semibold text-cream">
+                    <button key={value} onClick={() => void decide(draft.id, value)} className="btn-sweep touch-44 px-5 py-2.5 stamp-sm font-semibold text-cream">
                       <span className="flex items-center gap-2">
                         {value === "approve" ? <CheckCircle2 size={13} /> : value === "reject" ? <XCircle size={13} /> : null}
                         {label}

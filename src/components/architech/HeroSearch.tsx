@@ -126,7 +126,7 @@ export default function HeroSearch({
               type="button"
               onClick={v.on}
               aria-pressed={v.active}
-              className={`relative rounded-full px-4 py-2.5 stamp !text-[13px] font-semibold transition-all duration-300 sm:px-5 ${v.active ? "seg-active text-cream dark:text-[#2a1305]" : "text-cream/70 hover:text-cream"}`}
+              className={`relative rounded-full px-4 py-2.5 stamp font-semibold transition-all duration-300 sm:px-5 ${v.active ? "seg-active" : "text-ink/60 hover:text-ink"}`}
             >
               <span className="relative z-10">{v.label}</span>
             </button>
@@ -136,17 +136,17 @@ export default function HeroSearch({
 
       <form
         onSubmit={(e) => { e.preventDefault(); go(query); }}
-        className="search-composer field-shell [--field-focus:var(--ember)] search-glass mt-4 flex items-stretch rounded-2xl transition-all duration-300 shadow-2xl hover:shadow-[0_20px_50px_rgba(180,77,20,0.15)]"
+        className="search-composer field-shell [--field-focus:var(--brick)] search-glass mt-4 flex items-stretch rounded-2xl transition-all duration-300"
         role="search" aria-label={`Search ${intentLabel} across India`}>
-        <span className="grid w-14 shrink-0 place-items-center border-r border-cream/20 text-cream/80 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="hero-read block stamp !text-[12px] text-cream/95">{searchContext}</span><span className="hero-read mt-1 block font-display text-sm text-cream/95">All India</span></span><Search size={19} className="sm:hidden" /></span>
+        <span className="grid w-14 shrink-0 place-items-center border-r border-ink/12 text-ink/60 sm:w-[150px] sm:justify-items-start sm:px-4"><span className="hidden sm:block"><span className="hero-read block stamp text-ink/60">{searchContext}</span><span className="hero-read mt-1 block font-display text-sm text-ink">All India</span></span><Search size={19} className="sm:hidden" /></span>
         <input
           value={query} onChange={(e) => { setQuery(e.target.value); }}
           placeholder={`Try “${example}”, a PIN code, or any city…`}
-          className="hero-read w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-cream placeholder:text-cream/80 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
+          className="hero-read w-full bg-transparent py-4 pl-4 pr-2 text-[15px] text-ink placeholder:text-ink/45 focus:outline-none focus-visible:bg-transparent focus-visible:ring-0"
           aria-label={`Search ${intentLabel} by locality, project, or BHK`}
           {...sug.inputProps}
         />
-        <button type="submit" className="clay-fill shimmer-btn motion-press btn-primary mx-1.5 my-1.5 inline-flex items-center justify-center border border-white/15 bg-brick px-6 text-center stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
+        <button type="submit" className="clay-fill shimmer-btn motion-press btn-primary mx-1.5 my-1.5 inline-flex items-center justify-center rounded-full bg-brick px-6 text-center stamp font-semibold text-cream transition-colors hover:bg-brick-deep">{t.hero.search}</button>
       </form>
 
       {sug.open && (
@@ -154,7 +154,7 @@ export default function HeroSearch({
         <div
           ref={sug.listRef}
           id={sug.listId}
-          className="mt-2 rounded-2xl border border-ink/15 bg-paper text-ink shadow-lg"
+          className="glass mt-2 text-ink"
           role="listbox"
           aria-label="Search suggestions"
         >
@@ -184,17 +184,17 @@ export default function HeroSearch({
       )}
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <span className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px]">{t.hero.beginWith}</span>
+        <span className="glass-chip rounded-full px-3 py-1.5 stamp">{t.hero.beginWith}</span>
         {cities.slice(0, 4).map((city) => (
           <Link
             key={city.slug}
             href={`/search?q=${encodeURIComponent(city.name)}&${buildParams.toString()}`}
-            className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px] hover:-translate-y-0.5"
+            className="glass-chip rounded-full px-3 py-1.5 stamp hover:-translate-y-0.5"
           >{city.name}</Link>
         ))}
-        <span className="mx-1 h-4 w-px bg-cream/30" aria-hidden="true" />
+        <span className="mx-1 h-4 w-px bg-ink/15" aria-hidden="true" />
         {heroPresets.map((preset) => (
-          <button key={preset.query} type="button" onClick={() => { setQuery(preset.query); go(preset.query); }} className="glass-chip rounded-full px-3 py-1.5 stamp !text-[12px] hover:-translate-y-0.5">{preset.label}</button>
+          <button key={preset.query} type="button" onClick={() => { setQuery(preset.query); go(preset.query); }} className="glass-chip rounded-full px-3 py-1.5 stamp hover:-translate-y-0.5">{preset.label}</button>
         ))}
       </div>
     </div>

@@ -12,7 +12,7 @@ export default function GuideArticle({ guide }: { guide: Guide }) {
     <div className="bg-paper pt-[78px] text-ink">
       <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
-          <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
+          <nav className="flex flex-wrap items-center gap-2 stamp-sm text-ink/60" aria-label="Breadcrumb">
             <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
             <Link href="/guide/" className="link-rail hover:text-brick">Field notes</Link><span>/</span>
             <span className="text-ink/80">{guide.title}</span>
@@ -20,7 +20,7 @@ export default function GuideArticle({ guide }: { guide: Guide }) {
           <p className="kicker mt-12 text-brick">{guide.tag} · {guide.time}</p>
           <h1 className="display mt-6 max-w-[880px] text-[clamp(40px,6vw,84px)]">{guide.title}</h1>
           <p className="mt-7 max-w-[680px] text-base leading-8 text-ink/65 md:text-lg">{guide.summary}</p>
-          <div className="mt-8 flex flex-wrap gap-3 stamp !text-[10px] text-ink/60">
+          <div className="mt-8 flex flex-wrap gap-3 stamp-sm text-ink/60">
             <span className="inline-flex items-center gap-1.5"><UserRoundCheck size={13} /> {guide.author}</span>
             <span className="inline-flex items-center gap-1.5"><FileCheck2 size={13} /> {guide.reviewer}</span>
             <span className="inline-flex items-center gap-1.5"><CalendarDays size={13} /> Updated {guide.updatedAt}</span>
@@ -61,7 +61,7 @@ export default function GuideArticle({ guide }: { guide: Guide }) {
               </div>
             ))}
           </div>
-          <Link href="/search" className="clay-fill btn-sweep motion-press mt-7 inline-flex items-center gap-2 bg-brick px-5 py-4 stamp !text-[12px] font-semibold text-cream">Use this in search <ArrowUpRight size={14} /></Link>
+          <Link href="/search" className="clay-fill btn-sweep motion-press mt-7 inline-flex items-center gap-2 bg-brick px-5 py-4 stamp font-semibold text-cream">Use this in search <ArrowUpRight size={14} /></Link>
         </aside>
       </section>
     </div>

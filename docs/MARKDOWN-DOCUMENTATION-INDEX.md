@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated from the repository Markdown tree (211 files, digest 4669b1b0d06f).
+Generated from the repository Markdown tree (213 files, digest 929adc20320c).
 
 ## Recommended Reading Order
 
@@ -137,10 +137,12 @@ Generated from the repository Markdown tree (211 files, digest 4669b1b0d06f).
 - [Design Tooling Manifest](../docs/tooling/design-tooling-manifest.md)
 - [Phase 1 Trust Score](../docs/trust/phase-1-trust-score.md)
 - [Attached Ui Review Findings](../docs/ui/attached-ui-review-findings.md)
+- [Aurora Glass Theme](../docs/ui/aurora-glass-theme.md)
 - [Chisfis Theme](../docs/ui/chisfis-theme.md)
 - [Decision Dossier](../docs/ui/decision-dossier.md)
 - [Hero Direction Evaluation](../docs/ui/hero-direction-evaluation.md)
 - [NIGHT SURVEY THEME](../docs/ui/NIGHT-SURVEY-THEME.md)
+- [PREMIUM UI UPGRADE PLAN](../docs/ui/PREMIUM-UI-UPGRADE-PLAN.md)
 - [Reference Screenshot Findings](../docs/ui/reference-screenshot-findings.md)
 - [AGENTS](../ops/config/AGENTS.md)
 - [README](../ops/config/data/location/README.md)

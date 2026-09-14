@@ -107,8 +107,8 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
             <input name="whatsappOptIn" type="checkbox" className="mt-1 accent-[var(--brick)]" />
             <span>{t.listing.whatsappOptInText}</span>
           </label>
-          <button type="submit" disabled={submitting} className="night-fill btn-sweep btn-solid touch-44 w-full bg-night py-4 stamp !text-[12px] font-semibold text-cream disabled:cursor-wait">{submitting ? t.listing.sending : t.listing.send}</button>
-          <p className="stamp text-center !text-[9px] text-ink/60">{t.listing.noRealMessage}</p>
+          <button type="submit" disabled={submitting} className="night-fill btn-sweep btn-solid touch-44 w-full bg-night py-4 stamp font-semibold text-cream disabled:cursor-wait">{submitting ? t.listing.sending : t.listing.send}</button>
+          <p className="stamp-sm text-center text-ink/60">{t.listing.noRealMessage}</p>
         </form>
       </DialogContent>
     </Dialog>
@@ -178,7 +178,7 @@ export default function ListingPage({
     <div className="bg-paper pt-[78px] text-ink">
       <section className="container py-10 md:py-14">
         {/* Breadcrumb */}
-        <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
+        <nav className="flex flex-wrap items-center gap-2 stamp-sm text-ink/60" aria-label="Breadcrumb">
           <Link href="/" className="link-rail hover:text-brick">{t.listing.breadcrumbHome}</Link><span>/</span>
           <Link href={`/buy/${property.citySlug}/`} className="link-rail hover:text-brick">{property.city}</Link><span>/</span>
           <Link href={`/buy/${property.citySlug}/${property.localitySlug}/`} className="link-rail hover:text-brick">{property.locality}</Link><span>/</span>
@@ -192,7 +192,7 @@ export default function ListingPage({
             reader into thinking it was in charge. */}
         <div id="dossier-top" className="mt-8 grid gap-6 border-y border-ink/15 bg-sand/70 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-9">
           <div>
-            <p className="flex flex-wrap items-center gap-2 stamp !text-[11px] font-semibold text-trust">
+            <p className="flex flex-wrap items-center gap-2 stamp-sm font-semibold text-trust">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button className="flex cursor-help items-center gap-1.5 underline decoration-dotted underline-offset-4" aria-label={t.listing.reraDetails}>
@@ -200,7 +200,7 @@ export default function ListingPage({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[270px] border border-ink/15 bg-night text-cream">
-                  <p className="stamp !text-[10px] text-ember">{t.listing.reraTooltipKicker}</p>
+                  <p className="stamp-sm text-ember">{t.listing.reraTooltipKicker}</p>
                   <p className="mt-1.5 text-xs leading-5">{t.listing.reraTooltipCopy}</p>
                 </TooltipContent>
               </Tooltip>
@@ -228,9 +228,9 @@ export default function ListingPage({
             </p>
           </div>
           <div className="border-l-4 border-brick pl-6 md:min-w-[210px]">
-            <p className="stamp !text-[10px] text-ink/60">{t.listing.guidePrice}</p>
+            <p className="stamp-sm text-ink/60">{t.listing.guidePrice}</p>
             <p className="mt-2 font-display text-[40px] font-semibold leading-none tracking-[-0.03em]">{property.price}</p>
-            <p className="stamp mt-2 !text-[10px] text-ink/60">{property.pricePerSqft}</p>
+            <p className="stamp-sm mt-2 text-ink/60">{property.pricePerSqft}</p>
           </div>
         </div>
 
@@ -244,7 +244,7 @@ export default function ListingPage({
             <h2 id="verification-summary-heading" className="mt-4 font-display text-2xl font-medium">What was checked</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/65">The page separates listing freshness from verification. Review the evidence trail below for the fields and dates recorded by the source packet; unsupported claims are not presented as verified.</p>
           </div>
-          <a href="#highlights" className="link-rail stamp !text-[11px] font-semibold text-brick">Read the evidence trail <ArrowUpRight size={14} className="ml-1 inline" /></a>
+          <a href="#highlights" className="link-rail stamp-sm font-semibold text-brick">Read the evidence trail <ArrowUpRight size={14} className="ml-1 inline" /></a>
         </section>
       </section>
 
@@ -279,12 +279,12 @@ export default function ListingPage({
                   {[["12 Aug 2026", "Listed by verified partner"], ["19 Aug 2026", "RERA registration re-checked"], ["20 Aug 2026", "Photos & price reviewed"]].map(([date, event]) => (
                     <div key={date} className="relative pb-6 last:pb-0">
                       <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-cream bg-brick" />
-                      <p className="stamp !text-[10px] text-ink/60">{date}</p>
+                      <p className="stamp-sm text-ink/60">{date}</p>
                       <p className="mt-1 text-sm font-medium text-ink/85">{event}</p>
                     </div>
                   ))}
                 </div>
-                <p className="mt-6 flex items-center gap-2 stamp !text-[10px] text-trust"><Clock3 size={13} /> {property.status}</p>
+                <p className="mt-6 flex items-center gap-2 stamp-sm text-trust"><Clock3 size={13} /> {property.status}</p>
               </div>
             </div>
 
@@ -292,7 +292,7 @@ export default function ListingPage({
             <div className="mt-12 grid grid-cols-2 divide-x divide-ink/12 border-y border-ink/12 sm:grid-cols-4">
               {[[t.listing.facts.type, property.meta.split("·")[0].trim()], [t.listing.facts.area, property.area], [t.listing.facts.status, property.meta.split("·")[1]?.trim() ?? "Available"], [t.listing.facts.rate, property.pricePerSqft]].map(([k, v]) => (
                 <div key={k} className="px-5 py-6 first:pl-0">
-                  <p className="stamp !text-[10px] text-ink/60">{k}</p>
+                  <p className="stamp-sm text-ink/60">{k}</p>
                   <p className="mt-2 font-display text-lg font-medium tracking-[-0.01em]">{v}</p>
                 </div>
               ))}
@@ -300,11 +300,11 @@ export default function ListingPage({
 
             {/* Property features — explicit facts, no invented reviews */}
             <section id="features" className="mt-12 border-y border-ink/12 py-10" aria-labelledby="property-features-heading">
-              <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="kicker text-brick !text-[10px]">Property features</p><h2 id="property-features-heading" className="mt-3 font-display text-3xl font-medium tracking-[-0.02em]">The useful facts, <span className="text-brick">together.</span></h2></div><span className="stamp text-ink/45">FACTS / {property.details.amenities?.length ?? 0} AMENITIES</span></div>
+              <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="kicker text-brick">Property features</p><h2 id="property-features-heading" className="mt-3 font-display text-3xl font-medium tracking-[-0.02em]">The useful facts, <span className="text-brick">together.</span></h2></div><span className="stamp-sm text-ink/45">FACTS / {property.details.amenities?.length ?? 0} AMENITIES</span></div>
               <div className="mt-7 grid grid-cols-2 gap-px border border-ink/10 bg-ink/10 sm:grid-cols-3">
-                {propertyFactRows(property.details).map(([label, value]) => <div key={label} className="bg-paper p-4 md:p-5"><p className="stamp !text-[9px] text-ink/50">{label}</p><p className="mt-2 font-display text-lg font-medium tracking-[-0.01em]">{value}</p></div>)}
+                {propertyFactRows(property.details).map(([label, value]) => <div key={label} className="bg-paper p-4 md:p-5"><p className="stamp-sm text-ink/50">{label}</p><p className="mt-2 font-display text-lg font-medium tracking-[-0.01em]">{value}</p></div>)}
               </div>
-              <div className="mt-6"><p className="stamp !text-[9px] text-ink/50">Amenities selected in the source packet</p><div className="mt-3 flex flex-wrap gap-2">{(property.details.amenities ?? []).map((amenity) => <span key={amenity} className="border border-ink/12 bg-sand/45 px-3 py-2 text-xs text-ink/70">{amenity}</span>)}</div></div>
+              <div className="mt-6"><p className="stamp-sm text-ink/50">Amenities selected in the source packet</p><div className="mt-3 flex flex-wrap gap-2">{(property.details.amenities ?? []).map((amenity) => <span key={amenity} className="border border-ink/12 bg-sand/45 px-3 py-2 text-xs text-ink/70">{amenity}</span>)}</div></div>
             </section>
 
             {/* Trust dossier */}
@@ -320,12 +320,12 @@ export default function ListingPage({
                   {priceHistory.events.map((event) => (
                     <div key={event.id} className="relative pb-6 last:pb-0">
                       <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-cream ${event.kind === "price_change" ? "bg-ember" : "bg-brick"}`} />
-                      <p className="stamp !text-[10px] text-ink/60">{event.date}</p>
+                      <p className="stamp-sm text-ink/60">{event.date}</p>
                       <p className="mt-1 text-sm font-medium text-ink/85">₹{event.priceInr.toLocaleString("en-IN")} · {event.note ?? event.kind.replace("_", " ")}</p>
                     </div>
                   ))}
                 </div>
-                {priceHistory.hasDecline && <p className="stamp mt-3 !text-[10px] text-ember">Price adjusted since listing.</p>}
+                {priceHistory.hasDecline && <p className="stamp-sm mt-3 text-ember">Price adjusted since listing.</p>}
 
                 <p className="kicker mt-8 text-brick !text-[10px]">{t.search.demoFixtures}</p>
                 <div className="mt-3 space-y-3">
@@ -333,7 +333,7 @@ export default function ListingPage({
                     <Link key={comparable.id} href={`/listing/${comparable.id}`} className="group flex items-center justify-between border border-ink/12 bg-card p-4 hover:border-brick">
                       <div>
                         <p className="font-display text-base font-medium leading-tight group-hover:text-brick">{comparable.title}</p>
-                        <p className="stamp mt-1 !text-[10px] text-ink/55">{comparable.locality} · {comparable.pricePerSqft}</p>
+                        <p className="stamp-sm mt-1 text-ink/55">{comparable.locality} · {comparable.pricePerSqft}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-display text-base">₹{(comparable.priceNum / 10000000).toFixed(2)} Cr</p>
@@ -341,7 +341,7 @@ export default function ListingPage({
                             price to compare against — render an em dash rather than
                             "null% vs this home". Same convention as the price-index
                             and locality-intel surfaces. */}
-                        <p className={`stamp !text-[10px] ${comparable.deltaPct === null ? "" : comparable.deltaPct >= 0 ? "" : "text-trust"}`}>
+                        <p className={`stamp-sm ${comparable.deltaPct === null ? "" : comparable.deltaPct >= 0 ? "" : "text-trust"}`}>
                           {comparable.deltaPct === null ? "—" : `${comparable.deltaPct >= 0 ? "+" : ""}${comparable.deltaPct}% vs this home`}
                         </p>
                       </div>
@@ -353,7 +353,7 @@ export default function ListingPage({
               <section id="partner" aria-labelledby="agent-heading" className="h-fit border border-ink/15 bg-sand/50 p-6">
                 <p className="kicker text-brick !text-[10px]">Your partner</p>
                 <h3 id="agent-heading" className="mt-3 font-display text-2xl font-medium tracking-[-0.02em]">{agent.name}.</h3>
-                <p className="stamp mt-2 !text-[10px] text-trust">{agent.badge}</p>
+                <p className="stamp-sm mt-2 text-trust">{agent.badge}</p>
                 {agent.rating > 0 ? (
                   <p className="mt-4 flex items-center gap-2 text-sm">
                     <span className="text-ember" aria-hidden="true">{"★".repeat(Math.round(agent.rating))}</span>
@@ -367,11 +367,11 @@ export default function ListingPage({
                   {agent.reviews.map((review) => (
                     <div key={review.id} className="text-sm">
                       <p className="text-ink/80">“{review.comment}”</p>
-                      <p className="stamp mt-1 !text-[10px] text-ink/55">{review.buyerName} · {review.role} · sample</p>
+                      <p className="stamp-sm mt-1 text-ink/55">{review.buyerName} · {review.role} · sample</p>
                     </div>
                   ))}
                 </div>
-                <Link href="/guide/" className="mt-6 inline-flex items-center gap-2 stamp !text-[11px] font-semibold text-brick">How we verify partners <ArrowUpRight size={13} /></Link>
+                <Link href="/guide/" className="mt-6 inline-flex items-center gap-2 stamp-sm font-semibold text-brick">How we verify partners <ArrowUpRight size={13} /></Link>
               </section>
             </div>
 
@@ -387,10 +387,10 @@ export default function ListingPage({
                     className="map-frame absolute inset-0 h-full w-full border-0"
                     loading="lazy"
                   />
-                  <p className="stamp absolute right-3 top-3 bg-paper/90 px-2 py-1 !text-[9px] text-ink/60">© OpenStreetMap contributors</p>
+                  <p className="stamp-sm absolute right-3 top-3 bg-paper/90 px-2 py-1 text-ink/60">© OpenStreetMap contributors</p>
                 </> : <p className="grid h-full place-items-center p-6 text-center text-sm ink-3">A reviewed locality map is not available for this listing yet.</p>}
               </div>
-              <p className="stamp mt-3 !text-[9px] text-ink/60">{t.listing.exactAddressPrivate}</p>
+              <p className="stamp-sm mt-3 text-ink/60">{t.listing.exactAddressPrivate}</p>
             </div>
           </div>
 
@@ -407,18 +407,18 @@ export default function ListingPage({
                 <span className="grid h-12 w-12 place-items-center rounded-t-full bg-night font-display text-xl text-cream">{(property.developer?.trim()[0] ?? "A").toUpperCase()}</span>
                 <div>
                   <p className="font-semibold">{property.developer || "Architech Curated Homes"}</p>
-                  <p className="stamp mt-0.5 flex items-center gap-1.5 !text-[10px] text-trust"><ShieldCheck size={11} /> {t.listing.verifiedPartner}</p>
+                  <p className="stamp-sm mt-0.5 flex items-center gap-1.5 text-trust"><ShieldCheck size={11} /> {t.listing.verifiedPartner}</p>
                 </div>
               </div>
             </div>
             <button
               onClick={() => setLeadOpen(true)}
-              className="clay-fill btn-sweep motion-press mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-brick px-6 py-5 stamp !text-[12px] font-semibold text-cream transition-colors hover:bg-brick-deep"
+              className="clay-fill btn-sweep motion-press mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-brick px-6 py-5 stamp font-semibold text-cream transition-colors hover:bg-brick-deep"
             >
               <MessageCircle size={16} /> {t.listing.ask}
             </button>
             <LeadDialog propertyId={property.id} propertyTitle={property.title} open={leadOpen} onOpenChange={setLeadOpen} />
-            <p className="stamp mt-4 text-center !text-[10px] text-ink/60">{t.listing.usuallyReplies}</p>
+            <p className="stamp-sm mt-4 text-center text-ink/60">{t.listing.usuallyReplies}</p>
           </aside>
         </div>
 
@@ -429,7 +429,7 @@ export default function ListingPage({
         <div id="nearby" className="mt-20 border-t border-ink/12 pt-14">
           <div className="flex items-end justify-between">
             <h2 className="display text-[clamp(26px,3vw,40px)]">{t.listing.nearbyTitle1} <em className="text-brick">{t.listing.nearbyTitleEm}</em>.</h2>
-            <Link href="/search" className="group inline-flex items-center gap-2 stamp !text-[12px] font-semibold text-brick">{t.listing.allHomes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
+            <Link href="/search" className="group inline-flex items-center gap-2 stamp font-semibold text-brick">{t.listing.allHomes} <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></Link>
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             {/* The SHARED card, not a local copy of it. This was a hand-rolled

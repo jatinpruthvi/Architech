@@ -168,7 +168,7 @@ export default function MapListSync({ listings, selectedId, onSelect, onSearchAr
             {points.map((point) => (
               <button key={point.id} onClick={() => onSelect(point.id)} className={`w-full border px-3 py-3 text-left text-sm ${point.id === selectedId ? "border-brick bg-paper text-brick" : "border-ink/15 bg-paper/80 text-ink/75"}`}>
                 <span className="font-semibold">{point.title}</span>
-                <span className="mt-1 block stamp !text-[10px] text-ink/60">{point.price} · {point.locality}</span>
+                <span className="mt-1 block stamp-sm text-ink/60">{point.price} · {point.locality}</span>
               </button>
             ))}
           </div>
@@ -188,16 +188,16 @@ export default function MapListSync({ listings, selectedId, onSelect, onSearchAr
             toast(copy.searchingArea, { description: copy.searchingAreaDescription });
           }
         }}
-        className="night-fill touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp !text-[11px] font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
+        className="night-fill touch-44 absolute left-1/2 top-4 z-10 inline-flex -translate-x-1/2 items-center gap-2 bg-night px-5 stamp-sm font-semibold text-cream shadow-lg transition-transform hover:-translate-y-0.5">
         <Crosshair size={14} className="text-ember" /> {copy.searchArea}
       </button>
 
       <div className="pointer-events-none absolute inset-x-5 bottom-5 z-10 border border-ink/12 bg-paper/95 p-5 backdrop-blur">
-        <p className="stamp !text-[10px] font-semibold text-brick">{copy.liveCartography}</p>
+        <p className="stamp-sm font-semibold text-brick">{copy.liveCartography}</p>
         <p className="mt-2 text-sm leading-6 text-ink/65">{copy.mapCopy}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {clusters.map((cluster) => (
-            <span key={`${cluster.citySlug}:${cluster.localitySlug}`} className="border border-ink/15 bg-sand/70 px-2 py-1 stamp !text-[9px] text-ink/65">
+            <span key={`${cluster.citySlug}:${cluster.localitySlug}`} className="border border-ink/15 bg-sand/70 px-2 py-1 stamp-sm text-ink/65">
               {cluster.locality} · {cluster.count}
             </span>
           ))}

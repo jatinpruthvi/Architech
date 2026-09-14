@@ -67,7 +67,7 @@ export const metadata: Metadata = {
    indicator. Zoom stays enabled — pinching is an accessibility affordance,
    not a bug to suppress. The appleWebApp half of the iOS install story lives
    in `metadata` above: Next 16 types it on Metadata, not on Viewport. */
-export const viewport: Viewport = { themeColor: "#180b05", viewportFit: "cover" };
+export const viewport: Viewport = { themeColor: "#f7f4fc", viewportFit: "cover" };
 
 const websiteJsonLd = {
   "@context": "https://schema.org",

@@ -93,7 +93,7 @@ export default async function CityHub({ params }: { params: Promise<{ city: stri
       <div className="bg-paper pt-[78px] text-ink">
       <section className="border-b border-ink/12 bg-sand/70 py-14 md:py-20">
         <div className="container">
-          <nav className="flex flex-wrap items-center gap-2 stamp !text-[11px] text-ink/60" aria-label="Breadcrumb">
+          <nav className="flex flex-wrap items-center gap-2 stamp-sm text-ink/60" aria-label="Breadcrumb">
             <Link href="/" className="link-rail hover:text-brick">Home</Link><span>/</span>
             <Link href="/buy/" className="link-rail hover:text-brick">{BUY.hubLabel}</Link><span>/</span>
             <span className="text-ink/80">Buy in {city.name}</span>
@@ -112,17 +112,17 @@ export default async function CityHub({ params }: { params: Promise<{ city: stri
               <span className="index-num text-[28px] text-ink/25 transition-colors group-hover:text-brick md:text-[44px]">{String(i + 1).padStart(2, "0")}</span>
               <div>
                 <p className="font-display text-[26px] font-medium tracking-[-0.02em] transition-transform duration-300 group-hover:translate-x-2 md:text-[34px]">{place.name} <span className="ml-2 align-middle font-sans text-sm text-ink/55">{place.hindi}</span></p>
-                <p className="stamp mt-1 !text-[10px] text-ink/60">{place.coords}</p>
+                <p className="stamp-sm mt-1 text-ink/60">{place.coords}</p>
               </div>
               <p className="hidden text-sm text-ink/55 md:block">{place.note}</p>
               <div className="flex items-center gap-4">
-                <span className="stamp !text-[11px] text-ink/60">{place.homes} homes</span>
+                <span className="stamp-sm text-ink/60">{place.homes} homes</span>
                 <span className="clay-fill group-hover:border-brick group-hover:bg-brick grid h-10 w-10 place-items-center border border-ink/20 text-ink transition-all duration-300"><ArrowUpRight size={16} /></span>
               </div>
             </Link>
           ))}
         </div>
-        <p className="stamp mt-6 !text-[10px] text-ink/60">Coordinates © OpenStreetMap contributors · home counts are illustrative for this concept preview</p>
+        <p className="stamp-sm mt-6 text-ink/60">Coordinates © OpenStreetMap contributors · home counts are illustrative for this concept preview</p>
         <LocalityTrust summary={trust} />
         <p className="mt-10 text-sm text-ink/60">
           Looking elsewhere? <Link href="/buy/" className="link-rail text-brick">Browse every city Architech covers</Link>.

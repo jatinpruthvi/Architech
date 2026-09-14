@@ -40,9 +40,9 @@ export default function Guide() {
                 <Link href={n.path} className="group block border border-ink/12 bg-card motion-lift hover:editorial-shadow">
                   <div className="img-hover aspect-[1.35] bg-sand"><Pic name={n.image} alt="" className="h-full w-full object-cover" sizes="(max-width: 640px) 100vw, 33vw" /></div>
                   <div className="p-6">
-                    <p className="stamp !text-[10px] text-brick">{n.tag} · {n.time}</p>
+                    <p className="stamp-sm text-brick">{n.tag} · {n.time}</p>
                     <h3 className="mt-3 font-display text-[22px] font-medium leading-snug tracking-[-0.02em] group-hover:text-brick">{n.title}</h3>
-                    <p className="mt-4 inline-flex items-center gap-1.5 stamp !text-[11px] font-semibold text-ink/60">Read note <ArrowUpRight size={13} /></p>
+                    <p className="mt-4 inline-flex items-center gap-1.5 stamp-sm font-semibold text-ink/60">Read note <ArrowUpRight size={13} /></p>
                   </div>
                 </Link>
               </Reveal>
@@ -51,7 +51,7 @@ export default function Guide() {
           <Reveal delay={200}>
             <div className="mt-14 flex flex-col items-start justify-between gap-6 border border-ink/12 bg-card p-8 md:flex-row md:items-center md:p-10">
               <p className="max-w-[520px] font-display text-2xl font-medium leading-snug tracking-[-0.015em]">Ready to put the method to work?</p>
-              <Link href="/search" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp !text-[12px] font-semibold text-cream">Start exploring <ArrowUpRight size={15} /></Link>
+              <Link href="/search" className="clay-fill btn-sweep motion-press inline-flex items-center gap-2 bg-brick px-7 py-4 stamp font-semibold text-cream">Start exploring <ArrowUpRight size={15} /></Link>
             </div>
           </Reveal>
         </div>

@@ -30,7 +30,7 @@ export default function PrivacyPage() {
       <section className="container py-14 md:py-20">
         <div className="overflow-x-auto border border-ink/12 bg-card">
           <table className="min-w-[760px] w-full text-left text-sm">
-            <thead className="border-b border-ink/12 stamp !text-[10px] text-ink/60"><tr>{["Area", "Data", "Purpose", "Retention"].map((h) => <th key={h} className="p-4">{h}</th>)}</tr></thead>
+            <thead className="border-b border-ink/12 stamp-sm text-ink/60"><tr>{["Area", "Data", "Purpose", "Retention"].map((h) => <th key={h} className="p-4">{h}</th>)}</tr></thead>
             <tbody>{rows.map((row) => <tr key={row[0]} className="border-b border-ink/8 last:border-0">{row.map((cell) => <td key={cell} className="p-4 align-top text-ink/70">{cell}</td>)}</tr>)}</tbody>
           </table>
         </div>
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
           <div className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl">No sale of data</h2><p className="mt-3 text-sm leading-6 text-ink/60">Architech does not sell personal data. Broker sharing requires an explicit product purpose and consent gate.</p></div>
           <div className="border border-ink/12 bg-card p-6"><h2 className="font-display text-2xl">Security</h2><p className="mt-3 text-sm leading-6 text-ink/60">PII is minimized and masked in responses. Durable requirement phone digits are encrypted at the application boundary; production still requires managed keys, access audit, rotation, and purge monitoring.</p></div>
         </div>
-        <Link href="/terms" className="mt-8 inline-flex stamp !text-[12px] font-semibold text-brick">Read terms →</Link>
+        <Link href="/terms" className="mt-8 inline-flex stamp font-semibold text-brick">Read terms →</Link>
       </section>
     </div>
   );
