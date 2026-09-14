@@ -106,6 +106,14 @@ describe("WhatsApp dispatch worker", () => {
     expect(mocks.provider.sendText).toHaveBeenCalledTimes(1);
   });
 
+  it("marks unknown if provider resolves without a message ID", async () => {
+    setup();
+    mocks.provider.sendText.mockResolvedValueOnce({ providerMessageId: undefined });
+    const result = await processWhatsAppDispatchBatch({ organizationId: "org_1", now: new Date("2026-09-12T00:01:00.000Z") });
+    expect(result.unknown).toBe(1);
+    expect(mocks.provider.sendText).toHaveBeenCalledTimes(1);
+  });
+
   it("marks definitive provider errors failed and ambiguous errors unknown without resend", async () => {
     setup();
     mocks.provider.sendText.mockRejectedValueOnce(new WhatsAppProviderError("DEFINITIVE", "PROVIDER_REJECTED"));
