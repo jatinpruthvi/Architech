@@ -22,7 +22,7 @@ test.describe("Search Results Journey", () => {
         results: [
           { 
             id: "mock-1", 
-            title: "Mock Villa", 
+            title: "Mock Villa",
             price: "₹2 Cr", 
             priceNum: 20000000,
             locality: "Test Area",
