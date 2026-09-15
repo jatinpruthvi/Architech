@@ -92,10 +92,6 @@ jobs:
           BETTER_AUTH_SECRET: 'devsecret123456789012345678901234567890'
           BETTER_AUTH_URL: 'http://localhost:3000'
           DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
-        env:
-          BETTER_AUTH_SECRET: 'devsecret123456789012345678901234567890'
-          BETTER_AUTH_URL: 'http://localhost:3000'
-          DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
       - name: Search Console config audit
         run: pnpm seo:gsc:audit
       - name: Security and legal gates
@@ -130,16 +126,8 @@ jobs:
           BETTER_AUTH_SECRET: 'devsecret123456789012345678901234567890'
           BETTER_AUTH_URL: 'http://localhost:3000'
           DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
-        env:
-          BETTER_AUTH_SECRET: 'devsecret123456789012345678901234567890'
-          BETTER_AUTH_URL: 'http://localhost:3000'
-          DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
       - name: Visual & Devanagari layout smoke
         run: pnpm test:ui
-        env:
-          BETTER_AUTH_SECRET: 'devsecret123456789012345678901234567890'
-          BETTER_AUTH_URL: 'http://localhost:3000'
-          DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
         env:
           BETTER_AUTH_SECRET: 'devsecret123456789012345678901234567890'
           BETTER_AUTH_URL: 'http://localhost:3000'
