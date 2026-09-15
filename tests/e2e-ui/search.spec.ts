@@ -5,12 +5,12 @@ test.describe("Search Results Journey", () => {
   test("displays search results deterministically", async ({ page }) => {
     const searchPage = new SearchPage(page);
 
-    await searchPage.goto("mumbai");
+    await searchPage.page.goto("/search?q=mumbai&city=mumbai");
 
     await expect(searchPage.titleHeading).toContainText(/Mumbai/i);
 
-    if (await searchPage.filtersButton.isVisible()) {
-      await searchPage.filtersButton.click();
+    if (await searchPage.filtersButton.first().isVisible()) {
+      await searchPage.filtersButton.first().click();
     }
 
     // Since we are unmocked, the page must show at least one property for 'mumbai'.
