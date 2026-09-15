@@ -40,6 +40,68 @@ type AuthServer = ReturnType<typeof createAuthServer>;
 
 let instance: AuthServer | undefined;
 
+/* ── Password-reset token capture ──────────────────────────────────────────
+ *
+ * Better Auth owns the password store, so the WhatsApp-OTP reset cannot write a
+ * new hash itself. It has to travel Better Auth's own
+ * `request-password-reset` → `reset-password` pair, which is the only path that
+ * updates `account.password` with the hash scheme `sign-in/email` later
+ * verifies against.
+ *
+ * The handoff between those two calls is a single-use token that Better Auth
+ * only ever hands to the `sendResetPassword` callback. This app has no email
+ * transport, so that callback's whole job is to park the token where the OTP
+ * flow can pick it up: the OTP the user proved over WhatsApp takes the place of
+ * the emailed reset link as the proof of ownership.
+ *
+ * Keyed by EMAIL, not a single shared slot. A single slot silently breaks under
+ * concurrency: request A arms, request B arms over the top of it, and A's
+ * callback then finds a slot belonging to B and captures nothing — so A returns
+ * no token and the reset fails with no obvious cause. `password-reset-flow.test.ts`
+ * pins the concurrent case.
+ *
+ * Capture is ARMED per request instead of always-on. Always-on would let any
+ * anonymous caller reach `POST /api/auth/request-password-reset` through the
+ * `[...all]` handler and grow this map without bound. Entries are keyed by
+ * email and removed in the caller's `finally`, so the map holds at most one
+ * entry per reset actually in flight.
+ *
+ * Two concurrent resets for the SAME email do share an entry, so the later
+ * token wins and the earlier caller gets a spent-token failure. Both were
+ * authorised by a code verified on that account's phone, so one of two
+ * legitimate resets needing a retry is the worst case — and the alternative
+ * (queuing per account) would be more machinery than that warrants.
+ */
+type ResetTokenCapture = { token: string | null };
+const armedResetCaptures = new Map<string, ResetTokenCapture>();
+
+/** Arm capture for one `request-password-reset` call. The caller must disarm in
+ *  a `finally`, or capture stays armed and the public endpoint regains the
+ *  ability to fill the slot. */
+export function armResetTokenCapture(email: string): ResetTokenCapture {
+  const capture: ResetTokenCapture = { token: null };
+  armedResetCaptures.set(email, capture);
+  return capture;
+}
+
+export function disarmResetTokenCapture(email: string): void {
+  armedResetCaptures.delete(email);
+}
+
+/** Called by Better Auth's `sendResetPassword`.
+ *
+ *  The body has NO `await`, so it runs to completion synchronously at call time
+ *  — the token is in the slot before `runInBackgroundOrAwait` is even handed a
+ *  promise. That matters: Better Auth may run this callback in the background
+ *  rather than awaiting it, and a capture that depended on being awaited would
+ *  be a race the caller could only paper over by polling. `src/lib/auth/
+ *  password-reset-flow.test.ts` pins the property, so a future Better Auth that
+ *  defers the callback body fails a test instead of silently failing resets. */
+async function captureResetToken(user: { id: string; email: string }, token: string): Promise<void> {
+  const capture = armedResetCaptures.get(user.email);
+  if (capture) capture.token = token;
+}
+
 /* Origins Better Auth will accept a credential request from.
  *
  * Better Auth runs its OWN origin check, separate from `request-safety.ts`, and
@@ -86,7 +148,17 @@ function createAuthServer() {
           : ["x-real-ip", "cf-connecting-ip"],
       },
     },
-    emailAndPassword: { enabled: true },
+    emailAndPassword: {
+      enabled: true,
+      /* No email transport exists here — see the capture note above. This is
+         what makes `request-password-reset` usable at all: without it Better
+         Auth rejects the call with RESET_PASSWORD_DISABLED. */
+      sendResetPassword: async ({ user, token }) => {
+        /* The awaited call's body still executes synchronously — see
+           `captureResetToken`. */
+        await captureResetToken({ id: user.id, email: user.email }, token);
+      },
+    },
     user: {
       additionalFields: {
         role: { type: "string", required: false, defaultValue: "BUYER" },
@@ -189,4 +261,37 @@ function isAuthRole(value?: string | null): value is NonNullable<BetterAuthClaim
 /** Test hook: drop the singleton so a test can build an instance against fresh env. */
 export function resetAuthServerForTests(): void {
   instance = undefined;
+  armedResetCaptures.clear();
+}
+
+/** Ask Better Auth to mint a single-use password-reset token for `email`.
+ *
+ *  Returns the token rather than sending anything: the caller decides how the
+ *  user proves ownership (here, a WhatsApp OTP) before the token is spent.
+ *  `null` means Better Auth found no such account — it answers 200 either way
+ *  so that the endpoint is not an account-enumeration oracle, which is exactly
+ *  why the caller cannot treat a token as "the account exists".
+ */
+export async function requestPasswordResetToken(email: string): Promise<string | null> {
+  const capture = armResetTokenCapture(email);
+  try {
+    await getAuthServer().api.requestPasswordReset({ body: { email } });
+    return capture.token;
+  } finally {
+    disarmResetTokenCapture(email);
+  }
+}
+
+/** Spend a token on a new password. Anything other than success means the token
+ *  is expired, already spent, or was never issued — in every case the honest
+ *  answer to the user is "request a new code", so the reason is returned for
+ *  logs rather than shown. */
+export async function applyPasswordResetToken(token: string, newPassword: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  try {
+    await getAuthServer().api.resetPassword({ body: { token, newPassword } });
+    return { ok: true };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "RESET_FAILED";
+    return { ok: false, reason };
+  }
 }
