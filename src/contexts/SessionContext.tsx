@@ -75,8 +75,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       /* `authProvider` reports the CONFIGURED provider, which reads
          "better-auth" even in demo mode; `source` reports what actually served
          the request. Only the latter distinguishes a demo contract from a live
-         one, so registration availability keys off it. */
-      setRegistrationAvailable(payload.source !== "better-auth-contract-demo");
+         one, so registration availability keys off it.
+         
+         FIX: Phone OTP flow now works in demo mode (mock OTP 123456), so
+         registration should be available even when source is demo. Previously
+         demo had no user store, but phone-flow.ts now mocks OTP and creates
+         demo sessions for any Indian mobile with password demo-buyer-1234.
+         Keep registration available for both live and demo. */
+      setRegistrationAvailable(true);
       setSession(payload.session ?? null);
       setCanAccess(Boolean(payload.canAccessBrokerDashboard));
       setStatus(payload.authenticated && payload.session ? "authenticated" : "unauthenticated");

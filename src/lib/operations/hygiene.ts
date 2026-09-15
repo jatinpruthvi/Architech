@@ -104,6 +104,10 @@ export const ALLOWED_ENV_KEYS = [
   "ARCHITECH_WHATSAPP_WORKER_SECRET",
   "WHATSAPP_WORKER_TARGET_URL",
   "ARCHITECH_IDEMPOTENCY_HMAC_KEY",
+  /* Auth OTP via WhatsApp – single global admin account for signup OTPs */
+  "ARCHITECH_AUTH_WHATSAPP_ENABLED",
+  "ARCHITECH_AUTH_WHATSAPP_INSTANCE",
+  "ARCHITECH_OTP_HMAC_KEY",
 ] as const;
 
 /** Risk keywords that reveal a stray secret in source or a rendered URL. */

@@ -59,6 +59,11 @@ export type PrismaClientLike = {
   whatsappTemplate: PrismaModelDelegate;
   whatsappDispatch: PrismaModelDelegate;
   interopInboundEvent: PrismaModelDelegate;
+  otpVerification: PrismaModelDelegate;
+  systemWhatsAppAccount: PrismaModelDelegate;
+  user: PrismaModelDelegate & {
+    findUnique(args: unknown): Promise<unknown | null>;
+  };
 };
 
 declare global {

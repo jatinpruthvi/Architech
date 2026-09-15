@@ -94,6 +94,10 @@ function createAuthServer() {
            the listing form can default its attribution checkbox. Explicitly NOT
            a permission — see lib/listing/lister-type.ts. */
         listerType: { type: "string", required: false, defaultValue: "OWNER" },
+        // Phone-based auth: primary identifier is phoneE164, email is synthetic for Better Auth compat
+        phoneE164: { type: "string", required: false, defaultValue: null },
+        phone: { type: "string", required: false, defaultValue: null },
+        phoneVerified: { type: "boolean", required: false, defaultValue: false },
       },
     },
   });
