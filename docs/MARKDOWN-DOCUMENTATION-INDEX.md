@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated from the repository Markdown tree (215 files, digest 31e6480b8574).
+Generated from the repository Markdown tree (218 files, digest 0b254e438382).
 
 ## Recommended Reading Order
 
@@ -51,9 +51,12 @@ Generated from the repository Markdown tree (215 files, digest 31e6480b8574).
 - [Perf Bug Hunt 2026 09 06](../docs/ai/perf-bug-hunt-2026-09-06.md)
 - [Phase 1 Ai Assistance](../docs/ai/phase-1-ai-assistance.md)
 - [Sql Perf Bug Hunt 2026 09 06](../docs/ai/sql-perf-bug-hunt-2026-09-06.md)
+- [Forgot Password Whatsapp](../docs/auth/forgot-password-whatsapp.md)
 - [Live Better Auth Handoff](../docs/auth/live-better-auth-handoff.md)
 - [Login Surface](../docs/auth/login-surface.md)
 - [Phase 1 Better Auth Organizations](../docs/auth/phase-1-better-auth-organizations.md)
+- [Phone Otp Implementation](../docs/auth/phone-otp-implementation.md)
+- [Phone Otp Whatsapp Plan](../docs/auth/phone-otp-whatsapp-plan.md)
 - [Broker Channel Functionality](../docs/broker-suite/broker-channel-functionality.md)
 - [Broker Channel Implementation Design](../docs/broker-suite/broker-channel-implementation-design.md)
 - [Decision](../docs/broker-suite/decision.md)

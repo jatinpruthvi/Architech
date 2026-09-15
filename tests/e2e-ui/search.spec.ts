@@ -1,88 +1,41 @@
 import { test, expect } from "@playwright/test";
 import { SearchPage } from "./pages/SearchPage";
 
-test.describe("Search Results Journey", () => {
-  test("displays search results deterministically", async ({ page }) => {
+/*
+ * These tests deliberately do NOT mock /api/search.
+ *
+ * The previous version installed a page.route mock on the /api/search glob,
+ * which never worked: the mock fulfilled search-shaped JSON for the
+ * /api/search/suggest endpoint too, and the h1's city comes from client-side
+ * resolution of the query against the city registry rather than from the
+ * response body — so asserting /Bangalore/i could not pass even when the mock
+ * did apply (the registry slug and display name are both "Bengaluru").
+ *
+ * The fixture repository is deterministic, so asserting against it directly is
+ * both simpler and a stronger test. Verified against a built `next start`:
+ *   GET /api/search/?q=bengaluru         -> count 18, first title
+ *                                          "A ready 3 BHK in Indiranagar"
+ *   GET /api/search/?q=zzzznonexistent   -> count 0
+ */
+
+test.describe("Search functionality", () => {
+  test("displays search results for a city with fixture inventory", async ({ page }) => {
     const searchPage = new SearchPage(page);
+    await searchPage.goto("bengaluru");
 
-    // Mock search API to return a predictable property card result
-    await page.route("**/api/search*", async (route) => {
-      const json = {
-        query: "bangalore",
-        city: "bangalore",
-        pincode: null,
-        filters: [],
-        category: "residential",
-        intent: "buy",
-        sort: "relevance",
-        count: 1,
-        source: "fixture-repository",
-        indexPlan: "postgres-fts-trigram-ready",
-        page: { limit: 48, offset: 0, hasMore: false },
-        results: [
-          {
-            id: "mock-1",
-            title: "Mock Villa",
-            price: "₹2 Cr",
-            priceNum: 20000000,
-            locality: "Test Area",
-            city: "Bangalore",
-            badge: "RERA Verified",
-            details: { bathrooms: 2, parkingSpaces: 1 }
-          }
-        ],
-        projection: "consumer",
-        facets: {},
-        applied: [],
-        relaxations: [],
-        widening: []
-      };
-      await route.fulfill({ json });
-    });
+    // Results render inside <article> (PropertyCard), behind a Suspense
+    // boundary, so wait for hydration rather than assuming SSR markup.
+    await expect(searchPage.propertyCards.first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("A ready 3 BHK in Indiranagar").first()).toBeVisible();
 
-    await searchPage.goto("bangalore");
-
-    await expect(searchPage.titleHeading).toContainText(/Bangalore/i);
-
-    if (await searchPage.filtersButton.isVisible()) {
-      await searchPage.filtersButton.click();
-    }
-
-    // Verify that the mocked result is correctly rendered as a property card
-    await expect(searchPage.propertyCards.first()).toBeVisible();
-    await expect(page.getByText("Mock Villa")).toBeVisible();
+    // The result count is read aloud in the h1 ("N homes to buy in …").
+    await expect(searchPage.titleHeading).toContainText(/\d+ homes?/i);
   });
 
-  test("displays zero results state deterministically", async ({ page }) => {
+  test("shows the zero-result state when nothing matches", async ({ page }) => {
     const searchPage = new SearchPage(page);
+    await searchPage.goto("zzzznonexistent");
 
-    // Mock search API to return zero results
-    await page.route("**/api/search*", async (route) => {
-      const json = {
-        query: "nowhere",
-        city: "all",
-        pincode: null,
-        filters: [],
-        category: "residential",
-        intent: "buy",
-        sort: "relevance",
-        count: 0,
-        source: "fixture-repository",
-        indexPlan: "postgres-fts-trigram-ready",
-        page: { limit: 48, offset: 0, hasMore: false },
-        results: [],
-        projection: "consumer",
-        facets: {},
-        applied: [],
-        relaxations: [],
-        widening: []
-      };
-      await route.fulfill({ json });
-    });
-
-    await searchPage.goto("nowhere");
-
-    // Explicitly verify the zero state is visible
-    await expect(searchPage.noResultsMessage).toBeVisible();
+    await expect(searchPage.noResultsMessage).toBeVisible({ timeout: 20_000 });
   });
 });
