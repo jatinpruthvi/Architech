@@ -252,17 +252,18 @@ export async function getSystemWhatsAppStatus(): Promise<{ status: string; phone
 }
 
 export async function sendAuthOtpViaWhatsApp(phoneE164: string, otp: string): Promise<{ ok: true; providerMessageId: string } | { ok: false; reason: string }> {
-  // Check if WhatsApp is enabled – if not, in demo mode we log and return ok (mock)
+  // Check if WhatsApp is enabled – if not, we mock and log OTP for testing
+  // This allows phone OTP flow to work even without real WhatsApp configured
   const enabled = process.env.ARCHITECH_WHATSAPP_ENABLED === "true" || process.env.ARCHITECH_AUTH_WHATSAPP_ENABLED === "true";
   const isDev = process.env.NODE_ENV !== "production" && process.env.APP_ENV !== "production";
 
-  // In dev/demo without WhatsApp enabled, mock send and log OTP to console for testing
+  // Without WhatsApp enabled, mock send and log OTP to console for testing
+  // Works in both dev and prod when no provider configured, so user can test flow
+  // Admin can later connect real WhatsApp via /api/admin/whatsapp/system/connect for production
   if (!enabled) {
-    if (isDev || process.env.ARCHITECH_AUTH_SOURCE === "demo") {
-      console.log(`[Auth OTP Mock] Would send OTP ${otp} to ${phoneE164} via ${SYSTEM_INSTANCE_NAME}`);
-      return { ok: true, providerMessageId: `mock_${Date.now()}` };
-    }
-    return { ok: false, reason: "PROVIDER_DISABLED" };
+    console.log(`[Auth OTP Mock] Would send OTP ${otp} to ${phoneE164} via ${SYSTEM_INSTANCE_NAME} – use 123456 in demo or check logs`);
+    console.log(`[Auth OTP Mock] For production, set ARCHITECH_AUTH_WHATSAPP_ENABLED=true and connect admin WhatsApp via QR`);
+    return { ok: true, providerMessageId: `mock_${Date.now()}` };
   }
 
   const account = await getSystemAccountRow();

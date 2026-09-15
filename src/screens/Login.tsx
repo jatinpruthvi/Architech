@@ -45,9 +45,9 @@ type ApiResponse = {
 };
 
 const DEMO_HINTS = [
-  { label: "Broker admin", email: "broker-admin@example.com", password: "demo-broker-1234" },
-  { label: "Buyer", email: "buyer@example.com", password: "demo-buyer-1234" },
-  { label: "Moderator", email: "moderator@example.com", password: "demo-moderator-1234" },
+  { label: "Broker admin", email: "broker-admin@example.com", password: "demo-broker-1234", phone: "9876543210" },
+  { label: "Buyer", email: "buyer@example.com", password: "demo-buyer-1234", phone: "9876543211" },
+  { label: "Moderator", email: "moderator@example.com", password: "demo-moderator-1234", phone: "9876543212" },
 ];
 
 export default function Login() {
@@ -663,10 +663,10 @@ export default function Login() {
             <ul role="list" className="mt-5 space-y-3">
               {DEMO_HINTS.map((hint) => (
                 <li key={hint.email}>
-                  <button type="button" onClick={() => { setMode("signin"); setPhone(""); setPassword(hint.password); setIssues([]); setFormError("Demo uses email. Switch to real auth for phone flow."); }} className="w-full border border-ink/12 bg-card px-4 py-3 text-left hover:border-brick">
+                  <button type="button" onClick={() => { setMode("signin"); setPhone(hint.phone); setPassword(hint.password); setIssues([]); setFormError(null); phoneRef.current?.focus(); }} className="w-full border border-ink/12 bg-card px-4 py-3 text-left hover:border-brick">
                     <span className="stamp font-semibold text-brick">{hint.label}</span>
-                    <span className="mt-1 block text-[13px] ink-2">{hint.email}</span>
-                    <span className="block text-[12px] ink-3">{hint.password}</span>
+                    <span className="mt-1 block text-[13px] ink-2">{hint.email} • +91 {hint.phone}</span>
+                    <span className="block text-[12px] ink-3">{hint.password} • OTP: 123456 in demo</span>
                   </button>
                 </li>
               ))}

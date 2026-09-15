@@ -142,5 +142,17 @@ export function sessionForDemoCookie(cookieHeader: string): DemoCookieState {
   if (!value) return { kind: "absent" };
   if (value === DEMO_SIGNED_OUT) return { kind: "signed-out" };
   const account = findDemoAccountById(value);
-  return account ? { kind: "account", session: account.session } : { kind: "absent" };
+  if (account) return { kind: "account", session: account.session };
+  // Handle phone-based demo sessions: demo-phone-+91XXXXXXXXXX
+  if (value.startsWith("demo-phone-")) {
+    const phoneE164 = value.replace("demo-phone-", "");
+    // Validate it's a plausible E164
+    if (phoneE164.startsWith("+91") && phoneE164.length === 13) {
+      const session = demoSession(value, `Phone User ${phoneE164.slice(-4)}`, `${phoneE164.replace(/\D/g, "")}@phone.architech.internal`, "BUYER");
+      // Add phoneE164 to user for UI
+      (session.user as any).phoneE164 = phoneE164;
+      return { kind: "account", session };
+    }
+  }
+  return { kind: "absent" };
 }

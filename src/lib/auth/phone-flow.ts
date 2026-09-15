@@ -87,7 +87,7 @@ export async function signInWithPhone(request: Request, input: Partial<{ phone: 
 
   if (getAuthSourceMode() === "demo") {
     // In demo mode, allow phone login with demo buyer password for testing
-    const { DEMO_ACCOUNTS, demoSessionCookieValue } = await import("./demo-accounts");
+    const { DEMO_ACCOUNTS } = await import("./demo-accounts");
     const buyer = DEMO_ACCOUNTS.find((a) => a.id === "demo-user-buyer");
     if (buyer && password === buyer.password) {
       const mockSession = {
@@ -95,9 +95,12 @@ export async function signInWithPhone(request: Request, input: Partial<{ phone: 
         permissions: buyer.session.permissions,
         source: "better-auth-contract-demo" as const,
       };
-      return { ok: true, session: mockSession as any, cookies: [demoSessionCookieValue(buyer, request)] };
+      // Create cookie with phone id so sessionForDemoCookie can restore it
+      const secure = new URL(request.url).protocol === "https:";
+      const cookie = `architech.demo_session=${encodeURIComponent(`demo-phone-${phoneE164}`)}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+      return { ok: true, session: mockSession as any, cookies: [cookie] };
     }
-    return failure(503, "DEMO_PHONE_LOGIN", "Phone login in demo mode: use password demo-buyer-1234 with any Indian mobile for testing, or use email demo accounts.");
+    return failure(401, "INVALID_CREDENTIALS", INVALID_PHONE_CREDENTIALS_MESSAGE);
   }
 
   const syntheticEmail = phoneToSyntheticEmail(phoneE164);
@@ -217,7 +220,6 @@ export async function verifyOtpAndRegister(request: Request, input: Partial<{ ph
 
   if (getAuthSourceMode() === "demo") {
     // Demo mode: create mock buyer session (like demo-accounts but phone-based)
-    const { demoSessionCookieValue, DEMO_ACCOUNTS } = await import("./demo-accounts");
     const { permissionsForRole } = await import("./roles");
     // Create synthetic demo session for phone user
     const mockSession = {
@@ -225,11 +227,9 @@ export async function verifyOtpAndRegister(request: Request, input: Partial<{ ph
       permissions: permissionsForRole("BUYER"),
       source: "better-auth-contract-demo" as const,
     };
-    // For demo, we use first demo account's cookie pattern but with custom id? Use buyer account cookie
-    const buyerAccount = DEMO_ACCOUNTS.find((a) => a.id === "demo-user-buyer")!;
-    // Create cookie with buyer id for demo purposes (since demo cookie is plaintext id)
-    const cookie = demoSessionCookieValue(buyerAccount, request);
-    // Return mock session but with phone
+    // Create cookie with phone id so session persists across refreshes
+    const secure = new URL(request.url).protocol === "https:";
+    const cookie = `architech.demo_session=${encodeURIComponent(`demo-phone-${phoneE164}`)}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
     return { ok: true, session: mockSession as any, cookies: [cookie] };
   }
 
