@@ -50,7 +50,10 @@ async function demoModeFlows() {
       await test("GET /login/ returns a real sign-in page", async () => {
         const page = await client.get("/login/");
         assertEqual(page.status, 200, "login page must render");
-        assertIncludes(page.text, "login-email", "login page must contain the email field");
+        // Phone-based auth: primary identifier is now mobile, email is legacy fallback
+        const hasPhone = page.text.includes("login-phone");
+        const hasEmail = page.text.includes("login-email");
+        assert(hasPhone || hasEmail, "login page must contain phone or email field (phone primary after migration)");
         assertIncludes(page.text, "login-password", "login page must contain the password field");
       });
 

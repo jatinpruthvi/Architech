@@ -245,7 +245,7 @@ export default function Login() {
       if (!response.ok || !payload.ok || !payload.session) {
         const returned = payload.issues ?? [];
         setIssues(returned);
-        setFormError(payload.message ?? "We could not verify OTP. Please try again.");
+        setFormError(payload.message ?? "We could not create your account. Please check the OTP and try again.");
         if (returned.length > 0) focusFirstIssue(returned);
         return;
       }
