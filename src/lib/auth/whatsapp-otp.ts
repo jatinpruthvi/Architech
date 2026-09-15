@@ -18,7 +18,7 @@ import { getEvolutionProvider } from "@/lib/whatsapp/evolution";
 import { WhatsAppProviderError } from "@/lib/whatsapp/provider";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 import { getPrismaClient, type PrismaClientLike, type PrismaModelDelegate } from "@/lib/repositories/server/prisma";
-import { formatOtpMessage } from "./otp";
+import { DEMO_OTP, formatOtpMessageFor, OTP_PURPOSE_SIGNUP } from "./otp";
 
 const SYSTEM_INSTANCE_NAME = process.env.ARCHITECH_AUTH_WHATSAPP_INSTANCE ?? "architech-auth-system";
 const SYSTEM_INSTANCE_MAX = 100;
@@ -251,7 +251,7 @@ export async function getSystemWhatsAppStatus(): Promise<{ status: string; phone
   }
 }
 
-export async function sendAuthOtpViaWhatsApp(phoneE164: string, otp: string): Promise<{ ok: true; providerMessageId: string } | { ok: false; reason: string }> {
+export async function sendAuthOtpViaWhatsApp(phoneE164: string, otp: string, purpose: string = OTP_PURPOSE_SIGNUP): Promise<{ ok: true; providerMessageId: string } | { ok: false; reason: string }> {
   // Check if WhatsApp is enabled – if not, we mock and log OTP for testing
   // This allows phone OTP flow to work even without real WhatsApp configured
   const enabled = process.env.ARCHITECH_WHATSAPP_ENABLED === "true" || process.env.ARCHITECH_AUTH_WHATSAPP_ENABLED === "true";
@@ -261,7 +261,7 @@ export async function sendAuthOtpViaWhatsApp(phoneE164: string, otp: string): Pr
   // Works in both dev and prod when no provider configured, so user can test flow
   // Admin can later connect real WhatsApp via /api/admin/whatsapp/system/connect for production
   if (!enabled) {
-    console.log(`[Auth OTP Mock] Would send OTP ${otp} to ${phoneE164} via ${SYSTEM_INSTANCE_NAME} – use 123456 in demo or check logs`);
+    console.log(`[Auth OTP Mock] Would send ${purpose} OTP ${otp} to ${phoneE164} via ${SYSTEM_INSTANCE_NAME} – use ${DEMO_OTP} in demo or check logs`);
     console.log(`[Auth OTP Mock] For production, set ARCHITECH_AUTH_WHATSAPP_ENABLED=true and connect admin WhatsApp via QR`);
     return { ok: true, providerMessageId: `mock_${Date.now()}` };
   }
@@ -279,7 +279,7 @@ export async function sendAuthOtpViaWhatsApp(phoneE164: string, otp: string): Pr
     const provider = getEvolutionProvider();
     // Evolution expects number without + and with country code, e.g., 919876543210
     const numberWithoutPlus = phoneE164.replace(/^\+/, "");
-    const text = formatOtpMessage(otp);
+    const text = formatOtpMessageFor(purpose, otp);
     const result = await provider.sendText({
       instanceName: SYSTEM_INSTANCE_NAME,
       number: numberWithoutPlus,

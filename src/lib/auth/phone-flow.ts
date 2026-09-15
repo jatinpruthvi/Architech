@@ -11,9 +11,10 @@ import { getAuthSourceMode } from "./source";
 import { INVALID_PHONE_CREDENTIALS_MESSAGE, validatePhoneSignIn, validatePhoneSignUp, phoneToSyntheticEmail, type CredentialIssue } from "./credentials";
 import { clearLoginAttempts, registerLoginAttempt } from "./login-throttle";
 import { clientKey } from "./request-safety";
-import type { AuthSession } from "./roles";
+import { permissionsForRole, type AuthSession } from "./roles";
+import { demoResetPasswordFor } from "./password-reset-flow";
 import { getLatestValidOtp, incrementAttempts, markVerified, countRecentOtps, createOtpRecord, invalidateOtpsForPhone } from "./otp-store";
-import { generateOtp, hashOtp, verifyOtpHash, otpExpiryDate, isOtpExpired } from "./otp";
+import { generateOtp, hashOtp, verifyOtpHash, otpExpiryDate, isOtpExpired, OTP_PURPOSE_SIGNUP } from "./otp";
 import { sendAuthOtpViaWhatsApp } from "./whatsapp-otp";
 import { maskPhone } from "./phone";
 
@@ -30,7 +31,10 @@ function configuredOrigin(): string | null {
     if (!candidate) continue;
     try {
       return new URL(candidate).origin;
-    } catch {}
+    } catch {
+      /* An unparseable configured origin must not become a wildcard — skip it
+         and try the next candidate. */
+    }
   }
   return null;
 }
@@ -61,7 +65,11 @@ async function callProvider(path: string, body: Record<string, unknown>, request
   let payload: Record<string, unknown> = {};
   try {
     payload = (await response.json()) as Record<string, unknown>;
-  } catch {}
+  } catch {
+    /* A non-JSON body leaves `payload` empty rather than failing the call:
+       the status code is what decides success, and the payload is only read
+       for an error message. */
+  }
   return { status: response.status, cookies, payload };
 }
 
@@ -89,10 +97,28 @@ export async function signInWithPhone(request: Request, input: Partial<{ phone: 
     // In demo mode, allow phone login with demo buyer password for testing
     const { DEMO_ACCOUNTS } = await import("./demo-accounts");
     const buyer = DEMO_ACCOUNTS.find((a) => a.id === "demo-user-buyer");
-    if (buyer && password === buyer.password) {
+    /* A demo-mode forgot-password has nowhere to write a hash (there is no user
+       store), so `password-reset-flow.ts` parks the new password per phone and
+       it is honoured here. Without this the reset form would report success and
+       the very next sign-in would reject the password it had just set — a bug
+       that survives review because the reset's own happy path looks green.
+
+       Once a number has a reset password it is the ONLY accepted one: leaving
+       the shared demo password working too would mean "change your password"
+       did not actually change what signs you in. */
+    const resetPassword = demoResetPasswordFor(phoneE164);
+    const accepted = resetPassword !== null ? password === resetPassword : buyer !== undefined && password === buyer.password;
+    if (accepted) {
       const mockSession = {
-        user: { id: `demo-phone-${phoneE164}`, name: buyer.session.user.name, email: phoneToSyntheticEmail(phoneE164), role: "BUYER" as const, listerType: "OWNER" as const, phoneE164 },
-        permissions: buyer.session.permissions,
+        user: {
+          id: `demo-phone-${phoneE164}`,
+          name: resetPassword !== null ? `Phone User ${phoneE164.slice(-4)}` : buyer!.session.user.name,
+          email: phoneToSyntheticEmail(phoneE164),
+          role: "BUYER" as const,
+          listerType: "OWNER" as const,
+          phoneE164,
+        },
+        permissions: resetPassword !== null ? permissionsForRole("BUYER") : buyer!.session.permissions,
         source: "better-auth-contract-demo" as const,
       };
       // Create cookie with phone id so sessionForDemoCookie can restore it
@@ -128,7 +154,7 @@ export async function sendSignupOtp(request: Request, input: Partial<{ phone: st
 
   // Throttle by phone: 3 per hour
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const recentCount = await countRecentOtps(phoneE164, oneHourAgo, "signup");
+  const recentCount = await countRecentOtps(phoneE164, oneHourAgo, OTP_PURPOSE_SIGNUP);
   if (recentCount >= 3) {
     return { ok: false, status: 429, code: "TOO_MANY_OTPS", message: "Too many OTP requests for this number. Please try again after an hour.", issues: [], retryAfterSeconds: 3600 };
   }
@@ -160,7 +186,7 @@ export async function sendSignupOtp(request: Request, input: Partial<{ phone: st
     // In demo, mock OTP send
     const otp = "123456"; // fixed for demo
     const hash = hashOtp(otp);
-    await createOtpRecord({ phoneE164, otpHash: hash, purpose: "signup", expiresAt: otpExpiryDate() });
+    await createOtpRecord({ phoneE164, otpHash: hash, purpose: OTP_PURPOSE_SIGNUP, expiresAt: otpExpiryDate() });
     console.log(`[Demo OTP] ${phoneE164} OTP: ${otp}`);
     return { ok: true, phoneE164, phoneMasked: maskPhone(phoneE164), expiresAt: otpExpiryDate().toISOString() };
   }
@@ -169,7 +195,7 @@ export async function sendSignupOtp(request: Request, input: Partial<{ phone: st
   const hash = hashOtp(otp);
   const expiresAt = otpExpiryDate();
 
-  await createOtpRecord({ phoneE164, otpHash: hash, purpose: "signup", expiresAt });
+  await createOtpRecord({ phoneE164, otpHash: hash, purpose: OTP_PURPOSE_SIGNUP, expiresAt });
 
   const sendResult = await sendAuthOtpViaWhatsApp(phoneE164, otp);
   if (!sendResult.ok) {
@@ -196,7 +222,7 @@ export async function verifyOtpAndRegister(request: Request, input: Partial<{ ph
   const digitsOtp = otp.trim().replace(/\D/g, "");
   const syntheticEmail = phoneToSyntheticEmail(phoneE164);
 
-  const record = await getLatestValidOtp(phoneE164, "signup");
+  const record = await getLatestValidOtp(phoneE164, OTP_PURPOSE_SIGNUP);
   if (!record) {
     return failure(400, "OTP_EXPIRED", "OTP expired or not found. Please request a new OTP.", [{ field: "otp", message: "OTP expired. Request a new one." }]);
   }
@@ -253,7 +279,7 @@ export async function verifyOtpAndRegister(request: Request, input: Partial<{ ph
   if (!session) return failure(400, "REGISTRATION_FAILED", "We could not create that account.");
 
   // Invalidate other OTPs for this phone
-  await invalidateOtpsForPhone(phoneE164, "signup");
+  await invalidateOtpsForPhone(phoneE164, OTP_PURPOSE_SIGNUP);
 
   // Also create Prisma User if in prisma mode? Better Auth memory adapter doesn't create Prisma user, but we should create Prisma User for future
   try {

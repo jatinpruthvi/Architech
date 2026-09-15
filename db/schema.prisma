@@ -1764,7 +1764,7 @@ model InteropInboundEvent {
   @@index([organizationId, processedAt])
 }
 
-/// Phone OTP verification for signup (api-connector-builder pattern).
+/// Phone OTP verification for signup and password reset.
 /// Stores hashed OTP, not plaintext. Used for India-only +91 flow.
 /// Matches existing WhatsApp Evolution provider pattern for sending.
 model OtpVerification {
@@ -1772,7 +1772,10 @@ model OtpVerification {
   phoneE164   String    @db.VarChar(20) // +91XXXXXXXXXX
   phoneLast4  String    @db.VarChar(4)
   otpHash     String    @db.VarChar(128) // HMAC SHA256 or bcrypt
-  purpose     String    @default("signup") @db.VarChar(20) // signup, login
+  /// signup | password-reset. A discriminator, not a label: lookups always
+  /// filter on it, so a code issued to create an account can never satisfy a
+  /// password reset or vice versa. Keep values <= 20 chars (VarChar(20)).
+  purpose     String    @default("signup") @db.VarChar(20)
   attempts    Int       @default(0)
   maxAttempts Int       @default(5)
   expiresAt   DateTime
