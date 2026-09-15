@@ -36,6 +36,8 @@ type OtpClient = PrismaClientLike & {
 };
 
 // In-memory fallback
+// bounded-state: demo/fixture only, keyed by phoneE164 (India 10-digit), max 3 OTPs/hour/phone via countRecentOtps throttle,
+// 5min expiry, 5 attempts max, evicted via cleanupMemory (filters expired) and invalidateOtpsForPhone, clearMemoryStoreForTests for tests
 const memoryStore: Map<string, OtpRecord[]> = new Map(); // phoneE164 -> records
 
 function isExpired(record: OtpRecord): boolean {

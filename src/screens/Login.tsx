@@ -648,7 +648,7 @@ export default function Login() {
             <p className="mt-3 text-[14px] leading-7 ink-2">
               We use our official WhatsApp number (admin connects first via QR) to send OTP. Your number is verified once, then you sign in with mobile + password. No email needed.
             </p>
-            <ul className="mt-4 list-disc pl-5 text-[13px] leading-6 ink-3">
+            <ul role="list" className="mt-4 list-disc pl-5 text-[13px] leading-6 ink-3">
               <li>India only: +91, 10-digit starting 6-9</li>
               <li>6-digit OTP, 5 min expiry, 5 attempts max</li>
               <li>3 OTPs per hour per number</li>
