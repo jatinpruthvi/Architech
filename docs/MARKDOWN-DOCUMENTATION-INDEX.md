@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated from the repository Markdown tree (211 files, digest 4669b1b0d06f).
+Generated from the repository Markdown tree (215 files, digest 31e6480b8574).
 
 ## Recommended Reading Order
 
@@ -264,6 +264,10 @@ Generated from the repository Markdown tree (211 files, digest 4669b1b0d06f).
 
 - [AGENTS](../src/AGENTS.md)
 - [AGENTS](../src/app/AGENTS.md)
+- [Error Context](../test-results/login-Login-Journey-demo-accounts-login-flow-chromium-desktop/error-context.md)
+- [Error Context](../test-results/login-Login-Journey-demo-accounts-login-flow-chromium-mobile/error-context.md)
+- [Error Context](../test-results/login-Login-Journey-shows--be240--for-empty-fields-on-submit-chromium-desktop/error-context.md)
+- [Error Context](../test-results/login-Login-Journey-shows--be240--for-empty-fields-on-submit-chromium-mobile/error-context.md)
 - [AGENTS](../tests/AGENTS.md)
 - [README](../tests/e2e/README.md)
 

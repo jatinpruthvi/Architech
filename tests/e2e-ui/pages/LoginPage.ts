@@ -12,7 +12,7 @@ export class LoginPage {
   constructor(page: Page) {
     this.page = page;
     this.emailInput = page.getByLabel("Email address");
-    this.passwordInput = page.locator("id=login-password");
+    this.passwordInput = page.getByLabel("Password");
     this.signInButton = page.getByRole("button", { name: "Sign in", exact: true });
     this.registerTab = page.getByRole("tab", { name: /Create account/i });
     this.emailError = page.locator("#login-email-error");
@@ -30,6 +30,6 @@ export class LoginPage {
   }
 
   async clickDemoAccount(name: RegExp | string) {
-    await this.page.getByRole("button", { name }).first().click({ force: true });
+    await this.page.getByRole("button", { name }).first().click();
   }
 }

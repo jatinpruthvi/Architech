@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getCities, getCitiesByState, getLocalities } from "@/lib/repositories";
-import { getCityListingCountsForServer } from "@/lib/repositories/server/prisma";
+import { getListingsForServer } from "@/lib/repositories/server/prisma";
 import { canonicalUrl, cityUrl, homeUrl } from "@/lib/seo/urls";
 import { serializeJsonLd } from "@/lib/seo/jsonld-serialize";
 
@@ -24,11 +24,10 @@ export default async function BuyIndiaHub() {
      gets no rent link, because its /rent/ hub is held back by the quality gate
      and linking to a page the sitemap omits would strand the crawler. */
   const rentCountByCity = new Map<string, number>();
-  const counts = await getCityListingCountsForServer();
   for (const city of getCities()) {
-    const cityCounts = counts.get(city.slug);
-    listingCountByCity.set(city.slug, cityCounts?.buy ?? 0);
-    rentCountByCity.set(city.slug, cityCounts?.rent ?? 0);
+    const all = await getListingsForServer({ citySlug: city.slug });
+    listingCountByCity.set(city.slug, all.filter((listing) => listing.transaction !== "rent").length);
+    rentCountByCity.set(city.slug, all.filter((listing) => listing.transaction === "rent").length);
   }
   const cities = getCities();
   const groups = getCitiesByState();
