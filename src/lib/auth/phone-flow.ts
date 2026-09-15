@@ -31,7 +31,10 @@ function configuredOrigin(): string | null {
     if (!candidate) continue;
     try {
       return new URL(candidate).origin;
-    } catch {}
+    } catch {
+      /* An unparseable configured origin must not become a wildcard — skip it
+         and try the next candidate. */
+    }
   }
   return null;
 }
@@ -62,7 +65,11 @@ async function callProvider(path: string, body: Record<string, unknown>, request
   let payload: Record<string, unknown> = {};
   try {
     payload = (await response.json()) as Record<string, unknown>;
-  } catch {}
+  } catch {
+    /* A non-JSON body leaves `payload` empty rather than failing the call:
+       the status code is what decides success, and the payload is only read
+       for an error message. */
+  }
   return { status: response.status, cookies, payload };
 }
 

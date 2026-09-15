@@ -849,8 +849,25 @@ export default function Login() {
                   {LISTER_TYPE_OPTIONS.map((option) => {
                     const active = listerType === option.value;
                     return (
-                      <label key={option.value} className={`flex cursor-pointer items-start gap-3 border bg-card p-4 ${active ? "border-brick" : "border-ink/15"}`}>
-                        <input type="radio" name="listerType" value={option.value} checked={active} onChange={() => setListerType(option.value)} disabled={otpSending} className="mt-0.5 h-4 w-4 accent-[var(--brick)]" />
+                      <label
+                        key={option.value}
+                        htmlFor={`lister-type-${option.value}`}
+                        className={`flex cursor-pointer items-start gap-3 border bg-card p-4 ${active ? "border-brick" : "border-ink/15"}`}
+                      >
+                        {/* Explicit htmlFor/id rather than relying on wrapping: the
+                            caption sits two levels down in nested spans, so neither
+                            the a11y lint rule nor every screen reader can infer the
+                            association from containment alone. */}
+                        <input
+                          id={`lister-type-${option.value}`}
+                          type="radio"
+                          name="listerType"
+                          value={option.value}
+                          checked={active}
+                          onChange={() => setListerType(option.value)}
+                          disabled={otpSending}
+                          className="mt-0.5 h-4 w-4 accent-[var(--brick)]"
+                        />
                         <span className="block">
                           <span className="block text-[14px] font-semibold">{option.label}</span>
                           <span className="mt-0.5 block text-[12px] ink-3">{option.description}</span>
