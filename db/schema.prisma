@@ -717,7 +717,13 @@ model BrokerOrganization {
 
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
+  /// Email is now optional: primary identifier is phoneE164. Kept for backward compat
+  /// and for users who signed up before phone migration. Unique where not null (Postgres allows multiple nulls).
+  email         String?   @unique
+  /// Primary identifier: E.164 Indian mobile (+91XXXXXXXXXX). Unique, used as login userid.
+  phoneE164     String?   @unique @db.VarChar(20)
+  phoneVerified DateTime?
+  phoneLast4    String?   @db.VarChar(4)
   name          String?
   role          UserRole  @default(BUYER)
   /// Self-declared at sign-up; defaults the listing form only. See ListerType.
@@ -745,6 +751,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@index([role])
+  @@index([phoneE164])
 }
 
 model BrokerUser {
@@ -1755,4 +1762,48 @@ model InteropInboundEvent {
 
   @@unique([provider, externalId])
   @@index([organizationId, processedAt])
+}
+
+/// Phone OTP verification for signup (api-connector-builder pattern).
+/// Stores hashed OTP, not plaintext. Used for India-only +91 flow.
+/// Matches existing WhatsApp Evolution provider pattern for sending.
+model OtpVerification {
+  id          String    @id @default(cuid())
+  phoneE164   String    @db.VarChar(20) // +91XXXXXXXXXX
+  phoneLast4  String    @db.VarChar(4)
+  otpHash     String    @db.VarChar(128) // HMAC SHA256 or bcrypt
+  purpose     String    @default("signup") @db.VarChar(20) // signup, login
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  expiresAt   DateTime
+  verifiedAt  DateTime?
+  // Optional link to user after verification (not required for signup)
+  userId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phoneE164, purpose, createdAt])
+  @@index([expiresAt])
+  @@index([phoneE164, verifiedAt])
+}
+
+/// System WhatsApp account for auth OTPs (single global admin account).
+/// Separate from BrokerOrganization WhatsAppAccount which is per-org.
+/// Admin logs in once via QR, then this instance sends all signup OTPs.
+/// Reuses Evolution provider pattern: instanceName, status, phoneLast4.
+model SystemWhatsAppAccount {
+  id                 String                @id @default(cuid())
+  instanceName       String                @unique @db.VarChar(100) // architech-auth-system
+  provider           String                @default("EVOLUTION_BAILEYS") @db.VarChar(32)
+  providerInstanceId String?               @db.VarChar(140)
+  status             WhatsAppAccountStatus @default(PROVISIONING)
+  phoneLast4         String?               @db.VarChar(4)
+  connectedAt        DateTime?
+  lastObservedAt     DateTime?
+  lastErrorCode      String?               @db.VarChar(64)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@index([status, lastObservedAt])
 }
