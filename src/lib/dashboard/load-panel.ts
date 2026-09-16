@@ -10,7 +10,7 @@
  *   "empty"       -- the request succeeded and there is genuinely nothing.
  *   "unavailable" -- we could not look.
  *
- * Rendering the second as the first is the bug that shipped in the owner
+ * Rendering the second as the first is the issue that shipped in the owner
  * dashboard: a 403 was swallowed, `[]` was returned, and the panel announced
  * "No properties listed yet" to someone who might have had ten. `loadPanel`
  * therefore returns an outcome, never a bare array, so a caller cannot

@@ -4,6 +4,27 @@ import { defineConfig, devices } from "@playwright/test";
    no horizontal overflow, Hindi actually flips the document, the command
    palette journeys in a real browser. See tests/ui/visual-i18n.spec.ts for
    why these are layout facts instead of pixel-diff screenshots. */
+
+/* ARCHITECH_DEMO_START_SIGNED_OUT makes a cookie-less visitor anonymous.
+ *
+ * Without it demo mode hands every visitor the broker-admin session
+ * (src/lib/auth/live.ts), so `/login/` is already authenticated on arrival:
+ * the screen's post-login effect calls `router.replace()` to /dashboard/
+ * about 500ms in, and every pending Playwright action on the form then fails
+ * with "element was detached from the DOM, retrying" until the timeout. The
+ * three login tests can never touch the form, and it is not a selector or
+ * animation problem — the page is navigating away underneath them.
+ *
+ * This is the same opt-in the Node end-to-end suites already use for exactly
+ * this reason (tests/e2e/public-journeys.mjs, marketplace-flows.mjs,
+ * broker-ops-flows.mjs), and it is what a real deployment does: a first-time
+ * visitor is signed out. Set here rather than in the caller's shell so the
+ * suite is self-contained. */
+const SERVER_ENV = [
+  "ARCHITECH_DEMO_START_SIGNED_OUT=true",
+  "BETTER_AUTH_SECRET=devsecret123456789012345678901234567890",
+  "BETTER_AUTH_URL=http://127.0.0.1:3000",
+].join(" ");
 export default defineConfig({
   testDir: "./tests/e2e-ui",
   timeout: 45_000,
@@ -21,7 +42,7 @@ export default defineConfig({
     /* Run against the canonical Next runtime, not the static publish snapshot:
        palette journeys need /api/search/suggest, which only the runtime
        serves. Same choice as playwright.a11y.broker.config.ts. */
-    command: "BETTER_AUTH_SECRET=devsecret123456789012345678901234567890 BETTER_AUTH_URL=http://127.0.0.1:3000 pnpm build:ci && BETTER_AUTH_SECRET=devsecret123456789012345678901234567890 BETTER_AUTH_URL=http://127.0.0.1:3000 pnpm start:next",
+    command: `${SERVER_ENV} pnpm build:ci && ${SERVER_ENV} pnpm start:next`,
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

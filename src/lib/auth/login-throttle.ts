@@ -25,26 +25,13 @@ export const LOGIN_WINDOW_MS = 15 * 60_000;
 export const MAX_ATTEMPTS_PER_IP = 20;
 export const MAX_ATTEMPTS_PER_EMAIL = 8;
 
-/* BUG-R4-003: hard ceiling on live windows in EACH map.
-
-   Neither map was ever pruned: `clearLoginAttempts` only fires on a successful
-   sign-in, so every address an attacker sprayed at POST /api/auth/login left a
-   permanent entry (the route forwards the body's `email` here after nothing
-   more than a shape check — see credential-flow.ts:133). With a 15-minute
-   window these entries also outlive the mutation limiter's 60-second ones by
-   15x. Same defect class as BUG-R4-001 (metrics series) and BUG-R4-002
-   (mutation buckets): unbounded in-process state keyed by client input.
-
+/* Hard ceiling on live windows in EACH map.
    20k live windows per map is far above any realistic sign-in volume; above
    that we drop the longest-resident windows rather than the process. */
 export const MAX_LOGIN_THROTTLE_BUCKETS = 20_000;
 
 type Bucket = { startedAt: number; count: number };
 
-/* Round-4 §6 item 1: both maps are BoundedWindowMaps, so the ceiling and the
-   eviction pass live in one shared, separately unit-tested place instead of
-   being re-implemented here. Behaviour is unchanged — same 20k ceiling, same
-   insertion-order eviction, same "prune only when a brand-new key arrives". */
 const ipBuckets = new BoundedWindowMap<Bucket>(MAX_LOGIN_THROTTLE_BUCKETS, LOGIN_WINDOW_MS);
 const emailBuckets = new BoundedWindowMap<Bucket>(MAX_LOGIN_THROTTLE_BUCKETS, LOGIN_WINDOW_MS);
 
@@ -58,9 +45,6 @@ export type ThrottleDecision = { allowed: true } | { allowed: false; retryAfterS
 function take(store: BoundedWindowMap<Bucket>, key: string, max: number, now: number): ThrottleDecision {
   const current = store.peek(key, now);
   if (!current) {
-    /* BUG-R4-003: only a brand-new key can grow the map — an expired hit
-       overwrites its slot in place. set() prunes lazily, and only at the
-       ceiling, so the steady-state cost stays O(1). */
     store.set(key, { startedAt: now, count: 1 }, now);
     return { allowed: true };
   }

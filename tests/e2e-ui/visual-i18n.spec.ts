@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /* Visual & Devanagari smoke suite (P1-UI-001).
  *
@@ -18,6 +18,25 @@ const ROUTES = [
   { path: "/listing/garden-courtyard/", name: "listing dossier" },
   { path: "/saved-searches/", name: "saved searches" },
 ];
+
+/* Opens the palette through the gesture each viewport actually offers, so the
+ * palette is covered on BOTH projects instead of being skipped on mobile.
+ *
+ * The header launcher button is `hidden md:inline-flex` (desktop-only by
+ * design), so a mobile project cannot click it. But Mod+K is a global window
+ * listener in CommandPaletteLauncher, not a button handler — the palette
+ * itself is reachable at every viewport, which is why the keyboard tests below
+ * have always passed on mobile. Skipping the whole test on mobile therefore
+ * threw away real coverage of palette search, navigation and the Hindi
+ * palette at a 393px viewport, which is where Devanagari layout is riskiest. */
+async function openPalette(page: Page, isMobile: boolean | undefined): Promise<Locator> {
+  if (isMobile) {
+    await page.keyboard.press("Control+k");
+  } else {
+    await page.getByRole("button", { name: "Search or jump — press ⌘K" }).click();
+  }
+  return page.getByRole("dialog", { name: "Command palette" });
+}
 
 async function assertNoHorizontalOverflow(page: Page, label: string) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -78,13 +97,9 @@ test.describe("Hindi / Devanagari", () => {
 });
 
 test.describe("command palette", () => {
-  test("opens on the launcher, searches, and navigates", async ({ page, isMobile }) => {
-    /* The header launcher button is desktop-only by design (hidden below md);
-       mobile opens the palette with ⌘K, covered by the sibling tests. */
-    test.skip(isMobile ?? false, "palette launcher button is desktop-only by design");
+  test("opens, searches, and navigates", async ({ page, isMobile }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Search or jump — press ⌘K" }).click();
-    const dialog = page.getByRole("dialog", { name: "Command palette" });
+    const dialog = await openPalette(page, isMobile);
     await expect(dialog).toBeVisible();
 
     await dialog.getByPlaceholder(/Search a city, locality, PIN, BHK/).fill("paldi");
@@ -105,11 +120,14 @@ test.describe("command palette", () => {
   });
 
   test("palette works in Hindi too", async ({ page, isMobile }) => {
-    /* Same desktop-only launcher affordance as the English journey above. */
-    test.skip(isMobile ?? false, "palette launcher button is desktop-only by design");
     await page.goto("/");
     await page.getByRole("button", { name: "हिन्दी में देखें" }).click();
-    await page.getByRole("button", { name: "खोजें या सीधे जाएँ — ⌘K दबाएँ" }).click();
+
+    if (isMobile) {
+      await page.keyboard.press("Control+k");
+    } else {
+      await page.getByRole("button", { name: "खोजें या सीधे जाएँ — ⌘K दबाएँ" }).click();
+    }
     await expect(page.getByRole("dialog", { name: "कमांड पैलेट" })).toBeVisible();
     await page.keyboard.press("Escape");
   });

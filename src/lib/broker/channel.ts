@@ -202,7 +202,7 @@ function normalizePropertyType(value: string) {
   return String(value || "APARTMENT").trim().toUpperCase().replace(/[^A-Z_]/g, "_");
 }
 
-/* BUG-R4-005: widest values the ChannelRequest columns can hold (migration
+/* Widest values the ChannelRequest columns can hold (migration
    DDL: bhk/area INTEGER, budget/price BIGINT). The money ceiling is the
    exact-integer bound money.ts already commits to (MAX_SAFE_INR). */
 const MAX_STORED_INT = 2_147_483_647;
@@ -275,10 +275,10 @@ export function validateChannelRequest(input: Partial<ChannelRequestInput>, sess
   const areaMin = toNumberOrNull(input.areaMinSqft);
   const areaMax = toNumberOrNull(input.areaMaxSqft);
   if (areaMin !== null && areaMax !== null && areaMin > areaMax) errors.push("areaMinSqft cannot exceed areaMaxSqft.");
-  /* BUG-R4-005: same storage-ceiling gap the requirement path had. The
+  /* Same storage-ceiling gap the requirement path had. The
      ChannelRequest migration declares bhk/area INTEGER (max 2147483647) and
      budget/price BIGINT (max 9223372036854775807), but `toNumberOrNull` accepts
-     any finite non-negative number — so 1e30 passed here and reached
+     any finite non-negative number — so 1e30 passes here and reaches
      BigInt(Math.round(Number(...))) in channel-store.ts normalizeInput, which
      succeeds in JS and then fails inside PostgreSQL as "out of range": an
      unhandled 500 on the broker write path instead of a 400. The money ceiling
@@ -338,7 +338,7 @@ export function createChannelRequest(input: ChannelRequestInput, session: AuthSe
     sourceListingId: input.sourceListingId ? String(input.sourceListingId) : null,
     sourceRequirementId: input.sourceRequirementId ? String(input.sourceRequirementId) : null,
     status: "DRAFT",
-    expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString() : addDays(new Date(), 30).toISOString(),
+    expiresAt: input.expiresAt != null && String(input.expiresAt).trim() !== "" ? new Date(input.expiresAt).toISOString() : addDays(new Date(), 30).toISOString(),
     publishedAt: null,
     closedAt: null,
     revision: 1,
@@ -587,7 +587,7 @@ export function saveChannelDealSplit(dealId: string, input: { totalCommissionInr
   if (demandShare + supplyShare !== total) return { ok: false, status: 400, errors: ["Commission split must add up to totalCommissionInr."] };
   /* BUG-R4-006: the ceiling as well as the sign. BUG-2026-001 routed this path
      through toNumberOrNull, which rejects negatives and fractions but accepts
-     any finite value — so a 1e30 commission passed and only failed inside
+     any finite value — so a 1e30 commission could pass and only fail inside
      PostgreSQL ("totalCommissionInr" BIGINT, max 9223372036854775807). */
   if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) {
     return { ok: false, status: 400, errors: ["Commission amounts are out of range."] };
