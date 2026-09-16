@@ -1,5 +1,7 @@
 import "server-only";
 
+import { WEB_VITAL_NAMES } from "./web-vitals";
+
 /* In-process rolling metrics store (dependency-free baseline).
    Records RUM web-vital samples and API latency observations in bounded ring
    buffers so SLO endpoints can evaluate REAL observed values instead of
@@ -58,11 +60,10 @@ function push(seriesId: SeriesId, value: SampleValue) {
    samples at 720, but nothing capped the NUMBER of series: rotating `name`
    grew process memory without bound. Matching against this list makes the
    `SeriesId` union true at runtime, not just at compile time. */
-const WEB_VITAL_NAMES: readonly string[] = ["CLS", "FCP", "FID", "INP", "LCP", "TTFB"];
 
 /** Record one RUM web-vital sample (name is the web-vitals metric name). */
 export function recordWebVitalSample(name: string, value: number) {
-  if (typeof name !== "string" || !WEB_VITAL_NAMES.includes(name)) return;
+  if (typeof name !== "string" || !WEB_VITAL_NAMES.includes(name as any)) return;
   push(`web_vital.${name}` as SeriesId, value);
 }
 /** Record one search-API latency observation in milliseconds. */

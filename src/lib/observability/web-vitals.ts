@@ -1,4 +1,5 @@
-export type WebVitalName = "CLS" | "FCP" | "FID" | "INP" | "LCP" | "TTFB";
+export const WEB_VITAL_NAMES = ["CLS", "FCP", "FID", "INP", "LCP", "TTFB"] as const;
+export type WebVitalName = typeof WEB_VITAL_NAMES[number];
 
 export type WebVitalPayload = {
   id: string;

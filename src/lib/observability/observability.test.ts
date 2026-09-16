@@ -24,10 +24,10 @@ describe("observability contracts", () => {
     expect(body.withinTarget).toBe(true);
   });
 
-  /* BUG-R4-001: the unauthenticated RUM endpoint must not be able to mint
-     unbounded in-process state by rotating the metric name. Drives the REAL
-     route handler, not just the store helper. */
-  it("BUG-R4-001: the public RUM route cannot mint unbounded series via arbitrary names", async () => {
+  /* Regression test for BUG-R4-001: the unauthenticated RUM endpoint must not
+     be able to mint unbounded in-process state by rotating the metric name.
+     Drives the REAL route handler, not just the store helper. */
+  it("Regression test for BUG-R4-001: the public RUM route cannot mint unbounded series via arbitrary names", async () => {
     resetMetricsStoreForTests();
     for (let i = 0; i < 250; i += 1) {
       const response = await webVitalsRoute(
