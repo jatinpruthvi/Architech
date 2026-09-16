@@ -1,0 +1,12 @@
+# Local credentials — never commit
+.env
+
+# Runtime data (SQLite DB + WAL/SHM + CSV exports + json probe outputs)
+data/
+exports/
+
+# Dependencies (root .gitignore also covers **/node_modules)
+node_modules/
+
+# Logs (root .gitignore also covers *.log)
+*.log

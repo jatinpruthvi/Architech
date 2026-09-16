@@ -1,0 +1,19 @@
+{
+  "name": "crawl-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Crawler for the technoproperty.in broker portal — pulls property listings, contacts, and gallery images into SQLite and exports CSVs.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "crawl:full": "node crawl.mjs --full",
+    "crawl:delta": "node crawl.mjs --delta",
+    "crawl:help": "node crawl.mjs --help"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "camoufox-js": "^0.12.0"
+  }
+}

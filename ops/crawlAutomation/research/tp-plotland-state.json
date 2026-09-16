@@ -1,0 +1,23 @@
+{
+  "state": {
+    "url": "https://ahmedabad.technoproperty.in/brokersproperty.php?proptype=PlotAndLandRent",
+    "title": "Broker Properties - Plotandland Rent | Techno Property",
+    "tables": 3,
+    "rows": 50,
+    "cards": 50,
+    "proptype": "PlotAndLandRent",
+    "brokerMode": "offline",
+    "loginUrl": "https://broker.kaizenproperty.org/",
+    "lockText": "Property TypeDateBrokerEstate NameBroker Mobile #Scheme NameLandmarkLocationRent/Sell PriceAvailabilityConditionProperty",
+    "pagination": null,
+    "isDt": true,
+    "cardText": "South BopalLand & Plot for Rent0d - 15/09/2026PlotNear Vip Road, South BopalLocation : South BopalArea : 1200 Sq.YardsShow MoreDetailsavailable plot for rentMahendraKajal Estate+91-9081333222",
+    "propRefs": 0
+  },
+  "reqs": [
+    {
+      "m": "GET",
+      "url": "brokersproperty.php"
+    }
+  ]
+}

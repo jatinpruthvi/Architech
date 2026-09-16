@@ -1,0 +1,55 @@
+{
+  "premium": {
+    "url": "https://ahmedabad.technoproperty.in/premiumPropList.php",
+    "title": "Premium Properties | Techno Property",
+    "hasTable": true,
+    "info": {
+      "page": 0,
+      "pages": 74,
+      "start": 0,
+      "end": 25,
+      "length": 25,
+      "recordsTotal": 1848,
+      "recordsDisplay": 1848,
+      "serverSide": true
+    },
+    "dataLoaded": 25,
+    "initialScript": null,
+    "props": {}
+  },
+  "important": {
+    "url": "https://ahmedabad.technoproperty.in/importantPropList.php",
+    "title": "Shortlisted Properties | Techno Property",
+    "info": {
+      "page": 0,
+      "pages": 6,
+      "start": 0,
+      "end": 25,
+      "length": 25,
+      "recordsTotal": 135,
+      "recordsDisplay": 135,
+      "serverSide": true
+    },
+    "hiddens": {}
+  },
+  "all": {
+    "url": "https://ahmedabad.technoproperty.in/listproperty.php",
+    "title": "All Properties | Techno Property",
+    "info": {
+      "page": 0,
+      "pages": 0,
+      "start": 0,
+      "end": 0,
+      "length": 25,
+      "recordsTotal": 0,
+      "recordsDisplay": 0,
+      "serverSide": true
+    },
+    "hiddens": {
+      "propertyListCategoryId": "",
+      "propertyListCategoryName": "All",
+      "propertyListInitialFilter": "",
+      "propertyListDeleted": "0"
+    }
+  }
+}

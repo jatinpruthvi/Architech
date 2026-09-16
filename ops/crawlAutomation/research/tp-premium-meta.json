@@ -1,0 +1,137 @@
+{
+  "requestBodies": [],
+  "meta": {
+    "title": "Premium Properties | Techno Property",
+    "guidInputs": [
+      {
+        "id": "rentedout_b15ef436-4e28-7186-f77d-675688921481",
+        "name": "",
+        "value": "b15ef436-4e28-7186-f77d-675688921481"
+      },
+      {
+        "id": "rentedout_6e0d4f47-f21e-760a-a0c4-6aa793c68036",
+        "name": "",
+        "value": "6e0d4f47-f21e-760a-a0c4-6aa793c68036"
+      },
+      {
+        "id": "rentedout_63ecc452-4ae8-937c-4e11-6aa7e18aedea",
+        "name": "",
+        "value": "63ecc452-4ae8-937c-4e11-6aa7e18aedea"
+      },
+      {
+        "id": "rentedout_5a31015d-3a06-693b-8bb1-6aa3cc329f98",
+        "name": "",
+        "value": "5a31015d-3a06-693b-8bb1-6aa3cc329f98"
+      },
+      {
+        "id": "rentedout_eb4f5891-258b-fc56-0130-6a421f5133b2",
+        "name": "",
+        "value": "eb4f5891-258b-fc56-0130-6a421f5133b2"
+      },
+      {
+        "id": "rentedout_dc31e1ee-4783-b1e4-f314-6aa506a107ff",
+        "name": "",
+        "value": "dc31e1ee-4783-b1e4-f314-6aa506a107ff"
+      },
+      {
+        "id": "rentedout_d025cb60-16ae-6b41-b164-6aa53bec62df",
+        "name": "",
+        "value": "d025cb60-16ae-6b41-b164-6aa53bec62df"
+      },
+      {
+        "id": "rentedout_cdcba6b1-143c-1427-17d0-6aa3eefc7150",
+        "name": "",
+        "value": "cdcba6b1-143c-1427-17d0-6aa3eefc7150"
+      },
+      {
+        "id": "rentedout_c5569490-3ada-8b31-4d21-6aa524882622",
+        "name": "",
+        "value": "c5569490-3ada-8b31-4d21-6aa524882622"
+      },
+      {
+        "id": "rentedout_a8eb54e8-b3a6-e2ad-c4c8-6aa50fba05d7",
+        "name": "",
+        "value": "a8eb54e8-b3a6-e2ad-c4c8-6aa50fba05d7"
+      },
+      {
+        "id": "rentedout_a3c57566-de54-7cff-364d-6aa5053aafa7",
+        "name": "",
+        "value": "a3c57566-de54-7cff-364d-6aa5053aafa7"
+      },
+      {
+        "id": "rentedout_a34bb9ee-9960-10c7-a5d8-6aa545dfb588",
+        "name": "",
+        "value": "a34bb9ee-9960-10c7-a5d8-6aa545dfb588"
+      },
+      {
+        "id": "rentedout_9bef43f0-38c8-fbe4-973c-6aa4fbd304ce",
+        "name": "",
+        "value": "9bef43f0-38c8-fbe4-973c-6aa4fbd304ce"
+      },
+      {
+        "id": "rentedout_5bc558fb-2ad8-28e9-b61a-6aa50c170bc6",
+        "name": "",
+        "value": "5bc558fb-2ad8-28e9-b61a-6aa50c170bc6"
+      },
+      {
+        "id": "rentedout_4a54b72e-41e1-cc34-92b6-6aa53e249dec",
+        "name": "",
+        "value": "4a54b72e-41e1-cc34-92b6-6aa53e249dec"
+      },
+      {
+        "id": "rentedout_3d423c2b-3eb1-1695-61cc-6aa510e1c296",
+        "name": "",
+        "value": "3d423c2b-3eb1-1695-61cc-6aa510e1c296"
+      },
+      {
+        "id": "rentedout_301a9673-cfe2-5e38-a65b-67fcc2e08a1e",
+        "name": "",
+        "value": "301a9673-cfe2-5e38-a65b-67fcc2e08a1e"
+      },
+      {
+        "id": "rentedout_2aa7cad9-6ff4-b2b2-c870-6aa50d035b75",
+        "name": "",
+        "value": "2aa7cad9-6ff4-b2b2-c870-6aa50d035b75"
+      },
+      {
+        "id": "rentedout_192e017f-6f8c-b95a-6994-6aa4feacf160",
+        "name": "",
+        "value": "192e017f-6f8c-b95a-6994-6aa4feacf160"
+      },
+      {
+        "id": "rentedout_16b56032-e6ef-1262-5c68-6aa4fa65798d",
+        "name": "",
+        "value": "16b56032-e6ef-1262-5c68-6aa4fa65798d"
+      },
+      {
+        "id": "rentedout_cc3198e5-0cf7-fc34-fe1e-6aa3c6e7680e",
+        "name": "",
+        "value": "cc3198e5-0cf7-fc34-fe1e-6aa3c6e7680e"
+      },
+      {
+        "id": "rentedout_cb0c3fac-7ac7-262b-ba13-64bfaeaa9249",
+        "name": "",
+        "value": "cb0c3fac-7ac7-262b-ba13-64bfaeaa9249"
+      },
+      {
+        "id": "rentedout_c68313ca-7a38-0ed9-98be-6aa3a1cb7bbd",
+        "name": "",
+        "value": "c68313ca-7a38-0ed9-98be-6aa3a1cb7bbd"
+      },
+      {
+        "id": "rentedout_9e9ce070-1d57-4d98-cd12-6565bded64eb",
+        "name": "",
+        "value": "9e9ce070-1d57-4d98-cd12-6565bded64eb"
+      },
+      {
+        "id": "rentedout_96e3054a-5eab-ea7c-70ac-6aa2a3677a6f",
+        "name": "",
+        "value": "96e3054a-5eab-ea7c-70ac-6aa2a3677a6f"
+      }
+    ],
+    "hasTable": true,
+    "dtInfo": {
+      "total": 1848
+    }
+  }
+}

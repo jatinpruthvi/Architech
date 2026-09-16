@@ -1,0 +1,104 @@
+{
+  "recordsTotal": 1960,
+  "recordsDisplay": 1960,
+  "pages": 79,
+  "rowsOnPage": 25,
+  "colCount": 18,
+  "headers": [
+    "Action",
+    "Note",
+    "Property Type",
+    "Date",
+    "Name & Contact",
+    "Address",
+    "Premise",
+    "Area",
+    "Rent / Price",
+    "Availability",
+    "Condition",
+    "Description",
+    "Furniture & Other Details",
+    "SqFt/Sqyd",
+    "Key",
+    "Brokerage",
+    "Status",
+    "Rented Out?"
+  ],
+  "firstRowCells": [
+    "",
+    "",
+    "Residential Rent",
+    "15/09/20260d",
+    "Contact Details",
+    "A-703, 7th Floor, Ishan Luxuria, Near Sona Cross Road, Chandkhedaread more",
+    "Ishan Luxuria",
+    "Chandkheda",
+    "35.00 Thd",
+    "3BHKLow Rise Apartment",
+    "Semi Furnished",
+    "Online/Bathrooms:3/Balconies:2/7th of 7 Floors/Maintenance Included/read more",
+    "Modular Kitchen, Fan, Wardrobe, Light, Chimney, For Family, 6-10 Floorsread more",
+    "1450 Sqft",
+    "Call to Owner before 1 day",
+    "Half Brokerage",
+    "Available",
+    ""
+  ],
+  "actionHtml0": "<span class=\"dt-action-group\"><a id=\"sharepropertylink_ef0d9dde-7a87-7912-c01f-6aa0f619dbce\" target=\"_blank\" href=\"\" title=\"Share property on WhatsApp\">\n        <i class=\"fa-solid fa-share-nodes square-icon sharepropertyicon\" title=\"Share property on WhatsApp\"></i></a><span class=\"dt-action-slot\"><a id=\"whatsapplink_ef0d9dde-7a87-7912-c01f-6aa0f619dbce\" target=\"_blank\" href=\"\" title=\"Reveal contac",
+  "links": [
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    },
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    },
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    },
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    },
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    },
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    },
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    },
+    {
+      "href": "https://ahmedabad.technoproperty.in/ResidentialRent.php",
+      "text": ""
+    }
+  ],
+  "firstRowObject": {
+    "0": "<span class=\"dt-action-group\"><a id='sharepropertylink_ef0d9dde-7a87-7912-c01f-6aa0f619dbce' target='_blank' href='' title='Share property on WhatsApp'>\n        <i class='fa-solid ",
+    "1": "<span class=\"dt-splnote-raw\" style=\"display:none\"></span><span class=\"dt-splnote-actions\"><i class=\"fa-solid fa-pen-to-square splnote-desktop\"></i></span>",
+    "2": "<span class=\"dt-property-type-text\">Residential Rent</span>",
+    "3": "15/09/2026<br>0d",
+    "4": "<button type=\"button\" id=\"getcntinfo_MzAyODI4IyMwOTE1MjY\" data-propid=\"ef0d9dde-7a87-7912-c01f-6aa0f619dbce\" class=\"dt-contact-btn\">Contact Details</button>",
+    "5": "A-703, 7th Floor, Ishan Luxuria, Near Sona Cross Road, Chandkheda",
+    "6": "<a target=\"_blank\" href=\"https://www.google.com/maps/search/?api=1&query=Ishan+Luxuria%2C+Chandkheda%2C+Gujarat\" style=\"color:inherit; font-weight:700; text-decoration:underline;\">",
+    "7": "Chandkheda",
+    "8": "35.00  Thd",
+    "9": "3BHK<br>Low Rise Apartment",
+    "10": "Semi Furnished",
+    "11": "NA",
+    "12": "Online/Bathrooms:3/Balconies:2/7th of 7 Floors/Maintenance Included/",
+    "13": "Modular Kitchen, Fan, Wardrobe, Light, Chimney, For Family, 6-10 Floors",
+    "14": "1450 Sqft",
+    "15": "Call to Owner before 1 day",
+    "16": "Half Brokerage",
+    "17": "Available",
+    "18": "<input type=checkbox value=ef0d9dde-7a87-7912-c01f-6aa0f619dbce id='rentedout_ef0d9dde-7a87-7912-c01f-6aa0f619dbce' >",
+    "19": "[{\"align\":\"center\",\"style\":\"white-space:nowrap\"},{\"align\":\"center\",\"class\":\"dt-splnote-cell\",\"id\":\"splnotecell_ef0d9dde-7a87-7912-c01f-6aa0f619dbce\"},null,{\"class\":\"highlightTodayC"
+  }
+}

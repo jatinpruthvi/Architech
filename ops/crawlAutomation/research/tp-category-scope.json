@@ -1,0 +1,38 @@
+[
+  {
+    "category": "Residential Rent",
+    "name": "ResidentialRent",
+    "recordsTotal": 1960,
+    "recordsDisplay": 1960,
+    "pages": 79,
+    "rowsPage": 25,
+    "guid": "c7f77b53-1a4c-4fe7-1c9e-5147f5e13535"
+  },
+  {
+    "category": "Residential Sell",
+    "name": "ResidentialSell",
+    "recordsTotal": 18194,
+    "recordsDisplay": 18194,
+    "pages": 728,
+    "rowsPage": 25,
+    "guid": "337b7338-d305-ae3c-304b-5147f5ccf3f9"
+  },
+  {
+    "category": "Commercial Rent",
+    "name": "CommercialRent",
+    "recordsTotal": 3786,
+    "recordsDisplay": 3786,
+    "pages": 152,
+    "rowsPage": 25,
+    "guid": "a40ec292-c8dd-bb7f-6470-5147f5b8e625"
+  },
+  {
+    "category": "Commercial Sell",
+    "name": "CommercialSell",
+    "recordsTotal": 7618,
+    "recordsDisplay": 7618,
+    "pages": 305,
+    "rowsPage": 25,
+    "guid": "b2e312a4-7af1-2c47-0082-5147f5fd18a3"
+  }
+]
