@@ -178,16 +178,16 @@ describe("BUG-R3-001: channel request expiresAt validation", () => {
   });
 });
 
-/* BUG-R4-005: `toNumberOrNull` accepted any finite non-negative number, so an
-   absurd budget/price/area passed validateChannelRequest and reached
+/* `toNumberOrNull` accepts any finite non-negative number, so an
+   absurd budget/price/area could pass validateChannelRequest and reach
    BigInt(Math.round(Number(...))) in channel-store.ts normalizeInput. JS BigInt
-   is arbitrary-precision, so the conversion SUCCEEDED and the failure only
-   happened inside PostgreSQL, whose ChannelRequest columns are INTEGER (bhk,
+   is arbitrary-precision, so the conversion SUCCEEDS and the failure only
+   happens inside PostgreSQL, whose ChannelRequest columns are INTEGER (bhk,
    area; max 2147483647) and BIGINT (budget, price; max 9223372036854775807) —
-   an unhandled 500 on the broker write path where a 400 was owed. Same defect
+   an unhandled 500 on the broker write path where a 400 is owed. Same defect
    class as BUG-2026-001 (split amounts) and BUG-R3-001 (expiresAt): convert
    before validate. */
-describe("BUG-R4-005: channel request amounts must fit their columns", () => {
+describe("channel request amounts must fit their columns", () => {
   beforeEach(resetBrokerChannelForTests);
 
   it("rejects a DEMAND budget past the BIGINT column range with a 400", () => {

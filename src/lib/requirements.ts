@@ -133,7 +133,7 @@ function normalizedLocalitySlugs(input: Partial<RequirementInput>): string[] {
   return (input.localitySlugs ?? []).map((slug) => slug.trim()).filter(Boolean);
 }
 
-/* BUG-R4-005: the widest values the database columns behind these fields can
+/* The widest values the database columns behind these fields can
    hold. INTEGER per the migration DDL; for money, the exact-integer ceiling the
    repo already commits to in money.ts (MAX_SAFE_INR). */
 const MAX_STORED_INT = 2_147_483_647;
@@ -182,15 +182,15 @@ export function validateRequirementInput(input: Partial<RequirementInput>, locat
   const areaMax = toPositiveInteger(input.areaMaxSqft);
   const budgetMin = toPositiveInteger(input.budgetMinInr);
   const budgetMax = toPositiveInteger(input.budgetMaxInr);
-  /* BUG-R4-005: ceilings taken from the STORAGE contract, not from domain
+  /* Ceilings taken from the STORAGE contract, not from domain
      taste. The migration DDL declares the bhk and area columns INTEGER (max
      2147483647) and the budget columns BIGINT (max 9223372036854775807).
-     `toPositiveInteger` accepts any finite positive number, so before this
-     check a value like 1e30 sailed through validation, was converted by
+     `toPositiveInteger` accepts any finite positive number, so without this
+     check a value like 1e30 sails through validation, is converted by
      BigInt(Math.round(Number(...))) — which succeeds in JS at arbitrary
-     precision — and only failed inside PostgreSQL as "out of range". That
-     surfaced as an unhandled 500 on POST /api/requirements, a public endpoint,
-     where the caller should have got a 400.
+     precision — and only fails inside PostgreSQL as "out of range". That
+     surfaces as an unhandled 500 on POST /api/requirements, a public endpoint,
+     where the caller should get a 400.
 
      For money the ceiling is the one the repo already declares in money.ts
      (MAX_SAFE_INR = 2^53-1, ~₹9,007 crore): the largest amount that survives
