@@ -1,0 +1,9 @@
+--- src/lib/persistence/rera-store.test.ts
++++ src/lib/persistence/rera-store.test.ts
+@@ -126,5 +126,6 @@
+
+     expect(result).toMatchObject({ ok: false, scanned: 2, refreshed: 1 });
+     expect(result.errors.join(" ")).toContain("provider unreachable");
++    expect(mockDb.reraRecord.update).toHaveBeenCalledWith(expect.objectContaining({ data: { updatedAt: expect.any(Date) } }));
+   });
+ });
