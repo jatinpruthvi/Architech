@@ -9,10 +9,17 @@ test.describe("Login page functionality", () => {
     // Verify login form loads (h1 is aria-hidden; assert on the visible heading).
     await expect(page.getByRole("heading", { name: /Welcome back to your survey/i })).toBeVisible();
 
-    // Wait for the fetched registration state instead of sampling the
-    // server-rendered disabled tab once (see LoginPage.waitForRegistrationSettled).
+    /* Wait for the fetched registration state instead of sampling the
+       server-rendered disabled tab once (see LoginPage.waitForRegistrationSettled).
+
+       This asserts rather than skips. The suite boots its own server on the
+       demo auth source, where account creation is always open, so "closed"
+       can only mean the session contract never settled — a regression this
+       test must report rather than quietly step around. A test.skip() here
+       would silently drop the register tab from coverage the moment it broke,
+       which is the same failure mode that kept these login tests red. */
     const registrationOpen = await loginPage.waitForRegistrationSettled();
-    test.skip(!registrationOpen, "Account creation is closed in this environment");
+    expect(registrationOpen, "account creation must be open with the demo auth source this suite boots").toBeTruthy();
 
     await loginPage.registerTab.click();
 
