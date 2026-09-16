@@ -6,7 +6,7 @@ export const MUTATION_WINDOW_MS = 60_000;
 const MAX_MUTATIONS_PER_WINDOW = 60;
 const MAX_BODY_BYTES = 256 * 1024;
 
-/* BUG-R4-002: hard ceiling on the number of live rate-limit windows.
+/* FIX-R4-002: hard ceiling on the number of live rate-limit windows.
 
    `buckets` used to be pruned only by the test helper, so it grew for the
    whole process lifetime: one permanent entry per (client, route, method)
@@ -179,7 +179,7 @@ export function enforceMutationSafety(request: Request): NextResponse | null {
   const key = `${ip}:${route}:${request.method}`;
   const current = buckets.peek(key, now);
   if (!current) {
-    /* BUG-R4-002: only a brand-new key can grow the map — an expired hit
+    /* FIX-R4-002: only a brand-new key can grow the map — an expired hit
        overwrites its slot in place. set() prunes lazily, and only once the map
        is actually at the ceiling, so the steady-state cost stays O(1). */
     buckets.set(key, { startedAt: now, count: 1 }, now);
