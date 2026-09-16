@@ -524,16 +524,25 @@ async function createMatchesForPrismaRequest(db: ChannelPrismaClient, request: C
     return score >= 40 ? { demand, supply, score, reasons } : null;
   }).filter(isScoredPrismaCandidate);
   const created: ChannelMatchRecord[] = [];
-  for (const { demand, supply, score, reasons } of scored.sort((a, b) => b.score - a.score || b.supply.updatedAt.localeCompare(a.supply.updatedAt)).slice(0, BROKER_CHANNEL_TOP_MATCH_LIMIT)) {
-    const existing = await db.channelMatch.findFirst({ where: { demandRequestId: demand.id, supplyRequestId: supply.id } });
-    if (existing) {
-      created.push(matchFromRow(existing));
-      continue;
+  const topScored = scored.sort((a, b) => b.score - a.score || b.supply.updatedAt.localeCompare(a.supply.updatedAt)).slice(0, BROKER_CHANNEL_TOP_MATCH_LIMIT);
+
+  if (topScored.length > 0) {
+    const pairs = topScored.map(({ demand, supply }) => ({ demandRequestId: demand.id, supplyRequestId: supply.id }));
+    // sql-perf: intentionally-unbounded (bounded by BROKER_CHANNEL_TOP_MATCH_LIMIT in loop array before this point)
+    const existingMatches = await db.channelMatch.findMany({ where: { OR: pairs } });
+    const existingMap = new Map(existingMatches.map(m => [`${m.demandRequestId}:${m.supplyRequestId}`, m]));
+
+    for (const { demand, supply, score, reasons } of topScored) {
+      const existing = existingMap.get(`${demand.id}:${supply.id}`);
+      if (existing) {
+        created.push(matchFromRow(existing));
+        continue;
+      }
+      const match = matchFromRow(await db.channelMatch.create({ data: { demandRequestId: demand.id, supplyRequestId: supply.id, score, reasons, createdBy: "system" } }));
+      await createNotification(db, demand.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 supply match is available.`, "ChannelMatch", match.id);
+      await createNotification(db, supply.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 demand match is available.`, "ChannelMatch", match.id);
+      created.push(match);
     }
-    const match = matchFromRow(await db.channelMatch.create({ data: { demandRequestId: demand.id, supplyRequestId: supply.id, score, reasons, createdBy: "system" } }));
-    await createNotification(db, demand.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 supply match is available.`, "ChannelMatch", match.id);
-    await createNotification(db, supply.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 demand match is available.`, "ChannelMatch", match.id);
-    created.push(match);
   }
   return created;
 }
