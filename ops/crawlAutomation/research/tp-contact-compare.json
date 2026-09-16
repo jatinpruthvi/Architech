@@ -1,0 +1,46 @@
+{
+  "initiallisting1_contact": "Navin Kumar<br>9033228864",
+  "initiallisting0_contact": "Navin Kumar<br>9033228864",
+  "sample": [
+    {
+      "propid": "ef0d9dde-7a87-7912-c01f-6aa0f619dbce",
+      "contact": "Navin Kumar<br>9033228864"
+    },
+    {
+      "propid": "e3eb0b5b-9561-f767-fad7-67f65b3177da",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MjQzNzgzIyMwOTE1MjY\" data-propid=\"e3eb0b5b-9561-f767-fad7-67f65b3177da\" class=\"dt-contact-btn\">Contact Details</button>"
+    },
+    {
+      "propid": "d270ff20-0f35-ffb5-1266-6aa7c9230461",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MzAzMzcwIyMwOTE1MjY\" data-propid=\"d270ff20-0f35-ffb5-1266-6aa7c9230461\" class=\"dt-contact-btn\">Contact Details</button>"
+    },
+    {
+      "propid": "d266b985-5c65-d51b-ebc9-6a9fa63fac1f",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MzAyNjcyIyMwOTE1MjY\" data-propid=\"d266b985-5c65-d51b-ebc9-6a9fa63fac1f\" class=\"dt-contact-btn\">Contact Details</button>"
+    },
+    {
+      "propid": "d0a81fb4-7f6b-41c0-c357-688b1d6dc050",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MjU3MDg2IyMwOTE1MjY\" data-propid=\"d0a81fb4-7f6b-41c0-c357-688b1d6dc050\" class=\"dt-contact-btn\">Contact Details</button>"
+    },
+    {
+      "propid": "cc08d564-7b7a-80dd-f6cb-6aa798644c22",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MzAzMzEyIyMwOTE1MjY\" data-propid=\"cc08d564-7b7a-80dd-f6cb-6aa798644c22\" class=\"dt-contact-btn\">Contact Details</button>"
+    },
+    {
+      "propid": "bd1404a4-c20e-99cf-fa67-68ec9ea62b4b",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MjY0ODQzIyMwOTE1MjY\" data-propid=\"bd1404a4-c20e-99cf-fa67-68ec9ea62b4b\" class=\"dt-contact-btn\">Contact Details</button>"
+    },
+    {
+      "propid": "b6cc5c14-c20f-a6d7-9652-661625297e39",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MjA2NjAzIyMwOTE1MjY\" data-propid=\"b6cc5c14-c20f-a6d7-9652-661625297e39\" class=\"dt-contact-btn\">Contact Details</button>"
+    },
+    {
+      "propid": "b15ef436-4e28-7186-f77d-675688921481",
+      "contact": "Vipul<br>9099031746"
+    },
+    {
+      "propid": "ad554902-8109-e97e-49b7-617690bb869d",
+      "contact": "<button type=\"button\" id=\"getcntinfo_MTIyNTA5IyMwOTE1MjY\" data-propid=\"ad554902-8109-e97e-49b7-617690bb869d\" class=\"dt-contact-btn\">Contact Details</button>"
+    }
+  ]
+}

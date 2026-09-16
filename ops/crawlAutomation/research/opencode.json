@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "camofox-browser": {
+      "type": "local",
+      "command": [
+        "node",
+        "E:/Jatin-Project/Broker/BrainStrom/automation/camofox-browser-1.13.1/mcp/server.mjs"
+      ],
+      "enabled": true,
+      "environment": {
+        "CAMOFOX_USER_ID": "mcp-dde3bae1-a7f2-4f07-bc13-ef83fab4148a"
+      }
+    }
+  }
+}

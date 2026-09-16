@@ -16,11 +16,29 @@ ops/crawlAutomation/
 │   ├── db.mjs           # SQLite schema + all persistence helpers
 │   └── parse.mjs        # Row/detail HTML parsing, fingerprinting
 ├── ENDPOINTS.md         # Verified reverse-engineering of the portal's APIs
+├── research/            # Full investigation trail (see below)
 ├── data/                # SQLite DB (runtime, gitignored)
 ├── exports/             # CSV exports + dashboard (runtime, gitignored)
 ├── .env                 # Local credentials (gitignored — see .env.example)
 └── package.json
 ```
+
+## `research/` — reverse-engineering trail
+
+Captured site assets and one-off investigation scripts from when the portal's
+DataTable/TerraPi APIs were reverse-engineered. Reference material, not used at
+runtime:
+
+- `probe/`, `probe3/` — the portal's original JS bundles (`propertyList.js`,
+  `common.min.js`, `datatable-listing.min.js`, jQuery plugins, etc.) as served
+  at crawl time.
+- `tp-*` — endpoint probes + raw response captures (`tp-dt-rows.json`,
+  `tp-browser-ajax.json`, `tp-ResidentialRent.html`, `tp-dashboard.html`, …).
+- `probe-*`, `test-*`, `analyze-*`, `inspect-*`, `find-*` — scripts used to
+  map the DataTable parameters, `_tpx` decryption, contact/gallery endpoints.
+- `crawl.md`, `installation.md`, `opencode.json` — working notes preserved from
+  the original workspace (some reference the housing.com/addressbox tooling
+  stack that is **not** part of this project).
 
 ## Prerequisites
 

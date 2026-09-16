@@ -1,0 +1,59 @@
+[
+  {
+    "name": "PlotAndLandRent",
+    "url": "https://ahmedabad.technoproperty.in/brokersproperty.php?proptype=PlotAndLandRent",
+    "recordsTotal": null,
+    "title": "Broker Properties - Plotandland Rent | Techno Property",
+    "categoryId": null,
+    "categoryName": null,
+    "initialFilter": null,
+    "deletedView": null,
+    "hasTable": false
+  },
+  {
+    "name": "PlotAndLandSell",
+    "url": "https://ahmedabad.technoproperty.in/brokersproperty.php?proptype=PlotAndLandSell",
+    "recordsTotal": null,
+    "title": "Broker Properties - Plotandland Sell | Techno Property",
+    "categoryId": null,
+    "categoryName": null,
+    "initialFilter": null,
+    "deletedView": null,
+    "hasTable": false
+  },
+  {
+    "name": "Premium",
+    "url": "https://ahmedabad.technoproperty.in/premiumPropList.php",
+    "recordsTotal": 1848,
+    "pages": 74,
+    "title": "Premium Properties | Techno Property",
+    "categoryId": null,
+    "categoryName": null,
+    "initialFilter": null,
+    "deletedView": null,
+    "hasTable": true
+  },
+  {
+    "name": "Important",
+    "url": "https://ahmedabad.technoproperty.in/importantPropList.php",
+    "recordsTotal": 135,
+    "pages": 6,
+    "title": "Shortlisted Properties | Techno Property",
+    "categoryId": null,
+    "categoryName": null,
+    "initialFilter": null,
+    "deletedView": null,
+    "hasTable": true
+  },
+  {
+    "name": "Filtered",
+    "url": "https://ahmedabad.technoproperty.in/filteredPropList.php",
+    "recordsTotal": null,
+    "title": "Advanced Property Search | Techno Property",
+    "categoryId": null,
+    "categoryName": null,
+    "initialFilter": null,
+    "deletedView": null,
+    "hasTable": true
+  }
+]

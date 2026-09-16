@@ -1,0 +1,113 @@
+{
+  "results": [
+    {
+      "label": "length=25",
+      "ms": 4722,
+      "rawKeys": [
+        "_tpx",
+        "v",
+        "alg",
+        "iv",
+        "tag",
+        "data"
+      ],
+      "decKeys": [
+        "draw",
+        "recordsTotal",
+        "recordsFiltered",
+        "data"
+      ],
+      "recordsTotal": 1960,
+      "returned": 25
+    },
+    {
+      "label": "length=100",
+      "ms": 704,
+      "rawKeys": [
+        "_tpx",
+        "v",
+        "alg",
+        "iv",
+        "tag",
+        "data"
+      ],
+      "decKeys": [
+        "draw",
+        "recordsTotal",
+        "recordsFiltered",
+        "data"
+      ],
+      "recordsTotal": 1960,
+      "returned": 100
+    },
+    {
+      "label": "length=500",
+      "ms": 1469,
+      "rawKeys": [
+        "_tpx",
+        "v",
+        "alg",
+        "iv",
+        "tag",
+        "data"
+      ],
+      "decKeys": [
+        "draw",
+        "recordsTotal",
+        "recordsFiltered",
+        "data"
+      ],
+      "recordsTotal": 1960,
+      "returned": 500
+    },
+    {
+      "label": "length=1000",
+      "ms": 2743,
+      "rawKeys": [
+        "_tpx",
+        "v",
+        "alg",
+        "iv",
+        "tag",
+        "data"
+      ],
+      "decKeys": [
+        "draw",
+        "recordsTotal",
+        "recordsFiltered",
+        "data"
+      ],
+      "recordsTotal": 1960,
+      "returned": 1000
+    },
+    {
+      "label": "length=2000",
+      "ms": 4334,
+      "rawKeys": [
+        "_tpx",
+        "v",
+        "alg",
+        "iv",
+        "tag",
+        "data"
+      ],
+      "decKeys": [
+        "draw",
+        "recordsTotal",
+        "recordsFiltered",
+        "data"
+      ],
+      "recordsTotal": 1960,
+      "returned": 1000
+    }
+  ],
+  "tpxfn": {
+    "has": true,
+    "type": "function",
+    "keys": [
+      "r",
+      "q"
+    ]
+  },
+  "propGuid": "pending"
+}

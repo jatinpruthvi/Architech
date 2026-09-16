@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated from the repository Markdown tree (712 files, digest 2450e580deb0).
+Generated from the repository Markdown tree (714 files, digest 434e775a7aba).
 
 ## Recommended Reading Order
 
@@ -148,6 +148,8 @@ Generated from the repository Markdown tree (712 files, digest 2450e580deb0).
 - [README](../ops/config/data/location/README.md)
 - [ENDPOINTS](../ops/crawlAutomation/ENDPOINTS.md)
 - [README](../ops/crawlAutomation/README.md)
+- [Crawl](../ops/crawlAutomation/research/crawl.md)
+- [Installation](../ops/crawlAutomation/research/installation.md)
 - [AGENTS](../ops/scripts/AGENTS.md)
 
 ## Product Inventories

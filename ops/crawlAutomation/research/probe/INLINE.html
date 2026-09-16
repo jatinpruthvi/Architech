@@ -1,0 +1,204 @@
+
+            (function(w) {
+                w.__tpKx7 = ["7O7SA5Dnk27ath","c4lobRHgN2","t7nSsGg\/nEBpq0HgFzM="];
+                w.__tpOx7 = [1, 0, 2];
+            })(window);
+        
+
+/*----*/
+
+(function () {var request = {"draw":1,"start":0,"length":25,"searchvalue":"all","propertytype":"c7f77b53-1a4c-4fe7-1c9e-5147f5e13535","countcategory":"Residential Rent","initiallisting":1,"order[0][column]":3,"order[0][dir]":"desc"};window.TechnoPropertyInitialListingData = fetch("ajaxpropertydatatable.php", {method: "POST", credentials: "same-origin", cache: "no-store",headers: {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest"},body: new URLSearchParams(request).toString()}).then(function (response) { if (!response.ok) { throw new Error("Initial listing request failed"); } return response.json(); }).then(function (payload) { return window.__tpCx7 ? window.__tpCx7.q(payload) : payload; });}());
+
+/*----*/
+
+
+            (function(w, d, s, l, i) {
+                w[l] = w[l] || [];
+                w[l].push({
+                    'gtm.start': new Date().getTime(),
+                    event: 'gtm.js'
+                });
+                var f = d.getElementsByTagName(s)[0],
+                    j = d.createElement(s),
+                    dl = l != 'dataLayer' ? '&l=' + l : '';
+                j.async = true;
+                j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+                f.parentNode.insertBefore(j, f);
+            })(window, document, 'script', 'dataLayer', 'GTM-MJ9BMJPF');
+        
+
+/*----*/
+
+
+            window.dataLayer = window.dataLayer || [];
+
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag('js', new Date());
+            window.TechnoAnalyticsUser = {"user_id":"9d24b63977b6c11f42ebb434e768f7b0ae7f2cce4423bf5a2064c904609fd81c","user_role":"2","is_premium_user":"yes"};
+            if (window.TechnoAnalyticsUser.user_id) {
+                gtag('set', 'user_properties', {
+                    user_role: window.TechnoAnalyticsUser.user_role || '',
+                    is_premium_user: window.TechnoAnalyticsUser.is_premium_user || 'no'
+                });
+            }
+            gtag('config', 'G-1DEN42JG14', window.TechnoAnalyticsUser.user_id ? {
+                user_id: window.TechnoAnalyticsUser.user_id
+            } : {});
+        
+
+/*----*/
+
+useractionlogjs('Residential Rent List - record');
+
+/*----*/
+
+
+    (function () {
+        var toggle = document.getElementById('appSidebarToggle');
+        var bottomToggle = document.getElementById('appBottomMenuToggle');
+        var sidebar = document.getElementById('appSidebar');
+        var backdrop = document.getElementById('appSidebarBackdrop');
+        var close = document.getElementById('appSidebarClose');
+        var collapse = document.getElementById('appSidebarCollapse');
+        var collapseText = collapse ? collapse.querySelector('.app-sidebar-collapse-text') : null;
+        var navGroups = sidebar ? sidebar.querySelectorAll('.app-sidebar-nav-group') : [];
+        if ((!toggle && !bottomToggle) || !sidebar || !backdrop) { return; }
+
+        function setOpen(open) {
+            sidebar.classList.toggle('is-open', open);
+            document.body.classList.toggle('app-sidebar-open', open);
+            backdrop.hidden = !open;
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+            if (bottomToggle) {
+                bottomToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+        }
+
+        // Collapsed is a desktop-only preference. On mobile the sidebar is an
+        // off-canvas drawer, and the desktop collapsed styles (40px icon
+        // tiles, popover subnavs, separators) would wreck it — so the class
+        // is only applied while the viewport is desktop-sized.
+        var desktopMq = window.matchMedia('(min-width: 993px)');
+        var collapsedPref = false;
+
+        function setCollapsed(collapsed) {
+            collapsedPref = collapsed;
+            var apply = collapsed && desktopMq.matches;
+            document.body.classList.toggle('app-sidebar-collapsed', apply);
+            syncGroupsForCollapsed(apply);
+            if (collapse) {
+                collapse.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                collapse.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
+                collapse.title = collapsed ? 'Expand menu' : 'Collapse menu';
+                collapse.querySelector('i').className = collapsed ? 'fa-solid fa-angles-right' : 'fa-solid fa-angles-left';
+            }
+            if (collapseText) {
+                collapseText.textContent = collapsed ? '' : 'Collapse';
+            }
+            try {
+                window.localStorage.setItem('appSidebarCollapsed', collapsed ? '1' : '0');
+            } catch (err) {}
+            // Collapsing/expanding changes the content width without firing a
+            // window resize — re-sync any DataTables scroll layout on the page.
+            if (window.dtListingRepairScroll) {
+                window.dtListingRepairScroll();
+            }
+        }
+
+        function syncGroupsForCollapsed(collapsed) {
+            navGroups.forEach(function (group) {
+                if (collapsed) {
+                    group.removeAttribute('open');
+                    delete group.dataset.hoverOpen;
+                    return;
+                }
+
+                if (group.classList.contains('is-active')) {
+                    group.open = true;
+                }
+            });
+        }
+
+        function isCollapsed() {
+            return document.body.classList.contains('app-sidebar-collapsed');
+        }
+
+        function closeHoverGroups(exceptGroup) {
+            navGroups.forEach(function (group) {
+                if (group !== exceptGroup && group.dataset.hoverOpen === '1') {
+                    group.removeAttribute('open');
+                    delete group.dataset.hoverOpen;
+                }
+            });
+        }
+
+        try {
+            setCollapsed(window.localStorage.getItem('appSidebarCollapsed') === '1');
+        } catch (err) {}
+        if (desktopMq.addEventListener) {
+            desktopMq.addEventListener('change', function () {
+                setCollapsed(collapsedPref);
+            });
+        }
+
+        [toggle, bottomToggle].forEach(function (button) {
+            if (!button) { return; }
+            button.addEventListener('click', function () {
+                setOpen(!sidebar.classList.contains('is-open'));
+            });
+        });
+        if (collapse) {
+            collapse.addEventListener('click', function () {
+                setCollapsed(!document.body.classList.contains('app-sidebar-collapsed'));
+            });
+        }
+        navGroups.forEach(function (group) {
+            group.addEventListener('mouseenter', function () {
+                if (!isCollapsed()) { return; }
+                closeHoverGroups(group);
+                if (!group.open) {
+                    group.open = true;
+                    group.dataset.hoverOpen = '1';
+                }
+            });
+            group.addEventListener('mouseleave', function () {
+                if (!isCollapsed() || group.dataset.hoverOpen !== '1') { return; }
+                group.removeAttribute('open');
+                delete group.dataset.hoverOpen;
+            });
+            group.addEventListener('toggle', function () {
+                if (!group.open) {
+                    delete group.dataset.hoverOpen;
+                }
+                if (isCollapsed() && group.open && group.dataset.hoverOpen !== '1') {
+                    closeHoverGroups(group);
+                }
+            });
+        });
+        if (close) {
+            close.addEventListener('click', function () { setOpen(false); });
+        }
+        backdrop.addEventListener('click', function () { setOpen(false); });
+        sidebar.addEventListener('click', function (e) {
+            if (e.target.closest('.app-sidebar-link, .app-sidebar-sublink')) { setOpen(false); }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { setOpen(false); }
+        });
+    })();
+
+
+/*----*/
+
+
+        if (typeof gtag === 'function') {
+            gtag('event', 'residentialRentPage', Object.assign({}, window.TechnoAnalyticsUser || {}, {
+                'logged_in_at': '2026-09-15 15:24:28',
+                'logged_out_at': '',
+            }));
+        }
+    
