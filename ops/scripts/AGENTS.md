@@ -76,9 +76,28 @@ That difference breaks any tooling that enumerates the working tree instead of
 the index. It already did: `generate-md-index.mjs` walked the disk, so an index
 generated locally listed ~500 `business_suite/**` Markdown files. CI regenerated
 from an empty tree, the diff was never empty, and the "Documentation index is up
-to date" step went red on every run for four commits while reporting only
-`The process '/usr/bin/git' failed with exit code 128`. The committed index also
-carried 497 links to files that do not exist in the repository.
+to date" step went red on four consecutive commits. The log printed a ~500-line
+diff and no explanation, so the cause had to be reconstructed by hand. The
+committed index also carried 497 links to files that do not exist in the
+repository — dead links on GitHub that no other check reads.
+
+Git also refuses pathspecs that land inside a gitlink, and it is not quiet about
+it:
+
+```
+$ git check-ignore -v business_suite/erpnext/README.md
+fatal: Pathspec 'business_suite/erpnext/README.md' is in submodule 'business_suite/erpnext'
+$ echo $?
+128
+```
+
+Any tooling that passes per-file pathspecs to git therefore has to tolerate a
+128 here. That is very likely the source of the standing **warning** annotation
+`The process '/usr/bin/git' failed with exit code 128` that CI emits on every
+run — green ones included, and predating all of this. It fails nothing; do not
+chase it as a regression. Retiring the fourteen orphan gitlinks (either give
+them a `.gitmodules` or `git rm --cached` them) would remove both this and the
+generator hazard for good.
 
 The generator now lists files with `git ls-files --cached`, which is the tree CI
 actually has. Keep it that way, and apply the same rule to any new script that

@@ -13,12 +13,17 @@
  *   node ops/scripts/generate-md-index.mjs
  *   git diff --exit-code docs/MARKDOWN-DOCUMENTATION-INDEX.md
  *
- * That conflates two very different outcomes into one opaque non-zero exit. A
- * stale index and a git failure ("fatal: …", exit 128) look identical, and the
- * only output is a raw diff with no instruction. A run went red for hours with
- * nothing but "The process '/usr/bin/git' failed with exit code 128" to go on,
- * and the actual cause — an index committed from a machine whose submodule
- * checkouts were populated — was invisible.
+ * That conflates two very different outcomes into one opaque non-zero exit: a
+ * stale index and a git failure ("fatal: …", exit 128) are indistinguishable,
+ * and the only output is a raw diff with no instruction. This step went red on
+ * four consecutive commits and nothing in the log said why — the real cause, an
+ * index committed from a machine whose submodule checkouts were populated, had
+ * to be reconstructed by hand.
+ *
+ * (Separately: CI carries a permanent *warning* annotation, "The process
+ * '/usr/bin/git' failed with exit code 128", on every run including green ones.
+ * It predates this and does not fail any step. See the submodule note in
+ * ops/scripts/AGENTS.md before chasing it.)
  *
  * This script separates them:
  *   exit 0  index is current

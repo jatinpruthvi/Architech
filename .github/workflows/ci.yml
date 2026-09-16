@@ -59,9 +59,9 @@ jobs:
       # relying on the author remembering.
       #
       # This is a script, not `git diff --exit-code`. That form reports a stale
-      # index and a git failure identically — a run once went red showing only
-      # "The process '/usr/bin/git' failed with exit code 128" — and its only
-      # output is a raw diff with no instruction. The script separates "stale"
+      # index and a git failure identically — one opaque non-zero exit — and its
+      # only output is a raw diff with no instruction, which is how this step
+      # stayed undiagnosed for four commits. The script separates "stale"
       # (exit 1) from "the check could not run" (exit 2), names the entries that
       # changed, and flags any link to a file the repository does not contain.
       - name: Documentation index is up to date
