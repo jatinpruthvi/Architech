@@ -63,10 +63,16 @@ function touch(listingId: string, delta: Partial<Record<ListingMetric, number>>)
     inquiries: base.inquiries + (delta.inquiries ?? 0),
     lastUpdatedAt: now,
   };
+  /* BUG-R4-007: only a brand-new listing id can grow the map, so evict only
+     then. We delete and re-set existing entries to move them to the end of
+     insertion order, ensuring LRU eviction. */
   /* Fixed BUG-R4-007: only a brand-new listing id can grow the map, so evict only
      then — an update to a tracked listing reuses its slot. */
   if (!existing && statsByListing.size >= MAX_TRACKED_LISTINGS - 1) {
     evictOldestEntries(statsByListing, statsByListing.keys(), MAX_TRACKED_LISTINGS - 1);
+  }
+  if (existing) {
+    statsByListing.delete(listingId);
   }
   statsByListing.set(listingId, next);
   return next;
@@ -82,6 +88,8 @@ export function recordListingMetric(
   if (metric === "views") {
     const key = `${listingId}:${sessionKey}`;
     if (seenViews.has(key)) {
+      seenViews.delete(key);
+      seenViews.add(key);
       return { ok: true, stats: touch(listingId, {}), duplicate: true };
     }
     /* Fixed BUG-R4-007: bounded idempotency window. Dropping the oldest keys means a
