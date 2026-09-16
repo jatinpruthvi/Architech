@@ -24,7 +24,6 @@ import {
   toNumberOrNull,
   transitionOwnChannelRequest,
   validateChannelRequest,
-  MAX_INR,
   type ChannelDealCloseMode,
   type ChannelDealRecord,
   type ChannelMatchRecord,
@@ -40,6 +39,7 @@ import { listBrokerDrafts, type ListingDraft } from "@/lib/broker/workflow";
 import { getRequirementForOrganization, propertyTypeFromRequirement, type RequirementCategory, type RequirementRecord, type RequirementRole } from "@/lib/requirements";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import { MAX_SAFE_INR } from "@/lib/money";
 
 type ChannelPrismaClient = ReturnType<typeof getPrismaClient> & {
   $transaction<T>(fn: (tx: ChannelPrismaClient) => Promise<T>): Promise<T>;
@@ -654,7 +654,7 @@ export async function saveChannelDealSplitForServer(id: string, input: { totalCo
   /* BUG-R4-005: same ceiling as the in-memory twin — toNumberOrNull bounds the
      sign and the fraction, not the magnitude, and BigInt() would happily carry
      1e30 into a BIGINT column that tops out at 9223372036854775807. */
-  if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) return fail(400, "Commission amounts are out of range.");
+  if (total > MAX_SAFE_INR || demandShare > MAX_SAFE_INR || supplyShare > MAX_SAFE_INR) return fail(400, "Commission amounts are out of range.");
   const row = await withOrg(prisma(), session.organization.id, async (db) => {
     const deal = await db.channelDeal.update({ where: { id }, data: { totalCommissionInr: BigInt(total), demandBrokerShareInr: BigInt(demandShare), supplyBrokerShareInr: BigInt(supplyShare), splitAgreement: input.splitAgreement ?? { type: "negotiated", summary: "Negotiated broker-channel split." }, closeMode: input.closeMode === "SINGLE" ? "SINGLE" : "DUAL" } });
     const parsed = dealFromRow(deal);
