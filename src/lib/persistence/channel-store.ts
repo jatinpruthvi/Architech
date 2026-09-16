@@ -1,3 +1,4 @@
+import pMap from "p-map";
 import "server-only";
 import { createHash } from "node:crypto";
 import {
@@ -817,9 +818,10 @@ async function processErpnextCloseWritesForOrganization(organizationId: string, 
   const writes = await pendingErpnextCloseWritesForServer(limit, organizationId);
   let processed = 0;
   const errors: string[] = [];
-  for (const write of writes) {
+
+  await pMap(writes, async (write) => {
     const claimed = await claimErpnextCloseWriteForServer(write.id, write.organizationId);
-    if (!claimed) continue; /* another driver (UI sync or cron) owns this row */
+    if (!claimed) return; /* another driver (UI sync or cron) owns this row */
     try {
       const db = prisma();
       const dealRow = await withOrg(db, write.organizationId, (tx) => tx.channelDeal.findFirst({ where: { id: write.channelDealId }, include: { match: { include: { demandRequest: true, supplyRequest: true } } } })) as ChannelDealWithMatchRow | null;
@@ -867,7 +869,7 @@ async function processErpnextCloseWritesForOrganization(organizationId: string, 
       errors.push(`${write.id}: ${message}`);
       await markErpnextCloseWriteForServer(write.id, write.organizationId, "FAILED", { lastError: message });
     }
-  }
+  }, { concurrency: 5 });
   return { processed, errors };
 }
 
