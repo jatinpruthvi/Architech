@@ -4,7 +4,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /* Bug-hunt round 4, §6 item 3 — CI source guard for the convert-before-validate
-   class: BUG-R4-005 (requirement/channel amounts), BUG-R4-006 (commission
+   class: (requirement/channel amounts), (commission
    split), and the earlier BUG-2026-001 and BUG-R3-001 in rounds 1 and 3. Four
    occurrences of one mistake.
 
@@ -65,7 +65,7 @@ function scan(): Offender[] {
   return offenders;
 }
 
-describe("BigInt range guard (BUG-R4-005/006 class)", () => {
+describe("BigInt range guard (value bound class)", () => {
   const offenders = scan();
 
   it("every module converting to BigInt carries a range ceiling", () => {
@@ -100,7 +100,7 @@ describe("BigInt range guard (BUG-R4-005/006 class)", () => {
     }
   });
 
-  /* The two validators that BUG-R4-005/006 fixed must keep their ceilings. This
+  /* The two validators must keep their ceilings. This
      is the direct regression pin on the fix itself, independent of the scan. */
   it("the requirement and channel validators declare their ceilings", () => {
     for (const file of ["src/lib/requirements.ts", "src/lib/broker/channel.ts"]) {
