@@ -15,7 +15,7 @@ export type ListingStats = {
   lastUpdatedAt: string;
 };
 
-/* BUG-R4-007: hard ceilings on the NUMBER of entries in each container.
+/* Fixed BUG-R4-007: hard ceilings on the NUMBER of entries in each container.
 
    Both are keyed by attacker-controlled input — `listingId` is the `[id]` URL
    path segment and `sessionKey` is a request-body field that defaults to a
@@ -63,7 +63,7 @@ function touch(listingId: string, delta: Partial<Record<ListingMetric, number>>)
     inquiries: base.inquiries + (delta.inquiries ?? 0),
     lastUpdatedAt: now,
   };
-  /* BUG-R4-007: only a brand-new listing id can grow the map, so evict only
+  /* Fixed BUG-R4-007: only a brand-new listing id can grow the map, so evict only
      then — an update to a tracked listing reuses its slot. */
   if (!existing && statsByListing.size >= MAX_TRACKED_LISTINGS - 1) {
     evictOldestEntries(statsByListing, statsByListing.keys(), MAX_TRACKED_LISTINGS - 1);
@@ -84,7 +84,7 @@ export function recordListingMetric(
     if (seenViews.has(key)) {
       return { ok: true, stats: touch(listingId, {}), duplicate: true };
     }
-    /* BUG-R4-007: bounded idempotency window. Dropping the oldest keys means a
+    /* Fixed BUG-R4-007: bounded idempotency window. Dropping the oldest keys means a
        very old replayed view may be counted twice; unbounded growth means the
        process eventually dies. That trade is deliberate and matches the rate
        limiters. */
