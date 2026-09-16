@@ -1,7 +1,7 @@
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { launchBrowser, ensureLoggedIn, navigateAndWaitForTable } from './lib/browser.mjs';
+import { launchBrowser, ensureLoggedIn, navigateAndWaitForTable, isHeadless, getProfileDir, getBrowserExecPath, isBrowserInstalled, loadCredentials } from './lib/browser.mjs';
 import { CATEGORIES } from './lib/categories.mjs';
 import { parseListingRows } from './lib/parse.mjs';
 export { CATEGORIES } from './lib/categories.mjs';
@@ -379,7 +379,14 @@ function selectedCategories() {
 async function cmdFull() {
   console.log('=== FULL CRAWL ===');
   const cats = selectedCategories();
-  const { context, baseUrl } = await launchBrowser();
+  let context, baseUrl;
+  try {
+    ({ context, baseUrl } = await launchBrowser());
+  } catch (err) {
+    console.error('ERROR: Could not launch browser.');
+    console.error(`  ${String(err.message || err).split('\n').join('\n  ')}`);
+    process.exit(1);
+  }
   const page = await context.newPage();
   const session = await ensureLoggedIn(page, baseUrl);
   if (!session.ok) {
@@ -434,7 +441,14 @@ async function cmdFull() {
 async function cmdDelta() {
   console.log('=== DELTA CRAWL ===');
   const cats = selectedCategories();
-  const { context, baseUrl } = await launchBrowser();
+  let context, baseUrl;
+  try {
+    ({ context, baseUrl } = await launchBrowser());
+  } catch (err) {
+    console.error('ERROR: Could not launch browser.');
+    console.error(`  ${String(err.message || err).split('\n').join('\n  ')}`);
+    process.exit(1);
+  }
   const page = await context.newPage();
   const session = await ensureLoggedIn(page, baseUrl);
   if (!session.ok) {
@@ -500,6 +514,76 @@ function cmdExport() {
   const db = openDb();
   exportCsv(db);
   db.close();
+}
+
+async function cmdCheck() {
+  // Layered environment diagnostic: verifies every prerequisite for a
+  // headless crawl without touching the portal (smoke test uses about:blank).
+  // Exit 0 = ready to crawl; exit 1 = a FATAL check failed.
+  console.log('=== ENVIRONMENT CHECK ===');
+  const results = [];
+  const check = (name, ok, detail = '', fatal = true) => {
+    results.push({ name, ok, fatal });
+    console.log(`  [${ok ? 'PASS' : 'FAIL'}]${fatal ? '' : ' (advisory)'} ${name}${detail ? ` — ${detail}` : ''}`);
+  };
+
+  const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
+  check(`Node ${process.versions.node} (>=20 required)`, nodeMajor >= 20);
+
+  try {
+    await import('better-sqlite3');
+    check('better-sqlite3 loads', true);
+  } catch (e) { check('better-sqlite3 loads', false, String(e.message || e).split('\n')[0]); }
+
+  try {
+    await import('camoufox-js');
+    check('camoufox-js loads', true);
+  } catch (e) { check('camoufox-js loads', false, String(e.message || e).split('\n')[0]); }
+
+  check(
+    `headless resolution (platform=${process.platform}, CAMOUFOX_HEADLESS=${process.env.CAMOUFOX_HEADLESS ?? 'unset'}) => headless=${isHeadless()}`,
+    true, '', false
+  );
+
+  const execPath = getBrowserExecPath();
+  check(
+    `Camoufox browser binary (${execPath})`,
+    isBrowserInstalled(),
+    isBrowserInstalled() ? '' : 'run: npx camoufox-js fetch'
+  );
+
+  try {
+    mkdirSync(getProfileDir(), { recursive: true });
+    check(`profile dir writable (${getProfileDir()})`, true);
+  } catch (e) { check('profile dir writable', false, String(e.message || e).split('\n')[0]); }
+
+  const creds = loadCredentials();
+  check('portal credentials (.env or env)', !!creds, creds ? '' : 'only needed if the saved session expired', false);
+
+  try {
+    const db = openDb();
+    db.close();
+    check('SQLite DB opens (data/technoproperty.db)', true);
+  } catch (e) { check('SQLite DB opens', false, String(e.message || e).split('\n')[0]); }
+
+  if (isBrowserInstalled()) {
+    try {
+      const { context } = await launchBrowser();
+      const page = await context.newPage();
+      await page.goto('about:blank');
+      const ua = await page.evaluate(() => navigator.userAgent);
+      await context.close();
+      check('headless launch smoke test (about:blank)', true, ua.slice(0, 70) + '...');
+    } catch (e) {
+      check('headless launch smoke test', false, String(e.message || e).split('\n')[0]);
+    }
+  } else {
+    check('headless launch smoke test', false, 'skipped — browser not installed');
+  }
+
+  const fatalFails = results.filter(r => !r.ok && r.fatal);
+  console.log(fatalFails.length === 0 ? '\nREADY: all checks passed.' : `\nNOT READY: ${fatalFails.length} failing check(s). Fix them, then re-run --check.`);
+  process.exitCode = fatalFails.length === 0 ? 0 : 1;
 }
 
 function cmdStatus() {
@@ -593,6 +677,10 @@ switch (cmd) {
   case '--export':
   case 'export':
     cmdExport();
+    break;
+  case '--check':
+  case 'check':
+    await cmdCheck();
     break;
   case '--status':
   case 'status':
