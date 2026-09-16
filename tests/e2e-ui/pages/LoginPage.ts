@@ -23,7 +23,12 @@ export class LoginPage {
     /* Labels are real <label for> associations in Login.tsx, so getByLabel is
        the stable hook: `login-phone` / `login-password`. */
     this.phoneInput = page.getByLabel("Mobile number");
-    this.passwordInput = page.getByLabel("Password");
+    /* `exact` is load-bearing, not cosmetic: the reveal toggle next to the
+       field is labelled "Show password" / "Hide password", and getByLabel
+       matches on substring by default — so the unqualified query resolves to
+       both the input and the toggle and every assertion on it dies with a
+       strict-mode violation. */
+    this.passwordInput = page.getByLabel("Password", { exact: true });
     /* The Sign in TAB is also named "Sign in", but it carries role="tab", so a
        role="button" query excludes it. Scoped to the form anyway, so this
        cannot silently start matching the tab if the markup changes. */
