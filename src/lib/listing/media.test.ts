@@ -51,7 +51,7 @@ describe("property card hover image", () => {
         expect(hover).not.toBe(property.image);
       }
       // The old bug: every card cross-faded the same unrelated stock shot.
-      expect(hover === "brick-arch" && stock.has(hover) && !property.gallery?.includes("brick-arch")).toBe(false);
+      expect(hover !== null && stock.has(hover) && !property.gallery?.includes(hover)).toBe(false);
     }
   });
 

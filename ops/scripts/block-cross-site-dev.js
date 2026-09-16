@@ -63,12 +63,11 @@ function parseHostnameFromHeader(header) {
 function isInternalEndpoint(req) {
     if (!req.url) return false;
     try {
-        // TODO: We should standardize on a single prefix for this
-        const isMiddlewareRequest = req.url.includes('/__nextjs');
-        const isInternalAsset = req.url.includes('/_next');
+        const isMiddlewareRequest = req.url.startsWith('/__nextjs');
+        const isInternalAsset = req.url.startsWith('/_next');
         // Static media requests are excluded, as they might be loaded via CSS and would fail
         // CORS checks.
-        const isIgnoredRequest = req.url.includes('/_next/image') || req.url.includes('/_next/static/media') || req.url.includes('/_next/static/immutable/media');
+        const isIgnoredRequest = req.url.startsWith('/_next/image') || req.url.startsWith('/_next/static/media') || req.url.startsWith('/_next/static/immutable/media');
         return !isIgnoredRequest && (isInternalAsset || isMiddlewareRequest);
     } catch (err) {
         return false;
