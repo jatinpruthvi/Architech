@@ -108,7 +108,7 @@ describe("mutation request safety", () => {
     expect(response?.status).toBe(429);
   });
 
-  /* BUG-R4-002 (P2, security/availability): `buckets` was keyed by
+  /* FIX-R4-002 (P2, security/availability): `buckets` was keyed by
      `${ip}:${route}:${method}` and was never pruned — the only cleanup was the
      test-only `clearMutationSafetyBucketsForTests()`. Two consequences:
        1. leak — every distinct client that ever mutated left a permanent entry,
@@ -118,7 +118,7 @@ describe("mutation request safety", () => {
           headers whenever the app is reachable without a proxy that overwrites
           them, so rotating that header mints entries at will (and each fresh
           identity also gets a clean 60-request allowance). */
-  it("BUG-R4-002: the bucket map stays bounded when client identity rotates", () => {
+  it("FIX-R4-002: the bucket map stays bounded when client identity rotates", () => {
     const request = new Request("http://example.com/api/leads", { method: "POST" });
     for (let index = 0; index < MAX_RATE_LIMIT_BUCKETS + 2000; index += 1) {
       request.headers.set("x-real-ip", `203.0.${index % 256}.${Math.floor(index / 256)}`);
@@ -127,7 +127,7 @@ describe("mutation request safety", () => {
     expect(mutationSafetyBucketCount()).toBeLessThanOrEqual(MAX_RATE_LIMIT_BUCKETS);
   });
 
-  it("BUG-R4-002: expired windows are reclaimed instead of retained forever", () => {
+  it("FIX-R4-002: expired windows are reclaimed instead of retained forever", () => {
     vi.useFakeTimers();
     try {
       const request = new Request("http://example.com/api/leads", { method: "POST" });
@@ -147,7 +147,7 @@ describe("mutation request safety", () => {
     }
   });
 
-  it("BUG-R4-002: pruning never weakens the per-client cap", () => {
+  it("FIX-R4-002: pruning never weakens the per-client cap", () => {
     const request = new Request("http://example.com/api/leads", { method: "POST" });
     request.headers.set("x-forwarded-for", "192.0.2.77");
     for (let index = 0; index < 60; index += 1) expect(enforceMutationSafety(request)).toBeNull();
