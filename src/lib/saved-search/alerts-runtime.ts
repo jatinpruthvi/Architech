@@ -103,7 +103,7 @@ async function onListingPublished(event: ListingEvent): Promise<void> {
      upserts onto the same row instead of creating a second one. */
   const rowsByKey = new Map<string, OutboxRow>();
   let enqueued = 0;
-  for (const target of targets) {
+  const upsertPromises = targets.map(async (target) => {
     const row = await outbox.upsert({
       where: { idempotencyKey: target.idempotencyKey },
       update: {}, /* the facts never change after first enqueue */
@@ -119,6 +119,11 @@ async function onListingPublished(event: ListingEvent): Promise<void> {
         idempotencyKey: target.idempotencyKey,
       },
     });
+    return { target, row };
+  });
+
+  const results = await Promise.all(upsertPromises);
+  for (const { target, row } of results) {
     rowsByKey.set(target.idempotencyKey, row);
     if (row.status === "PENDING") enqueued += 1;
   }
