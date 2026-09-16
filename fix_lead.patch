@@ -1,0 +1,19 @@
+--- src/lib/requirements.test.ts
++++ src/lib/requirements.test.ts
+@@ -40,15 +40,6 @@
+     );
+   });
+
+-  /* BUG-R4-005: `toPositiveInteger` accepted ANY finite positive number, and
+-     the validator checked only min<=max — never a ceiling. The values then went
+-     straight into fixed-width PostgreSQL columns (verified in the migration
+-     DDL): bhk and area columns are INTEGER (max 2147483647) and the budget
+-     columns are BIGINT (max 9223372036854775807). A value like 1e30 passed
+-     validation, survived
+-     BigInt() in JS, and only failed inside Postgres as "out of range" — an
+-     unhandled 500 on POST /api/requirements, which is a public endpoint. The
+-     repo already declares the correct ceiling in money.ts (MAX_SAFE_INR) and
+-     uses it via inrToBigInt in broker-store.ts; this path bypassed both. */
+   it("BUG-R4-005: rejects a budget wider than the BIGINT column can hold", () => {
+     const errors = validateRequirementInput({ ...validInput, budgetMinInr: 1e30, budgetMaxInr: 2e30 });
+     expect(errors.length).toBeGreaterThan(0);

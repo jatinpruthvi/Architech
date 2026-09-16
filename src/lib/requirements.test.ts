@@ -39,7 +39,7 @@ describe("requirement capture", () => {
     );
   });
 
-  /* `toPositiveInteger` accepted ANY finite positive number, and
+  /* [Fixed] BUG-R4-005: `toPositiveInteger` accepted ANY finite positive number, and
      the validator checked only min<=max — never a ceiling. The values then went
      straight into fixed-width PostgreSQL columns (verified in the migration
      DDL): bhk and area columns are INTEGER (max 2147483647) and the budget
@@ -49,23 +49,23 @@ describe("requirement capture", () => {
      unhandled 500 on POST /api/requirements, which is a public endpoint. The
      repo already declares the correct ceiling in money.ts (MAX_SAFE_INR) and
      uses it via inrToBigInt in broker-store.ts; this path bypassed both. */
-  it("rejects a budget wider than the BIGINT column can hold", () => {
+  it("[Fixed] BUG-R4-005: rejects a budget wider than the BIGINT column can hold", () => {
     const errors = validateRequirementInput({ ...validInput, budgetMinInr: 1e30, budgetMaxInr: 2e30 });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.join(" ")).toMatch(/budget/i);
   });
 
-  it("rejects an area wider than the INTEGER column can hold", () => {
+  it("[Fixed] BUG-R4-005: rejects an area wider than the INTEGER column can hold", () => {
     const errors = validateRequirementInput({ ...validInput, areaMinSqft: 1e10, areaMaxSqft: 2e10 });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.join(" ")).toMatch(/area/i);
   });
 
-  it("rejects a BHK count wider than the INTEGER column can hold", () => {
+  it("[Fixed] BUG-R4-005: rejects a BHK count wider than the INTEGER column can hold", () => {
     expect(validateRequirementInput({ ...validInput, bhkMin: 2, bhkMax: 3e9 }).length).toBeGreaterThan(0);
   });
 
-  it("still accepts realistic upper-bound values", () => {
+  it("[Fixed] BUG-R4-005: still accepts realistic upper-bound values", () => {
     // ₹9,000 crore and 50,000 sq ft are absurd-but-storable; they must pass.
     expect(validateRequirementInput({ ...validInput, budgetMinInr: 8e9, budgetMaxInr: 9e10 })).toEqual([]);
     expect(validateRequirementInput({ ...validInput, areaMinSqft: 1000, areaMaxSqft: 50_000 })).toEqual([]);
