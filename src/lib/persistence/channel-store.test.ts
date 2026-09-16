@@ -108,13 +108,13 @@ describe("saveChannelDealSplitForServer (Prisma path) — commission amount vali
     );
   });
 
-  /* BUG-R4-005: BUG-2026-001 closed the negative and fractional holes but not
+  /* BUG-R4-006: BUG-2026-001 closed the negative and fractional holes but not
      the CEILING. `toNumberOrNull` accepts any finite non-negative number, so a
      1e30 commission passed validation and the sum check, then reached
      BigInt(total) — which succeeds in JS at arbitrary precision — against
      "totalCommissionInr" BIGINT (max 9223372036854775807). Postgres rejects it
      as out of range: an unhandled 500 on the commission write path. */
-  it("BUG-R4-005: rejects a commission past the BIGINT column range with 400", async () => {
+  it("BUG-R4-006: rejects a commission past the BIGINT column range with 400", async () => {
     const result = await saveChannelDealSplitForServer(
       "deal-1",
       { totalCommissionInr: 1e30, demandBrokerShareInr: 6e29, supplyBrokerShareInr: 4e29 },
@@ -124,7 +124,7 @@ describe("saveChannelDealSplitForServer (Prisma path) — commission amount vali
     expect(mockDb.channelDeal.update).not.toHaveBeenCalled();
   });
 
-  it("BUG-R4-005: any commission that does reach the write fits BIGINT", async () => {
+  it("BUG-R4-006: any commission that does reach the write fits BIGINT", async () => {
     const PG_BIGINT_MAX = 9_223_372_036_854_775_807n;
     const result = await saveChannelDealSplitForServer(
       "deal-1",

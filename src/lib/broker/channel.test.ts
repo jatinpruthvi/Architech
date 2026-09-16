@@ -225,8 +225,8 @@ describe("BUG-R4-005: channel request amounts must fit their columns", () => {
      storage modes (channel.ts saveChannelDealSplit and channel-store.ts
      saveChannelDealSplitForServer). BUG-2026-001 closed the negative and
      fractional holes there but not the ceiling, so a 1e30 commission passed the
-     sum check in both. */
-  it("rejects a commission split past the BIGINT column range", () => {
+     sum check in both. This is BUG-R4-006. */
+  it("BUG-R4-006: rejects a commission split past the BIGINT column range", () => {
     const orgA = session("org-r4-split-a");
     const orgB = session("org-r4-split-b");
     const createdDemand = createChannelRequest(demand, orgA);
