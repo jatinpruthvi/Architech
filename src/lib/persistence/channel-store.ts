@@ -673,10 +673,12 @@ async function createCloseRecordsForPrisma(db: ChannelPrismaClient, deal: Channe
   ];
   for (const entry of entries) {
     await setTenantOrg(db, entry.organizationId);
-    await db.commissionEntry.create({ data: { organizationId: entry.organizationId, dealId: deal.id, entryType: "COMMISSION_INCOME", amountInr: BigInt(entry.amount), employeeId: session.user.id, description: `Broker channel commission for ${deal.id}`, entryDate: new Date(), recordedById: session.user.id } });
     const idempotencyKey = `channel.close.v${deal.closeVersion}.${deal.id}.${entry.organizationId}`;
     const payloadHash = createHash("sha256").update(`${idempotencyKey}:${entry.amount}`).digest("hex");
-    await db.erpnextCloseWrite.create({ data: { channelDealId: deal.id, organizationId: entry.organizationId, idempotencyKey, payloadHash } });
+    await Promise.all([
+      db.commissionEntry.create({ data: { organizationId: entry.organizationId, dealId: deal.id, entryType: "COMMISSION_INCOME", amountInr: BigInt(entry.amount), employeeId: session.user.id, description: `Broker channel commission for ${deal.id}`, entryDate: new Date(), recordedById: session.user.id } }),
+      db.erpnextCloseWrite.create({ data: { channelDealId: deal.id, organizationId: entry.organizationId, idempotencyKey, payloadHash } })
+    ]);
   }
 }
 
