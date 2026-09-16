@@ -8,7 +8,8 @@ npm scripts; update `package.json` in the same change.**
 
 - Root: `verify.mjs` (whole local gate, CI parity minus build/browser),
   `build-ci.mjs`, `build-publish.mjs`, `materialize-static-publish.mjs`,
-  `publish-server.mjs`, `generate-md-index.mjs`, `audit-surface-contrast.mjs`
+  `publish-server.mjs`, `generate-md-index.mjs`, `check-md-index.mjs`,
+  `audit-surface-contrast.mjs`
 - `operations/` — env/secrets/provisioning/readiness audits (read `ops/config/governance/`)
 - `security/` — header, RLS, and legal-gate audits
 - `release/` — release + production-enablement audits (read `ops/config/governance/release/`)
@@ -33,7 +34,14 @@ npm scripts; update `package.json` in the same change.**
   nothing runs is how the ops suites went unrun in CI in the first place.
 - `generate-md-index.mjs` regenerates `docs/MARKDOWN-DOCUMENTATION-INDEX.md` —
   rerun it after adding/moving any markdown file. CI enforces this, so its output
-  must stay deterministic: do not reintroduce a timestamp into the generated file.
+  must stay deterministic: do not reintroduce a timestamp into the generated
+  file, and do not replace the `git ls-files` enumeration with a directory walk
+  (see Gotchas below).
+- `check-md-index.mjs` is the gate (`pnpm docs:index:check`, and the `docs-index`
+  entry in `verify.mjs`). Keep its exit codes meaningful — `1` is "the index is
+  stale", `2` is "the check could not run". Collapsing them is what left a red
+  run explaining itself as only `git` exiting 128. If you add a reason for the
+  index to be wrong, add a branch that says so in plain words.
 
 ## Gotchas
 
@@ -58,6 +66,23 @@ pnpm baseline:worktree -- --remove            # clean up
 
 Use it before blaming a branch for a red check — several audits have been red on
 `main` independently of the change under review.
+
+**`business_suite/*` are git submodules, and CI never checks them out.** They are
+recorded as gitlinks (mode `160000`) with no `.gitmodules`, so a fresh clone —
+and every CI runner — sees fourteen empty directories. A local machine that
+populated them sees tens of thousands of files.
+
+That difference breaks any tooling that enumerates the working tree instead of
+the index. It already did: `generate-md-index.mjs` walked the disk, so an index
+generated locally listed ~500 `business_suite/**` Markdown files. CI regenerated
+from an empty tree, the diff was never empty, and the "Documentation index is up
+to date" step went red on every run for four commits while reporting only
+`The process '/usr/bin/git' failed with exit code 128`. The committed index also
+carried 497 links to files that do not exist in the repository.
+
+The generator now lists files with `git ls-files --cached`, which is the tree CI
+actually has. Keep it that way, and apply the same rule to any new script that
+needs "every file of kind X in this repo".
 
 ## See also
 

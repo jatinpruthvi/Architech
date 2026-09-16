@@ -111,6 +111,12 @@ Also worth knowing:
 
 - `pnpm docs:index` regenerates `docs/MARKDOWN-DOCUMENTATION-INDEX.md`. CI fails
   if it is stale, so run it after adding or moving any markdown file.
+  `pnpm docs:index:check` is the gate CI runs: it reports *why* the index is
+  stale (entries added/removed, links to files the repository does not contain)
+  and exits 2 — not 1 — when the check itself could not run. The index is built
+  from `git ls-files`, never from a directory walk, because `business_suite/*`
+  are submodules: populated locally, empty in CI, so a walk produces a different
+  index on each machine and 497 dead links were committed once already.
 - `pnpm ops:test` runs every `ops/scripts/**/*.test.mjs` under the Node test
   runner. `pnpm test` is vitest and does not reach them. The glob must stay
   quoted in `package.json` — unquoted, `sh` expands `**` as `*` and silently

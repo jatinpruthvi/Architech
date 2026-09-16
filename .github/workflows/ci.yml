@@ -57,10 +57,15 @@ jobs:
       # generate-md-index.mjs must be re-run whenever a markdown file is added
       # or moved. Enforcing it here means a stale index fails CI rather than
       # relying on the author remembering.
+      #
+      # This is a script, not `git diff --exit-code`. That form reports a stale
+      # index and a git failure identically — a run once went red showing only
+      # "The process '/usr/bin/git' failed with exit code 128" — and its only
+      # output is a raw diff with no instruction. The script separates "stale"
+      # (exit 1) from "the check could not run" (exit 2), names the entries that
+      # changed, and flags any link to a file the repository does not contain.
       - name: Documentation index is up to date
-        run: |
-          node ops/scripts/generate-md-index.mjs
-          git diff --exit-code docs/MARKDOWN-DOCUMENTATION-INDEX.md
+        run: pnpm docs:index:check
       # Both Evolution API compose files must stay parseable and fully
       # interpolated. Every variable carries a :- default, so this needs no .env
       # and no secrets. The whatsapp profile is the staging/production scaffold.
