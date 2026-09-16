@@ -233,9 +233,9 @@ const SCENARIOS: Scenario[] = [
    counts — it is never truncated). Both are asserted separately below, not
    by deep equality. */
 const stripPlan = (response: ServerSearchResponse) => {
-  // The named keys are the ones being stripped — intentionally unused.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { indexPlan, truncated, ...rest } = response;
+  const rest = { ...response };
+  delete (rest as Partial<ServerSearchResponse>).indexPlan;
+  delete rest.truncated;
   return rest;
 };
 
