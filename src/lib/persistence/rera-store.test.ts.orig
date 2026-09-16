@@ -134,6 +134,5 @@ describe("refreshStaleReraRecordsForServer (Prisma path) — batch resilience", 
 
     expect(result).toMatchObject({ ok: false, scanned: 2, refreshed: 1 });
     expect(result.errors.join(" ")).toContain("provider unreachable");
-    expect(mockDb.reraRecord.update).toHaveBeenCalledWith(expect.objectContaining({ data: { updatedAt: expect.any(Date) } }));
   });
 });

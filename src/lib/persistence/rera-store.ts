@@ -105,10 +105,26 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
       result = await verifyReraRecordForServer(jurisdictionSlug, registrationNumber);
     } catch (error) {
       errors.push(`${entityId}: ${error instanceof Error ? error.message : "provider error"}`);
+      try {
+        await db.reraRecord.update({
+          where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
+          data: { updatedAt: new Date() },
+        });
+      } catch (updateError) {
+        // Ignore
+      }
       continue;
     }
     if (!result.ok || !result.record) {
       /* Not found / jurisdiction unsupported / provider failure: stay STALE. */
+      try {
+        await db.reraRecord.update({
+          where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
+          data: { updatedAt: new Date() },
+        });
+      } catch (updateError) {
+        // Ignore
+      }
       continue;
     }
     const nextStatus = snapshotStatusToDb(result.record.verificationStatus);
@@ -157,6 +173,14 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
       refreshed += 1;
     } catch (error) {
       errors.push(`${entityId}: ${error instanceof Error ? error.message : "write error"}`);
+      try {
+        await db.reraRecord.update({
+          where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
+          data: { updatedAt: new Date() },
+        });
+      } catch (updateError) {
+        // Ignore update errors so the loop continues.
+      }
     }
   }
   return { ok: errors.length === 0, scanned: rows.length, refreshed, errors };
