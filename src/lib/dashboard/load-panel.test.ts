@@ -1,6 +1,6 @@
 /* How each panel behaves when its request does NOT succeed.
  *
- * This is the failure class that produced the worst bug in this feature: a
+ * This is the failure class that produced the worst issue in this feature: a
  * 403 was swallowed, an empty array was returned, and the owner dashboard
  * announced "No properties listed yet" to someone who might have had ten.
  *
@@ -53,7 +53,7 @@ describe("loading a dashboard panel", () => {
 
   describe("failures must never be reported as emptiness", () => {
     it("reports 403 as forbidden, not as an empty panel", async () => {
-      /* The exact bug: the owner dashboard's 403 became "No properties yet". */
+      /* The exact issue: the owner dashboard's 403 became "No properties yet". */
       const outcome = await loadPanel("/api/broker/listings/", "drafts", respondWith(403, { ok: false }));
       expect(outcome.state).toBe("forbidden");
       expect(mayClaimEmpty(outcome)).toBe(false);

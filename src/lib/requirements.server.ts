@@ -178,7 +178,7 @@ export async function createRequirementForServer(input: RequirementInput, sessio
            the top of this function), which enforces MAX_INR and MAX_STORED_INT
            from src/lib/requirements.ts. Without that ceiling these
            conversions succeed in JS at arbitrary precision and fail inside
-           PostgreSQL as 22003 numeric_value_out_of_range — see BUG-R4-005. */
+           PostgreSQL as 22003 numeric_value_out_of_range. */
         budgetMinInr: normalizedInput.budgetMinInr != null ? BigInt(Math.round(Number(normalizedInput.budgetMinInr))) : null,
         budgetMaxInr: normalizedInput.budgetMaxInr != null ? BigInt(Math.round(Number(normalizedInput.budgetMaxInr))) : null,
         organizationId: normalizedInput.organizationId ?? null,

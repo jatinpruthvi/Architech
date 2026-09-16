@@ -231,7 +231,7 @@ function normalizeInput(input: ChannelRequestInput, cityId?: string) {
     budgetMinInr: type === "DEMAND" && input.budgetMinInr != null ? BigInt(Math.round(Number(input.budgetMinInr))) : null,
     budgetMaxInr: type === "DEMAND" && input.budgetMaxInr != null ? BigInt(Math.round(Number(input.budgetMaxInr))) : null,
     priceInr: type === "SUPPLY" && input.priceInr != null ? BigInt(Math.round(Number(input.priceInr))) : null,
-    expiresAt: input.expiresAt ? new Date(input.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    expiresAt: input.expiresAt != null && String(input.expiresAt).trim() !== "" ? new Date(input.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   };
 }
 
@@ -651,7 +651,7 @@ export async function saveChannelDealSplitForServer(id: string, input: { totalCo
   const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
   if (total === null || demandShare === null || supplyShare === null) return fail(400, "totalCommissionInr, demandBrokerShareInr, and supplyBrokerShareInr are required.");
   if (demandShare + supplyShare !== total) return fail(400, "Commission split must add up to totalCommissionInr.");
-  /* BUG-R4-005: same ceiling as the in-memory twin — toNumberOrNull bounds the
+  /* Same ceiling as the in-memory twin — toNumberOrNull bounds the
      sign and the fraction, not the magnitude, and BigInt() would happily carry
      1e30 into a BIGINT column that tops out at 9223372036854775807. */
   if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) return fail(400, "Commission amounts are out of range.");

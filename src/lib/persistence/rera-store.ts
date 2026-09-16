@@ -96,7 +96,8 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
   });
   let refreshed = 0;
   const errors: string[] = [];
-  for (const row of rows) {
+
+  await Promise.all(rows.map(async (row) => {
     const jurisdictionSlug = String(row.jurisdictionSlug);
     const registrationNumber = String(row.registrationNumber);
     const entityId = `${jurisdictionSlug}:${registrationNumber}`;
@@ -110,10 +111,8 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
           where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
           data: { updatedAt: new Date() },
         });
-      } catch (updateError) {
-        // Ignore
-      }
-      continue;
+      } catch (updateError) {}
+      return;
     }
     if (!result.ok || !result.record) {
       /* Not found / jurisdiction unsupported / provider failure: stay STALE. */
@@ -122,13 +121,11 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
           where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
           data: { updatedAt: new Date() },
         });
-      } catch (updateError) {
-        // Ignore
-      }
-      continue;
+      } catch (updateError) {}
+      return;
     }
     const nextStatus = snapshotStatusToDb(result.record.verificationStatus);
-    if (nextStatus === null) continue;
+    if (nextStatus === null) return;
     /* BUG-R4-004: guard the WRITE half too, not only the provider call above.
        An unguarded throw here escaped both the loop and the cron route
        (`/api/internal/scheduled/rera-refresh` does not catch either), aborting
@@ -178,11 +175,9 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
           where: { jurisdictionSlug_registrationNumber: { jurisdictionSlug, registrationNumber } },
           data: { updatedAt: new Date() },
         });
-      } catch (updateError) {
-        // Ignore update errors so the loop continues.
-      }
+      } catch (updateError) {}
     }
-  }
+  }));
   return { ok: errors.length === 0, scanned: rows.length, refreshed, errors };
 }
 
