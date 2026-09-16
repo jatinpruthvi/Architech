@@ -112,6 +112,24 @@ describe("WhatsApp dispatch worker", () => {
     const result = await processWhatsAppDispatchBatch({ organizationId: "org_1", now: new Date("2026-09-12T00:01:00.000Z") });
     expect(result.unknown).toBe(1);
     expect(mocks.provider.sendText).toHaveBeenCalledTimes(1);
+    expect(mocks.database.whatsappDispatch.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "dispatch_1", organizationId: "org_1", status: "IN_FLIGHT" }),
+        data: expect.objectContaining({ status: "UNKNOWN", lastErrorCode: "PROVIDER_NO_MESSAGE_ID" })
+      })
+    );
+    expect(mocks.database.auditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "whatsapp.dispatch.unknown",
+          entityId: "dispatch_1",
+          metadata: expect.objectContaining({
+            status: "UNKNOWN",
+            code: "PROVIDER_NO_MESSAGE_ID"
+          })
+        })
+      })
+    );
   });
 
   it("marks definitive provider errors failed and ambiguous errors unknown without resend", async () => {
