@@ -8,6 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "postinstall": "camoufox-js fetch",
     "crawl:full": "node crawl.mjs --full",
     "crawl:delta": "node crawl.mjs --delta",
     "crawl:help": "node crawl.mjs --help"

@@ -28,7 +28,13 @@ const DEFAULT_PROFILE_DIR =
   process.platform === 'win32'
     ? 'C:\\Users\\Mishay\\.camofox\\profiles\\b30a0e34683cf2594ffa4b9f9b2379d3'
     : resolve(homedir(), '.camofox', 'profiles', 'technoproperty');
-const PROFILE_DIR = process.env.TECHNO_PROFILE_DIR || DEFAULT_PROFILE_DIR;
+
+let PROFILE_DIR = process.env.TECHNO_PROFILE_DIR || DEFAULT_PROFILE_DIR;
+// Ignore Windows paths in non-Windows environments (avoids creating literal C:\ directories in Linux)
+if (process.platform !== 'win32' && /^[a-zA-Z]:[\\/]/.test(PROFILE_DIR)) {
+  PROFILE_DIR = DEFAULT_PROFILE_DIR;
+}
+
 const BASE_URL = process.env.TECHNO_BASE_URL || 'https://ahmedabad.technoproperty.in';
 
 export function loadCredentials() {
