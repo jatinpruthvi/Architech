@@ -585,7 +585,7 @@ export function saveChannelDealSplit(dealId: string, input: { totalCommissionInr
   const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
   if (total === null || demandShare === null || supplyShare === null) return { ok: false, status: 400, errors: ["totalCommissionInr, demandBrokerShareInr, and supplyBrokerShareInr are required."] };
   if (demandShare + supplyShare !== total) return { ok: false, status: 400, errors: ["Commission split must add up to totalCommissionInr."] };
-  /* We must enforce the ceiling as well as the sign. BUG-2026-001 routed this path
+  /* BUG-R4-006: the ceiling as well as the sign. BUG-2026-001 routed this path
      through toNumberOrNull, which rejects negatives and fractions but accepts
      any finite value — so a 1e30 commission could pass and only fail inside
      PostgreSQL ("totalCommissionInr" BIGINT, max 9223372036854775807). */
