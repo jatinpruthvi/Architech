@@ -103,7 +103,7 @@ async function onListingPublished(event: ListingEvent): Promise<void> {
      upserts onto the same row instead of creating a second one. */
   const rowsByKey = new Map<string, OutboxRow>();
   let enqueued = 0;
-  for (const target of targets) {
+  const upsertPromises = targets.map(async (target) => {
     const row = await outbox.upsert({
       where: { idempotencyKey: target.idempotencyKey },
       update: {}, /* the facts never change after first enqueue */
@@ -119,6 +119,11 @@ async function onListingPublished(event: ListingEvent): Promise<void> {
         idempotencyKey: target.idempotencyKey,
       },
     });
+    return { target, row };
+  });
+
+  const results = await Promise.all(upsertPromises);
+  for (const { target, row } of results) {
     rowsByKey.set(target.idempotencyKey, row);
     if (row.status === "PENDING") enqueued += 1;
   }
@@ -249,51 +254,60 @@ export async function flushSavedSearchAlertDigestForServer(fetchImpl: typeof fet
   let emails = 0;
   let emailsFailed = 0;
   let rowsDelivered = 0;
-  for (const [email, group] of byEmail) {
-    const capped = group.slice(0, gate.digestMaxListings);
-    /* The same listing can match several of one watcher's searches. The
-       digest notifies about LISTINGS, not per search, so each stableId is
-       listed once — but every matching row is still cleared below, or the
-       duplicate would be "delivered" again next run. */
-    const seenStableIds = new Set<string>();
-    const batch = capped.filter((row) => {
-      if (seenStableIds.has(row.stableId)) return false;
-      seenStableIds.add(row.stableId);
-      return true;
-    });
-    const { subject, text } = buildDigestEmail(gate, batch.map((row) => ({
-      stableId: row.stableId,
-      listingTitle: row.listingTitle,
-      listingPrice: row.listingPrice,
-      localitySlug: row.localitySlug,
-      citySlug: row.citySlug,
-    })));
-    const fingerprint = createHash("sha256").update(batch.map((row) => row.stableId).sort().join("\n")).digest("hex").slice(0, 32);
-    const idempotencyKey = `digest:${dayKey}:${email}:${fingerprint}`;
-    try {
-      const response = await fetchImpl("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${gate.apiKey}`,
-          "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKey,
-        },
-        body: JSON.stringify({ from: gate.from, to: email, subject, text }),
+
+  // Convert entries to array to process in chunks
+  const byEmailEntries = Array.from(byEmail.entries());
+  const chunkSize = 20; // Process 20 emails concurrently to avoid rate limits
+
+  for (let i = 0; i < byEmailEntries.length; i += chunkSize) {
+    const chunk = byEmailEntries.slice(i, i + chunkSize);
+
+    await Promise.all(chunk.map(async ([email, group]) => {
+      const capped = group.slice(0, gate.digestMaxListings);
+      /* The same listing can match several of one watcher's searches. The
+         digest notifies about LISTINGS, not per search, so each stableId is
+         listed once — but every matching row is still cleared below, or the
+         duplicate would be "delivered" again next run. */
+      const seenStableIds = new Set<string>();
+      const batch = capped.filter((row) => {
+        if (seenStableIds.has(row.stableId)) return false;
+        seenStableIds.add(row.stableId);
+        return true;
       });
-      if (response.ok) {
-        emails += 1;
-        /* Every row in the capped window is cleared — the deduped
-           duplicates included, since the email already notified them. */
-        rowsDelivered += capped.length;
-        await outbox.updateMany({ where: { id: { in: capped.map((row) => row.id) } }, data: { status: "SENT", sentAt: new Date() } });
-      } else {
+      const { subject, text } = buildDigestEmail(gate, batch.map((row) => ({
+        stableId: row.stableId,
+        listingTitle: row.listingTitle,
+        listingPrice: row.listingPrice,
+        localitySlug: row.localitySlug,
+        citySlug: row.citySlug,
+      })));
+      const fingerprint = createHash("sha256").update(batch.map((row) => row.stableId).sort().join("\n")).digest("hex").slice(0, 32);
+      const idempotencyKey = `digest:${dayKey}:${email}:${fingerprint}`;
+      try {
+        const response = await fetchImpl("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${gate.apiKey}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+          body: JSON.stringify({ from: gate.from, to: email, subject, text }),
+        });
+        if (response.ok) {
+          emails += 1;
+          /* Every row in the capped window is cleared — the deduped
+             duplicates included, since the email already notified them. */
+          rowsDelivered += capped.length;
+          await outbox.updateMany({ where: { id: { in: capped.map((row) => row.id) } }, data: { status: "SENT", sentAt: new Date() } });
+        } else {
+          emailsFailed += 1;
+          logger.error({ event: "saved_search.digest_failed", email, status: response.status, batch: batch.length }, "saved-search digest delivery failed");
+        }
+      } catch (error) {
         emailsFailed += 1;
-        logger.error({ event: "saved_search.digest_failed", email, status: response.status, batch: batch.length }, "saved-search digest delivery failed");
+        logger.error({ event: "saved_search.digest_failed", email, error }, "saved-search digest transport failed");
       }
-    } catch (error) {
-      emailsFailed += 1;
-      logger.error({ event: "saved_search.digest_failed", email, error }, "saved-search digest transport failed");
-    }
+    }));
   }
   /* True backlog, not the read window: `rows` was bounded by `take: 500`,
      so `rows.length - rowsDelivered` under-reports whenever PENDING exceeds

@@ -5,11 +5,57 @@ import {
   clearMutationSafetyBucketsForTests,
   enforceMutationSafety,
   mutationSafetyBucketCount,
+  clientKey,
 } from "./request-safety";
 
 afterEach(() => {
   clearMutationSafetyBucketsForTests();
   vi.unstubAllEnvs();
+});
+
+describe("clientKey", () => {
+  it("returns x-real-ip if present", () => {
+    const request = new Request("http://localhost", { headers: { "x-real-ip": "203.0.113.1" } });
+    expect(clientKey(request)).toBe("203.0.113.1");
+  });
+
+  it("returns cf-connecting-ip if present", () => {
+    const request = new Request("http://localhost", { headers: { "cf-connecting-ip": "203.0.113.2" } });
+    expect(clientKey(request)).toBe("203.0.113.2");
+  });
+
+  it("prefers x-real-ip over x-forwarded-for", () => {
+    const request = new Request("http://localhost", {
+      headers: { "x-real-ip": "203.0.113.1", "x-forwarded-for": "198.51.100.1, 198.51.100.2" },
+    });
+    expect(clientKey(request)).toBe("203.0.113.1");
+  });
+
+  it("returns the first x-forwarded-for entry when not trusting proxy headers", () => {
+    vi.stubEnv("TRUST_PROXY_HEADERS", "false");
+    const request = new Request("http://localhost", { headers: { "x-forwarded-for": "198.51.100.1, 198.51.100.2, 198.51.100.3" } });
+    expect(clientKey(request)).toBe("198.51.100.1");
+  });
+
+  it("returns the last x-forwarded-for entry when trusting proxy headers", () => {
+    vi.stubEnv("TRUST_PROXY_HEADERS", "true");
+    const request = new Request("http://localhost", { headers: { "x-forwarded-for": "198.51.100.1, 198.51.100.2, 198.51.100.3" } });
+    expect(clientKey(request)).toBe("198.51.100.3");
+  });
+
+  it("handles whitespace in x-forwarded-for", () => {
+    vi.stubEnv("TRUST_PROXY_HEADERS", "false");
+    const request = new Request("http://localhost", { headers: { "x-forwarded-for": "  198.51.100.1  ,  198.51.100.2 " } });
+    expect(clientKey(request)).toBe("198.51.100.1");
+
+    vi.stubEnv("TRUST_PROXY_HEADERS", "true");
+    expect(clientKey(request)).toBe("198.51.100.2");
+  });
+
+  it("returns null when no relevant headers are present", () => {
+    const request = new Request("http://localhost");
+    expect(clientKey(request)).toBeNull();
+  });
 });
 
 describe("mutation request safety", () => {
@@ -108,7 +154,7 @@ describe("mutation request safety", () => {
     expect(response?.status).toBe(429);
   });
 
-  /* BUG-R4-002 (P2, security/availability): `buckets` was keyed by
+  /* FIX-R4-002 (P2, security/availability): `buckets` was keyed by
      `${ip}:${route}:${method}` and was never pruned — the only cleanup was the
      test-only `clearMutationSafetyBucketsForTests()`. Two consequences:
        1. leak — every distinct client that ever mutated left a permanent entry,
@@ -118,7 +164,7 @@ describe("mutation request safety", () => {
           headers whenever the app is reachable without a proxy that overwrites
           them, so rotating that header mints entries at will (and each fresh
           identity also gets a clean 60-request allowance). */
-  it("BUG-R4-002: the bucket map stays bounded when client identity rotates", () => {
+  it("FIX-R4-002: the bucket map stays bounded when client identity rotates", () => {
     const request = new Request("http://example.com/api/leads", { method: "POST" });
     for (let index = 0; index < MAX_RATE_LIMIT_BUCKETS + 2000; index += 1) {
       request.headers.set("x-real-ip", `203.0.${index % 256}.${Math.floor(index / 256)}`);
@@ -127,7 +173,7 @@ describe("mutation request safety", () => {
     expect(mutationSafetyBucketCount()).toBeLessThanOrEqual(MAX_RATE_LIMIT_BUCKETS);
   });
 
-  it("BUG-R4-002: expired windows are reclaimed instead of retained forever", () => {
+  it("FIX-R4-002: expired windows are reclaimed instead of retained forever", () => {
     vi.useFakeTimers();
     try {
       const request = new Request("http://example.com/api/leads", { method: "POST" });
@@ -147,7 +193,7 @@ describe("mutation request safety", () => {
     }
   });
 
-  it("BUG-R4-002: pruning never weakens the per-client cap", () => {
+  it("FIX-R4-002: pruning never weakens the per-client cap", () => {
     const request = new Request("http://example.com/api/leads", { method: "POST" });
     request.headers.set("x-forwarded-for", "192.0.2.77");
     for (let index = 0; index < 60; index += 1) expect(enforceMutationSafety(request)).toBeNull();

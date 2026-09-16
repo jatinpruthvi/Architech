@@ -192,6 +192,31 @@ export function validatePhoneAndOtp(input: Partial<{ phone: string; otp: string 
   return { ok: true, value: { phone: phone.trim(), phoneE164: e164, otp: digits } };
 }
 
+/** Validate a forgot-password request: the number alone.
+ *
+ *  Deliberately does NOT ask for a password or a name — asking for anything the
+ *  user cannot supply while locked out turns this into a second login form, and
+ *  every extra field is another way to leak whether the account exists. */
+export function validateResetRequest(input: Partial<{ phone: string }>): { ok: true; value: { phone: string; phoneE164: string } } | { ok: false; issues: CredentialIssue[] } {
+  const phone = typeof input.phone === "string" ? input.phone : "";
+  const phoneIssue = validatePhone(phone);
+  if (phoneIssue) return { ok: false, issues: [phoneIssue] };
+  return { ok: true, value: { phone: phone.trim(), phoneE164: normalizePhoneToE164(phone)! } };
+}
+
+/** Validate the OTP + new-password step of a reset.
+ *
+ *  The new password is held to the SAME floor as sign-up: a reset that allowed a
+ *  weaker password than the one it replaces would be an easy permanent
+ *  downgrade, and Better Auth would reject the short ones anyway. */
+export function validateResetPassword(input: Partial<{ otp: string; password: string }>): { ok: true; value: { otp: string; password: string } } | { ok: false; issues: CredentialIssue[] } {
+  const otp = typeof input.otp === "string" ? input.otp : "";
+  const password = typeof input.password === "string" ? input.password : "";
+  const issues = [validateOtp(otp), validatePassword(password)].filter((issue): issue is CredentialIssue => issue !== null);
+  if (issues.length > 0) return { ok: false, issues };
+  return { ok: true, value: { otp: otp.trim().replace(/\D/g, ""), password } };
+}
+
 /* Sign-in failure is reported as ONE message for both "unknown email" and
    "wrong password". Distinguishing them turns the form into an account
    enumeration oracle, which is exactly how credential-stuffing lists get

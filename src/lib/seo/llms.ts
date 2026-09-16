@@ -94,25 +94,19 @@ export type LlmsTxtOptions = {
 
 const DEFAULT_MAX_PER_SEGMENT = 200;
 
-/** Build llms.txt from the publishable registry.
- *
- *  Empty (bar a one-line explanation) when indexing is gated off — the same
- *  fail-closed behaviour as `buildSegmentSitemap`. A preview deploy must not
- *  hand an agent a list of URLs that are all `noindex`. */
-export function buildLlmsTxt(pages: SeoPage[], env: RuntimeEnvironment = process.env, options: LlmsTxtOptions = {}): string {
-  const site = siteUrl();
-  if (!isPublicIndexingEnabled(env)) {
-    return [
-      "# Architech",
-      "",
-      "Public indexing is disabled for this deployment, so no URLs are advertised here.",
-      "",
-      `See ${sitemapIndexUrl()} for the canonical index once indexing is enabled.`,
-      "",
-    ].join("\n");
-  }
+function buildDisabledMessage(): string {
+  return [
+    "# Architech",
+    "",
+    "Public indexing is disabled for this deployment, so no URLs are advertised here.",
+    "",
+    `See ${sitemapIndexUrl()} for the canonical index once indexing is enabled.`,
+    "",
+  ].join("\n");
+}
 
-  const maxPerSegment = options.maxPerSegment ?? DEFAULT_MAX_PER_SEGMENT;
+function buildHeader(env: RuntimeEnvironment): string[] {
+  const site = siteUrl();
   const lines: string[] = [
     "# Architech",
     "",
@@ -144,6 +138,11 @@ export function buildLlmsTxt(pages: SeoPage[], env: RuntimeEnvironment = process
     "and date on the page itself; prefer the page over any cached copy of this file.",
   );
 
+  return lines;
+}
+
+function buildSegments(pages: SeoPage[], maxPerSegment: number): string[] {
+  const lines: string[] = [];
   for (const segment of SITEMAP_SEGMENTS) {
     const inSegment = pages.filter((page) => sitemapSegmentForPage(page) === segment.id);
     if (!inSegment.length) continue;
@@ -156,8 +155,27 @@ export function buildLlmsTxt(pages: SeoPage[], env: RuntimeEnvironment = process
       );
     }
   }
+  return lines;
+}
 
-  lines.push("");
+/** Build llms.txt from the publishable registry.
+ *
+ *  Empty (bar a one-line explanation) when indexing is gated off — the same
+ *  fail-closed behaviour as `buildSegmentSitemap`. A preview deploy must not
+ *  hand an agent a list of URLs that are all `noindex`. */
+export function buildLlmsTxt(pages: SeoPage[], env: RuntimeEnvironment = process.env, options: LlmsTxtOptions = {}): string {
+  if (!isPublicIndexingEnabled(env)) {
+    return buildDisabledMessage();
+  }
+
+  const maxPerSegment = options.maxPerSegment ?? DEFAULT_MAX_PER_SEGMENT;
+
+  const lines: string[] = [
+    ...buildHeader(env),
+    ...buildSegments(pages, maxPerSegment),
+    "",
+  ];
+
   return lines.join("\n");
 }
 

@@ -1,3 +1,4 @@
+import pMap from "p-map";
 import "server-only";
 import { createHash } from "node:crypto";
 import {
@@ -24,7 +25,6 @@ import {
   toNumberOrNull,
   transitionOwnChannelRequest,
   validateChannelRequest,
-  MAX_INR,
   type ChannelDealCloseMode,
   type ChannelDealRecord,
   type ChannelMatchRecord,
@@ -40,6 +40,7 @@ import { listBrokerDrafts, type ListingDraft } from "@/lib/broker/workflow";
 import { getRequirementForOrganization, propertyTypeFromRequirement, type RequirementCategory, type RequirementRecord, type RequirementRole } from "@/lib/requirements";
 import { isPrismaPersistence } from "@/lib/persistence/source";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
+import { MAX_SAFE_INR } from "@/lib/money";
 
 type ChannelPrismaClient = ReturnType<typeof getPrismaClient> & {
   $transaction<T>(fn: (tx: ChannelPrismaClient) => Promise<T>): Promise<T>;
@@ -231,7 +232,7 @@ function normalizeInput(input: ChannelRequestInput, cityId?: string) {
     budgetMinInr: type === "DEMAND" && input.budgetMinInr != null ? BigInt(Math.round(Number(input.budgetMinInr))) : null,
     budgetMaxInr: type === "DEMAND" && input.budgetMaxInr != null ? BigInt(Math.round(Number(input.budgetMaxInr))) : null,
     priceInr: type === "SUPPLY" && input.priceInr != null ? BigInt(Math.round(Number(input.priceInr))) : null,
-    expiresAt: input.expiresAt ? new Date(input.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    expiresAt: input.expiresAt != null && String(input.expiresAt).trim() !== "" ? new Date(input.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   };
 }
 
@@ -524,16 +525,25 @@ async function createMatchesForPrismaRequest(db: ChannelPrismaClient, request: C
     return score >= 40 ? { demand, supply, score, reasons } : null;
   }).filter(isScoredPrismaCandidate);
   const created: ChannelMatchRecord[] = [];
-  for (const { demand, supply, score, reasons } of scored.sort((a, b) => b.score - a.score || b.supply.updatedAt.localeCompare(a.supply.updatedAt)).slice(0, BROKER_CHANNEL_TOP_MATCH_LIMIT)) {
-    const existing = await db.channelMatch.findFirst({ where: { demandRequestId: demand.id, supplyRequestId: supply.id } });
-    if (existing) {
-      created.push(matchFromRow(existing));
-      continue;
+  const topScored = scored.sort((a, b) => b.score - a.score || b.supply.updatedAt.localeCompare(a.supply.updatedAt)).slice(0, BROKER_CHANNEL_TOP_MATCH_LIMIT);
+
+  if (topScored.length > 0) {
+    const pairs = topScored.map(({ demand, supply }) => ({ demandRequestId: demand.id, supplyRequestId: supply.id }));
+    // sql-perf: intentionally-unbounded (bounded by BROKER_CHANNEL_TOP_MATCH_LIMIT in loop array before this point)
+    const existingMatches = await db.channelMatch.findMany({ where: { OR: pairs } });
+    const existingMap = new Map(existingMatches.map(m => [`${m.demandRequestId}:${m.supplyRequestId}`, m]));
+
+    for (const { demand, supply, score, reasons } of topScored) {
+      const existing = existingMap.get(`${demand.id}:${supply.id}`);
+      if (existing) {
+        created.push(matchFromRow(existing));
+        continue;
+      }
+      const match = matchFromRow(await db.channelMatch.create({ data: { demandRequestId: demand.id, supplyRequestId: supply.id, score, reasons, createdBy: "system" } }));
+      await createNotification(db, demand.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 supply match is available.`, "ChannelMatch", match.id);
+      await createNotification(db, supply.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 demand match is available.`, "ChannelMatch", match.id);
+      created.push(match);
     }
-    const match = matchFromRow(await db.channelMatch.create({ data: { demandRequestId: demand.id, supplyRequestId: supply.id, score, reasons, createdBy: "system" } }));
-    await createNotification(db, demand.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 supply match is available.`, "ChannelMatch", match.id);
-    await createNotification(db, supply.organizationId, "channel.match.suggested", "Top broker-channel match", `A ${score}/100 demand match is available.`, "ChannelMatch", match.id);
-    created.push(match);
   }
   return created;
 }
@@ -651,10 +661,10 @@ export async function saveChannelDealSplitForServer(id: string, input: { totalCo
   const supplyShare = toNumberOrNull(input.supplyBrokerShareInr);
   if (total === null || demandShare === null || supplyShare === null) return fail(400, "totalCommissionInr, demandBrokerShareInr, and supplyBrokerShareInr are required.");
   if (demandShare + supplyShare !== total) return fail(400, "Commission split must add up to totalCommissionInr.");
-  /* BUG-R4-005: same ceiling as the in-memory twin — toNumberOrNull bounds the
+  /* BUG-R4-006: same ceiling as the in-memory twin — toNumberOrNull bounds the
      sign and the fraction, not the magnitude, and BigInt() would happily carry
      1e30 into a BIGINT column that tops out at 9223372036854775807. */
-  if (total > MAX_INR || demandShare > MAX_INR || supplyShare > MAX_INR) return fail(400, "Commission amounts are out of range.");
+  if (total > MAX_SAFE_INR || demandShare > MAX_SAFE_INR || supplyShare > MAX_SAFE_INR) return fail(400, "Commission amounts are out of range.");
   const row = await withOrg(prisma(), session.organization.id, async (db) => {
     const deal = await db.channelDeal.update({ where: { id }, data: { totalCommissionInr: BigInt(total), demandBrokerShareInr: BigInt(demandShare), supplyBrokerShareInr: BigInt(supplyShare), splitAgreement: input.splitAgreement ?? { type: "negotiated", summary: "Negotiated broker-channel split." }, closeMode: input.closeMode === "SINGLE" ? "SINGLE" : "DUAL" } });
     const parsed = dealFromRow(deal);
@@ -673,10 +683,12 @@ async function createCloseRecordsForPrisma(db: ChannelPrismaClient, deal: Channe
   ];
   for (const entry of entries) {
     await setTenantOrg(db, entry.organizationId);
-    await db.commissionEntry.create({ data: { organizationId: entry.organizationId, dealId: deal.id, entryType: "COMMISSION_INCOME", amountInr: BigInt(entry.amount), employeeId: session.user.id, description: `Broker channel commission for ${deal.id}`, entryDate: new Date(), recordedById: session.user.id } });
     const idempotencyKey = `channel.close.v${deal.closeVersion}.${deal.id}.${entry.organizationId}`;
     const payloadHash = createHash("sha256").update(`${idempotencyKey}:${entry.amount}`).digest("hex");
-    await db.erpnextCloseWrite.create({ data: { channelDealId: deal.id, organizationId: entry.organizationId, idempotencyKey, payloadHash } });
+    await Promise.all([
+      db.commissionEntry.create({ data: { organizationId: entry.organizationId, dealId: deal.id, entryType: "COMMISSION_INCOME", amountInr: BigInt(entry.amount), employeeId: session.user.id, description: `Broker channel commission for ${deal.id}`, entryDate: new Date(), recordedById: session.user.id } }),
+      db.erpnextCloseWrite.create({ data: { channelDealId: deal.id, organizationId: entry.organizationId, idempotencyKey, payloadHash } })
+    ]);
   }
 }
 
@@ -817,9 +829,10 @@ async function processErpnextCloseWritesForOrganization(organizationId: string, 
   const writes = await pendingErpnextCloseWritesForServer(limit, organizationId);
   let processed = 0;
   const errors: string[] = [];
-  for (const write of writes) {
+
+  await pMap(writes, async (write) => {
     const claimed = await claimErpnextCloseWriteForServer(write.id, write.organizationId);
-    if (!claimed) continue; /* another driver (UI sync or cron) owns this row */
+    if (!claimed) return; /* another driver (UI sync or cron) owns this row */
     try {
       const db = prisma();
       const dealRow = await withOrg(db, write.organizationId, (tx) => tx.channelDeal.findFirst({ where: { id: write.channelDealId }, include: { match: { include: { demandRequest: true, supplyRequest: true } } } })) as ChannelDealWithMatchRow | null;
@@ -867,7 +880,7 @@ async function processErpnextCloseWritesForOrganization(organizationId: string, 
       errors.push(`${write.id}: ${message}`);
       await markErpnextCloseWriteForServer(write.id, write.organizationId, "FAILED", { lastError: message });
     }
-  }
+  }, { concurrency: 5 });
   return { processed, errors };
 }
 

@@ -44,7 +44,8 @@ export async function dispatchLeadEventNotifications(
 ): Promise<{ delivered: number; failed: number }> {
   let delivered = 0;
   let failed = 0;
-  for (const target of targets) {
+
+  const promises = targets.map(async (target) => {
     try {
       const response = await fetchImpl("https://api.resend.com/emails", {
         method: "POST",
@@ -65,7 +66,10 @@ export async function dispatchLeadEventNotifications(
       failed += 1;
       logger.error({ event: "lead.notify_failed", idempotencyKey: target.idempotencyKey, error }, "lead notification transport failed");
     }
-  }
+  });
+
+  await Promise.all(promises);
+
   return { delivered, failed };
 }
 

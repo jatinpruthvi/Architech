@@ -17,6 +17,19 @@ export const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_MAX_PER_HOUR = 3;
 
+/* OTP purposes. `OtpVerification.purpose` is a plain discriminator, and keeping
+   the two flows on SEPARATE values is a security property, not tidiness: a code
+   a user requested to create an account must never be accepted to change that
+   account's password, and vice versa. Every store call takes `purpose`, so a
+   signup code and a reset code for the same number are different rows and can
+   never satisfy each other's lookup. Fits `@db.VarChar(20)`. */
+export const OTP_PURPOSE_SIGNUP = "signup";
+export const OTP_PURPOSE_PASSWORD_RESET = "password-reset";
+
+/** Fixed code used when there is no real WhatsApp sender wired up, so the flow
+ *  stays exercisable in previews and CI. Mirrors the signup flow's behaviour. */
+export const DEMO_OTP = "123456";
+
 function getOtpSecret(): string {
   // Reuse existing HMAC key if present, else BETTER_AUTH_SECRET, else dev fallback (not for prod)
   return (
@@ -62,3 +75,17 @@ export function isOtpExpired(expiresAt: Date): boolean {
 export function formatOtpMessage(otp: string): string {
   return `Your Architech verification code is ${otp}. Valid for 5 minutes. Do not share this code with anyone.`;
 }
+
+/* A reset code is worth more than a signup code — it changes the password of an
+   account that already exists — so the wording says what it is for and names
+   the phishing pattern users actually fall for. */
+export function formatResetOtpMessage(otp: string): string {
+  return `Your Architech password reset code is ${otp}. Valid for 5 minutes. Do not share it — Architech staff will never ask for this code.`;
+}
+
+/** Message body for a given purpose, so the sender cannot drift from the
+ *  discriminator the code was stored under. */
+export function formatOtpMessageFor(purpose: string, otp: string): string {
+  return purpose === OTP_PURPOSE_PASSWORD_RESET ? formatResetOtpMessage(otp) : formatOtpMessage(otp);
+}
+

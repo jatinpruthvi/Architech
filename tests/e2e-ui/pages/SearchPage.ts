@@ -11,11 +11,13 @@ export class SearchPage {
     this.page = page;
     this.filtersButton = page.getByRole("button", { name: /Filters/i });
     this.propertyCards = page.locator("article");
-    this.noResultsMessage = page.getByText(/We couldn't find any homes matching/i);
+    this.noResultsMessage = page.getByText(/No homes match/i);
     this.titleHeading = page.locator("h1");
   }
 
   async goto(query: string) {
-    await this.page.goto(`/search?q=${encodeURIComponent(query)}`);
+    /* Trailing slash: /search 308-redirects to /search/, so request the
+       canonical form and skip a needless redirect on every test. */
+    await this.page.goto(`/search/?q=${encodeURIComponent(query)}`);
   }
 }

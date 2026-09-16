@@ -1,42 +1,50 @@
 import { test, expect } from "@playwright/test";
 import { LoginPage } from "./pages/LoginPage";
 
-test.describe("Login Journey", () => {
+test.describe("Login page functionality", () => {
   test("user can switch between sign in and register tabs", async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
 
-    // The default mode is sign in
+    // Verify login form loads (h1 is aria-hidden; assert on the visible heading).
     await expect(page.getByRole("heading", { name: /Welcome back to your survey/i })).toBeVisible();
 
-    // Note: It might be disabled depending on `registrationAvailable`
-    if (await loginPage.registerTab.isDisabled()) {
-      test.skip(true, "Registration is disabled in this environment");
-      return;
-    }
-    
+    /* Wait for the fetched registration state instead of sampling the
+       server-rendered disabled tab once (see LoginPage.waitForRegistrationSettled).
+
+       This asserts rather than skips. The suite boots its own server on the
+       demo auth source, where account creation is always open, so "closed"
+       can only mean the session contract never settled — a regression this
+       test must report rather than quietly step around. A test.skip() here
+       would silently drop the register tab from coverage the moment it broke,
+       which is the same failure mode that kept these login tests red. */
+    const registrationOpen = await loginPage.waitForRegistrationSettled();
+    expect(registrationOpen, "account creation must be open with the demo auth source this suite boots").toBeTruthy();
+
     await loginPage.registerTab.click();
 
-    // Now mode should be register
+    // Verify we're on the registration form.
     await expect(page.getByRole("heading", { name: /Start a shortlist that follows you/i })).toBeVisible();
     await expect(page.getByLabel("Full name")).toBeVisible();
   });
 
-  test("demo accounts login flow", async ({ page }) => {
+  test("demo phone credentials fill the sign-in form and sign in", async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
 
     await expect(page.getByRole("heading", { name: /Preview sign-ins/i })).toBeVisible();
 
+    // The demo buyer's real credentials (src/lib/auth/demo-accounts.ts).
     await loginPage.clickDemoAccount(/Buyer/i);
 
-    // Verify fields are populated
-    await expect(loginPage.emailInput).toHaveValue("buyer@example.com");
+    await expect(loginPage.phoneInput).toHaveValue("9876543211");
     await expect(loginPage.passwordInput).toHaveValue("demo-buyer-1234");
 
-    // Submit
     await loginPage.signInButton.click();
-    await page.waitForLoadState("networkidle");
+
+    // resolvePostLoginPath() sends an unscoped buyer to the shared dashboard.
+    // The point of the assertion is that sign-in navigated off /login/.
+    await expect(page).toHaveURL(/\/dashboard\//, { timeout: 30_000 });
   });
 
   test("shows validation errors for empty fields on submit", async ({ page }) => {
@@ -45,7 +53,8 @@ test.describe("Login Journey", () => {
 
     await loginPage.signInButton.click();
 
-    await expect(loginPage.emailError).toBeVisible();
+    // validatePhoneSignIn() reports both fields when the form is empty.
+    await expect(loginPage.phoneError).toBeVisible();
     await expect(loginPage.passwordError).toBeVisible();
   });
 });
