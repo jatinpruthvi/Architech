@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { enforceMutationSafety } from "@/lib/auth/request-safety";
 import { logInfo } from "@/lib/observability/logger";
 import { recordWebVitalSample } from "@/lib/observability/metrics-store";
-import { isCoreWebVital, metricWithinPhaseOneTarget, type WebVitalPayload } from "@/lib/observability/web-vitals";
+import { isCoreWebVital, metricWithinPhaseOneTarget, WEB_VITAL_NAMES, type WebVitalPayload } from "@/lib/observability/web-vitals";
 
 export const runtime = "nodejs";
 
@@ -12,6 +12,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as WebVitalPayload | null;
   if (!body || !body.name || typeof body.value !== "number") {
     return NextResponse.json({ ok: false, errors: ["Invalid web vital payload."] }, { status: 400 });
+  }
+
+  if (!WEB_VITAL_NAMES.includes(body.name as any)) {
+    return NextResponse.json({ ok: true, ignored: true }, { headers: { "Cache-Control": "no-store" } });
   }
 
   /* Feed the in-process rolling store so /api/observability/slo reports
