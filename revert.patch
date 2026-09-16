@@ -1,0 +1,13 @@
+--- src/lib/observability/metrics-store.ts
++++ src/lib/observability/metrics-store.ts
+@@ -62,8 +62,8 @@ const WEB_VITAL_NAMES: readonly string[] = ["CLS", "FCP", "FID", "INP", "LCP", "
+
+ /** Record one RUM web-vital sample (name is the web-vitals metric name). */
+ export function recordWebVitalSample(name: string, value: number) {
+-  if (typeof name !== "string" || !WEB_VITAL_NAMES.includes(name)) return;
+-  push(`web_vital.${name}` as SeriesId, value);
++  const seriesId = `web_vital.${name}` as SeriesId;
++  if (seriesId.startsWith("web_vital.")) push(seriesId, value);
+ }
+ /** Record one search-API latency observation in milliseconds. */
+ export function recordSearchApiLatency(durationMs: number) {
