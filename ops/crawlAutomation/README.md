@@ -73,9 +73,8 @@ cp .env.example .env
 |---|---|---|---|
 | `TECHNO_USERNAME` | auto-login* | — | Portal username (only used if no valid session exists) |
 | `TECHNO_PASSWORD` | auto-login* | — | Portal password |
-| `TECHNO_PROFILE_DIR` | no | Win: dev profile; Linux/macOS: `~/.camofox/profiles/technoproperty` | Camoufox profile dir that holds a logged-in session |
+| `TECHNO_PROFILE_DIR` | no | hardcoded dev profile | Camoufox profile dir that holds a logged-in session |
 | `TECHNO_BASE_URL` | no | `https://ahmedabad.technoproperty.in` | Portal base URL |
-| `CAMOUFOX_HEADLESS` | no | headless on Linux/macOS, headed on Windows | `1` = headless, `0` = headed browser |
 
 \* A valid Camoufox profile session is the primary path; credentials are only
 needed when the crawler must re-login from scratch.
@@ -100,37 +99,11 @@ node crawl.mjs --export                  # write CSVs to exports/
 | `--status` / `status` | Show DB stats + last crawl (default) |
 | `-c, --category` | Comma-separated category keys (default: all) |
 | `--no-meta` | Skip contacts + gallery-image backfill (faster, listings only) |
-| `--headless` / `--headed` | Force headless/headed browser (overrides `CAMOUFOX_HEADLESS`) |
-| `--check` / `check` | Environment diagnostic: deps, browser binary, headless smoke test (no portal access) |
 
 ### Category keys
 
 `ResidentialRent`, `ResidentialSell`, `CommercialRent`, `CommercialSell`,
 `Premium`, `Important`.
-
-## Linux / headless server setup
-
-```bash
-# 1. System deps for headless Firefox + better-sqlite3 builds
-sudo apt update && sudo apt install -y \
-  libgtk-3-0 libasound2 libdbus-glib-1-2 libxt6 libx11-xcb1 \
-  build-essential python3
-
-# 2. Install + fetch the Camoufox browser (first time only)
-cd ops/crawlAutomation
-npm install
-npx camoufox-js fetch
-
-# 3. Configure (headless is the default on Linux; no DISPLAY needed)
-cp .env.example .env
-# edit .env: TECHNO_USERNAME, TECHNO_PASSWORD
-# optional: TECHNO_PROFILE_DIR, CAMOUFOX_HEADLESS=1
-
-# 4. Run — first run auto-logs-in via the form and persists the session
-#    in ~/.camofox/profiles/technoproperty for subsequent runs
-node crawl.mjs --full -c Important --no-meta   # small trial category first
-node crawl.mjs --full                          # then the full crawl
-```
 
 ## How it works
 
@@ -187,18 +160,6 @@ contact/image reveal APIs, saved-search endpoints, and the TerraPi
 | Important / shortlist | `ajaximppropdatatable.php` |
 | Contact reveal | `ajaxgetinfo.php` (POST `proprow=<full_btn_id>&ajax=true`) |
 | Gallery images | `ajaxgetimages.php` (POST `propertyId=<uuid>&ajax=true`) |
-
-## Troubleshooting (headless)
-
-Run `node crawl.mjs --check` first — it pinpoints the failing layer.
-
-| Symptom | Cause | Fix |
-|---|---|---|
-| `Camoufox browser binary not found` | `fetch` never ran | `npx camoufox-js fetch` (needs internet to GitHub releases) |
-| `missing Linux system libraries` / `libgtk…` | headless Firefox system deps absent | `sudo apt install -y libgtk-3-0 libasound2 libdbus-glib-1-2 libxt6 libx11-xcb1 libnss3 libxss1` |
-| Smoke test fails with `Target closed` | stale profile lock or bad profile | stop other runs, delete `~/.camofox/profiles/technoproperty/lock` if orphaned |
-| `No valid session` + auto-login fails | credentials wrong / site changed / CAPTCHA | verify `.env`, or log in once manually and reuse the profile |
-| Everything passes but crawl hangs at login | portal unreachable from that network | verify `curl -sI https://ahmedabad.technoproperty.in` from the same machine |
 
 ## Operational notes
 
