@@ -1,0 +1,10 @@
+TechnoProperty Crawler - 2026-09-16T17:27:23.276Z
+Command: delta
+=== DELTA CRAWL ===
+Launching Camoufox (headless=true, profile=/home/jules/.camofox/profiles/technoproperty)
+Session valid: auto-login
+
+>>> Crawling Residential Rent (https://ahmedabad.technoproperty.in/ResidentialRent.php)
+  No records found for Residential Rent
+
+>>> Crawling Residential Sell (https://ahmedabad.technoproperty.in/ResidentialSell.php)
