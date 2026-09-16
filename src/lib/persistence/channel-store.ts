@@ -231,7 +231,7 @@ function normalizeInput(input: ChannelRequestInput, cityId?: string) {
     budgetMinInr: type === "DEMAND" && input.budgetMinInr != null ? BigInt(Math.round(Number(input.budgetMinInr))) : null,
     budgetMaxInr: type === "DEMAND" && input.budgetMaxInr != null ? BigInt(Math.round(Number(input.budgetMaxInr))) : null,
     priceInr: type === "SUPPLY" && input.priceInr != null ? BigInt(Math.round(Number(input.priceInr))) : null,
-    expiresAt: input.expiresAt ? new Date(input.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    expiresAt: input.expiresAt != null && String(input.expiresAt).trim() !== "" ? new Date(input.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   };
 }
 

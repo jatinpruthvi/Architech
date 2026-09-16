@@ -338,7 +338,7 @@ export function createChannelRequest(input: ChannelRequestInput, session: AuthSe
     sourceListingId: input.sourceListingId ? String(input.sourceListingId) : null,
     sourceRequirementId: input.sourceRequirementId ? String(input.sourceRequirementId) : null,
     status: "DRAFT",
-    expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString() : addDays(new Date(), 30).toISOString(),
+    expiresAt: input.expiresAt != null && String(input.expiresAt).trim() !== "" ? new Date(input.expiresAt).toISOString() : addDays(new Date(), 30).toISOString(),
     publishedAt: null,
     closedAt: null,
     revision: 1,
