@@ -54,6 +54,21 @@ test("the default gate covers what CI enforces, not just what `pnpm quality` doe
   }
 });
 
+test("CI still provisions the database the search parity matrix needs", () => {
+  // sql-page-integration.test.ts is opt-in behind ARCHITECH_PARITY_DATABASE_URL.
+  // With no database in the job, all 48 of its cases skip and the suite reports
+  // green — which is exactly how "the guardrail the whole rebuild depends on"
+  // went unrun on every build. Removing the service or the env var must fail
+  // here rather than silently shrink coverage again.
+  const workflow = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8");
+  assert.match(workflow, /ARCHITECH_PARITY_DATABASE_URL/, "the parity database URL is no longer passed to CI");
+  assert.match(workflow, /services:\n\s+postgres:/, "the CI job no longer runs a postgres service");
+  // Migrations alone are not enough: the place-resolution scenarios compare two
+  // empty answers and pass for the wrong reason without the reference seed.
+  assert.match(workflow, /pnpm db:migrate/, "CI no longer applies migrations");
+  assert.match(workflow, /pnpm db:seed/, "CI no longer seeds the reference data");
+});
+
 test("every check has a unique name and a reason", () => {
   const names = CHECKS.map((check) => check.name);
   assert.equal(new Set(names).size, names.length);

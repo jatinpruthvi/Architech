@@ -22,6 +22,32 @@ jobs:
     # Bounds a hung step (browser suites and the build are the usual suspects)
     # instead of letting it idle to the 6-hour default.
     timeout-minutes: 45
+    # src/lib/search/sql-page-integration.test.ts is the standing proof that the
+    # SQL page path returns exactly what the JS path returns — its own header
+    # calls it "the guardrail the whole rebuild depends on". It is opt-in behind
+    # ARCHITECH_PARITY_DATABASE_URL, so with no database in this job all 48 of
+    # its cases were skipped on every single build and the guardrail was only
+    # ever run by hand.
+    #
+    # postgis/postgis is the image docker-compose.production-like.yml uses, so
+    # migrations apply unmodified here instead of through the stubs
+    # ops/scripts/sandbox/setup-local-db.mjs needs when PostGIS is absent. The
+    # suite asserts indexPlan === "postgres-fts-trigram-page", so pg_trgm and
+    # unaccent have to be real, not skipped.
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: architech
+          POSTGRES_PASSWORD: architech
+          POSTGRES_DB: architech
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U architech -d architech"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -32,6 +58,19 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Provisions the parity database. The seed is not optional: the suite
+      # resolves places through the city/locality reference rows, and without
+      # them the place-resolution scenarios compare two empty answers and pass
+      # for the wrong reason. Fatal on purpose — a database that half-applied
+      # would quietly skip the guardrail again, which is the state this exists
+      # to end.
+      - name: Apply database schema and seed
+        env:
+          DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
+        run: |
+          pnpm db:generate
+          pnpm db:migrate
+          pnpm db:seed
       - name: Prisma schema validate
         run: pnpm db:validate
       - name: Type check
@@ -44,8 +83,14 @@ jobs:
       # token-level tests cannot see.
       - name: Surface contrast audit
         run: pnpm audit:contrast
+      # ARCHITECH_PARITY_DATABASE_URL is what switches the search parity matrix
+      # from describe.skip to describe — see the `services:` block above. The
+      # suite provisions its own rows, so this needs nothing beyond the schema
+      # and the reference seed applied earlier.
       - name: Unit tests
         run: pnpm test
+        env:
+          ARCHITECH_PARITY_DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
       # ops/scripts tests use the Node test runner, not vitest, so `pnpm test`
       # does not reach them. This glob covers every ops suite at once, so a new
       # *.test.mjs is picked up automatically instead of needing a CI edit —
