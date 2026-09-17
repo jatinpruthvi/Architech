@@ -1,14 +1,7 @@
-import type { Metadata } from "next";
-import BrokerDashboard from "@/screens/BrokerDashboard";
-import RequireSession from "@/components/architech/RequireSession";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: "Broker dashboard",
-  description: "Protected broker workspace contract for verified Architech partners.",
-  robots: { index: false, follow: false },
-};
 
 export default function Page() {
-  return <RequireSession permission="broker.dashboard.read" requireOrganization><BrokerDashboard /></RequireSession>;
+  redirect("/broker");
 }
