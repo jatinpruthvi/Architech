@@ -1810,3 +1810,206 @@ model SystemWhatsAppAccount {
 
   @@index([status, lastObservedAt])
 }
+
+// ---------------------------------------------------------------
+// TechnoProperty crawled inventory (ops/crawlAutomation import)
+// ---------------------------------------------------------------
+
+enum TechnoCategory {
+  RESIDENTIAL_RENT
+  RESIDENTIAL_SELL
+  COMMERCIAL_RENT
+  COMMERCIAL_SELL
+  PREMIUM
+  IMPORTANT
+}
+
+enum TechnoSourceStatus {
+  ACTIVE
+  RENTED_OUT
+  SOLD
+  REMOVED
+}
+
+enum TechnoListingType {
+  OWNER
+  BROKER
+}
+
+enum TechnoRevealChannel {
+  CLICK_TO_DIAL
+  WHATSAPP
+  REVEAL_ONLY
+}
+
+model TechnoProperty {
+  id                String   @id @default(cuid())
+  externalId        String   // crawler property UUID (unique per org)
+  orgId             String
+  category          TechnoCategory
+  propertyType      String?
+  datePosted        DateTime?
+  address           String?
+  premiseName       String?
+  area              String?
+  rentPriceRaw      String?
+  rentPriceValue    BigInt?
+  availabilityRaw   String?
+  conditionRaw      String?
+  propertyAge       String?
+  descriptionRaw    String?
+  furnitureRaw      String?
+  sqftRaw           String?
+  sqftValue         Int?
+  keyInfo           String?
+  brokerage         String?
+  isRentedOut       Boolean  @default(false)
+  soldOut           Boolean  @default(false)
+  hasGallery        Boolean  @default(false)
+  isPremium         Boolean  @default(false)
+  sourceShortlisted Boolean  @default(false)
+  ownerName         String?
+  ownerPhoneCipher  Bytes?
+  ownerPhoneLast4   String?  @db.VarChar(4)
+  contactBtnId      String?
+  imageUrls         Json?
+  sourceStatus      TechnoSourceStatus @default(ACTIVE)
+  firstSeenAt       DateTime
+  lastSeenAt        DateTime
+  lastModifiedAt    DateTime
+  rowHash           String
+  active            Boolean  @default(true)
+
+  notes         TechnoNote[]
+  shortlists    TechnoShortlist[]
+  contactEvents TechnoContactEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, externalId])
+  @@index([orgId, active, category, datePosted])
+  @@index([orgId, active, isPremium])
+  @@index([orgId, active, sourceShortlisted])
+  @@index([orgId, ownerPhoneLast4])
+  @@index([rowHash])
+}
+
+model TechnoBrokerListing {
+  id                String   @id @default(cuid())
+  externalId        String?
+  orgId             String
+  category          TechnoCategory
+  propertyType      String?
+  datePosted        DateTime?
+  brokerName        String?
+  estateName        String?
+  brokerPhoneCipher Bytes?
+  brokerPhoneLast4  String?  @db.VarChar(4)
+  schemeName        String?
+  landmark          String?
+  address           String?
+  rowHash           String
+  active            Boolean  @default(true)
+  firstSeenAt       DateTime
+  lastSeenAt        DateTime
+
+  contactEvents TechnoContactEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, rowHash])
+  @@index([orgId, active, category, datePosted])
+}
+
+model TechnoCategoryStat {
+  id             String   @id @default(cuid())
+  orgId          String
+  categoryKey    String
+  totalActive    Int      @default(0)
+  todayCount     Int      @default(0)
+  yesterdayCount Int      @default(0)
+  last15Days     Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@unique([orgId, categoryKey])
+}
+
+model TechnoContactEvent {
+  id              String              @id @default(cuid())
+  brokerUserId    String
+  orgId           String
+  listingType     TechnoListingType
+  propertyId      String?
+  brokerListingId String?
+  phoneLast4      String?             @db.VarChar(4)
+  channel         TechnoRevealChannel @default(CLICK_TO_DIAL)
+  outcome         String?             @db.VarChar(32)
+  note            String?             @db.VarChar(500)
+  followUpAt      DateTime?
+  createdAt       DateTime            @default(now())
+
+  property      TechnoProperty?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  brokerListing TechnoBrokerListing? @relation(fields: [brokerListingId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt])
+  @@index([brokerUserId, createdAt])
+  @@index([propertyId, createdAt])
+}
+
+model TechnoNote {
+  id           String   @id @default(cuid())
+  brokerUserId String
+  orgId        String
+  propertyId   String
+  text         String   @db.VarChar(1000)
+  meta         Json?
+  updatedAt    DateTime @updatedAt
+
+  property TechnoProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([brokerUserId, orgId, propertyId])
+  @@index([orgId, updatedAt])
+}
+
+model TechnoShortlist {
+  id           String   @id @default(cuid())
+  brokerUserId String
+  orgId        String
+  propertyId   String
+  createdAt    DateTime @default(now())
+
+  property TechnoProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([brokerUserId, orgId, propertyId])
+}
+
+model TechnoSavedSearch {
+  id             String   @id @default(cuid())
+  brokerUserId   String
+  orgId          String
+  name           String   @db.VarChar(120)
+  filterJson     Json
+  createdAt      DateTime @default(now())
+  lastNotifiedAt DateTime?
+
+  @@index([orgId, brokerUserId])
+}
+
+model TechnoCrawlRun {
+  id                String   @id @default(cuid())
+  mode              String
+  externalCrawlId   Int?
+  startedAt         DateTime
+  finishedAt        DateTime?
+  status            String   @default("running")
+  totalProperties   Int      @default(0)
+  newProperties     Int      @default(0)
+  updatedProperties Int      @default(0)
+  removedProperties Int      @default(0)
+  contactsFetched   Int      @default(0)
+  imagesFetched     Int      @default(0)
+  errors            Int      @default(0)
+  createdAt         DateTime @default(now())
+}

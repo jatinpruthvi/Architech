@@ -319,6 +319,13 @@ function enginesDir() {
 }
 
 function runPrisma(args, timeoutMs = 240000) {
+  // In sandbox networking we provide a Node-based schema-engine shim. Prefer
+  // PRISMA_SCHEMA_ENGINE_BINARY from the caller; fall back to the cached shim
+  // we just placed in ~/.cache/prisma.
+  const CACHE_SHIM = path.join(
+    process.env.HOME ?? process.env.USERPROFILE ?? "/root",
+    ".cache/prisma/master/e922089b7d7502aff4249d5da3420f6fa55fc6ad/debian-openssl-3.0.x/schema-engine"
+  );
   return spawnSync(process.execPath, [PRISMA_CLI, ...args], {
     cwd: repoRoot,
     stdio: "inherit",
@@ -326,6 +333,9 @@ function runPrisma(args, timeoutMs = 240000) {
     env: {
       ...process.env,
       DATABASE_URL: process.env.DATABASE_URL ?? DATABASE_URL,
+      PRISMA_SCHEMA_ENGINE_BINARY: process.env.PRISMA_SCHEMA_ENGINE_BINARY ?? CACHE_SHIM,
+      PRISMA_MIGRATION_ENGINE_BINARY: process.env.PRISMA_SCHEMA_ENGINE_BINARY ?? CACHE_SHIM,
+      PRISMA_QUERY_ENGINE_LIBRARY: process.env.PRISMA_QUERY_ENGINE_LIBRARY,
     },
   });
 }
