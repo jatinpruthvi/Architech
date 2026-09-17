@@ -9,7 +9,7 @@ npm scripts; update `package.json` in the same change.**
 - Root: `verify.mjs` (whole local gate, CI parity minus build/browser),
   `build-ci.mjs`, `build-publish.mjs`, `materialize-static-publish.mjs`,
   `publish-server.mjs`, `generate-md-index.mjs`, `check-md-index.mjs`,
-  `audit-surface-contrast.mjs`
+  `assert-tests-ran.mjs`, `audit-surface-contrast.mjs`
 - `operations/` — env/secrets/provisioning/readiness audits (read `ops/config/governance/`)
 - `security/` — header, RLS, and legal-gate audits
 - `release/` — release + production-enablement audits (read `ops/config/governance/release/`)
@@ -42,6 +42,14 @@ npm scripts; update `package.json` in the same change.**
   stale", `2` is "the check could not run". Collapsing them is what left a red
   run explaining itself as only `git` exiting 128. If you add a reason for the
   index to be wrong, add a branch that says so in plain words.
+- `assert-tests-ran.mjs` (`pnpm test:assert-parity`) reads the vitest JSON report
+  and fails when a suite that must execute was skipped. Add any other
+  opt-in-behind-an-env-var suite to its argument list in `package.json` — a
+  conditionally-skipped guardrail reports green while asserting nothing, and
+  `sql-page-integration.test.ts` did exactly that on every build until CI grew a
+  database. Deliberately **not** in `verify.mjs`'s `CHECKS`: the local gate runs
+  `pnpm test`, which emits no JSON report, and the parity database is optional on
+  a developer machine. This one is a CI-only gate.
 
 ## Gotchas
 

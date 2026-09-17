@@ -87,10 +87,22 @@ jobs:
       # from describe.skip to describe — see the `services:` block above. The
       # suite provisions its own rows, so this needs nothing beyond the schema
       # and the reference seed applied earlier.
+      #
+      # test:report adds a JSON report for the step after this one. A vitest
+      # exit code cannot tell 48 passed from 48 skipped — both are 0 — which is
+      # exactly how that suite went unrun on every build while this step stayed
+      # green.
       - name: Unit tests
-        run: pnpm test
+        run: pnpm test:report
         env:
           ARCHITECH_PARITY_DATABASE_URL: 'postgresql://architech:architech@localhost:5432/architech?schema=public'
+      # Reads the report above and fails if the parity matrix did not execute.
+      # Asserting on the workflow text is not enough: the variable can be
+      # present and still be empty, or name a database that never came up in a
+      # way that skips the suite rather than failing it. This checks the
+      # outcome, not the configuration.
+      - name: Search parity matrix ran, not skipped
+        run: pnpm test:assert-parity
       # ops/scripts tests use the Node test runner, not vitest, so `pnpm test`
       # does not reach them. This glob covers every ops suite at once, so a new
       # *.test.mjs is picked up automatically instead of needing a CI edit —

@@ -13,6 +13,8 @@
     "audit:mobile": "node ops/scripts/audit/mobile-audit.mjs",
     "audit:pwa": "node ops/scripts/audit/pwa-audit.mjs",
     "test": "vitest run",
+    "test:report": "vitest run --reporter=default --reporter=json --outputFile.json=tmp/unit.json",
+    "test:assert-parity": "node ops/scripts/assert-tests-ran.mjs tmp/unit.json src/lib/search/sql-page-integration.test.ts",
     "format": "prettier --write .",
     "test:seo": "node ops/scripts/seo/run-seo-suite.mjs",
     "test:crawl": "pnpm build:ci && node ops/scripts/seo/crawl-simulation.mjs",
