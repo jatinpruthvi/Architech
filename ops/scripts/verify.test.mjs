@@ -54,6 +54,21 @@ test("the default gate covers what CI enforces, not just what `pnpm quality` doe
   }
 });
 
+test("CI still provisions the database the search parity matrix needs", () => {
+  // sql-page-integration.test.ts is opt-in behind ARCHITECH_PARITY_DATABASE_URL.
+  // With no database in the job, all 48 of its cases skip and the suite reports
+  // green — which is exactly how "the guardrail the whole rebuild depends on"
+  // went unrun on every build. Removing the service or the env var must fail
+  // here rather than silently shrink coverage again.
+  const workflow = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8");
+  assert.match(workflow, /ARCHITECH_PARITY_DATABASE_URL/, "the parity database URL is no longer passed to CI");
+  assert.match(workflow, /services:\n\s+postgres:/, "the CI job no longer runs a postgres service");
+  // Migrations alone are not enough: the place-resolution scenarios compare two
+  // empty answers and pass for the wrong reason without the reference seed.
+  assert.match(workflow, /pnpm db:migrate/, "CI no longer applies migrations");
+  assert.match(workflow, /pnpm db:seed/, "CI no longer seeds the reference data");
+});
+
 test("every check has a unique name and a reason", () => {
   const names = CHECKS.map((check) => check.name);
   assert.equal(new Set(names).size, names.length);
@@ -95,16 +110,26 @@ test("runChecks keeps going after a failure instead of stopping at the first", (
 });
 
 test("docs-index reports current vs stale and says to commit when it fixes it", () => {
-  const current = docsIndexCheck({ run: (command, args) => (command === "git" ? 0 : 0) });
+  const current = docsIndexCheck({ run: () => 0 });
   assert.deepEqual(current, { status: 0, note: "already current" });
 
-  const stale = docsIndexCheck({ run: (command) => (command === "git" ? 1 : 0) });
+  const stale = docsIndexCheck({ run: () => 1 });
   assert.equal(stale.status, 1);
   assert.match(stale.note, /was stale/);
   assert.match(stale.note, /commit it/);
 });
 
-test("docs-index runs the generator before diffing", () => {
+test("docs-index keeps a tooling failure distinct from a stale index", () => {
+  // The whole point of delegating to check-md-index.mjs: a broken check must
+  // not be reported as "your index is stale", which sends the author off to
+  // regenerate a file that was never the problem.
+  const broken = docsIndexCheck({ run: () => 2 });
+  assert.equal(broken.status, 2);
+  assert.match(broken.note, /could not run/);
+  assert.equal(/stale/.test(broken.note), false);
+});
+
+test("docs-index runs the same script CI runs, and nothing else", () => {
   const calls = [];
   docsIndexCheck({
     run: (command, args) => {
@@ -112,8 +137,7 @@ test("docs-index runs the generator before diffing", () => {
       return 0;
     },
   });
-  assert.equal(calls[0], "node ops/scripts/generate-md-index.mjs");
-  assert.match(calls[1], /^git diff --exit-code -- docs\/MARKDOWN-DOCUMENTATION-INDEX\.md$/);
+  assert.deepEqual(calls, ["node ops/scripts/check-md-index.mjs"]);
 });
 
 test("db:validate falls back to the offline shim instead of reporting a network error as a schema failure", () => {

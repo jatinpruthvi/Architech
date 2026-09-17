@@ -47,12 +47,8 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  ".."
-);
+const here = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(here, "..", "..", "..");
 const SANDBOX_DIR = path.join(repoRoot, "tmp", "sandbox");
 const PG_DIR = path.join(SANDBOX_DIR, "pg");
 const PG_DATA = path.join(PG_DIR, "data");
@@ -65,12 +61,12 @@ const PG_PASS = "architech";
 // the exact same stub logic without touching the main sandbox database.
 const PG_DB = process.env.ARCHITECH_SANDBOX_DB_NAME ?? "architech";
 const DATABASE_URL = `postgresql://${PG_USER}:${PG_PASS}@localhost:${PG_PORT}/${PG_DB}?schema=public`;
-const SHIM_SRC = path.join(
-  repoRoot,
-  "scripts",
-  "sandbox",
-  "schema-engine-shim.cjs"
-);
+// Resolved from this file's own directory, not from a repo-root-relative
+// literal: the scripts/ -> ops/scripts/ restructure left the old spelling
+// behind here, and `pnpm db:setup:sandbox` then died with ENOENT on exactly
+// the network-restricted machines it exists to serve. Sibling-relative cannot
+// go stale when the folder moves.
+const SHIM_SRC = path.join(here, "schema-engine-shim.cjs");
 const PRISMA_CLI = path.join(
   repoRoot,
   "node_modules",

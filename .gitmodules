@@ -1,0 +1,77 @@
+# Vendored reference implementations under business_suite/.
+#
+# These fourteen entries were recorded as gitlinks (mode 160000) with no
+# .gitmodules, which made them unusable: `git submodule update --init` had no
+# URL to fetch from, so every clone — and every CI runner — saw fourteen empty
+# directories that nothing could ever populate.
+#
+# Each url below was verified against the commit already pinned in the index:
+# the recorded gitlink SHA resolves in the named repository. Do not repoint one
+# of these without re-checking the SHA, or `submodule update` starts failing
+# with "reference is not a tree".
+#
+# shallow = true because these are large upstreams (frappe, erpnext and hrms
+# alone are hundreds of megabytes of history). The gitlink already pins an
+# exact commit, so depth 1 loses nothing and makes the fetch survivable.
+#
+# CI deliberately does NOT check these out (actions/checkout defaults to
+# submodules: false). Nothing in the build, the tests or the audits reads them —
+# they are reference material. Keep it that way: ops/scripts/AGENTS.md records
+# what happened the last time local and CI disagreed about this tree.
+
+[submodule "business_suite/Baileys"]
+	path = business_suite/Baileys
+	url = https://github.com/WhiskeySockets/Baileys.git
+	shallow = true
+[submodule "business_suite/crm"]
+	path = business_suite/crm
+	url = https://github.com/frappe/crm.git
+	shallow = true
+[submodule "business_suite/ecommerce_integrations"]
+	path = business_suite/ecommerce_integrations
+	url = https://github.com/frappe/ecommerce_integrations.git
+	shallow = true
+[submodule "business_suite/erpnext"]
+	path = business_suite/erpnext
+	url = https://github.com/frappe/erpnext.git
+	shallow = true
+[submodule "business_suite/evolution-api"]
+	path = business_suite/evolution-api
+	url = https://github.com/EvolutionAPI/evolution-api.git
+	shallow = true
+[submodule "business_suite/frappe"]
+	path = business_suite/frappe
+	url = https://github.com/frappe/frappe.git
+	shallow = true
+[submodule "business_suite/frappe_whatsapp"]
+	path = business_suite/frappe_whatsapp
+	url = https://github.com/shridarpatil/frappe_whatsapp.git
+	shallow = true
+[submodule "business_suite/go-whatsapp-web-multidevice"]
+	path = business_suite/go-whatsapp-web-multidevice
+	url = https://github.com/aldinokemal/go-whatsapp-web-multidevice.git
+	shallow = true
+[submodule "business_suite/gows-plus"]
+	path = business_suite/gows-plus
+	url = https://github.com/devlikeapro/gows-plus.git
+	shallow = true
+[submodule "business_suite/hrms"]
+	path = business_suite/hrms
+	url = https://github.com/frappe/hrms.git
+	shallow = true
+[submodule "business_suite/india-compliance"]
+	path = business_suite/india-compliance
+	url = https://github.com/resilient-tech/india-compliance.git
+	shallow = true
+[submodule "business_suite/wa-automate-nodejs"]
+	path = business_suite/wa-automate-nodejs
+	url = https://github.com/open-wa/wa-automate-nodejs.git
+	shallow = true
+[submodule "business_suite/waha"]
+	path = business_suite/waha
+	url = https://github.com/devlikeapro/waha.git
+	shallow = true
+[submodule "business_suite/wppconnect-server"]
+	path = business_suite/wppconnect-server
+	url = https://github.com/wppconnect-team/wppconnect-server.git
+	shallow = true

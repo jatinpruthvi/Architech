@@ -70,13 +70,19 @@ export function selectChecks(argv, all = CHECKS) {
 /**
  * Regenerate the docs index and report whether it was already current.
  *
- * Leaves the regenerated file in place: if it was stale, the working tree is
- * now correct and only needs committing.
+ * Delegates to `ops/scripts/check-md-index.mjs`, the same script CI runs, so
+ * the local gate and the pipeline cannot drift apart. Leaves the regenerated
+ * file in place: if it was stale, the working tree is now correct and only
+ * needs committing.
+ *
+ * Exit 2 from the script means the check itself could not run. That is reported
+ * distinctly rather than folded into "stale", because conflating the two is
+ * exactly what made the original CI failure undiagnosable.
  */
 export function docsIndexCheck({ cwd = process.cwd(), run } = {}) {
-  run("node", ["ops/scripts/generate-md-index.mjs"], { cwd, stdio: "ignore" });
-  const diff = run("git", ["diff", "--exit-code", "--", DOCS_INDEX], { cwd, stdio: "ignore" });
-  if (diff === 0) return { status: 0, note: "already current" };
+  const status = run("node", ["ops/scripts/check-md-index.mjs"], { cwd, stdio: "ignore" });
+  if (status === 0) return { status: 0, note: "already current" };
+  if (status === 2) return { status: 2, note: "the check could not run — `pnpm docs:index:check` prints why" };
   return { status: 1, note: `was stale — ${DOCS_INDEX} regenerated, commit it` };
 }
 
@@ -119,7 +125,7 @@ export function runChecks({ checks, run, cwd = process.cwd(), log = () => {} } =
   });
 }
 
-/** The docs-index probe must not echo git's diff to the console. */
+/** The docs-index probe prints a multi-line report; the summary wants one line per check. */
 function quietRun(run) {
   return (command, args, options) => run(command, args, { ...options, stdio: "ignore" });
 }
