@@ -5,6 +5,7 @@ import { callStateFor, compareQueueRows, type CallState } from "./call-lifecycle
 /** How many finished calls ride along in the queue payload for the
     collapsed "completed" section. Purely presentational history. */
 const CALL_DONE_HISTORY_LIMIT = 20;
+const CALL_SCHEDULED_LIMIT = 20;
 import { decryptContact } from "@/lib/interop/contact-crypto";
 import { technoDb } from "./prisma";
 import { TECHNOCATEGORIES, categoryKeyToEnum, categoryLabel } from "./categories";
@@ -619,8 +620,18 @@ export async function getCallingQueue(
     .slice(0, perPage);
   /* Collapsed history: recently finished calls stay reachable without
      crowding "Next to call" (see CallQueueList's completed section). */
-  const done = mapped.filter((r) => r.callState === "done").sort(compareQueueRows).slice(0, CALL_DONE_HISTORY_LIMIT);  return {
-    rows: [...callable, ...done],
+  /* Future follow-ups ride in the payload (not callable today) so the status
+     board can show and filter them; the "N scheduled" chip reflects ALL of
+     them, this list is capped like the other sections. */
+  const scheduled = mapped
+    .filter((r) => r.callState === "scheduled")
+    .sort((a, b) => (a.followUpAt?.getTime() ?? 0) - (b.followUpAt?.getTime() ?? 0))
+    .slice(0, CALL_SCHEDULED_LIMIT);
+  /* Collapsed history: recently finished calls stay reachable without
+     crowding "Next to call" (see CallQueueList's completed section). */
+  const done = mapped.filter((r) => r.callState === "done").sort(compareQueueRows).slice(0, CALL_DONE_HISTORY_LIMIT);
+  return {
+    rows: [...callable, ...scheduled, ...done],
     scheduledCount: mapped.filter((r) => r.callState === "scheduled").length,
   };
 }

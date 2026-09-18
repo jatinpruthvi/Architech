@@ -36,14 +36,17 @@ describe("call queue progress", () => {
     expect(summary.percent).toBe(67);
   });
 
-  it("moves a follow-up logged THIS session out of the pending split", () => {
+  it("moves a follow-up logged THIS session into the scheduled bucket", () => {
     const outcomes = applyLoggedOutcome({}, "new-1", "follow_up");
     const summary = summarizeCallQueue(rows, outcomes);
     expect(summary.pending.map((row) => row.id)).toEqual(["new-2"]);
-    expect(summary.completed).toContainEqual(expect.objectContaining({ id: "new-1" }));
+    expect(summary.scheduled).toContainEqual(expect.objectContaining({ id: "new-1" }));
+    // it still counts as a logged call on the progress card
+    expect(summary.completedCount).toBe(2);
+    expect(summary.percent).toBe(67);
   });
 
-  it("keeps a server-side DUE follow-up pending (it is today's work)", () => {
+  it("keeps a server-side DUE follow-up pending; future ones sit in scheduled", () => {
     const rowsWithDue = [
       { id: "due-1", currentOutcome: "follow_up", callState: "followup" as const },
       { id: "sched-1", currentOutcome: "follow_up", callState: "scheduled" as const },
@@ -51,12 +54,17 @@ describe("call queue progress", () => {
     ];
     const summary = summarizeCallQueue(rowsWithDue, {});
     expect(summary.pending.map((row) => row.id)).toEqual(["due-1", "new-1"]);
-    expect(summary.completed.map((row) => row.id)).toEqual(["sched-1"]);
+    expect(summary.scheduled.map((row) => row.id)).toEqual(["sched-1"]);
+    expect(summary.completed).toEqual([]);
+    // the scheduled one was still a call made: logged = 1 of 3
+    expect(summary.completedCount).toBe(1);
+    expect(summary.percent).toBe(33);
   });
 
   it("handles an empty queue without dividing by zero", () => {
     expect(summarizeCallQueue([], {})).toEqual({
       pending: [],
+      scheduled: [],
       completed: [],
       completedCount: 0,
       total: 0,

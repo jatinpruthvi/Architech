@@ -81,7 +81,7 @@ export default async function TechnoHome() {
         <p className="text-xs font-bold uppercase tracking-wider text-[var(--tp-accent)]">Today at a glance</p>
         <div className="mt-2 flex items-end justify-between gap-3">
           <div>
-            <p className="font-display text-3xl font-bold text-[var(--tp-ink)]">{queue.length}</p>
+            <p className="font-display text-3xl font-bold text-[var(--tp-ink)]">{queue.filter((row) => row.callState === "new" || row.callState === "retry" || row.callState === "followup").length}</p>
             <p className="text-sm text-[var(--tp-muted)]">fresh owners ready to call</p>
           </div>
           <span className="tp-chip tp-chip-green"><Zap size={13} /> {kpis.owner.today} new listings</span>
@@ -196,7 +196,7 @@ export default async function TechnoHome() {
           <div>
             <h2 className="tp-section-title !mb-1">
               <Phone size={20} className="text-[var(--tp-accent-2)]" /> Today&apos;s calling queue
-              <span className="ml-2 tp-chip tp-chip-green">{queue.length} to call</span>
+              <span className="ml-2 tp-chip tp-chip-green">{queue.filter((row) => row.callState === "new" || row.callState === "retry" || row.callState === "followup").length} to call</span>
             </h2>
             <p className="mt-1 text-sm text-[var(--tp-muted)]">
               Newest owner listings first. Tap the ready phone number to dial, then log an outcome so no follow-up slips through.

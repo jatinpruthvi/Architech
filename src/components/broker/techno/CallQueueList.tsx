@@ -32,6 +32,8 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
   const [showCompleted, setShowCompleted] = useState(false);
   const [queueMessage, setQueueMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<OutcomeFilter>("all");
+  const [showScheduled, setShowScheduled] = useState(false);
+  const scheduledId = useId();
   const completedId = useId();
   const nextHeadingRef = useRef<HTMLHeadingElement>(null);
   const summary = summarizeCallQueue(rows, loggedOutcomes);
@@ -147,6 +149,33 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
           </div>
         )}
       </section>
+
+      {summary.scheduled.length > 0 && (statusFilter === "all" || statusFilter === "follow_up") ? (
+        <section>
+          <button
+            type="button"
+            className="tp-completed-toggle min-h-11"
+            aria-expanded={showScheduled}
+            aria-controls={scheduledId}
+            onClick={() => setShowScheduled((value) => !value)}
+          >
+            <span><CalendarClock size={17} aria-hidden="true" /> {summary.scheduled.length} scheduled follow-{summary.scheduled.length === 1 ? "up" : "ups"}</span>
+            <ChevronDown size={18} aria-hidden="true" className={`transition-transform motion-reduce:transition-none ${showScheduled ? "rotate-180" : ""}`} />
+          </button>
+          {showScheduled ? (
+            <div id={scheduledId} className="mt-2 space-y-2">
+              {summary.scheduled.map((row) => (
+                <CallQueueCard
+                  key={row.id}
+                  row={row}
+                  outcome={loggedOutcomes[row.id] ?? row.currentOutcome}
+                  onLogged={(outcome) => handleLogged(row.id, outcome, false)}
+                />
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {completedView.length > 0 ? (
         <section>

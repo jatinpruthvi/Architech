@@ -12,31 +12,40 @@ export function applyLoggedOutcome(
   return { ...outcomes, [propertyId]: outcome };
 }
 
-/* The completed section mirrors the server lifecycle. A DUE follow-up stays
- * pending (it is today's work — the server orders it first); only a FUTURE
- * one (callState "scheduled") leaves the list. Rows lacking callState fall
- * back to outcome strings. Outcomes logged THIS session apply instantly:
- * terminal ones complete the row, a follow-up is out of the way until its
- * date arrives (the next full reload re-buckets it via callState). */
+/* Three buckets mirror the server lifecycle. A DUE follow-up stays pending
+ * (it is today's work — the server orders it first); a FUTURE one is its own
+ * "scheduled" bucket (out of the way, visible via the Follow-up filter and
+ * the collapsed section). Rows lacking callState fall back to outcome
+ * strings. Outcomes logged THIS session apply instantly: terminal ones
+ * complete the row, a follow-up moves to scheduled until its date arrives
+ * (the next full reload re-buckets it via callState). "Calls logged" on the
+ * progress card counts completed + scheduled — both mean a call was made. */
 export function summarizeCallQueue<T extends QueueRow>(rows: T[], outcomes: LoggedOutcomes) {
+  const isScheduled = (row: T) => {
+    const logged = outcomes[row.id];
+    if (logged) return logged === "follow_up";
+    if (row.callState) return row.callState === "scheduled";
+    return (row.currentOutcome ?? null) === "follow_up" && !TERMINAL_OUTCOMES.has(row.currentOutcome ?? "");
+  };
   const isCompleted = (row: T) => {
     const logged = outcomes[row.id];
-    if (logged === "follow_up") return true;
     if (logged) return TERMINAL_OUTCOMES.has(logged);
-    if (row.callState) return row.callState === "done" || row.callState === "scheduled";
+    if (row.callState) return row.callState === "done";
     const outcome = row.currentOutcome ?? null;
-    return outcome !== null && (TERMINAL_OUTCOMES.has(outcome) || outcome === "follow_up");
+    return outcome !== null && TERMINAL_OUTCOMES.has(outcome);
   };
-  const pending = rows.filter((row) => !isCompleted(row));
+  const pending = rows.filter((row) => !isScheduled(row) && !isCompleted(row));
+  const scheduled = rows.filter(isScheduled);
   const completed = rows.filter(isCompleted);
   const total = rows.length;
-  const completedCount = completed.length;
+  const loggedCount = scheduled.length + completed.length;
   return {
     pending,
+    scheduled,
     completed,
-    completedCount,
+    completedCount: loggedCount,
     total,
-    percent: total === 0 ? 0 : Math.round((completedCount / total) * 100),
+    percent: total === 0 ? 0 : Math.round((loggedCount / total) * 100),
   };
 }
 
