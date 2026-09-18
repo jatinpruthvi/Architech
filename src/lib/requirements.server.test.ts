@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RequirementInput } from "./requirements";
+import { demoBrokerSession } from "./auth/roles";
 
 const database = vi.hoisted(() => ({
   city: { findUnique: vi.fn() },
@@ -77,6 +78,35 @@ describe("Prisma-backed requirement capture", () => {
     const days = (retentionUntil.getTime() - Date.now()) / 86_400_000;
     expect(days).toBeGreaterThan(29.9);
     expect(days).toBeLessThan(30.1);
+  });
+
+  it("does not persist an in-memory demo user id as a database foreign key", async () => {
+    const result = await createRequirementForServer(
+      { ...input, userId: "forged-user", organizationId: "forged-org" },
+      demoBrokerSession,
+    );
+
+    expect(result.ok).toBe(true);
+    const args = database.requirement.create.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(args.data.organizationId).toBe(demoBrokerSession.organization?.id);
+    expect(args.data.userId).toBeNull();
+  });
+
+  it("uses verified live-session ownership instead of caller-supplied ids", async () => {
+    const liveSession = {
+      ...demoBrokerSession,
+      source: "better-auth-live" as const,
+      user: { ...demoBrokerSession.user, id: "verified-user" },
+    };
+    const result = await createRequirementForServer(
+      { ...input, userId: "forged-user", organizationId: "forged-org" },
+      liveSession,
+    );
+
+    expect(result.ok).toBe(true);
+    const args = database.requirement.create.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(args.data.organizationId).toBe(demoBrokerSession.organization?.id);
+    expect(args.data.userId).toBe("verified-user");
   });
 
   it("revalidates city membership before writing", async () => {

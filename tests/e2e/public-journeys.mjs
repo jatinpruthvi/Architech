@@ -142,10 +142,22 @@ async function run() {
       });
 
       await test("private surfaces are noindex", async () => {
-        for (const path of ["/login/", "/broker/dashboard/"]) {
-          const response = await client.get(path);
-          assertMatch(response.text, /<meta name="robots" content="noindex/, `${path} must be noindex`);
-        }
+        const login = await client.get("/login/");
+        assertMatch(login.text, /<meta name="robots" content="noindex/, "/login/ must be noindex");
+
+        const broker = client.fork();
+        const signIn = await broker.post("/api/auth/login/", {
+          email: "broker-admin@example.com",
+          password: "demo-broker-1234",
+        });
+        assertEqual(signIn.status, 200, "demo broker sign-in must succeed");
+        const workspace = await broker.get("/broker/");
+        assertEqual(workspace.status, 200, "the canonical broker workspace must render");
+        assertMatch(workspace.text, /<meta name="robots" content="noindex/, "/broker/ must be noindex");
+
+        const legacy = await client.get("/broker/dashboard/");
+        assertEqual(legacy.status, 307, "the retired broker dashboard path must redirect");
+        assertEqual(legacy.location, "/broker/", "the retired path must resolve to the canonical workspace");
       });
 
       await test("JSON-LD blocks parse as JSON", async () => {

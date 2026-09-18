@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { TechnoSidebar } from "@/components/broker/techno/TechnoSidebar";
 import { TechnoTopbar } from "@/components/broker/techno/TechnoTopbar";
@@ -8,6 +9,11 @@ import WhatsAppFab from "@/components/broker/techno/WhatsAppFab";
 import TechnoKeyboardShortcuts from "@/components/broker/techno/TechnoKeyboardShortcuts";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Broker workspace · Architech",
+  description: "Private inventory, calling, and follow-up workspace for Architech broker partners.",
+  robots: { index: false, follow: false },
+};
 
 export default async function TechnoLayout({
   children,

@@ -30,6 +30,7 @@ const { group, test } = suite;
 
 const BROKER = { email: "broker-admin@example.com", password: "demo-broker-1234" };
 const BUYER = { email: "buyer@example.com", password: "demo-buyer-1234" };
+const RUN_ID = Date.now();
 
 const VALID_REQUIREMENT = {
   intent: "buy",
@@ -40,6 +41,8 @@ const VALID_REQUIREMENT = {
   subtype: "apartment",
   bhkMin: 3,
   bhkMax: 3,
+  areaMinSqft: 900,
+  areaMaxSqft: 1_400,
   budgetMinInr: 10_000_000,
   budgetMaxInr: 12_000_000,
   name: "E2E Channel Buyer",
@@ -62,6 +65,8 @@ async function run() {
       /* Same opt-in as marketplace-flows: production refuses demo writes by
          default; these journeys need mutating demo sessions. */
       ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION: "true",
+      ARCHITECH_IDEMPOTENCY_HMAC_KEY: "test-e2e-idempotency-hmac-secret",
+      ARCHITECH_CONTACT_ENCRYPTION_KEY: "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
     },
     label: "broker ops server",
     singleWorker: true,
@@ -84,7 +89,10 @@ async function run() {
       await test("requirement → demand request → publish → dashboard → cancel → re-publish refused", async () => {
         const broker = await brokerClient(baseUrl);
 
-        const requirement = await broker.post("/api/broker/channel/requirements/", VALID_REQUIREMENT);
+        const requirement = await broker.post("/api/broker/channel/requirements/", {
+          ...VALID_REQUIREMENT,
+          idempotencyKey: `e2e-channel-${RUN_ID}`,
+        });
         assertEqual(requirement.status, 201, `a valid requirement must be created (${requirement.status}): ${requirement.text.slice(0, 200)}`);
         const requirementId = JSON.parse(requirement.text).requirement.id;
         assert(requirementId, "the requirement must carry an id");
@@ -127,7 +135,12 @@ async function run() {
 
       await test("a malformed expiresAt is a 400, never a 500 (BUG-R3-001 regression over HTTP)", async () => {
         const broker = await brokerClient(baseUrl);
-        const requirement = await broker.post("/api/broker/channel/requirements/", VALID_REQUIREMENT);
+        const requirement = await broker.post("/api/broker/channel/requirements/", {
+          ...VALID_REQUIREMENT,
+          idempotencyKey: `e2e-channel-invalid-expiry-${RUN_ID}`,
+          budgetMinInr: 9_000_000,
+          budgetMaxInr: 9_500_000,
+        });
         const requirementId = JSON.parse(requirement.text).requirement.id;
         const response = await broker.post("/api/broker/channel/requests/", {
           type: "DEMAND",
