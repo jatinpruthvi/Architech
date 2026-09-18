@@ -69,7 +69,7 @@ export function TechnoTopbar({
 
   return (
     <>
-      <header aria-label="Broker workspace header" className="sticky top-0 z-40 border-b border-[#6d5b44]/20 bg-[#5d4a36] text-white shadow-sm">
+      <header role="banner" aria-label="Broker workspace header" className="sticky top-0 z-40 border-b border-[#6d5b44]/20 bg-[#5d4a36] text-white shadow-sm">
         <div className="mx-auto flex min-h-16 max-w-[1400px] items-center gap-2 px-3 py-2 md:gap-4 md:px-8 md:py-3">
           <button
             type="button"
