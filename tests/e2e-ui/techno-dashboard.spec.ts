@@ -7,7 +7,9 @@ async function ensureBrokerSession(page: Page) {
   const login = new LoginPage(page);
   await login.clickDemoAccount(/Broker admin/i);
   await login.signInButton.click();
-  await expect(page).toHaveURL(/\/broker\/?/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/dashboard\/?$/, { timeout: 30_000 });
+  await page.goto("/broker");
+  await expect(page).toHaveURL(/\/broker\/?$/, { timeout: 30_000 });
 }
 
 test.beforeEach(async ({ page }) => {
