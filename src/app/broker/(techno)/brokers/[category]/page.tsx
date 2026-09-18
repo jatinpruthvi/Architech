@@ -3,6 +3,7 @@ import { listBrokerProperties } from "@/lib/technoproperty/repository";
 import { categoryLabel } from "@/lib/technoproperty/categories";
 import { BrokerPropertyTable } from "@/components/broker/techno/BrokerPropertyTable";
 import { ListPageHeader } from "@/components/broker/techno/ListPageHeader";
+import { serializeListSearch } from "@/components/broker/techno/list-controls";
 import Link from "next/link";
 
 const TABS = ["ResidentialRent", "ResidentialSell", "CommercialRent", "CommercialSell"];
@@ -20,7 +21,7 @@ export default async function BrokersByCategoryPage({
   const session = await requireTechnoSession();
   const orgId = session.organization!.id;
   const page = Math.max(1, Number(sp.page) || 1);
-  const perPage = Math.min(500, Math.max(10, Number(sp.perPage) || 100));
+  const perPage = Math.min(100, Math.max(10, Number(sp.perPage) || 25));
   const cat = TABS.includes(category) ? category : "ResidentialRent";
 
   const data = await listBrokerProperties(orgId, { page, perPage, q: sp.q, category: cat });
@@ -33,15 +34,24 @@ export default async function BrokersByCategoryPage({
         filterAllLabel="All"
         initialQuery={sp.q || ""}
         basePath={`/broker/brokers/${cat}`}
+        resultCount={data.total}
+        showStatusFilter={false}
       />
-      <div className="flex flex-wrap gap-2">
+      <div className="tp-tabs-rail flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
           <Link key={t} href={`/broker/brokers/${t}`} className={`tp-tab ${cat === t ? "active" : ""}`}>
             {categoryLabel(t)}
           </Link>
         ))}
       </div>
-      <BrokerPropertyTable rows={data.rows} total={data.total} page={data.page} perPage={data.perPage} basePath={`/broker/brokers/${cat}`} />
+      <BrokerPropertyTable
+        rows={data.rows}
+        total={data.total}
+        page={data.page}
+        perPage={data.perPage}
+        basePath={`/broker/brokers/${cat}`}
+        currentSearch={serializeListSearch({ q: sp.q, page: sp.page, perPage: sp.perPage })}
+      />
     </div>
   );
 }

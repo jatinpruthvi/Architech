@@ -10,6 +10,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLang } from "@/contexts/LangContext";
 import { useSession } from "@/contexts/SessionContext";
 import { loginUrlFor } from "@/lib/auth/redirects";
+import { isTechnoWorkspacePath } from "@/lib/technoproperty/routes";
 import AccountMenu from "@/components/architech/AccountMenu";
 import InstallAppButton from "@/components/architech/InstallAppButton";
 import CommandPaletteLauncher from "@/components/architech/CommandPaletteLauncher";
@@ -61,6 +62,8 @@ export default function Header() {
   }, [open]);
 
   const iconBtn = `grid h-10 w-10 place-items-center rounded-xl border transition-colors ${onDark ? "border-cream/25 text-cream/85 hover:border-ember hover:text-ember" : "border-ink/15 text-ink/70 hover:border-brick hover:text-brick"}`;
+
+  if (isTechnoWorkspacePath(pathname)) return null;
 
   return (
     <header suppressHydrationWarning className={`fixed inset-x-0 top-0 z-50 px-3 transition-all duration-300 md:px-5 ${onDark ? "bg-transparent text-cream" : "text-ink"}`}>

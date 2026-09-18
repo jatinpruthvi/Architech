@@ -32,7 +32,7 @@ async function TechnoShell({ children }: { children: React.ReactNode }) {
     countShortlisted(orgId, userId).catch(() => 0),
   ]);
   return (
-    <div className="techno min-h-screen">
+    <div className="techno vh-fill">
       <a
         href="#techno-main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2"
@@ -42,10 +42,10 @@ async function TechnoShell({ children }: { children: React.ReactNode }) {
       <div className="mx-auto flex max-w-[1400px]">
         <TechnoSidebar freshCount={freshCount} shortlistCount={shortlistCount} />
         <div className="min-w-0 flex-1">
-          <TechnoTopbar userName={firstName} />
-          <main id="techno-main" className="px-4 py-6 md:px-8 md:py-8">
+          <TechnoTopbar userName={firstName} freshCount={freshCount} shortlistCount={shortlistCount} />
+          <div id="techno-main" tabIndex={-1} className="px-3 pb-28 pt-5 sm:px-4 md:px-8 md:py-8">
             {children}
-          </main>
+          </div>
         </div>
       </div>
       <WhatsAppFab />

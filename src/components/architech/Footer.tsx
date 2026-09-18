@@ -1,10 +1,14 @@
 "use client";
 /* Editorial footer with i18n + translation-status note. */
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLang } from "@/contexts/LangContext";
+import { isTechnoWorkspacePath } from "@/lib/technoproperty/routes";
 
 export default function Footer() {
   const { lang, t } = useLang();
+  const pathname = usePathname();
+  if (isTechnoWorkspacePath(pathname)) return null;
   return (
     <footer className="bg-night text-cream">
       <div className="container pt-20">

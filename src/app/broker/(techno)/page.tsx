@@ -20,6 +20,8 @@ import {
   Calendar,
   Phone,
   TrendingUp,
+  Search,
+  Zap,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -32,13 +34,29 @@ export default async function TechnoHome() {
   const queue = await getCallingQueue(orgId, userId, 5);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7 md:space-y-10">
+      <h1 className="sr-only">Broker dashboard</h1>
+      <section className="tp-mobile-priority md:hidden" aria-label="Today at a glance">
+        <p className="text-xs font-bold uppercase tracking-wider text-[var(--tp-accent)]">Today at a glance</p>
+        <div className="mt-2 flex items-end justify-between gap-3">
+          <div>
+            <p className="font-display text-3xl font-bold text-[var(--tp-ink)]">{queue.length}</p>
+            <p className="text-sm text-[var(--tp-muted)]">fresh owners ready to call</p>
+          </div>
+          <span className="tp-chip tp-chip-green"><Zap size={13} /> {kpis.owner.today} new listings</span>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Link href="/broker/call-queue" className="tp-btn tp-btn-primary min-h-11 justify-center"><Phone size={16} /> Start calling</Link>
+          <Link href="/broker/search" className="tp-btn tp-btn-ghost min-h-11 justify-center"><Search size={16} /> Search</Link>
+        </div>
+      </section>
+
       {/* Section 1: Owner Properties Data */}
       <section>
         <h2 className="tp-section-title">
           <LayoutGrid size={20} /> Owner Properties Data
         </h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
           <CountCard
             big
             icon={Home}
@@ -64,7 +82,7 @@ export default async function TechnoHome() {
         </div>
 
         <h3 className="tp-section-title mt-8 text-lg">Properties Status</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
           {kpis.byCategory.map((c) => (
             <Link key={c.key} href={`/broker/owners/${c.key}`}>
               <CountCard
@@ -133,17 +151,17 @@ export default async function TechnoHome() {
 
       {/* Section 3: Improved — Today's calling queue */}
       <section className="tp-card tp-card-accent" style={{ borderColor: "rgba(31,191,142,.35)" }}>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="tp-section-title !mb-1">
               <Phone size={20} className="text-[var(--tp-accent-2)]" /> Today&apos;s calling queue
               <span className="ml-2 tp-chip tp-chip-green">{queue.length} to call</span>
             </h2>
             <p className="mt-1 text-sm text-[var(--tp-muted)]">
-              Newest owner listings you haven&apos;t called yet. Click to reveal the phone and dial instantly. Use the follow-up chips after each call so nothing slips through.
+              Newest owner listings first. Tap the ready phone number to dial, then log an outcome so no follow-up slips through.
             </p>
           </div>
-          <Link href="/broker/call-queue" className="tp-btn tp-btn-primary shrink-0">
+          <Link href="/broker/call-queue" className="tp-btn tp-btn-primary min-h-11 shrink-0 justify-center">
             <TrendingUp size={14} /> Open power dialer
           </Link>
         </div>

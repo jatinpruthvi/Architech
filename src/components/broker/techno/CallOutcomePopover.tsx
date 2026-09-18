@@ -1,6 +1,8 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import { Check, PhoneIncoming, PhoneOff, AlertTriangle, Handshake, Calendar } from "lucide-react";
+import { AlertTriangle, Calendar, Check, Handshake, PhoneIncoming, PhoneOff } from "lucide-react";
+import { persistCallOutcome } from "./call-outcome-request";
 
 const OUTCOMES: { key: string; label: string; icon: typeof Check; tone: string }[] = [
   { key: "connected", label: "Connected", icon: PhoneIncoming, tone: "green" },
@@ -14,7 +16,7 @@ const toneMap: Record<string, string> = {
   green: "#0e8a65",
   slate: "#39495b",
   rose: "#c12e4c",
-  amber: "#b27b0b",
+  amber: "#8a5b0b",
   violet: "#5e35c9",
 };
 const toneBg: Record<string, string> = {
@@ -36,6 +38,9 @@ export function CallOutcomePopover({
 }) {
   const [outcome, setOutcome] = useState<string | null>(initialOutcome ?? null);
   const [busy, setBusy] = useState(false);
+  const [savingOutcome, setSavingOutcome] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialOutcome && !outcome) setOutcome(initialOutcome);
@@ -43,47 +48,57 @@ export function CallOutcomePopover({
 
   async function log(next: string) {
     if (busy) return;
-    // Allow re-selecting: clicking the same chip again is a no-op, picking a
-    // different one overwrites the visual selection immediately and persists.
     setBusy(true);
-    setOutcome(next);
-    try {
-      await fetch("/api/broker/technoproperty/call-outcome", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ propertyId, outcome: next }),
-      });
+    setSavingOutcome(next);
+    setMessage(null);
+    setError(null);
+    const result = await persistCallOutcome(propertyId, next);
+    if (result.ok) {
+      setOutcome(next);
+      setMessage("Outcome saved");
       onLogged?.(next);
-    } finally {
-      setBusy(false);
+    } else {
+      setError(result.error);
     }
+    setBusy(false);
+    setSavingOutcome(null);
   }
 
+  const savingLabel = OUTCOMES.find((item) => item.key === savingOutcome)?.label;
+
   return (
-    <div className="mt-2 flex flex-wrap gap-1" data-tp-action-group="outcome">
-      {OUTCOMES.map(({ key, label, icon: Icon, tone }) => {
-        const active = outcome === key;
-        return (
-          <button
-            key={key}
-            type="button"
-            data-tp-outcome={key}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition hover:brightness-95"
-            style={{
-              color: active ? "#fff" : toneMap[tone],
-              background: active ? toneMap[tone] : toneBg[tone],
-              outline: active ? `2px solid ${toneMap[tone]}` : "none",
-              outlineOffset: 1,
-            }}
-            disabled={busy}
-            onClick={() => log(key)}
-            title={label}
-            aria-pressed={active}
-          >
-            <Icon size={12} />{label}{active ? <Check size={10} /> : null}
-          </button>
-        );
-      })}
+    <div className="mt-2">
+      <div className="flex flex-wrap gap-1" data-tp-action-group="outcome" aria-label="Log call outcome">
+        {OUTCOMES.map(({ key, label, icon: Icon, tone }) => {
+          const active = outcome === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              data-tp-outcome={key}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition hover:brightness-95"
+              style={{
+                color: active ? "#fff" : toneMap[tone],
+                background: active ? toneMap[tone] : toneBg[tone],
+                outline: active ? `2px solid ${toneMap[tone]}` : "none",
+                outlineOffset: 1,
+              }}
+              disabled={busy}
+              onClick={() => log(key)}
+              title={label}
+              aria-label={savingOutcome === key ? `Saving ${label}` : label}
+              aria-pressed={active}
+            >
+              <Icon size={12} aria-hidden="true" />{label}{active ? <Check size={10} aria-hidden="true" /> : null}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-1 min-h-5 text-xs" aria-live="polite" aria-atomic="true">
+        {busy && savingLabel ? <p className="font-semibold text-[var(--tp-muted)]">Saving {savingLabel.toLowerCase()}…</p> : null}
+        {!busy && message ? <p className="font-semibold text-[#0e8a65]">{message}</p> : null}
+        {error ? <p role="alert" className="font-semibold text-[var(--tp-rose)]">{error}</p> : null}
+      </div>
     </div>
   );
 }

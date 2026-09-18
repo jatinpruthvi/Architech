@@ -46,6 +46,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { schemaEngineEnvironment } from "./schema-engine-env.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..", "..", "..");
@@ -318,23 +319,19 @@ function enginesDir() {
   return path.dirname(enginesPkg);
 }
 
+let installedSchemaEngineBinary;
+
 function runPrisma(args, timeoutMs = 240000) {
-  // In sandbox networking we provide a Node-based schema-engine shim. Prefer
-  // PRISMA_SCHEMA_ENGINE_BINARY from the caller; fall back to the cached shim
-  // we just placed in ~/.cache/prisma.
-  const CACHE_SHIM = path.join(
-    process.env.HOME ?? process.env.USERPROFILE ?? "/root",
-    ".cache/prisma/master/e922089b7d7502aff4249d5da3420f6fa55fc6ad/debian-openssl-3.0.x/schema-engine"
-  );
+  // The fallback must be the package engine that ensureEngine actually found
+  // or installed. A fixed ~/.cache path is invalid in fresh sandboxes and made
+  // Prisma exit before the shim could apply a migration.
   return spawnSync(process.execPath, [PRISMA_CLI, ...args], {
     cwd: repoRoot,
     stdio: "inherit",
     timeout: timeoutMs,
     env: {
-      ...process.env,
+      ...schemaEngineEnvironment(process.env, installedSchemaEngineBinary),
       DATABASE_URL: process.env.DATABASE_URL ?? DATABASE_URL,
-      PRISMA_SCHEMA_ENGINE_BINARY: process.env.PRISMA_SCHEMA_ENGINE_BINARY ?? CACHE_SHIM,
-      PRISMA_MIGRATION_ENGINE_BINARY: process.env.PRISMA_SCHEMA_ENGINE_BINARY ?? CACHE_SHIM,
       PRISMA_QUERY_ENGINE_LIBRARY: process.env.PRISMA_QUERY_ENGINE_LIBRARY,
     },
   });
@@ -356,6 +353,7 @@ function ensureEngine() {
     }
   });
   if (usable) {
+    installedSchemaEngineBinary = usable;
     log(`prisma engine available (${path.basename(usable)})`);
     runPrisma(["generate", "--schema", "db/schema.prisma"]);
     log("client generated");
@@ -388,6 +386,7 @@ function ensureEngine() {
     candidates[0] ?? path.join(dir, "schema-engine-debian-openssl-3.0.x");
   fs.copyFileSync(SHIM_SRC, target);
   fs.chmodSync(target, 0o755);
+  installedSchemaEngineBinary = target;
   log(`shim installed at ${path.relative(repoRoot, target)}`);
   // Hard-fail if the engine (real or shim) does not actually execute — the
   // Prisma CLI can otherwise exit 0 on `migrate deploy` without applying

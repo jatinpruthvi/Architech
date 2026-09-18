@@ -1,12 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parsePrice, parseSqft, parseDate, toLast4, mapSqliteProperty } from "./mappers";
 
 describe("technoproperty/mappers", () => {
+  const originalKey = process.env.ARCHITECH_CONTACT_ENCRYPTION_KEY;
+
+  beforeEach(() => {
+    process.env.ARCHITECH_CONTACT_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
+  });
+
+  afterEach(() => {
+    if (originalKey === undefined) delete process.env.ARCHITECH_CONTACT_ENCRYPTION_KEY;
+    else process.env.ARCHITECH_CONTACT_ENCRYPTION_KEY = originalKey;
+  });
+
   it("parsePrice handles plain numbers, lac and cr", () => {
     expect(parsePrice("25000")).toBe(25000n);
     expect(parsePrice("₹ 25,000 / month")).toBe(25000n);
     expect(parsePrice("1.25 Cr")).toBe(12500000n);
     expect(parsePrice("55 Lac")).toBe(5500000n);
+    expect(parsePrice("999999999999999999999999")).toBeNull();
+    expect(parsePrice("999999999 Cr")).toBeNull();
     expect(parsePrice(null)).toBeNull();
   });
 

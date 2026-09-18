@@ -49,21 +49,33 @@ function toBool(v: number | boolean | null | undefined): boolean {
   return v === 1;
 }
 
-export function parsePrice(raw: string | null | undefined): bigint | null {
-  if (!raw) return null;
-  // Pull digits out of messy strings like "₹ 25,000 / month" or "1.25 Cr" or "55 Lac"
-  const clean = raw.replace(/[₹,\s]/g, "");
-  const cr = clean.match(/([\d.]+)\s*cr/i);
-  if (cr) return BigInt(Math.round(parseFloat(cr[1]) * 1_00_00_000));
-  const lac = clean.match(/([\d.]+)\s*lac?/i);
-  if (lac) return BigInt(Math.round(parseFloat(lac[1]) * 1_00_000));
-  const num = clean.match(/\d+/);
-  if (!num) return null;
+const MAX_SAFE_INR = BigInt(Number.MAX_SAFE_INTEGER);
+
+function toBoundedPrice(value: number | string): bigint | null {
   try {
-    return BigInt(num[0]);
+    const parsed = BigInt(value);
+    return parsed >= 0n && parsed <= MAX_SAFE_INR ? parsed : null;
   } catch {
     return null;
   }
+}
+
+export function parsePrice(raw: string | null | undefined): bigint | null {
+  if (!raw) return null;
+  // Pull digits out of messy strings like "₹ 25,000 / month" or "1.25 Cr" or "55 Lac".
+  const clean = raw.replace(/[₹,\s]/g, "");
+  const cr = clean.match(/([\d.]+)\s*cr/i);
+  if (cr) {
+    const value = Math.round(parseFloat(cr[1]) * 1_00_00_000);
+    return Number.isSafeInteger(value) ? toBoundedPrice(value) : null;
+  }
+  const lac = clean.match(/([\d.]+)\s*lac?/i);
+  if (lac) {
+    const value = Math.round(parseFloat(lac[1]) * 1_00_000);
+    return Number.isSafeInteger(value) ? toBoundedPrice(value) : null;
+  }
+  const num = clean.match(/\d+/);
+  return num ? toBoundedPrice(num[0]) : null;
 }
 
 export function parseSqft(raw: string | null | undefined): number | null {

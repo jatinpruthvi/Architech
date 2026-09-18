@@ -51,6 +51,8 @@ export const ALLOWED_ENV_KEYS = [
   "NEXT_PUBLIC_APP_ENV",
   "NODE_ENV",
   "PORT",
+  /* Optional local/offline Prisma engine path used by the sandbox bootstrap. */
+  "PRISMA_QUERY_ENGINE_LIBRARY",
   "NEXT_RUNTIME",
   "PUBLIC_INDEXING_ENABLED",
   "INDEXNOW_KEY",
