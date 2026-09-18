@@ -1347,13 +1347,14 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
   --border: rgba(58, 36, 26, 0.14);
 }
 /* App-shell scroll: the page itself never scrolls, so there is exactly one
-   header and the scrollbars start where the content begins — the sidebar menu
-   scrolls between the pinned brand block and footer, and the workspace column
-   scrolls below the pinned topbar. Scoped to the broker shell only. */
-.techno.vh-fill { height: 100dvh; overflow: hidden; }
-.techno .tp-shell-row { height: 100%; }
-.techno .tp-content-col { display: flex; height: 100%; min-width: 0; flex-direction: column; }
-.techno .tp-content-col > header { flex: 0 0 auto; }
+   header and the scrollbars start where the content begins. The topbar is a
+   full-width row across the very top; below it the sidebar menu scrolls
+   between its pinned ends and the workspace column scrolls in its own
+   region. Scoped to the broker shell only. */
+.techno.vh-fill { display: flex; height: 100dvh; overflow: hidden; flex-direction: column; }
+.techno.vh-fill > header { flex: 0 0 auto; }
+.techno .tp-shell-row { flex: 1 1 auto; min-height: 0; }
+.techno .tp-content-col { display: flex; min-width: 0; flex-direction: column; }
 .techno #techno-main { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
 .techno .tp-sidebar-body { display: flex; height: 100%; flex-direction: column; }
 .techno .tp-sidebar-body > div:first-child { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; }

@@ -45,10 +45,10 @@ async function TechnoShell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
+      <TechnoTopbar userName={firstName} freshCount={freshCount} shortlistCount={shortlistCount} />
       <div className="tp-shell-row mx-auto flex max-w-[1400px]">
         <TechnoSidebar freshCount={freshCount} shortlistCount={shortlistCount} />
         <div className="tp-content-col min-w-0 flex-1">
-          <TechnoTopbar userName={firstName} freshCount={freshCount} shortlistCount={shortlistCount} />
           <div id="techno-main" tabIndex={-1} className="px-3 pb-28 pt-5 sm:px-4 md:px-8 md:py-8">
             {children}
           </div>
