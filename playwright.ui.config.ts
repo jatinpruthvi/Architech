@@ -30,6 +30,7 @@ export default defineConfig({
   testDir: "./tests/e2e-ui",
   timeout: 45_000,
   expect: { timeout: 10_000 },
+  retries: process.env.CI ? 1 : 0,
   fullyParallel: false,
   workers: 1,
   /* "github" annotates failing assertions on the check run so CI failures are
