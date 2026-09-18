@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useSession } from "@/contexts/SessionContext";
+import { normalizeTechnoPathname } from "@/lib/technoproperty/routes";
 import {
   Bell,
   Bookmark,
@@ -78,7 +79,7 @@ export function TechnoNavContent({
   shortlistCount?: number;
   onNavigate?: () => void;
 }) {
-  const pathname = usePathname() ?? "";
+  const pathname = normalizeTechnoPathname(usePathname() ?? "");
   const { signOut } = useSession();
   const [ownersOpen, setOwnersOpen] = useState(pathname.includes("/owners") || pathname === "/broker");
   const [brokersOpen, setBrokersOpen] = useState(pathname.includes("/brokers"));

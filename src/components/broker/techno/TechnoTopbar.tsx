@@ -25,6 +25,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { normalizeTechnoPathname } from "@/lib/technoproperty/routes";
 import { CountBadge, TechnoNavContent } from "./TechnoSidebar";
 
 const NAV = [
@@ -57,7 +58,7 @@ export function TechnoTopbar({
   freshCount?: number;
   shortlistCount?: number;
 }) {
-  const pathname = usePathname() ?? "";
+  const pathname = normalizeTechnoPathname(usePathname() ?? "");
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);

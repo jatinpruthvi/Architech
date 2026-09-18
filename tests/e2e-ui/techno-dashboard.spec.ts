@@ -22,10 +22,11 @@ test.beforeEach(async ({ page }) => {
 
 test("techno dashboard renders KPI tiles and responsive navigation", async ({ page }, testInfo) => {
   await page.goto("/broker");
-  await expect(page.getByRole("heading", { name: /Owner Properties Data/ })).toBeVisible();
-  await expect(page.getByText("Active Owner Properties")).toBeVisible();
-  await expect(page.getByText("Added Today")).toBeVisible();
-  await expect(page.getByText("Properties Status")).toBeVisible();
+  const main = page.locator("#techno-main");
+  await expect(main.getByRole("heading", { name: /Owner Properties Data/ })).toBeVisible();
+  await expect(main.getByText("Active Owner Properties", { exact: true })).toBeVisible();
+  await expect(main.getByText("Added Today", { exact: true })).toBeVisible();
+  await expect(main.getByText("Properties Status", { exact: true })).toBeVisible();
 
   if (testInfo.project.use.isMobile) {
     const navigation = page.getByRole("navigation", { name: "Broker mobile navigation" });
@@ -72,6 +73,7 @@ test.describe("mobile broker workspace", () => {
     await page.getByRole("button", { name: "Open broker menu" }).click();
     const menu = page.getByRole("dialog", { name: "Broker workspace" });
     await expect(menu).toBeVisible();
+    await expect(menu.getByRole("button", { name: "Owner Properties" })).toHaveAttribute("aria-expanded", "true");
     await menu.getByRole("link", { name: "Residential Rent" }).first().click();
     await expect(page).toHaveURL(/\/broker\/owners\/ResidentialRent/);
   });

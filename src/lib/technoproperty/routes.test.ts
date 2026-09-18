@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isTechnoWorkspacePath } from "./routes";
+import { isTechnoWorkspacePath, normalizeTechnoPathname } from "./routes";
 
 describe("isTechnoWorkspacePath", () => {
+  it("normalizes canonical trailing slashes for client navigation state", () => {
+    expect(normalizeTechnoPathname("/broker/")).toBe("/broker");
+    expect(normalizeTechnoPathname("/broker/owners/ResidentialRent///")).toBe("/broker/owners/ResidentialRent");
+  });
+
   it.each([
     "/broker",
     "/broker/",
