@@ -1036,13 +1036,13 @@ export default function Login() {
           <div className="border border-ink/12 bg-sand/60 p-6">
             <LockKeyhole size={20} className="text-brick" />
             <h2 className="mt-4 font-display text-2xl font-medium">Preview sign-ins</h2>
-            <p className="mt-3 text-[14px] leading-7 ink-2">Demo auth source – phone OTP mocked as 123456 in demo. Use email demos below or set ARCHITECH_AUTH_SOURCE=better-auth for real phone flow.</p>
+            <p className="mt-3 text-[14px] leading-7 ink-2">Demo auth source – phone OTP mocked as 123456 in demo. Tap a preview sign-in below to fill the mobile number + password, or set ARCHITECH_AUTH_SOURCE=better-auth for the real phone flow.</p>
             <ul role="list" className="mt-5 space-y-3">
               {DEMO_HINTS.map((hint) => (
                 <li key={hint.email}>
                   <button type="button" onClick={() => { setMode("signin"); setPhone(hint.phone); setPassword(hint.password); setIssues([]); setFormError(null); phoneRef.current?.focus(); }} className="w-full border border-ink/12 bg-card px-4 py-3 text-left hover:border-brick">
                     <span className="stamp font-semibold text-brick">{hint.label}</span>
-                    <span className="mt-1 block text-[13px] ink-2">{hint.email} • +91 {hint.phone}</span>
+                    <span className="mt-1 block text-[13px] ink-2">+91 {hint.phone} • {hint.email}</span>
                     <span className="block text-[12px] ink-3">{hint.password} • OTP: 123456 in demo</span>
                   </button>
                 </li>
