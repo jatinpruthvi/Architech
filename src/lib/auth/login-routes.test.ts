@@ -50,7 +50,12 @@ describe("login route", () => {
     const setCookie = response.headers.getSetCookie().join(" ");
     expect(setCookie).toContain(DEMO_SESSION_COOKIE);
     expect(setCookie).toContain("HttpOnly");
-    expect(setCookie).toContain("SameSite=Lax");
+    /* Dev/test runs emit the iframe-proof attributes (see demoCookieAttributes):
+       the preview hosts embed this app in a cross-site iframe, where Chrome
+       silently drops SameSite=Lax cookies and "demo login signs nobody in". */
+    expect(setCookie).toContain("SameSite=None");
+    expect(setCookie).toContain("Secure");
+    expect(setCookie).toContain("Partitioned");
     /* The cookie must never be readable by page scripts, and the response must
        never be cached by a shared proxy. */
     expect(response.headers.get("cache-control")).toBe("no-store");

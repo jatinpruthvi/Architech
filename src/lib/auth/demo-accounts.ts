@@ -114,16 +114,48 @@ export function findDemoAccountById(id: string): DemoAccount | null {
   return DEMO_ACCOUNTS.find((account) => account.id === id) ?? null;
 }
 
+/** The `Set-Cookie` attributes for every demo session cookie.
+ *
+ *  WHY NOT `SameSite=Lax`
+ *
+ *  Sandbox previews (Arena/e2b) show this app inside an IFRAME on a different
+ *  site (arena.ai vs *.e2b.app). In that cross-site context Chrome silently
+ *  DROPS `SameSite=Lax` cookies: the login POST returns 200 with a `Set-Cookie`
+ *  the browser never stores, the UI flashes signed-in (the context adopts the
+ *  response session) and is anonymous again on the very next request — with no
+ *  error anywhere. That was the "demo login signs nobody in" bug.
+ *
+ *  `SameSite=None; Secure` is the cross-site-embeddable form, and `Partitioned`
+ *  (CHIPS) keeps it working even for visitors who block third-party cookies,
+ *  because a partitioned cookie is keyed by the top-level site and cannot track
+ *  anyone across sites. In a first-party context (localhost dev, a real
+ *  deployment) a partitioned cookie behaves exactly like a normal one, so the
+ *  attributes are simply always-on outside production.
+ *
+ *  `Secure` is required whenever `SameSite=None` is used. Chrome treats
+ *  http://localhost as trustworthy and accepts Secure cookies there, so local
+ *  dev keeps working unchanged.
+ *
+ *  Production keeps the strict protocol-derived form: demo cookies never
+ *  authorise a production mutation anyway (`authorizeRequest` rejects demo
+ *  sessions when NODE_ENV === "production"), so there is nothing to relax.
+ */
+export function demoCookieAttributes(request: Request): string {
+  if (process.env.NODE_ENV === "production") {
+    const secure = new URL(request.url).protocol === "https:";
+    return `HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+  }
+  return "HttpOnly; SameSite=None; Secure; Partitioned";
+}
+
 /** The `Set-Cookie` value that signs a demo account in. */
 export function demoSessionCookieValue(account: DemoAccount, request: Request): string {
-  const secure = new URL(request.url).protocol === "https:";
-  return `${DEMO_SESSION_COOKIE}=${encodeURIComponent(account.id)}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+  return `${DEMO_SESSION_COOKIE}=${encodeURIComponent(account.id)}; Path=/; Max-Age=${60 * 60 * 8}; ${demoCookieAttributes(request)}`;
 }
 
 /** The `Set-Cookie` value that signs a demo account out. */
 export function demoSignOutCookieValue(request: Request): string {
-  const secure = new URL(request.url).protocol === "https:";
-  return `${DEMO_SESSION_COOKIE}=${DEMO_SIGNED_OUT}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+  return `${DEMO_SESSION_COOKIE}=${DEMO_SIGNED_OUT}; Path=/; Max-Age=${60 * 60 * 8}; ${demoCookieAttributes(request)}`;
 }
 
 function readCookie(cookieHeader: string, name: string): string | undefined {

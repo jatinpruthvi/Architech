@@ -147,6 +147,16 @@ function createAuthServer() {
           ? ["x-real-ip", "cf-connecting-ip", "x-forwarded-for"]
           : ["x-real-ip", "cf-connecting-ip"],
       },
+      /* Sandbox previews embed this app in a cross-site iframe, where Chrome
+         silently drops SameSite=Lax cookies — a live sign-in would return 200
+         while the browser keeps no session (the demo-mode twin of this bug is
+         fixed in demo-accounts.ts:demoCookieAttributes). SameSite=None + Secure
+         is the embeddable form; Partitioned (CHIPS) keeps it working for
+         visitors who block third-party cookies, and behaves like a normal
+         cookie in first-party contexts. Production keeps the strict defaults. */
+      ...(process.env.NODE_ENV === "production"
+        ? {}
+        : { defaultCookieAttributes: { sameSite: "none", secure: true, partitioned: true } }),
     },
     emailAndPassword: {
       enabled: true,
