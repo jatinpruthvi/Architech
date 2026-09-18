@@ -132,7 +132,17 @@ function publicRecord(input: RequirementInput, row: RequirementRow): Requirement
  * city/locality relationship again against the database, and never persist a
  * plaintext phone number. */
 export async function createRequirementForServer(input: RequirementInput, session?: AuthSession | null) {
-  const scopedInput: RequirementInput = session?.organization ? { ...input, organizationId: session.organization.id, userId: input.userId ?? session.user.id } : input;
+  // Demo identities live only in the auth contract and have no durable User
+  // row, so persisting their id would violate Requirement_userId_fkey. For a
+  // live session, ownership always comes from the verified session rather than
+  // a caller-controlled body field.
+  const scopedInput: RequirementInput = session?.organization
+    ? {
+        ...input,
+        organizationId: session.organization.id,
+        userId: session.source === "better-auth-contract-demo" ? null : session.user.id,
+      }
+    : input;
   if (!isPrismaPersistence()) return createRequirement(scopedInput);
   const prisma = getPrismaClient() as RequirementPrisma;
 

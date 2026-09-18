@@ -2,6 +2,7 @@ import { requireTechnoSession } from "@/lib/technoproperty/session";
 import { listOwnerProperties } from "@/lib/technoproperty/repository";
 import { categoryLabel } from "@/lib/technoproperty/categories";
 import { ListPageHeader } from "@/components/broker/techno/ListPageHeader";
+import { serializeListSearch } from "@/components/broker/techno/list-controls";
 import RequirementTable from "@/components/broker/techno/RequirementTable";
 import Link from "next/link";
 
@@ -46,20 +47,29 @@ export default async function RequirementsByCategoryPage({
         searchLabel="Search requirements by budget, BHK, area…"
         initialQuery={sp.q || ""}
         basePath={basePath}
+        resultCount={data.total}
+        showStatusFilter={false}
       />
-      <div className="flex flex-wrap gap-2">
+      <div className="tp-tabs-rail flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
           <Link key={t} href={`/broker/requirements/${t}`} className={`tp-tab ${safeCat === t ? "active" : ""}`}>
             {categoryLabel(t)}
           </Link>
         ))}
       </div>
-      <div className="tp-card flex items-center gap-3 text-sm text-[var(--tp-muted)]">
+      <div className="tp-card flex flex-wrap items-center gap-3 text-sm leading-6 text-[var(--tp-muted)]">
         <span className="tp-chip tp-chip-violet">Requirements feed</span>
         Showing matches against {data.total.toLocaleString("en-IN")} active {categoryLabel(safeCat)} listings.
         Full buyer/tenant requirement posts will appear here once the crawler pulls them from brokersproperty.php.
       </div>
-      <RequirementTable rows={data.rows} total={data.total} page={data.page} perPage={data.perPage} basePath={basePath} />
+      <RequirementTable
+        rows={data.rows}
+        total={data.total}
+        page={data.page}
+        perPage={data.perPage}
+        basePath={basePath}
+        currentSearch={serializeListSearch({ q: sp.q, page: sp.page, perPage: sp.perPage })}
+      />
     </div>
   );
 }

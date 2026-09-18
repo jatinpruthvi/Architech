@@ -1,7 +1,7 @@
-import { CountCard, MiniCountCard } from "./CountCard";
+import { MiniCountCard } from "./CountCard";
 import { categoryLabel, chipFor } from "@/lib/technoproperty/categories";
 import Link from "next/link";
-import { Home, Building2, UsersRound, TrendingUp, Plus, Calendar, LayoutGrid, Phone, Eye } from "lucide-react";
+import { Phone } from "lucide-react";
 
 export function UpdatesBlock({
   title,
@@ -13,7 +13,7 @@ export function UpdatesBlock({
   return (
     <div className="tp-card tp-card-accent">
       <h3 className="tp-kpi-label mb-3 text-[var(--tp-ink)]">{title}</h3>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="tp-stat-rail grid grid-flow-col auto-cols-[minmax(8rem,1fr)] gap-2 overflow-x-auto pb-2 sm:grid-flow-row sm:grid-cols-3 sm:overflow-visible lg:grid-cols-5">
         {rows.map((r) => (
           <MiniCountCard
             key={r.key}
@@ -57,8 +57,8 @@ export function CallingQueueEmpty() {
 }
 
 export async function CallingQueue({
-  orgId,
-  userId,
+  orgId: _orgId,
+  userId: _userId,
   rows,
 }: {
   orgId: string;
@@ -82,7 +82,7 @@ export async function CallingQueue({
   return (
     <div className="mt-4 divide-y divide-[var(--tp-border)]">
       {rows.map((r) => (
-        <div key={r.id} className="flex items-start gap-3 py-3">
+        <div key={r.id} className="flex flex-col items-stretch gap-3 py-4 sm:flex-row sm:items-start">
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-[var(--tp-ink)]">{r.premiseName || r.area || "Property"}</p>
             <p className="truncate text-sm text-[var(--tp-ink-soft)]">{r.address}</p>

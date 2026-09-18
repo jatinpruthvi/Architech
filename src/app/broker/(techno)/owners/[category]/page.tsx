@@ -3,6 +3,7 @@ import { listOwnerProperties } from "@/lib/technoproperty/repository";
 import { categoryLabel } from "@/lib/technoproperty/categories";
 import { PropertyTable } from "@/components/broker/techno/PropertyTable";
 import { ListPageHeader } from "@/components/broker/techno/ListPageHeader";
+import { currentListFilter, serializeListSearch } from "@/components/broker/techno/list-controls";
 import Link from "next/link";
 
 const TABS = ["ResidentialRent", "ResidentialSell", "CommercialRent", "CommercialSell", "Premium", "Important"];
@@ -40,15 +41,37 @@ export default async function OwnersByCategoryPage({
 
   return (
     <div className="space-y-5">
-      <ListPageHeader title={title} searchLabel="Search Premise, Phone, Description, Special Note…" initialQuery={sp.q || ""} basePath={basePath} />
-      <div className="flex flex-wrap gap-2">
+      <ListPageHeader
+        title={title}
+        searchLabel="Search premise, phone, owner, or area"
+        initialQuery={sp.q || ""}
+        basePath={basePath}
+        resultCount={data.total}
+        activeFilter={currentListFilter(category === "Premium" || category === "Important" ? { rented: sp.rented } : sp)}
+        filterAllLabel={category === "Premium" ? "All premium" : category === "Important" ? "All important" : "All active"}
+        showPremiumOption={category !== "Premium" && category !== "Important"}
+      />
+      <div className="tp-tabs-rail flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
           <Link key={t} href={`/broker/owners/${t}`} className={`tp-tab ${category === t ? "active" : ""}`}>
             {categoryLabel(t)}
           </Link>
         ))}
       </div>
-      <PropertyTable rows={data.rows} total={data.total} page={data.page} perPage={data.perPage} basePath={basePath} />
+      <PropertyTable
+        rows={data.rows}
+        total={data.total}
+        page={data.page}
+        perPage={data.perPage}
+        basePath={basePath}
+        currentSearch={serializeListSearch({
+          q: sp.q,
+          premium: category === "Premium" || category === "Important" ? undefined : sp.premium,
+          rented: sp.rented,
+          page: sp.page,
+          perPage: sp.perPage,
+        })}
+      />
     </div>
   );
 }

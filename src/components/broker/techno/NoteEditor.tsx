@@ -1,81 +1,122 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { Pencil, Check, X } from "lucide-react";
 
-export function NoteEditor({ propertyId, initialText = "" }: { propertyId: string; initialText?: string }) {
+import { useRef, useState } from "react";
+import { Check, Pencil, X } from "lucide-react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+export function NoteEditor({
+  propertyId,
+  initialText = "",
+  showLabel = false,
+}: {
+  propertyId: string;
+  initialText?: string;
+  showLabel?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(initialText || "");
   const [saved, setSaved] = useState(initialText || "");
   const [busy, setBusy] = useState(false);
-  const popRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onClick(e: MouseEvent) {
-      if (popRef.current && !popRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [open]);
+  const [error, setError] = useState<string | null>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   async function save() {
     setBusy(true);
+    setError(null);
     try {
-      const res = await fetch("/api/broker/technoproperty/note", {
+      const res = await fetch("/api/broker/technoproperty/note/", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ propertyId, text }),
       });
       const data = await res.json();
-      if (data.ok) {
-        setSaved(text);
-        setOpen(false);
+      if (!res.ok || !data.ok) {
+        setError("Could not save. Please try again.");
+        return;
       }
+      setSaved(text);
+      setOpen(false);
+    } catch {
+      setError("Could not save. Check your connection and retry.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="relative inline-block" ref={popRef}>
-      <button
-        type="button"
-        title={saved ? `Note: ${saved}` : "Add note"}
-        aria-label={saved ? "Edit note" : "Add note"}
-        data-tp-action="note"
-        onClick={() => {
-          setText(saved);
-          setOpen((v) => !v);
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div className={showLabel ? "relative" : "relative inline-block"}>
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            title={saved ? `Note: ${saved}` : "Add note"}
+            aria-label={saved ? "Edit note" : "Add note"}
+            data-tp-action="note"
+            onClick={() => {
+              setText(saved);
+              setError(null);
+            }}
+            className={`${showLabel ? "tp-mobile-action w-full" : "tp-action-btn"} ${saved ? "bg-[#e0fbf0] !border-[#b6ebd3] !text-[#0e8a65]" : "bg-[#f0f7ff] !border-[#c7dffa] !text-[#1d5fc2]"}`}
+          >
+            <Pencil size={16} />
+            {showLabel ? <span>{saved ? "Edit note" : "Note"}</span> : null}
+          </button>
+        </DialogTrigger>
+        {saved && !showLabel ? (
+          <span className="ml-1 align-middle text-[10px] text-[var(--tp-muted)]">
+            {saved.length > 20 ? saved.slice(0, 20) + "…" : saved}
+          </span>
+        ) : null}
+      </div>
+
+      <DialogContent
+        showCloseButton={false}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          textAreaRef.current?.focus();
         }}
-        className={`tp-action-btn ${saved ? "bg-[#e0fbf0] !text-[#0e8a65] !border-[#b6ebd3]" : "bg-[#f0f7ff] !text-[#1d5fc2] !border-[#c7dffa]"}`}
+        className="techno tp-note-dialog !bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] !left-3 !right-3 !top-auto !w-auto !max-w-none !translate-x-0 !translate-y-0 rounded-2xl border border-[var(--tp-border)] bg-white p-4 text-[var(--tp-ink)] shadow-2xl md:!bottom-auto md:!left-1/2 md:!right-auto md:!top-1/2 md:!w-[22rem] md:!-translate-x-1/2 md:!-translate-y-1/2"
       >
-        <Pencil size={15} />
-      </button>
-      {saved ? (
-        <span className="ml-1 align-middle text-[10px] text-[var(--tp-muted)]">
-          {saved.length > 20 ? saved.slice(0, 20) + "…" : saved}
-        </span>
-      ) : null}
-      {open ? (
-        <div className="absolute left-8 top-0 z-20 w-72 rounded-xl border border-[var(--tp-border)] bg-white p-3 shadow-lg">
-          <p className="mb-1 text-[11px] font-semibold uppercase text-[var(--tp-muted)]">Private note</p>
-          <textarea
-            className="tp-input min-h-[80px] w-full resize-none"
-            value={text}
-            autoFocus
-            placeholder="e.g. wrong info it's 2bhk · call again Monday"
-            onChange={(e) => setText(e.target.value)}
-          />
-          <div className="mt-2 flex items-center justify-end gap-2">
-            <button className="tp-btn tp-btn-ghost !py-1 !px-2 !text-xs" onClick={() => setOpen(false)}>
-              <X size={12} /> Cancel
-            </button>
-            <button className="tp-btn tp-btn-primary !py-1 !px-2 !text-xs" onClick={save} disabled={busy}>
-              <Check size={12} /> {busy ? "Saving…" : "Save"}
-            </button>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <DialogTitle className="font-display text-lg font-bold text-[var(--tp-ink)]">Private note</DialogTitle>
+            <DialogDescription className="mt-1 text-xs text-[var(--tp-muted)]">
+              Only your brokerage team can see this property note.
+            </DialogDescription>
           </div>
+          <DialogClose asChild>
+            <button type="button" className="tp-icon-touch -mr-2 -mt-2" aria-label="Close note">
+              <X size={18} />
+            </button>
+          </DialogClose>
         </div>
-      ) : null}
-    </div>
+        <textarea
+          ref={textAreaRef}
+          aria-label="Property note"
+          className="tp-input min-h-[112px] w-full resize-none"
+          value={text}
+          placeholder="Example: confirm 2 BHK details; call again Monday"
+          onChange={(event) => setText(event.target.value)}
+        />
+        {error ? <p role="alert" className="text-xs font-semibold text-[var(--tp-rose)]">{error}</p> : null}
+        <div className="grid grid-cols-2 gap-2">
+          <DialogClose asChild>
+            <button type="button" className="tp-btn tp-btn-ghost min-h-11 justify-center">
+              Cancel
+            </button>
+          </DialogClose>
+          <button type="button" className="tp-btn tp-btn-primary min-h-11 justify-center" onClick={save} disabled={busy}>
+            <Check size={14} /> {busy ? "Saving…" : "Save note"}
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

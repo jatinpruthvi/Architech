@@ -35,7 +35,7 @@ export function CountCard({
   big?: boolean;
 }) {
   return (
-    <article className={`tp-card ${big ? "md:col-span-2" : ""}`}>
+    <article className={`tp-card ${big ? "col-span-2 md:col-span-2" : ""}`}>
       <div className="flex items-center justify-between">
         <span
           className="tp-chip"
@@ -46,9 +46,7 @@ export function CountCard({
         </span>
       </div>
       <p className="tp-kpi-value mt-4" style={{ color: toneFg[tone] }}>
-        {typeof value === "number"
-          ? `# ${value.toLocaleString("en-IN")}~`
-          : value}
+        {typeof value === "number" ? value.toLocaleString("en-IN") : value}
       </p>
       <p className="tp-kpi-sub">{subtitle}</p>
     </article>
@@ -76,7 +74,7 @@ export function MiniCountCard({
         {label}
       </p>
       <p className="mt-1 font-display text-lg font-bold" style={{ color: toneFg[tone] }}>
-        {typeof value === "number" ? `# ${value.toLocaleString("en-IN")}~` : value}
+        {typeof value === "number" ? value.toLocaleString("en-IN") : value}
       </p>
     </div>
   );

@@ -1,5 +1,5 @@
 {
-  "description": "Phase 1 performance budgets for the Architech public prototype. Re-baselined 26 Aug 2026 after the locality-intelligence layer added a provenance-labeled evidence band (current price range, inventory by configuration & budget, commute/nearby, new projects) to the /buy/ahmedabad/:locality/ hub, replacing placeholder snapshot figures for a cross-route client component: first-load gzip cap raised to 240 KB and total static JS cap to 2.16 MiB (max measured /search first-load gzip 230.0 KiB, total static JS 2151.1 KiB), keeping headroom so genuine regressions are still caught. Per-route raw first-load and core-web-vital targets remain unchanged. Prior re-baselines: 25 Aug 2026 parity overlay (first-load gzip 235 KB, total 2.15 MiB).",
+  "description": "Phase 1 performance budgets for the Architech public prototype. Re-baselined 18 Sep 2026 after the TechnoProperty mobile workspace added authenticated drawer and bottom navigation, persisted card/table inventory views, and accessible optimistic action workflows across the broker routes: total static JS measured 2248.6 KiB and the aggregate cap moved to 2.24 MiB with 2.1% headroom. Individual route and gzip caps remain unchanged because every route still passes them. Prior re-baselines: 26 Aug 2026 locality intelligence (2.16 MiB total) and 25 Aug 2026 parity overlay (2.15 MiB total).",
   "routes": {
     "default": {
       "maxFirstLoadJsBytes": 850000,
@@ -41,7 +41,7 @@
     ]
   },
   "staticAssets": {
-    "maxTotalStaticJsBytes": 2212000,
+    "maxTotalStaticJsBytes": 2350000,
     "maxLargestChunkBytes": 1100000,
     "maxLargestChunkGzipBytes": 280000,
     "maxMobileWebpBytes": 225000,

@@ -49,6 +49,14 @@ const ROUTES = [
   "/broker/channel/",
   "/broker/onboarding/",
   "/broker/listings/new/",
+  "/broker/",
+  "/broker/search/",
+  "/broker/owners/ResidentialRent/",
+  "/broker/brokers/ResidentialRent/",
+  "/broker/requirements/ResidentialRent/",
+  "/broker/shortlisted/",
+  "/broker/call-queue/",
+  "/broker/activities/",
 ];
 
 /** Strip tags into a flat list of elements with their attributes, in document

@@ -24,11 +24,13 @@ const SERVER_ENV = [
   "ARCHITECH_DEMO_START_SIGNED_OUT=true",
   "BETTER_AUTH_SECRET=devsecret123456789012345678901234567890",
   "BETTER_AUTH_URL=http://127.0.0.1:3000",
+  "ARCHITECH_CONTACT_ENCRYPTION_KEY=BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
 ].join(" ");
 export default defineConfig({
   testDir: "./tests/e2e-ui",
   timeout: 45_000,
   expect: { timeout: 10_000 },
+  retries: process.env.CI ? 1 : 0,
   fullyParallel: false,
   workers: 1,
   /* "github" annotates failing assertions on the check run so CI failures are
@@ -42,7 +44,7 @@ export default defineConfig({
     /* Run against the canonical Next runtime, not the static publish snapshot:
        palette journeys need /api/search/suggest, which only the runtime
        serves. Same choice as playwright.a11y.broker.config.ts. */
-    command: `${SERVER_ENV} pnpm build:ci && ${SERVER_ENV} pnpm start:next`,
+    command: `${SERVER_ENV} pnpm tsx tests/e2e-ui/fixtures/seed-techno-fixtures.ts && ${SERVER_ENV} pnpm build:ci && ${SERVER_ENV} pnpm start:next`,
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

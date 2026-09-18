@@ -288,11 +288,10 @@ async function demoModeFlows() {
         assert([403, 503].includes(response.status), `a buyer must never read moderation, got ${response.status}`);
       });
 
-      await test("protected pages still render a shell (the guard is client-side by design)", async () => {
-        /* The page shell is not the security boundary — the APIs are. This
-           asserts the documented split rather than a false expectation. */
+      await test("the retired dashboard path redirects to the canonical protected workspace", async () => {
         const page = await client.fork().get("/broker/dashboard/");
-        assertEqual(page.status, 200, "the dashboard shell renders; its DATA is what is guarded");
+        assertEqual(page.status, 307, "the retired dashboard path must redirect");
+        assertEqual(page.location, "/broker/", "the redirect must target the canonical broker workspace");
       });
     });
 

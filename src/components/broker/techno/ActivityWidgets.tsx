@@ -10,16 +10,20 @@ function relTime(d: Date): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type ActivityProperty = { premiseName: string | null; address: string | null } | null;
+type RecentReveal = { id: string; createdAt: Date; property?: ActivityProperty };
+type RecentNote = { id: string; text: string; property?: ActivityProperty };
+
 export function ActivityWidgets({ data }: {
   data: {
     shortlistCount: number;
     savedSearchCount: number;
-    recentReveals: any[];
-    recentNotes: any[];
+    recentReveals: RecentReveal[];
+    recentNotes: RecentNote[];
   };
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div id="notifications" className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <article className="tp-card" style={{ background: "linear-gradient(160deg,#0b3b6d 0%,#1d6fe0 100%)", color: "#fff", border: "none" }}>
         <span className="tp-chip" style={{ background: "rgba(255,255,255,.15)", color: "#fff" }}>
           <Bell size={12} /> Saved search matches
@@ -48,7 +52,7 @@ export function ActivityWidgets({ data }: {
         <span className="tp-chip tp-chip-amber"><Phone size={12} /> Recent contact reveals</span>
         <p className="tp-kpi-value mt-4">{data.recentReveals.length}</p>
         <p className="text-sm text-[var(--tp-muted)]">reveals today</p>
-        <ul className="mt-3 space-y-2">
+        <ul role="list" className="mt-3 space-y-2">
           {data.recentReveals.slice(0, 4).map((r) => (
             <li key={r.id} className="truncate rounded-lg border border-[var(--tp-border)] p-2 text-xs">
               <span className="text-[var(--tp-muted)]">{relTime(r.createdAt)}</span>{" "}
@@ -56,20 +60,22 @@ export function ActivityWidgets({ data }: {
             </li>
           ))}
           {data.recentReveals.length === 0 ? (
-            <p className="text-xs text-[var(--tp-muted)]">No reveals yet today — open the call queue to start dialing.</p>
+            <li className="text-xs text-[var(--tp-muted)]">No reveals yet today — open the call queue to start dialing.</li>
           ) : (
-            <Link href="/broker/call-queue" className="tp-btn tp-btn-ghost !text-xs">
-              Open recent →
-            </Link>
+            <li>
+              <Link href="/broker/call-queue" className="tp-btn tp-btn-ghost !text-xs">
+                Open recent →
+              </Link>
+            </li>
           )}
         </ul>
       </article>
 
-      <article className="tp-card">
+      <article id="notes" className="tp-card">
         <span className="tp-chip tp-chip-violet"><FileText size={12} /> My notes</span>
         <p className="tp-kpi-value mt-4">{data.recentNotes.length}</p>
         <p className="text-sm text-[var(--tp-muted)]">noted properties</p>
-        <ul className="mt-3 space-y-2">
+        <ul role="list" className="mt-3 space-y-2">
           {data.recentNotes.slice(0, 4).map((n) => (
             <li key={n.id} className="rounded-lg border border-[var(--tp-border)] p-2 text-xs">
               <p className="truncate font-medium">{n.property?.premiseName || n.property?.address || "Property"}</p>
@@ -77,7 +83,7 @@ export function ActivityWidgets({ data }: {
             </li>
           ))}
           {data.recentNotes.length === 0 ? (
-            <p className="text-xs text-[var(--tp-muted)]">Use the ✎ icon on any row to add a note.</p>
+            <li className="text-xs text-[var(--tp-muted)]">Use the Note action on any property to add one.</li>
           ) : null}
         </ul>
       </article>

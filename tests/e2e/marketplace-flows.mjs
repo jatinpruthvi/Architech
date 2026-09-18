@@ -55,6 +55,7 @@ async function run() {
          (DEMO_AUTH_DISABLED, asserted in auth-flows); the explicit opt-in is
          what makes broker/saved-search journeys testable end-to-end. */
       ARCHITECH_ALLOW_DEMO_AUTH_IN_PRODUCTION: "true",
+      ARCHITECH_IDEMPOTENCY_HMAC_KEY: "test-e2e-idempotency-hmac-secret",
     },
     label: "marketplace server",
     singleWorker: true,

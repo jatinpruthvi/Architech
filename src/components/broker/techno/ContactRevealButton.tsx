@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Phone, MessageCircle, Loader2 } from "lucide-react";
+import { normalizeIndianPhone, waMeLink } from "@/lib/interop/phone";
 
 export function ContactRevealButton({
   propertyId,
@@ -36,10 +37,10 @@ export function ContactRevealButton({
 
   // If server hands us the decrypted number, we're already revealed — skip the button.
   useEffect(() => {
-    if (initialPhone && !state.phone) {
-      setState((s) => ({ ...s, revealed: true, phone: initialPhone! }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!initialPhone) return;
+    setState((current) => current.phone
+      ? current
+      : { ...current, revealed: true, phone: initialPhone });
   }, [initialPhone]);
 
   async function reveal() {
@@ -47,7 +48,7 @@ export function ContactRevealButton({
     setBusy(true);
     setState((s) => ({ ...s, error: null }));
     try {
-      const res = await fetch("/api/broker/technoproperty/reveal", {
+      const res = await fetch("/api/broker/technoproperty/reveal/", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ propertyId, brokerListingId, listingType }),
@@ -73,7 +74,7 @@ export function ContactRevealButton({
 
   if (state.error) {
     return (
-      <button className="tp-contact-pill" onClick={reveal}>Retry</button>
+      <button type="button" className="tp-contact-pill" onClick={reveal}>Retry contact</button>
     );
   }
 
@@ -92,6 +93,11 @@ export function ContactRevealButton({
     );
   }
 
+  const normalizedPhone = normalizeIndianPhone(state.phone);
+  const whatsappHref = normalizedPhone.ok
+    ? `${waMeLink(normalizedPhone.e164)}?text=${encodeURIComponent("Hi, regarding your property on Techno Property…")}`
+    : null;
+
   return (
     <div className="flex flex-col gap-1" data-tp-revealed="true">
       {state.name ? (
@@ -103,21 +109,24 @@ export function ContactRevealButton({
             <a
               href={`tel:${state.phone}`}
               data-tp-action="call"
+              aria-label={`Call ${state.phone}`}
               className="tp-contact-pill revealed"
             >
-              <Phone size={12} /> {state.phone}
+              <Phone size={16} /> {state.phone}
             </a>
-            <a
-              href={`https://wa.me/91${state.phone}?text=${encodeURIComponent("Hi, regarding your property on Techno Property…")}`}
-              target="_blank"
-              rel="noreferrer"
-              data-tp-action="whatsapp"
-              className="grid h-8 w-8 place-items-center rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-              title="WhatsApp"
-              aria-label="WhatsApp"
-            >
-              <MessageCircle size={14} />
-            </a>
+            {whatsappHref ? (
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                data-tp-action="whatsapp"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                title="WhatsApp"
+                aria-label="WhatsApp"
+              >
+                <MessageCircle size={14} />
+              </a>
+            ) : null}
           </>
         ) : (
           <span className="text-xs text-[var(--tp-muted)]">

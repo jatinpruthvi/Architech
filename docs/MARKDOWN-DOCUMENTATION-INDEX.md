@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated from the repository Markdown tree (218 files, digest b4d174d3bbdf).
+Generated from the repository Markdown tree (220 files, digest 288153d93224).
 
 ## Recommended Reading Order
 
@@ -136,6 +136,7 @@ Generated from the repository Markdown tree (218 files, digest b4d174d3bbdf).
 - [Search Activation And Relevance 2026 09 07](../docs/search/search-activation-and-relevance-2026-09-07.md)
 - [Privacy Data Flow Map](../docs/security/privacy-data-flow-map.md)
 - [Security Headers](../docs/security/security-headers.md)
+- [ReadMe](../docs/tasks/task1/ReadMe.md)
 - [Design Tool Audit](../docs/tooling/design-tool-audit.md)
 - [Design Tooling Manifest](../docs/tooling/design-tooling-manifest.md)
 - [Phase 1 Trust Score](../docs/trust/phase-1-trust-score.md)
@@ -242,6 +243,7 @@ Generated from the repository Markdown tree (218 files, digest b4d174d3bbdf).
 - [2026 09 10 Broker Calling Completion](../docs/superpowers/plans/2026-09-10-broker-calling-completion.md)
 - [2026 09 11 Repository Restructure](../docs/superpowers/plans/2026-09-11-repository-restructure.md)
 - [2026 09 12 Automatic Whatsapp Lead Ack](../docs/superpowers/plans/2026-09-12-automatic-whatsapp-lead-ack.md)
+- [2026 09 16 Technoproperty Broker Dashboard](../docs/superpowers/plans/2026-09-16-technoproperty-broker-dashboard.md)
 - [2026 09 10 Broker Calling Completion Design](../docs/superpowers/specs/2026-09-10-broker-calling-completion-design.md)
 - [2026 09 10 Repo Restructure Src Layout Design](../docs/superpowers/specs/2026-09-10-repo-restructure-src-layout-design.md)
 - [2026 09 11 Admin Plan Lifecycle Extension Design](../docs/superpowers/specs/2026-09-11-admin-plan-lifecycle-extension-design.md)

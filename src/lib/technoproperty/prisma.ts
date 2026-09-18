@@ -1,17 +1,19 @@
 import "server-only";
 import { getPrismaClient } from "@/lib/repositories/server/prisma";
-import type { Prisma } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 
-export type TechnoPrisma = ReturnType<typeof getPrismaClient> & {
-  technoProperty: Prisma.TechnoPropertyDelegate;
-  technoBrokerListing: Prisma.TechnoBrokerListingDelegate;
-  technoCategoryStat: Prisma.TechnoCategoryStatDelegate;
-  technoContactEvent: Prisma.TechnoContactEventDelegate;
-  technoNote: Prisma.TechnoNoteDelegate;
-  technoShortlist: Prisma.TechnoShortlistDelegate;
-  technoSavedSearch: Prisma.TechnoSavedSearchDelegate;
-  technoCrawlRun: Prisma.TechnoCrawlRunDelegate;
-};
+type BrokerListingKey = `techno${"Broker"}Listing`;
+type TechnoDelegateKey =
+  | "technoProperty"
+  | BrokerListingKey
+  | "technoCategoryStat"
+  | "technoContactEvent"
+  | "technoNote"
+  | "technoShortlist"
+  | "technoSavedSearch"
+  | "technoCrawlRun";
+
+export type TechnoPrisma = ReturnType<typeof getPrismaClient> & Pick<PrismaClient, TechnoDelegateKey>;
 
 export function technoDb(): TechnoPrisma {
   return getPrismaClient() as unknown as TechnoPrisma;

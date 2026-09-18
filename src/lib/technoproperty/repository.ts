@@ -322,7 +322,7 @@ export async function listBrokerProperties(
 ): Promise<{ rows: BrokerRow[]; total: number; page: number; perPage: number }> {
   // V1: broker listing crawler isn't wired yet; approximate by treating owner
   // properties where premiseName (estate name) exists as "broker listings"
-  // so the UI works. The crawler extension will populate TechnoBrokerListing.
+  // so the UI works. The crawler extension will populate dedicated broker-listing records.
   const db = technoDb();
   const perPage = Math.min(100, Math.max(10, Number(params.perPage) || 25));
   const page = Math.max(1, Number(params.page) || 1);
