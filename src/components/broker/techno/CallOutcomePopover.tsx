@@ -97,7 +97,7 @@ export function CallOutcomePopover({
             <button
               key={days}
               type="button"
-              className="tp-tint-amber inline-flex min-h-9 items-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition hover:brightness-95"
+              className="tp-tint-amber inline-flex min-h-11 items-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition hover:brightness-95"
               disabled={busy}
               onClick={() => log("follow_up", followUpDate(days))}
             >

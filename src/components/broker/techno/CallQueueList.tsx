@@ -106,7 +106,7 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
                 aria-pressed={active}
                 onClick={() => setStatusFilter(active ? "all" : key)}
                 title={active ? `Showing ${label.toLowerCase()} calls — click to clear` : `Show ${label.toLowerCase()} calls`}
-                className={`tp-chip tp-chip-${tone} min-h-9 cursor-pointer px-2.5 ${active ? `tp-solid-${tone}` : ""}`}
+                className={`tp-chip tp-chip-${tone} min-h-11 cursor-pointer px-2.5 ${active ? `tp-solid-${tone}` : ""}`}
               >
                 {label} <span className="opacity-70">{counts[key]}</span>
               </button>
@@ -121,7 +121,7 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
             {statusFilter === "all" ? (summary.pending.length > 0 ? "Next to call" : "Queue complete") : activeLabel}
           </h2>
           {statusFilter !== "all" ? (
-            <button type="button" className="tp-chip tp-chip-blue min-h-9 cursor-pointer px-2.5" onClick={() => setStatusFilter("all")}>
+            <button type="button" className="tp-chip tp-chip-blue min-h-11 cursor-pointer px-2.5" onClick={() => setStatusFilter("all")}>
               Clear filter ✕
             </button>
           ) : summary.pending.length > 0 ? (
