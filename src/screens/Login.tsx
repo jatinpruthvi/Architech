@@ -42,6 +42,7 @@ type ApiResponse = {
   issues?: CredentialIssue[];
   session?: AuthSession;
   redirectTo?: string;
+  bridgeUrl?: string;
   phoneE164?: string;
   phoneMasked?: string;
   expiresAt?: string;
@@ -56,7 +57,7 @@ const DEMO_HINTS = [
 export default function Login() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { status, session, adopt, registrationAvailable } = useSession();
+  const { status, session, adopt, refresh, registrationAvailable } = useSession();
 
   const requestedModeParam = searchParams.get("mode");
   const requestedMode: Mode = requestedModeParam === "register" ? "register" : requestedModeParam === "forgot" ? "forgot" : "signin";
@@ -80,6 +81,7 @@ export default function Login() {
   const [issues, setIssues] = useState<CredentialIssue[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
 
@@ -124,6 +126,7 @@ export default function Login() {
     setIssues([]);
     setFormError(null);
     setNotice(options.notice ?? null);
+    setBridgeUrl(null);
     setOtp("");
     setPhoneE164(null);
     setPhoneMasked(null);
@@ -309,10 +312,33 @@ export default function Login() {
       }
 
       setPassword("");
-      adopt(payload.session);
-      const destination = payload.redirectTo ?? landingPathForSession(payload.session);
-      router.replace(destination);
-      router.refresh();
+      /* The Set-Cookie from the login response may never reach the browser's
+         jar: embedded preview iframes sometimes refuse to store it no matter
+         its attributes (opaque-origin sandbox, hard third-party blocks), and
+         the very next request is anonymous again. Verify persistence from the
+         server BEFORE navigating — adopting optimistically would let the
+         authenticated-redirect effect race ahead, land on the dashboard, and
+         bounce straight back here, unmounting this component mid-check.
+         refresh() itself updates the context state, so no separate adopt call
+         is needed. */
+      const persisted = await refresh();
+      if (persisted) {
+        const destination = payload.redirectTo ?? landingPathForSession(payload.session);
+        router.replace(destination);
+        router.refresh();
+        return;
+      }
+      if (payload.bridgeUrl) {
+        setBridgeUrl(payload.bridgeUrl);
+        const opened = window.open(payload.bridgeUrl, "_blank", "noopener");
+        setNotice(
+          opened
+            ? "This embedded preview is not keeping your session, so we opened your signed-in app in a new tab."
+            : "This embedded preview is not keeping your session. Use the link below to continue in a new tab.",
+        );
+        return;
+      }
+      setFormError("You are signed in, but this browser is not keeping the preview session. Open the preview in its own browser tab and sign in there.");
     } catch {
       setFormError("We could not reach the sign-in service. Check your connection and try again.");
     } finally {
@@ -513,6 +539,20 @@ export default function Login() {
             <p role="status" className="mt-4 flex items-start gap-2 border border-ink/20 bg-card px-4 py-3 text-[13px] leading-6 ink-2">
               <AlertCircle size={16} className="mt-0.5 shrink-0 text-brick" aria-hidden="true" />
               <span>Account creation is disabled in this preview. Use demo sign-ins below.</span>
+            </p>
+          )}
+
+          {/* One-time bridge link: shown when the embedded preview dropped the
+              session cookie and the fallback new-tab sign-in is the way out. */}
+          {bridgeUrl && (
+            <p role="status" className="mt-4 flex items-start gap-2 border border-trust/35 bg-trust/8 px-4 py-3 text-[13px] leading-6 text-ink">
+              <ShieldCheck size={16} className="mt-0.5 shrink-0 text-trust" aria-hidden="true" />
+              <span>
+                Your signed-in session is ready.{" "}
+                <a href={bridgeUrl} target="_blank" rel="noopener" className="font-semibold text-brick underline underline-offset-2">
+                  Continue in a new tab ↗
+                </a>
+              </span>
             </p>
           )}
 

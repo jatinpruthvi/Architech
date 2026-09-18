@@ -158,6 +158,65 @@ export function demoSignOutCookieValue(request: Request): string {
   return `${DEMO_SESSION_COOKIE}=${DEMO_SIGNED_OUT}; Path=/; Max-Age=${60 * 60 * 8}; ${demoCookieAttributes(request)}`;
 }
 
+/* ── Bridge tokens: one-time sign-in links for cookie-hostile embeds ──────
+ *
+ * The Arena/e2b preview embeds this app in a cross-site iframe, and some embed
+ * configurations (sandboxed iframes with an opaque origin, or browsers that
+ * block all third-party storage) refuse to store the session cookie NO MATTER
+ * what attributes it carries — SameSite=None; Secure; Partitioned included.
+ * The login POST returns 200, the client adopts the session, and the very next
+ * request is anonymous again.
+ *
+ * The escape hatch is top-level context: a normal browser tab on the preview
+ * host is first-party, where a plain cookie always works. So a successful demo
+ * sign-in ALSO mints a single-use, 60-second token; the client opens
+ * `/api/auth/bridge/?token=…` in a new tab, the route exchanges the token for
+ * the regular demo cookie at top level, and redirects to the post-login page.
+ *
+ * Single-use and short-lived on purpose: the URL grants the session, so a
+ * leaked one must not be replayable. The map is bounded like every other piece
+ * of per-client in-process state here.
+ */
+const BRIDGE_TOKEN_TTL_MS = 60_000;
+const MAX_BRIDGE_TOKENS = 1_000;
+const bridgeTokens = new Map<string, { accountId: string; expiresAt: number }>();
+
+function pruneBridgeTokens(now: number): void {
+  for (const [token, entry] of bridgeTokens) {
+    if (entry.expiresAt <= now) bridgeTokens.delete(token);
+  }
+}
+
+export function createDemoBridgeToken(accountId: string, now = Date.now()): string {
+  pruneBridgeTokens(now);
+  /* Bound first so a flood cannot grow the map: drop the oldest token when at
+     capacity. Losing an old token costs its owner one bounced login. */
+  if (bridgeTokens.size >= MAX_BRIDGE_TOKENS) {
+    const oldest = bridgeTokens.keys().next().value;
+    if (oldest !== undefined) bridgeTokens.delete(oldest);
+  }
+  const token = crypto.randomUUID();
+  bridgeTokens.set(token, { accountId, expiresAt: now + BRIDGE_TOKEN_TTL_MS });
+  return token;
+}
+
+/** Redeem a bridge token for its account id. Single-use: the token is removed
+    on read whether or not it is still valid, so a spent or expired token can
+    never be replayed. */
+export function consumeDemoBridgeToken(token: string, now = Date.now()): string | null {
+  const entry = bridgeTokens.get(token);
+  bridgeTokens.delete(token);
+  if (!entry) return null;
+  if (entry.expiresAt <= now) return null;
+  return entry.accountId;
+}
+
+/** Build the one-time bridge URL returned to the login screen. */
+export function createDemoBridgeUrl(accountId: string, next: string): string {
+  const token = createDemoBridgeToken(accountId);
+  return `/api/auth/bridge/?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
+}
+
 function readCookie(cookieHeader: string, name: string): string | undefined {
   for (const part of cookieHeader.split(";")) {
     const trimmed = part.trim();

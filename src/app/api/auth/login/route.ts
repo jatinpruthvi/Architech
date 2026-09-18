@@ -10,6 +10,7 @@ import { signInWithPhone } from "@/lib/auth/phone-flow";
 import { enforceMutationSafety } from "@/lib/auth/request-safety";
 import { resolvePostLoginPath } from "@/lib/auth/redirects";
 import { canAccessBrokerDashboard } from "@/lib/auth/roles";
+import { createDemoBridgeUrl } from "@/lib/auth/demo-accounts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,12 +53,20 @@ export async function POST(request: Request) {
   }
 
   const next = typeof body.next === "string" ? body.next : null;
+  const destination = resolvePostLoginPath(result.session, next);
   const response = NextResponse.json(
     {
       ok: true,
       session: result.session,
       canAccessBrokerDashboard: canAccessBrokerDashboard(result.session),
-      redirectTo: resolvePostLoginPath(result.session, next),
+      redirectTo: destination,
+      /* One-time top-level sign-in link (see demo-accounts.ts): embedded
+         previews that refuse to store the session cookie open this in a new
+         tab, where first-party cookies always work. */
+      bridgeUrl:
+        result.session.source === "better-auth-contract-demo"
+          ? createDemoBridgeUrl(result.session.user.id, destination)
+          : undefined,
     },
     { headers: { "Cache-Control": "no-store" } },
   );
