@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getOrgPlanSummary } from "@/lib/plans/plan-status";
 import { Bookmark, Phone, FileText, Bell, CreditCard } from "lucide-react";
 
 function relTime(d: Date): string {
@@ -91,15 +92,33 @@ export function ActivityWidgets({ data }: {
   );
 }
 
-export function PaymentStrip() {
+export async function PaymentStrip({ orgId }: { orgId: string }) {
+  const plan = await getOrgPlanSummary(orgId);
+  const statusMeta = {
+    ACTIVE: { label: "Active", chip: "tp-tint-green" },
+    TRIAL: { label: "Trial", chip: "tp-tint-amber" },
+    EXPIRED: { label: "Expired", chip: "tp-tint-rose" },
+    NONE: { label: "No plan", chip: "tp-tint-rose" },
+  }[plan.status];
+  const fmt = (d: Date) => d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const nextLine = plan.renewsAt
+    ? `Next payment ${fmt(new Date(plan.renewsAt))}`
+    : plan.expiresAt
+      ? `Valid till ${fmt(new Date(plan.expiresAt))}`
+      : plan.status === "NONE"
+        ? "Ask the platform admin to activate a plan."
+        : "Renewal date appears once billing is set up.";
   return (
     <div className="grid gap-3 md:grid-cols-2">
       <article className="tp-card flex items-center gap-3">
         <span className="tp-tint-green grid h-10 w-10 place-items-center rounded-xl"><CreditCard size={18} /></span>
         <div>
           <p className="text-xs text-[var(--tp-muted)]">Payment status</p>
-          <p className="font-semibold text-[var(--tp-ink)]">Active <span className="tp-tint-green ml-2 rounded px-1.5 py-0.5 text-xs">Plan active</span></p>
-          <p className="text-xs text-[var(--tp-muted)]">Next payment 28 Feb 2027 · <Link href="/broker/agent" className="text-[var(--tp-accent)]">Receipt</Link></p>
+          <p className="font-semibold text-[var(--tp-ink)]">
+            {statusMeta.label}
+            <span className={`${statusMeta.chip} ml-2 rounded px-1.5 py-0.5 text-xs`}>{plan.planName ?? "Plan"}</span>
+          </p>
+          <p className="text-xs text-[var(--tp-muted)]">{nextLine}</p>
         </div>
       </article>
       <article className="tp-card flex items-center gap-3">

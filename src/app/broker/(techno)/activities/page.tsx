@@ -15,7 +15,7 @@ export default async function ActivitiesPage() {
       <h1 className="tp-section-title text-2xl">
         <ListChecks size={22} /> My Activities
       </h1>
-      <PaymentStrip />
+      <PaymentStrip orgId={orgId} />
       <ActivityWidgets data={data} />
     </div>
   );
