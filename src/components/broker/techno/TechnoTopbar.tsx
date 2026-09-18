@@ -96,7 +96,7 @@ export function TechnoTopbar({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded px-3 py-2 text-xs font-bold tracking-wide transition hover:bg-white/10 ${isActive(item.href) ? "bg-white/10 text-gold" : "text-cream/85"}`}
+                className={`rounded px-3 py-2 text-xs font-bold tracking-wide transition hover:bg-white/10 ${isActive(item.href) ? "bg-white/10 text-gold" : "tp-topbar-link"}`}
               >
                 {item.label}
               </Link>
@@ -134,7 +134,7 @@ export function TechnoTopbar({
             <Link href="/broker/shortlisted" className="tp-topbar-icon hidden md:grid" title="Saved / Shortlist" aria-label="Saved properties">
               <Bookmark size={17} />
             </Link>
-            <span className="ml-1 hidden rounded-full bg-brick px-2 py-1 text-[11px] font-black text-cream sm:inline">
+            <span className="ml-1 hidden rounded-full clay-fill bg-brick px-2 py-1 text-[11px] font-black text-cream sm:inline">
               {userName.slice(0, 2).toUpperCase()}
             </span>
             <span className="ml-1 hidden text-xs font-bold uppercase tracking-wide text-white/90 xl:inline">NIVASA DEMO</span>

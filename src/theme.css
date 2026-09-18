@@ -1328,6 +1328,7 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
   color: inherit;
 }
 .techno .tp-topbar-icon:hover { background: rgba(255,255,255,.1); }
+.techno .tp-topbar-link { color: color-mix(in srgb, var(--cream) 85%, transparent); }
 .techno .tp-icon-touch { color: var(--tp-ink-soft); }
 .techno .tp-icon-touch:hover { background: var(--tp-bg); color: var(--tp-accent); }
 .techno .tp-mobile-nav {
