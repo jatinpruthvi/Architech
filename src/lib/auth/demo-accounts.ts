@@ -114,16 +114,107 @@ export function findDemoAccountById(id: string): DemoAccount | null {
   return DEMO_ACCOUNTS.find((account) => account.id === id) ?? null;
 }
 
+/** The `Set-Cookie` attributes for every demo session cookie.
+ *
+ *  WHY NOT `SameSite=Lax`
+ *
+ *  Sandbox previews (Arena/e2b) show this app inside an IFRAME on a different
+ *  site (arena.ai vs *.e2b.app). In that cross-site context Chrome silently
+ *  DROPS `SameSite=Lax` cookies: the login POST returns 200 with a `Set-Cookie`
+ *  the browser never stores, the UI flashes signed-in (the context adopts the
+ *  response session) and is anonymous again on the very next request — with no
+ *  error anywhere. That was the "demo login signs nobody in" bug.
+ *
+ *  `SameSite=None; Secure` is the cross-site-embeddable form, and `Partitioned`
+ *  (CHIPS) keeps it working even for visitors who block third-party cookies,
+ *  because a partitioned cookie is keyed by the top-level site and cannot track
+ *  anyone across sites. In a first-party context (localhost dev, a real
+ *  deployment) a partitioned cookie behaves exactly like a normal one, so the
+ *  attributes are simply always-on outside production.
+ *
+ *  `Secure` is required whenever `SameSite=None` is used. Chrome treats
+ *  http://localhost as trustworthy and accepts Secure cookies there, so local
+ *  dev keeps working unchanged.
+ *
+ *  Production keeps the strict protocol-derived form: demo cookies never
+ *  authorise a production mutation anyway (`authorizeRequest` rejects demo
+ *  sessions when NODE_ENV === "production"), so there is nothing to relax.
+ */
+export function demoCookieAttributes(request: Request): string {
+  if (process.env.NODE_ENV === "production") {
+    const secure = new URL(request.url).protocol === "https:";
+    return `HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+  }
+  return "HttpOnly; SameSite=None; Secure; Partitioned";
+}
+
 /** The `Set-Cookie` value that signs a demo account in. */
 export function demoSessionCookieValue(account: DemoAccount, request: Request): string {
-  const secure = new URL(request.url).protocol === "https:";
-  return `${DEMO_SESSION_COOKIE}=${encodeURIComponent(account.id)}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+  return `${DEMO_SESSION_COOKIE}=${encodeURIComponent(account.id)}; Path=/; Max-Age=${60 * 60 * 8}; ${demoCookieAttributes(request)}`;
 }
 
 /** The `Set-Cookie` value that signs a demo account out. */
 export function demoSignOutCookieValue(request: Request): string {
-  const secure = new URL(request.url).protocol === "https:";
-  return `${DEMO_SESSION_COOKIE}=${DEMO_SIGNED_OUT}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+  return `${DEMO_SESSION_COOKIE}=${DEMO_SIGNED_OUT}; Path=/; Max-Age=${60 * 60 * 8}; ${demoCookieAttributes(request)}`;
+}
+
+/* ── Bridge tokens: one-time sign-in links for cookie-hostile embeds ──────
+ *
+ * The Arena/e2b preview embeds this app in a cross-site iframe, and some embed
+ * configurations (sandboxed iframes with an opaque origin, or browsers that
+ * block all third-party storage) refuse to store the session cookie NO MATTER
+ * what attributes it carries — SameSite=None; Secure; Partitioned included.
+ * The login POST returns 200, the client adopts the session, and the very next
+ * request is anonymous again.
+ *
+ * The escape hatch is top-level context: a normal browser tab on the preview
+ * host is first-party, where a plain cookie always works. So a successful demo
+ * sign-in ALSO mints a single-use, 60-second token; the client opens
+ * `/api/auth/bridge/?token=…` in a new tab, the route exchanges the token for
+ * the regular demo cookie at top level, and redirects to the post-login page.
+ *
+ * Single-use and short-lived on purpose: the URL grants the session, so a
+ * leaked one must not be replayable. The map is bounded like every other piece
+ * of per-client in-process state here.
+ */
+const BRIDGE_TOKEN_TTL_MS = 60_000;
+const MAX_BRIDGE_TOKENS = 1_000;
+const bridgeTokens = new Map<string, { accountId: string; expiresAt: number }>();
+
+function pruneBridgeTokens(now: number): void {
+  for (const [token, entry] of bridgeTokens) {
+    if (entry.expiresAt <= now) bridgeTokens.delete(token);
+  }
+}
+
+export function createDemoBridgeToken(accountId: string, now = Date.now()): string {
+  pruneBridgeTokens(now);
+  /* Bound first so a flood cannot grow the map: drop the oldest token when at
+     capacity. Losing an old token costs its owner one bounced login. */
+  if (bridgeTokens.size >= MAX_BRIDGE_TOKENS) {
+    const oldest = bridgeTokens.keys().next().value;
+    if (oldest !== undefined) bridgeTokens.delete(oldest);
+  }
+  const token = crypto.randomUUID();
+  bridgeTokens.set(token, { accountId, expiresAt: now + BRIDGE_TOKEN_TTL_MS });
+  return token;
+}
+
+/** Redeem a bridge token for its account id. Single-use: the token is removed
+    on read whether or not it is still valid, so a spent or expired token can
+    never be replayed. */
+export function consumeDemoBridgeToken(token: string, now = Date.now()): string | null {
+  const entry = bridgeTokens.get(token);
+  bridgeTokens.delete(token);
+  if (!entry) return null;
+  if (entry.expiresAt <= now) return null;
+  return entry.accountId;
+}
+
+/** Build the one-time bridge URL returned to the login screen. */
+export function createDemoBridgeUrl(accountId: string, next: string): string {
+  const token = createDemoBridgeToken(accountId);
+  return `/api/auth/bridge/?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
 }
 
 function readCookie(cookieHeader: string, name: string): string | undefined {

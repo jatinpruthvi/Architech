@@ -94,7 +94,7 @@ export async function signInWithPhone(request: Request, input: Partial<{ phone: 
   }
 
   if (getAuthSourceMode() === "demo") {
-    const { authenticateDemoPhoneAccount, demoSessionCookieValue, DEMO_ACCOUNTS } = await import("./demo-accounts");
+    const { authenticateDemoPhoneAccount, demoSessionCookieValue, demoCookieAttributes, DEMO_SESSION_COOKIE, DEMO_ACCOUNTS } = await import("./demo-accounts");
     /* A demo-mode forgot-password has nowhere to write a hash (there is no user
        store), so `password-reset-flow.ts` parks the new password per phone and
        it is honoured here. Without this the reset form would report success and
@@ -131,9 +131,10 @@ export async function signInWithPhone(request: Request, input: Partial<{ phone: 
         permissions: resetPassword !== null ? permissionsForRole("BUYER") : buyer!.session.permissions,
         source: "better-auth-contract-demo" as const,
       };
-      // Create cookie with phone id so sessionForDemoCookie can restore it
-      const secure = new URL(request.url).protocol === "https:";
-      const cookie = `architech.demo_session=${encodeURIComponent(`demo-phone-${phoneE164}`)}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+      // Create cookie with phone id so sessionForDemoCookie can restore it.
+      // Attributes come from demoCookieAttributes — SameSite=Lax here would be
+      // silently dropped by the browser in the cross-site preview iframe.
+      const cookie = `${DEMO_SESSION_COOKIE}=${encodeURIComponent(`demo-phone-${phoneE164}`)}; Path=/; Max-Age=${60 * 60 * 8}; ${demoCookieAttributes(request)}`;
       return { ok: true, session: mockSession as any, cookies: [cookie] };
     }
     return failure(401, "INVALID_CREDENTIALS", INVALID_PHONE_CREDENTIALS_MESSAGE);
@@ -264,8 +265,8 @@ export async function verifyOtpAndRegister(request: Request, input: Partial<{ ph
       source: "better-auth-contract-demo" as const,
     };
     // Create cookie with phone id so session persists across refreshes
-    const secure = new URL(request.url).protocol === "https:";
-    const cookie = `architech.demo_session=${encodeURIComponent(`demo-phone-${phoneE164}`)}; Path=/; Max-Age=${60 * 60 * 8}; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+    const { demoCookieAttributes, DEMO_SESSION_COOKIE } = await import("./demo-accounts");
+    const cookie = `${DEMO_SESSION_COOKIE}=${encodeURIComponent(`demo-phone-${phoneE164}`)}; Path=/; Max-Age=${60 * 60 * 8}; ${demoCookieAttributes(request)}`;
     return { ok: true, session: mockSession as any, cookies: [cookie] };
   }
 

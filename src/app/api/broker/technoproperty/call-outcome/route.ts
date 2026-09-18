@@ -22,6 +22,19 @@ export async function POST(request: Request) {
   if (!body.propertyId || !body.outcome || !VALID_OUTCOMES.has(body.outcome)) {
     return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
   }
+  /* A follow-up without a date would silently never resurface, so the API
+     defaults it to tomorrow; a supplied date must actually parse. */
+  let followUpAt: Date | null = null;
+  if (body.outcome === "follow_up") {
+    if (body.followUpAt) {
+      followUpAt = new Date(body.followUpAt);
+      if (Number.isNaN(followUpAt.getTime())) {
+        return NextResponse.json({ ok: false, error: "INVALID_FOLLOW_UP" }, { status: 400 });
+      }
+    } else {
+      followUpAt = new Date(Date.now() + 86_400_000);
+    }
+  }
   const db = technoDb();
   await db.technoContactEvent.create({
     data: {
@@ -31,7 +44,7 @@ export async function POST(request: Request) {
       propertyId: body.propertyId,
       channel: TechnoRevealChannel.CLICK_TO_DIAL,
       outcome: body.outcome,
-      followUpAt: body.followUpAt ? new Date(body.followUpAt) : null,
+      followUpAt,
       note: body.note?.slice(0, 500) ?? null,
     },
   });

@@ -84,9 +84,9 @@ export function AdvancedSearchForm() {
         </div>
       </fieldset>
 
-      <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-[var(--tp-border)] bg-[#f8fbff] px-4 py-3">
+      <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-[var(--tp-border)] tp-tint-neutral border px-4 py-3">
         <input type="checkbox" checked={premium} onChange={(event) => setPremium(event.target.checked)} className="h-5 w-5 accent-[var(--tp-accent)]" />
-        <Crown size={18} className="text-[#b27b0b]" />
+        <Crown size={18} className="text-[var(--tp-amber)]" />
         <span>
           <span className="block text-sm font-semibold text-[var(--tp-ink)]">Premium properties only</span>
           <span className="block text-xs text-[var(--tp-muted)]">Limit results to highlighted inventory</span>

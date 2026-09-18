@@ -10,6 +10,12 @@ npm scripts; update `package.json` in the same change.**
   `build-ci.mjs`, `build-publish.mjs`, `materialize-static-publish.mjs`,
   `publish-server.mjs`, `generate-md-index.mjs`, `check-md-index.mjs`,
   `assert-tests-ran.mjs`, `audit-surface-contrast.mjs`
+- `skills/` — `generate-skill-index.mjs` regenerates `.agents/skills/INDEX.md`
+  (the agent skill router). Same discipline as the docs index: output must stay
+  deterministic (sorted, no timestamp), files are enumerated from
+  `git ls-files --cached` — never a directory walk, for the submodule reasons
+  documented in Gotchas below. `--check` exits 1 when stale (`pnpm
+  skills:index:check`); it is not yet in `verify.mjs`'s `CHECKS` list.`
 - `operations/` — env/secrets/provisioning/readiness audits (read `ops/config/governance/`)
 - `security/` — header, RLS, and legal-gate audits
 - `release/` — release + production-enablement audits (read `ops/config/governance/release/`)
@@ -57,6 +63,7 @@ npm scripts; update `package.json` in the same change.**
 Turbopack, which resolves the project root to the worktree and panics on a link
 pointing outside it:
 
+
 ```
 Symlink [project]/node_modules is invalid, it points out of the filesystem root
 ```
@@ -74,6 +81,23 @@ pnpm baseline:worktree -- --remove            # clean up
 
 Use it before blaming a branch for a red check — several audits have been red on
 `main` independently of the change under review.
+
+**Offline machines must install the schema-engine shim before ANY `prisma` CLI
+command, `prisma generate` included.** The CLI fetches the native schema engine
+from `binaries.prisma.sh`; in a network-restricted sandbox that TLS connection
+dies and even `pnpm db:generate` fails — leaving `@prisma/client` ungenerated,
+so every route whose import graph reaches it 500s at module load
+(`Cannot find module '.prisma/client/default'`; `/broker`'s layout imports
+`src/lib/technoproperty/repository.ts`, so the whole broker workspace dies with
+login blamed but innocent). Run the shim once after `pnpm install`:
+
+```bash
+node ops/scripts/sandbox/install-schema-engine-shim.mjs   # installs a stand-in engine
+pnpm db:generate                                          # now works offline
+```
+
+The stand-in satisfies `generate` / `validate` / `migrate deploy`; real
+migrations against a live database still need the network.
 
 **`business_suite/*` are git submodules, and CI never checks them out.** They are
 recorded as gitlinks (mode `160000`) with no `.gitmodules`, so a fresh clone —

@@ -10,7 +10,7 @@ import TechnoKeyboardShortcuts from "@/components/broker/techno/TechnoKeyboardSh
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Broker workspace · Architech",
+  title: "Broker workspace",
   description: "Private inventory, calling, and follow-up workspace for Architech broker partners.",
   robots: { index: false, follow: false },
 };
@@ -45,10 +45,10 @@ async function TechnoShell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
-      <div className="mx-auto flex max-w-[1400px]">
+      <TechnoTopbar userName={firstName} freshCount={freshCount} shortlistCount={shortlistCount} />
+      <div className="tp-shell-row mx-auto flex max-w-[1400px]">
         <TechnoSidebar freshCount={freshCount} shortlistCount={shortlistCount} />
-        <div className="min-w-0 flex-1">
-          <TechnoTopbar userName={firstName} freshCount={freshCount} shortlistCount={shortlistCount} />
+        <div className="tp-content-col min-w-0 flex-1">
           <div id="techno-main" tabIndex={-1} className="px-3 pb-28 pt-5 sm:px-4 md:px-8 md:py-8">
             {children}
           </div>

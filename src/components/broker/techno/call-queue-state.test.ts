@@ -16,8 +16,19 @@ describe("call queue progress", () => {
     expect(summary.percent).toBe(33);
   });
 
-  it("moves an owner to completed only after a saved outcome", () => {
+  it("keeps a no-answer as pending work (retry), not completed", () => {
     const outcomes = applyLoggedOutcome({}, "new-1", "no_answer");
+    const summary = summarizeCallQueue(rows, outcomes);
+    // A retry is still work: it stays pending (the card gains a
+    // "No answer · try again" chip and the server orders it after news).
+    expect(summary.pending.map((row) => row.id)).toEqual(["new-1", "new-2"]);
+    expect(summary.completed.map((row) => row.id)).toEqual(["done-1"]);
+    expect(summary.completedCount).toBe(1);
+    expect(summary.percent).toBe(33);
+  });
+
+  it("moves an owner to completed after a terminal outcome", () => {
+    const outcomes = applyLoggedOutcome({}, "new-1", "connected");
     const summary = summarizeCallQueue(rows, outcomes);
     expect(summary.pending.map((row) => row.id)).toEqual(["new-2"]);
     expect(summary.completed.map((row) => row.id)).toEqual(["new-1", "done-1"]);
@@ -25,13 +36,58 @@ describe("call queue progress", () => {
     expect(summary.percent).toBe(67);
   });
 
+  it("moves a follow-up logged THIS session into the scheduled bucket", () => {
+    const outcomes = applyLoggedOutcome({}, "new-1", "follow_up");
+    const summary = summarizeCallQueue(rows, outcomes);
+    expect(summary.pending.map((row) => row.id)).toEqual(["new-2"]);
+    expect(summary.scheduled).toContainEqual(expect.objectContaining({ id: "new-1" }));
+    // it still counts as a logged call on the progress card
+    expect(summary.completedCount).toBe(2);
+    expect(summary.percent).toBe(67);
+  });
+
+  it("keeps a server-side DUE follow-up pending; future ones sit in scheduled", () => {
+    const rowsWithDue = [
+      { id: "due-1", currentOutcome: "follow_up", callState: "followup" as const },
+      { id: "sched-1", currentOutcome: "follow_up", callState: "scheduled" as const },
+      { id: "new-1", currentOutcome: null },
+    ];
+    const summary = summarizeCallQueue(rowsWithDue, {});
+    expect(summary.pending.map((row) => row.id)).toEqual(["due-1", "new-1"]);
+    expect(summary.scheduled.map((row) => row.id)).toEqual(["sched-1"]);
+    expect(summary.completed).toEqual([]);
+    // the scheduled one was still a call made: logged = 1 of 3
+    expect(summary.completedCount).toBe(1);
+    expect(summary.percent).toBe(33);
+  });
+
   it("handles an empty queue without dividing by zero", () => {
     expect(summarizeCallQueue([], {})).toEqual({
       pending: [],
+      scheduled: [],
       completed: [],
       completedCount: 0,
       total: 0,
       percent: 0,
     });
+  });
+});
+
+import { outcomeCounts } from "./call-queue-state";
+
+describe("outcomeCounts", () => {
+  it("buckets rows by live outcome", () => {
+    const rows = [
+      { id: "a", currentOutcome: null },
+      { id: "b", currentOutcome: "connected" },
+      { id: "c", currentOutcome: "no_answer" },
+      { id: "d", currentOutcome: "no_answer" },
+      { id: "e", currentOutcome: "follow_up" },
+      { id: "f", currentOutcome: "deal" },
+    ];
+    expect(outcomeCounts(rows, {})).toEqual({ new: 1, connected: 1, no_answer: 2, wrong_number: 0, follow_up: 1, deal: 1 });
+    // logged-this-session overrides count immediately
+    expect(outcomeCounts(rows, { a: "connected" }).connected).toBe(2);
+    expect(outcomeCounts(rows, { a: "connected" }).new).toBe(0);
   });
 });

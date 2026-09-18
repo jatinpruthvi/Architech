@@ -13,9 +13,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, LogIn, LogOut, LayoutDashboard, ShieldCheck, UserRound } from "lucide-react";
+import { Building2, ChevronDown, LogIn, LogOut, LayoutDashboard, ShieldCheck, UserRound } from "lucide-react";
 import { useSession } from "@/contexts/SessionContext";
 import { landingPathForSession, loginUrlFor } from "@/lib/auth/redirects";
+import { requirePermission } from "@/lib/auth/roles";
 
 const ROLE_LABEL: Record<string, string> = {
   BUYER: "Buyer",
@@ -116,6 +117,15 @@ export default function AccountMenu({ onDark = false }: { onDark?: boolean }) {
             <Link role="menuitem" href={landingPathForSession(session)} className="flex items-center gap-2 px-1 py-2 text-[13px] ink-2 hover:text-brick">
               <LayoutDashboard size={14} aria-hidden="true" /> {canAccessBrokerDashboard ? "Broker dashboard" : "Your shortlist"}
             </Link>
+            {/* The owner-inventory workspace mirrors the route's own gate
+                (broker.dashboard.read via broker roles, the ADMIN bypass, and
+                an organization) — moderators and buyers never see it, exactly
+                the sessions the /broker shell would admit. */}
+            {Boolean(session.organization) && requirePermission(session, "broker.dashboard.read") && (
+              <Link role="menuitem" href="/broker/" className="flex items-center gap-2 px-1 py-2 text-[13px] ink-2 hover:text-brick">
+                <Building2 size={14} aria-hidden="true" /> Broker workspace
+              </Link>
+            )}
             <Link role="menuitem" href="/saved/" className="flex items-center gap-2 px-1 py-2 text-[13px] ink-2 hover:text-brick">
               <UserRound size={14} aria-hidden="true" /> Saved homes
             </Link>

@@ -99,7 +99,9 @@ async function main() {
       const premise = rand(premises);
       const area = rand(areas);
       const bhk = Math.ceil((i % 5) + 1);
-      const externalId = `demo-${cat}-${i}-${Math.random().toString(36).slice(2, 8)}`;
+      /* Deterministic id: the upsert below dedupes on (orgId, externalId), so
+         a random suffix here would silently DOUBLE the inventory on re-runs. */
+      const externalId = `demo-${cat}-${i}`;
       const rowHash = `seed-${externalId}`;
       const sqft = 900 + Math.floor(Math.random() * 2000);
       const data = {
@@ -176,8 +178,37 @@ async function main() {
     });
   }
 
+  // Demo plan + ACTIVE subscription so the workspace payment strip renders
+  // real MarketplacePlan/MarketplaceSubscription table data after every
+  // sandbox restore. Idempotent by plan code + (organizationId, planId).
+  const plan = await prisma.marketplacePlan.upsert({
+    where: { code: "demo-broker-pro" },
+    update: { active: true },
+    create: {
+      code: "demo-broker-pro",
+      name: "Broker Pro",
+      description: "Demo workspace plan for the partner preview.",
+      monthlyCredits: 500,
+      teamSeats: 10,
+    },
+  });
+  const yearOut = new Date();
+  yearOut.setFullYear(yearOut.getFullYear() + 1);
+  const sub = await prisma.marketplaceSubscription.findFirst({ where: { organizationId: orgId, planId: plan.id } });
+  if (sub) {
+    await prisma.marketplaceSubscription.update({
+      where: { id: sub.id },
+      data: { status: "ACTIVE", renewsAt: yearOut, expiresAt: yearOut },
+    });
+  } else {
+    await prisma.marketplaceSubscription.create({
+      data: { planId: plan.id, organizationId: orgId, status: "ACTIVE", renewsAt: yearOut, expiresAt: yearOut },
+    });
+  }
+
   console.log(`\nSeeded ${totalCreated} technoproperty rows for org ${orgId}.`);
   console.log(`  active=${totalActive}, today=${totalToday}, yesterday=${totalYday}, last15=${last15}`);
+  console.log(`  plan=${plan.code} ACTIVE, renews ${yearOut.toISOString().slice(0, 10)}`);
   await prisma.$disconnect();
 }
 

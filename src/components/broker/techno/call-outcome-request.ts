@@ -10,13 +10,14 @@ export type CallOutcomeResult =
 export async function persistCallOutcome(
   propertyId: string,
   outcome: string,
+  followUpAt?: string | null,
   fetchOutcome: FetchOutcome = fetch,
 ): Promise<CallOutcomeResult> {
   try {
     const response = await fetchOutcome("/api/broker/technoproperty/call-outcome/", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ propertyId, outcome }),
+      body: JSON.stringify({ propertyId, outcome, followUpAt: followUpAt ?? null }),
     });
     const data = await response.json().catch(() => null) as { ok?: boolean } | null;
     if (!response.ok || !data?.ok) {

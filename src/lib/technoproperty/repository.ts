@@ -1,5 +1,11 @@
 import "server-only";
 import { Prisma, TechnoCategory, TechnoListingType, TechnoRevealChannel, TechnoSourceStatus } from "@prisma/client";
+import { callStateFor, compareQueueRows, type CallState } from "./call-lifecycle";
+
+/** How many finished calls ride along in the queue payload for the
+    collapsed "completed" section. Purely presentational history. */
+const CALL_DONE_HISTORY_LIMIT = 20;
+const CALL_SCHEDULED_LIMIT = 20;
 import { decryptContact } from "@/lib/interop/contact-crypto";
 import { technoDb } from "./prisma";
 import { TECHNOCATEGORIES, categoryKeyToEnum, categoryLabel } from "./categories";
@@ -219,6 +225,11 @@ export interface PropertyRow {
   hasOwnerPhone: boolean;
   revealed: boolean;
   currentOutcome: string | null;
+  /* Lifecycle fields are populated by getCallingQueue only; plain list pages
+     leave them undefined so the queue rules never leak into lists. */
+  callState?: CallState;
+  followUpAt?: Date | null;
+  lastOutcomeAt?: Date | null;
   note: { text: string } | null;
   shortlisted: boolean;
   contactBtnId: string | null;
@@ -524,14 +535,24 @@ export async function getActivities(
   };
 }
 
+export interface CallQueueResult {
+  /** Ordered for dialing: fresh listings, then no-answer retries, then
+   *  follow-ups due today, then completed history (for the collapsed
+   *  section). Scheduled follow-ups (future date) are NOT included. */
+  rows: PropertyRow[];
+  /** Follow-ups with a future date — waiting, not callable today. */
+  scheduledCount: number;
+}
+
 export async function getCallingQueue(
   orgId: string,
   userId: string,
   perPage = 50,
-): Promise<PropertyRow[]> {
-  // Power-dialer: newest listings first. We DO include properties the broker has
-  // already revealed — otherwise the outcome chips disappear on refresh and every
-  // logged call looks "lost". Rows with no outcome yet surface first.
+): Promise<CallQueueResult> {
+  // Power-dialer lifecycle: the latest outcome per property decides its state
+  // (see call-lifecycle.ts). We fetch the whole freshness window and then
+  // order/filter in the lifecycle layer — Prisma cannot rank by "latest event
+  // outcome" in SQL without a raw group-by, and the window is bounded.
   const db = technoDb();
   const since = daysAgo(2);
   const rows = await db.technoProperty.findMany({
@@ -543,7 +564,7 @@ export async function getCallingQueue(
       datePosted: { gte: since },
     },
     orderBy: [{ datePosted: "desc" }],
-    take: perPage,
+    take: 200,
     include: {
       notes: { where: { brokerUserId: userId, orgId }, take: 1 },
       shortlists: { where: { brokerUserId: userId, orgId }, take: 1 },
@@ -554,7 +575,7 @@ export async function getCallingQueue(
       },
     },
   });
-  return rows.map((r) => {
+  const mapped = rows.map((r) => {
     const lastEvent = r.contactEvents[0] ?? null;
     let ownerPhone: string | null = null;
     if (r.ownerPhoneCipher) {
@@ -584,12 +605,35 @@ export async function getCallingQueue(
       hasOwnerPhone: !!r.ownerPhoneCipher,
       revealed: !!ownerPhone,
       currentOutcome: lastEvent?.outcome ?? null,
+      callState: callStateFor(lastEvent?.outcome ?? null, lastEvent?.followUpAt ?? null),
+      followUpAt: lastEvent?.followUpAt ?? null,
+      lastOutcomeAt: lastEvent?.createdAt ?? null,
       note: r.notes[0] ? { text: r.notes[0].text } : null,
       shortlisted: r.shortlists.length > 0,
       contactBtnId: r.contactBtnId,
       daysAgo: daysAgoFrom(r.datePosted),
     };
   });
+  const callable = mapped
+    .filter((r) => r.callState !== "done" && r.callState !== "scheduled")
+    .sort(compareQueueRows)
+    .slice(0, perPage);
+  /* Collapsed history: recently finished calls stay reachable without
+     crowding "Next to call" (see CallQueueList's completed section). */
+  /* Future follow-ups ride in the payload (not callable today) so the status
+     board can show and filter them; the "N scheduled" chip reflects ALL of
+     them, this list is capped like the other sections. */
+  const scheduled = mapped
+    .filter((r) => r.callState === "scheduled")
+    .sort((a, b) => (a.followUpAt?.getTime() ?? 0) - (b.followUpAt?.getTime() ?? 0))
+    .slice(0, CALL_SCHEDULED_LIMIT);
+  /* Collapsed history: recently finished calls stay reachable without
+     crowding "Next to call" (see CallQueueList's completed section). */
+  const done = mapped.filter((r) => r.callState === "done").sort(compareQueueRows).slice(0, CALL_DONE_HISTORY_LIMIT);
+  return {
+    rows: [...callable, ...scheduled, ...done],
+    scheduledCount: mapped.filter((r) => r.callState === "scheduled").length,
+  };
 }
 
 export async function countFreshUnrevealed(orgId: string, userId?: string): Promise<number> {

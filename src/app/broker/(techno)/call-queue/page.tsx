@@ -9,7 +9,7 @@ export default async function CallQueuePage() {
   const session = await requireTechnoSession();
   const orgId = session.organization!.id;
   const userId = session.user.id;
-  const rows = await getCallingQueue(orgId, userId, 50);
+  const { rows, scheduledCount } = await getCallingQueue(orgId, userId, 50);
 
   return (
     <div className="space-y-5">
@@ -19,9 +19,9 @@ export default async function CallQueuePage() {
         </h1>
       </div>
       <p className="text-sm leading-6 text-[var(--tp-muted)]">
-        Phone numbers are ready. Call the next owner and log an outcome—the queue keeps completed work out of your way.
+        Phone numbers are ready. Call the next owner and log an outcome—completed calls drop off, no-answers come back as retries, and scheduled follow-ups resurface on their day.
       </p>
-      <CallQueueList rows={rows} />
+      <CallQueueList rows={rows} scheduledCount={scheduledCount} />
       <p className="hidden text-center text-xs text-[var(--tp-muted)] md:block">
         Tip: press <kbd className="rounded border px-1.5 py-0.5 text-[10px]">c</kbd> from anywhere in the dashboard to jump here.
       </p>

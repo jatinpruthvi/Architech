@@ -59,6 +59,8 @@
     "verify": "node ops/scripts/verify.mjs",
     "docs:index": "node ops/scripts/generate-md-index.mjs",
     "docs:index:check": "node ops/scripts/check-md-index.mjs",
+    "skills:index": "node ops/scripts/skills/generate-skill-index.mjs",
+    "skills:index:check": "node ops/scripts/skills/generate-skill-index.mjs --check",
     "build:ci": "node ops/scripts/build-ci.mjs",
     "production:plan:audit": "node ops/scripts/release/production-enablement-audit.mjs",
     "env:audit": "node ops/scripts/operations/environment-audit.mjs",

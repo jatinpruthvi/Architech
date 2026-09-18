@@ -12,20 +12,7 @@ const OUTCOMES: { key: string; label: string; icon: typeof Check; tone: string }
   { key: "deal", label: "Deal", icon: Handshake, tone: "violet" },
 ];
 
-const toneMap: Record<string, string> = {
-  green: "#0e8a65",
-  slate: "#39495b",
-  rose: "#c12e4c",
-  amber: "#8a5b0b",
-  violet: "#5e35c9",
-};
-const toneBg: Record<string, string> = {
-  green: "#e0fbf0",
-  slate: "#e8eef5",
-  rose: "#ffe2e9",
-  amber: "#fff2d4",
-  violet: "#efe6ff",
-};
+/* Tones resolve in the token layer: .tp-tint-* / .tp-solid-* (src/theme.css). */
 
 export function CallOutcomePopover({
   propertyId,
@@ -41,27 +28,42 @@ export function CallOutcomePopover({
   const [savingOutcome, setSavingOutcome] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /* `follow_up` is only real once it has a date: pick a day, THEN persist.
+     Without this the outcome saved but nothing ever resurfaced it. */
+  const [pickingFollowUp, setPickingFollowUp] = useState(false);
 
   useEffect(() => {
     if (initialOutcome && !outcome) setOutcome(initialOutcome);
   }, [initialOutcome, outcome]);
 
-  async function log(next: string) {
+  async function log(next: string, followUpAt?: string) {
     if (busy) return;
+    if (next === "follow_up" && !followUpAt) {
+      setOutcome("follow_up");
+      setPickingFollowUp(true);
+      return;
+    }
+    setPickingFollowUp(false);
     setBusy(true);
     setSavingOutcome(next);
     setMessage(null);
     setError(null);
-    const result = await persistCallOutcome(propertyId, next);
+    const result = await persistCallOutcome(propertyId, next, followUpAt ?? null);
     if (result.ok) {
       setOutcome(next);
-      setMessage("Outcome saved");
+      setMessage(next === "follow_up" ? "Follow-up scheduled" : "Outcome saved");
       onLogged?.(next);
     } else {
       setError(result.error);
     }
     setBusy(false);
     setSavingOutcome(null);
+  }
+
+  function followUpDate(offsetDays: number): string {
+    const d = new Date(Date.now() + offsetDays * 86_400_000);
+    d.setHours(9, 30, 0, 0);
+    return d.toISOString();
   }
 
   const savingLabel = OUTCOMES.find((item) => item.key === savingOutcome)?.label;
@@ -76,13 +78,7 @@ export function CallOutcomePopover({
               key={key}
               type="button"
               data-tp-outcome={key}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition hover:brightness-95"
-              style={{
-                color: active ? "#fff" : toneMap[tone],
-                background: active ? toneMap[tone] : toneBg[tone],
-                outline: active ? `2px solid ${toneMap[tone]}` : "none",
-                outlineOffset: 1,
-              }}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition hover:brightness-95 ${active ? `tp-solid-${tone}` : `tp-tint-${tone}`}`}
               disabled={busy}
               onClick={() => log(key)}
               title={label}
@@ -94,9 +90,25 @@ export function CallOutcomePopover({
           );
         })}
       </div>
+      {pickingFollowUp ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Choose follow-up date">
+          <span className="text-xs font-semibold text-[var(--tp-muted)]">Call back:</span>
+          {([["Tomorrow", 1], ["In 2 days", 2], ["Next week", 7]] as const).map(([label, days]) => (
+            <button
+              key={days}
+              type="button"
+              className="tp-tint-amber inline-flex min-h-11 items-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition hover:brightness-95"
+              disabled={busy}
+              onClick={() => log("follow_up", followUpDate(days))}
+            >
+              <Calendar size={12} className="mr-1" aria-hidden="true" />{label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="mt-1 min-h-5 text-xs" aria-live="polite" aria-atomic="true">
         {busy && savingLabel ? <p className="font-semibold text-[var(--tp-muted)]">Saving {savingLabel.toLowerCase()}…</p> : null}
-        {!busy && message ? <p className="font-semibold text-[#0e8a65]">{message}</p> : null}
+        {!busy && message ? <p className="font-semibold text-[var(--tp-accent-2)]">{message}</p> : null}
         {error ? <p role="alert" className="font-semibold text-[var(--tp-rose)]">{error}</p> : null}
       </div>
     </div>

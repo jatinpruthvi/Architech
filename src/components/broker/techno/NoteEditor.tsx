@@ -63,7 +63,7 @@ export function NoteEditor({
               setText(saved);
               setError(null);
             }}
-            className={`${showLabel ? "tp-mobile-action w-full" : "tp-action-btn"} ${saved ? "bg-[#e0fbf0] !border-[#b6ebd3] !text-[#0e8a65]" : "bg-[#f0f7ff] !border-[#c7dffa] !text-[#1d5fc2]"}`}
+            className={`${showLabel ? "tp-mobile-action w-full" : "tp-action-btn"} ${saved ? "tp-tint-green" : "tp-tint-blue"}`}
           >
             <Pencil size={16} />
             {showLabel ? <span>{saved ? "Edit note" : "Note"}</span> : null}
@@ -82,7 +82,7 @@ export function NoteEditor({
           event.preventDefault();
           textAreaRef.current?.focus();
         }}
-        className="techno tp-note-dialog !bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] !left-3 !right-3 !top-auto !w-auto !max-w-none !translate-x-0 !translate-y-0 rounded-2xl border border-[var(--tp-border)] bg-white p-4 text-[var(--tp-ink)] shadow-2xl md:!bottom-auto md:!left-1/2 md:!right-auto md:!top-1/2 md:!w-[22rem] md:!-translate-x-1/2 md:!-translate-y-1/2"
+        className="techno tp-note-dialog !bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] !left-3 !right-3 !top-auto !w-auto !max-w-none !translate-x-0 !translate-y-0 rounded-2xl border border-[var(--tp-border)] bg-[var(--tp-surface)] p-4 text-[var(--tp-ink)] shadow-2xl md:!bottom-auto md:!left-1/2 md:!right-auto md:!top-1/2 md:!w-[22rem] md:!-translate-x-1/2 md:!-translate-y-1/2"
       >
         <div className="flex items-start justify-between gap-3">
           <div>

@@ -90,18 +90,6 @@ export function TechnoNavContent({
 
   return (
     <div className="flex min-h-full flex-col">
-      <div className="mb-4 px-2">
-        <div className="flex items-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--tp-accent)] font-display text-lg font-bold text-white">
-            T
-          </span>
-          <div>
-            <p className="font-display text-lg font-bold leading-tight text-[var(--tp-ink)]">Techno Property</p>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--tp-muted)]">Ahmedabad &amp; Gandhinagar</p>
-          </div>
-        </div>
-      </div>
-
       <nav className="space-y-0.5" aria-label="Broker workspace">
         {main.map(({ key, label, icon: Icon, href }) => (
           <Link key={key} href={href} className="tp-sidebar-item" aria-current={isActive(href) ? "page" : undefined} onClick={onNavigate}>
@@ -205,8 +193,8 @@ export function CountBadge({ count, urgent = false }: { count: number; urgent?: 
 
 export function TechnoSidebar({ freshCount = 0, shortlistCount = 0 }: { freshCount?: number; shortlistCount?: number }) {
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-[var(--tp-border)] bg-white md:block">
-      <div className="sticky top-0 h-dvh overflow-y-auto p-4">
+    <aside className="hidden w-60 shrink-0 border-r border-[var(--tp-border)] bg-[var(--tp-surface)] md:block">
+      <div className="tp-sidebar-body p-4">
         <TechnoNavContent freshCount={freshCount} shortlistCount={shortlistCount} />
       </div>
     </aside>

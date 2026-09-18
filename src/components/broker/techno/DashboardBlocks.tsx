@@ -89,7 +89,7 @@ export async function CallingQueue({
             <p className="text-xs text-[var(--tp-muted)]">
               {r.rentPriceRaw}
               {r.daysAgo !== null && r.daysAgo <= 1 ? (
-                <span className="ml-2 rounded bg-[#e0fbf0] px-1.5 py-0.5 text-[10px] font-semibold text-[#0e8a65]">NEW</span>
+                <span className="ml-2 rounded tp-tint-green rounded px-1.5 py-0.5 text-[10px] font-semibold">NEW</span>
               ) : null}
             </p>
           </div>

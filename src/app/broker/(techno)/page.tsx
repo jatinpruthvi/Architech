@@ -9,6 +9,8 @@ import { requireTechnoSession } from "@/lib/technoproperty/session";
 import {
   getDashboardKpis,
   getCallingQueue,
+  type DashboardKpis,
+  type PropertyRow,
 } from "@/lib/technoproperty/repository";
 import {
   Home,
@@ -26,21 +28,60 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/* This workspace reads the techno PostgreSQL. A demo/sandbox deployment may
+   have no database behind it at all — and an uncaught Prisma error here kills
+   the streamed page MID-FLIGHT: the 200 shell has already flushed, so the
+   browser gets a broken client render (that was the "dashboard won't load"
+   bug). The layout already degrades its counters with `.catch(() => 0)`; the
+   dashboard body now does the same and says so honestly with a banner. A real
+   deployment with a reachable database never takes the fallback path. */
+const EMPTY_KPIS: DashboardKpis = {
+  owner: { active: 0, today: 0, yesterday: 0 },
+  byCategory: [],
+  today: [],
+  yesterday: [],
+  broker: { today: 0, last15: 0, total: 0, byCategory: [] },
+  requirements: { today: 0, last15: 0, total: 0, byCategory: [] },
+  freshUnrevealed: 0,
+};
+
+let loggedDbUnavailable = false;
+
+async function fetchOrEmpty<T>(label: string, fetcher: () => Promise<T>, fallback: T): Promise<{ value: T; degraded: boolean }> {
+  try {
+    return { value: await fetcher(), degraded: false };
+  } catch (error) {
+    if (!loggedDbUnavailable) {
+      console.error(`[broker] ${label} unavailable — rendering empty demo data`, error);
+      loggedDbUnavailable = true;
+    }
+    return { value: fallback, degraded: true };
+  }
+}
+
 export default async function TechnoHome() {
   const session = await requireTechnoSession();
   const orgId = session.organization!.id;
   const userId = session.user.id;
-  const kpis = await getDashboardKpis(orgId);
-  const queue = await getCallingQueue(orgId, userId, 5);
+  const [{ value: kpis, degraded: kpisDegraded }, { value: queue, degraded: queueDegraded }] = await Promise.all([
+    fetchOrEmpty("dashboard KPIs", () => getDashboardKpis(orgId), EMPTY_KPIS),
+    fetchOrEmpty("calling queue", () => getCallingQueue(orgId, userId, 5).then((r) => r.rows), [] as PropertyRow[]),
+  ]);
+  const dataDegraded = kpisDegraded || queueDegraded;
 
   return (
     <div className="space-y-7 md:space-y-10">
+      {dataDegraded && (
+        <p role="status" className="tp-chip tp-chip-amber w-fit">
+          Demo preview: the listing database is not connected, so counters show zeros.
+        </p>
+      )}
       <h1 className="sr-only">Broker dashboard</h1>
       <section className="tp-mobile-priority md:hidden" aria-label="Today at a glance">
         <p className="text-xs font-bold uppercase tracking-wider text-[var(--tp-accent)]">Today at a glance</p>
         <div className="mt-2 flex items-end justify-between gap-3">
           <div>
-            <p className="font-display text-3xl font-bold text-[var(--tp-ink)]">{queue.length}</p>
+            <p className="font-display text-3xl font-bold text-[var(--tp-ink)]">{queue.filter((row) => row.callState === "new" || row.callState === "retry" || row.callState === "followup").length}</p>
             <p className="text-sm text-[var(--tp-muted)]">fresh owners ready to call</p>
           </div>
           <span className="tp-chip tp-chip-green"><Zap size={13} /> {kpis.owner.today} new listings</span>
@@ -155,7 +196,7 @@ export default async function TechnoHome() {
           <div>
             <h2 className="tp-section-title !mb-1">
               <Phone size={20} className="text-[var(--tp-accent-2)]" /> Today&apos;s calling queue
-              <span className="ml-2 tp-chip tp-chip-green">{queue.length} to call</span>
+              <span className="ml-2 tp-chip tp-chip-green">{queue.filter((row) => row.callState === "new" || row.callState === "retry" || row.callState === "followup").length} to call</span>
             </h2>
             <p className="mt-1 text-sm text-[var(--tp-muted)]">
               Newest owner listings first. Tap the ready phone number to dial, then log an outcome so no follow-up slips through.

@@ -95,7 +95,7 @@ export function ContactRevealButton({
 
   const normalizedPhone = normalizeIndianPhone(state.phone);
   const whatsappHref = normalizedPhone.ok
-    ? `${waMeLink(normalizedPhone.e164)}?text=${encodeURIComponent("Hi, regarding your property on Techno Property…")}`
+    ? `${waMeLink(normalizedPhone.e164)}?text=${encodeURIComponent("Hi, regarding your property on Architech…")}`
     : null;
 
   return (
