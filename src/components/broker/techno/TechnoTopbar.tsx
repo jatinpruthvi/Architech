@@ -175,7 +175,15 @@ export function TechnoTopbar({
         {MOBILE_NAV.map(({ label, href, icon: Icon }) => {
           const count = label === "Calls" ? freshCount : label === "Saved" ? shortlistCount : 0;
           return (
-            <Link key={href} href={href} className="tp-mobile-nav-item" aria-current={isActive(href) ? "page" : undefined}>
+            <Link
+              key={href}
+              href={href}
+              className="tp-mobile-nav-item"
+              aria-current={isActive(href) ? "page" : undefined}
+              aria-label={count > 0
+                ? `${label}, ${count} ${label === "Calls" ? "fresh leads" : "saved properties"}`
+                : undefined}
+            >
               <span className="relative">
                 <Icon size={20} />
                 {count > 0 ? <span className="absolute -right-4 -top-2"><CountBadge count={count} urgent={label === "Calls"} /></span> : null}
