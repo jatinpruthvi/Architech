@@ -94,9 +94,7 @@ export async function signInWithPhone(request: Request, input: Partial<{ phone: 
   }
 
   if (getAuthSourceMode() === "demo") {
-    // In demo mode, allow phone login with demo buyer password for testing
-    const { DEMO_ACCOUNTS } = await import("./demo-accounts");
-    const buyer = DEMO_ACCOUNTS.find((a) => a.id === "demo-user-buyer");
+    const { authenticateDemoPhoneAccount, demoSessionCookieValue, DEMO_ACCOUNTS } = await import("./demo-accounts");
     /* A demo-mode forgot-password has nowhere to write a hash (there is no user
        store), so `password-reset-flow.ts` parks the new password per phone and
        it is honoured here. Without this the reset form would report success and
@@ -104,9 +102,21 @@ export async function signInWithPhone(request: Request, input: Partial<{ phone: 
        that survives review because the reset's own happy path looks green.
 
        Once a number has a reset password it is the ONLY accepted one: leaving
-       the shared demo password working too would mean "change your password"
+       a published demo password working too would mean "change your password"
        did not actually change what signs you in. */
     const resetPassword = demoResetPasswordFor(phoneE164);
+    const publishedAccount = resetPassword === null ? authenticateDemoPhoneAccount(phoneE164, password) : null;
+    if (publishedAccount) {
+      clearLoginAttempts(phoneE164);
+      return {
+        ok: true,
+        session: publishedAccount.session,
+        cookies: [demoSessionCookieValue(publishedAccount, request)],
+      };
+    }
+
+    // Unlisted demo numbers remain buyer-shaped for registration/reset previews.
+    const buyer = DEMO_ACCOUNTS.find((a) => a.id === "demo-user-buyer");
     const accepted = resetPassword !== null ? password === resetPassword : buyer !== undefined && password === buyer.password;
     if (accepted) {
       const mockSession = {

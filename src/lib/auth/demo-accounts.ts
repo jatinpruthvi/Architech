@@ -39,6 +39,7 @@ export type DemoAccount = {
   id: string;
   label: string;
   email: string;
+  phoneE164: string;
   password: string;
   session: AuthSession;
 };
@@ -57,6 +58,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     id: "demo-user-broker-admin",
     label: "Broker admin",
     email: demoBrokerSession.user.email,
+    phoneE164: "+919876543210",
     password: "demo-broker-1234",
     session: demoBrokerSession,
   },
@@ -64,6 +66,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     id: "demo-user-buyer",
     label: "Buyer",
     email: "buyer@example.com",
+    phoneE164: "+919876543211",
     password: "demo-buyer-1234",
     session: demoSession("demo-user-buyer", "Demo Buyer", "buyer@example.com", "BUYER"),
   },
@@ -71,6 +74,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     id: "demo-user-moderator",
     label: "Moderator",
     email: "moderator@example.com",
+    phoneE164: "+919876543212",
     password: "demo-moderator-1234",
     session: demoSession("demo-user-moderator", "Demo Moderator", "moderator@example.com", "MODERATOR"),
   },
@@ -78,6 +82,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     id: "demo-user-broker-member",
     label: "Broker member",
     email: "broker-member@example.com",
+    phoneE164: "+919876543213",
     password: "demo-member-1234",
     session: demoSession("demo-user-broker-member", "Demo Broker Member", "broker-member@example.com", "BROKER_MEMBER", DEMO_ORGANIZATION, "BROKER"),
   },
@@ -95,6 +100,12 @@ function equals(a: string, b: string): boolean {
 
 export function authenticateDemoAccount(email: string, password: string): DemoAccount | null {
   const account = DEMO_ACCOUNTS.find((candidate) => candidate.email === email.trim().toLowerCase());
+  if (!account) return null;
+  return equals(account.password, password) ? account : null;
+}
+
+export function authenticateDemoPhoneAccount(phoneE164: string, password: string): DemoAccount | null {
+  const account = DEMO_ACCOUNTS.find((candidate) => candidate.phoneE164 === phoneE164);
   if (!account) return null;
   return equals(account.password, password) ? account : null;
 }

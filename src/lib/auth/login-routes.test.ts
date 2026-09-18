@@ -56,6 +56,23 @@ describe("login route", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
   });
 
+  it("restores the intended account for every published demo phone sign-in", async () => {
+    /* The login screen is phone-primary. Its preview cards must authenticate
+       their named roles instead of falling through to the generic demo-buyer
+       password contract. */
+    for (const account of DEMO_ACCOUNTS) {
+      const response = await login(post("/api/auth/login", { phone: account.phoneE164, password: account.password }));
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.session.user.id).toBe(account.id);
+
+      const cookie = cookiesOf(response);
+      const restored = await session(new Request(`${ORIGIN}/api/auth/session`, { headers: { cookie } }));
+      const restoredBody = await restored.json();
+      expect(restoredBody.session.user.id).toBe(account.id);
+    }
+  });
+
   it("routes each role to a landing page that role can open", async () => {
     /* Both roles now land on the shared `/dashboard/`, which any signed-in
        session can open; it selects a persona rather than gating on one. The
