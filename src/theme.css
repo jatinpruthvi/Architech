@@ -1315,6 +1315,18 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
    The broker surface is a task app on phones: fixed thumb navigation, card-first
    inventory, and 44px actions. Desktop keeps the dense table workflow. */
 .techno { overflow-x: clip; }
+/* App-shell scroll: the page itself never scrolls, so there is exactly one
+   header and the scrollbars start where the content begins — the sidebar menu
+   scrolls between the pinned brand block and footer, and the workspace column
+   scrolls below the pinned topbar. Scoped to the broker shell only. */
+.techno.vh-fill { height: 100dvh; overflow: hidden; }
+.techno .tp-shell-row { height: 100%; }
+.techno .tp-content-col { display: flex; height: 100%; min-width: 0; flex-direction: column; }
+.techno .tp-content-col > header { flex: 0 0 auto; }
+.techno #techno-main { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
+.techno .tp-sidebar-body { display: flex; height: 100%; flex-direction: column; }
+.techno .tp-sidebar-body > div:first-child { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; }
+.techno .tp-sidebar-body > div:first-child > nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
 .techno .tp-topbar-icon,
 .techno .tp-icon-touch {
   display: grid;

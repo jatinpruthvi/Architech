@@ -208,7 +208,7 @@ export function CountBadge({ count, urgent = false }: { count: number; urgent?: 
 export function TechnoSidebar({ freshCount = 0, shortlistCount = 0 }: { freshCount?: number; shortlistCount?: number }) {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-[var(--tp-border)] bg-[var(--tp-surface)] md:block">
-      <div className="sticky top-0 h-dvh overflow-y-auto p-4">
+      <div className="tp-sidebar-body p-4">
         <TechnoNavContent freshCount={freshCount} shortlistCount={shortlistCount} />
       </div>
     </aside>
