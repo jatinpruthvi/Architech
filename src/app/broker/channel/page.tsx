@@ -4,7 +4,7 @@ import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Broker channel · Architech",
+  title: "Broker channel",
   robots: { index: false, follow: false },
 };
 

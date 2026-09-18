@@ -10,7 +10,7 @@ import TechnoKeyboardShortcuts from "@/components/broker/techno/TechnoKeyboardSh
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Broker workspace · Architech",
+  title: "Broker workspace",
   description: "Private inventory, calling, and follow-up workspace for Architech broker partners.",
   robots: { index: false, follow: false },
 };

@@ -4,7 +4,7 @@ import RequireSession from "@/components/architech/RequireSession";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Agent workspace · Architech",
+  title: "Agent workspace",
   description: "Protected India-wide, city-scoped partner workspace.",
   robots: { index: false, follow: false },
 };
