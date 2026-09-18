@@ -10,6 +10,12 @@ npm scripts; update `package.json` in the same change.**
   `build-ci.mjs`, `build-publish.mjs`, `materialize-static-publish.mjs`,
   `publish-server.mjs`, `generate-md-index.mjs`, `check-md-index.mjs`,
   `assert-tests-ran.mjs`, `audit-surface-contrast.mjs`
+- `skills/` — `generate-skill-index.mjs` regenerates `.agents/skills/INDEX.md`
+  (the agent skill router). Same discipline as the docs index: output must stay
+  deterministic (sorted, no timestamp), files are enumerated from
+  `git ls-files --cached` — never a directory walk, for the submodule reasons
+  documented in Gotchas below. `--check` exits 1 when stale (`pnpm
+  skills:index:check`); it is not yet in `verify.mjs`'s `CHECKS` list.`
 - `operations/` — env/secrets/provisioning/readiness audits (read `ops/config/governance/`)
 - `security/` — header, RLS, and legal-gate audits
 - `release/` — release + production-enablement audits (read `ops/config/governance/release/`)
