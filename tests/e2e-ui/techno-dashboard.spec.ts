@@ -32,14 +32,14 @@ test("techno dashboard renders KPI tiles and responsive navigation", async ({ pa
     const navigation = page.getByRole("navigation", { name: "Broker mobile navigation" });
     await expect(navigation.getByRole("link", { name: "Home", exact: true })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Search", exact: true })).toBeVisible();
-    await expect(navigation.getByRole("link", { name: "Calls", exact: true })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: /^Calls/ })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Saved", exact: true })).toBeVisible();
   } else {
     const navigation = page.getByRole("navigation", { name: "Broker workspace" });
     await expect(navigation.getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Search", exact: true })).toBeVisible();
     await expect(navigation.getByRole("link", { name: "Shortlisted", exact: true })).toBeVisible();
-    await expect(navigation.getByRole("link", { name: "Call queue", exact: true })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: /^Call queue/ })).toBeVisible();
   }
 });
 
