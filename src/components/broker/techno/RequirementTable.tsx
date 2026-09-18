@@ -137,7 +137,7 @@ function RequirementCard({ row }: { row: RequirementRow }) {
         {row.daysAgo !== null ? <span className={`tp-chip ${row.daysAgo <= 1 ? "tp-chip-green" : "tp-chip-slate"}`}>{row.daysAgo === 0 ? "Today" : `${row.daysAgo}d ago`}</span> : null}
       </div>
       <p className="mt-3 flex items-center gap-2 text-sm text-[var(--tp-ink-soft)]"><MapPin size={16} className="text-[var(--tp-accent)]" />{area}</p>
-      <div className="mt-3 rounded-xl bg-[#f6f9fd] p-3">
+      <div className="mt-3 rounded-xl tp-tint-neutral rounded-xl p-3">
         <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--tp-muted)]">Budget</p>
         <p className="mt-1 font-display text-lg font-bold text-[var(--tp-ink)]">{row.rentPriceRaw || "Confirm budget"}</p>
       </div>

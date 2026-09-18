@@ -193,7 +193,7 @@ function BrokerCard({ row }: { row: BrokerRow }) {
         <CardFact icon={<Home size={15} />} label="Availability" value={row.availabilityLabel || "Confirm"} />
         <CardFact icon={<ClipboardList size={15} />} label="Condition" value={row.conditionLabel || "Not listed"} />
       </dl>
-      <div className="mt-3 rounded-xl bg-[#f6f9fd] p-3 text-sm leading-5 text-[var(--tp-ink-soft)]">
+      <div className="mt-3 rounded-xl tp-tint-neutral rounded-xl p-3 text-sm leading-5">
         <p className="font-semibold text-[var(--tp-ink)]">{buildDetailsLabel(row)}</p>
         <p className="mt-1">{row.descriptionShort || "No additional description."}</p>
       </div>
@@ -203,7 +203,7 @@ function BrokerCard({ row }: { row: BrokerRow }) {
 
 function CardFact({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-[#f6f9fd] p-3">
+    <div className="tp-tint-neutral rounded-xl p-3">
       <dt className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--tp-muted)]">{icon}{label}</dt>
       <dd className="mt-1 whitespace-pre-line text-sm font-semibold leading-5 text-[var(--tp-ink)]">{value}</dd>
     </div>

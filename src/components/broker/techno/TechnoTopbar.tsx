@@ -115,7 +115,7 @@ export function TechnoTopbar({
                 MORE <ChevronDown size={14} className={`transition-transform ${moreOpen ? "rotate-180" : ""}`} />
               </button>
               {moreOpen ? (
-                <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-lg border border-[var(--tp-border)] bg-white text-[var(--tp-ink)] shadow-xl">
+                <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-lg border border-[var(--tp-border)] bg-[var(--tp-surface)] text-[var(--tp-ink)] shadow-xl">
                   {MORE.map(({ label, href, icon: Icon }) => (
                     <Link key={href} href={href} role="menuitem" className="flex min-h-11 items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--tp-bg)]" onClick={() => setMoreOpen(false)}>
                       <Icon size={16} /> {label}
@@ -154,7 +154,7 @@ export function TechnoTopbar({
                 <ChevronDown size={15} className="hidden sm:block" />
               </button>
               {profileOpen ? (
-                <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-xl border border-[var(--tp-border)] bg-white text-[var(--tp-ink)] shadow-xl">
+                <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-xl border border-[var(--tp-border)] bg-[var(--tp-surface)] text-[var(--tp-ink)] shadow-xl">
                   <div className="border-b border-[var(--tp-border)] px-3 py-3 text-xs text-[var(--tp-muted)]">
                     Signed in as <span className="font-semibold text-[var(--tp-ink)]">{userName}</span>
                   </div>
@@ -198,7 +198,7 @@ export function TechnoTopbar({
       </nav>
 
       <Drawer direction="left" open={menuOpen} onOpenChange={setMenuOpen}>
-        <DrawerContent className="techno h-dvh w-[min(88vw,22rem)] bg-white text-[var(--tp-ink)]">
+        <DrawerContent className="techno h-dvh w-[min(88vw,22rem)] bg-[var(--tp-surface)] text-[var(--tp-ink)]">
           <DrawerHeader className="flex-row items-start justify-between border-b border-[var(--tp-border)] text-left">
             <div>
               <DrawerTitle className="font-display text-xl text-[var(--tp-ink)]">Broker workspace</DrawerTitle>

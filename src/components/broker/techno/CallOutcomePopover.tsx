@@ -96,7 +96,7 @@ export function CallOutcomePopover({
       </div>
       <div className="mt-1 min-h-5 text-xs" aria-live="polite" aria-atomic="true">
         {busy && savingLabel ? <p className="font-semibold text-[var(--tp-muted)]">Saving {savingLabel.toLowerCase()}…</p> : null}
-        {!busy && message ? <p className="font-semibold text-[#0e8a65]">{message}</p> : null}
+        {!busy && message ? <p className="font-semibold text-[var(--tp-accent-2)]">{message}</p> : null}
         {error ? <p role="alert" className="font-semibold text-[var(--tp-rose)]">{error}</p> : null}
       </div>
     </div>

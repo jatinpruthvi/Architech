@@ -24,7 +24,7 @@ export function ActivityWidgets({ data }: {
 }) {
   return (
     <div id="notifications" className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <article className="tp-card" style={{ background: "linear-gradient(160deg,#0b3b6d 0%,#1d6fe0 100%)", color: "#fff", border: "none" }}>
+      <article className="tp-card" style={{ background: "linear-gradient(160deg, var(--night) 0%, color-mix(in srgb, var(--brick) 55%, var(--night)) 100%)", color: "var(--cream)", border: "none" }}>
         <span className="tp-chip" style={{ background: "rgba(255,255,255,.15)", color: "#fff" }}>
           <Bell size={12} /> Saved search matches
         </span>
@@ -95,15 +95,15 @@ export function PaymentStrip() {
   return (
     <div className="grid gap-3 md:grid-cols-2">
       <article className="tp-card flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e0fbf0] text-[#0e8a65]"><CreditCard size={18} /></span>
+        <span className="tp-tint-green grid h-10 w-10 place-items-center rounded-xl"><CreditCard size={18} /></span>
         <div>
           <p className="text-xs text-[var(--tp-muted)]">Payment status</p>
-          <p className="font-semibold text-[var(--tp-ink)]">Active <span className="ml-2 text-xs text-[#0e8a65]">Plan active</span></p>
+          <p className="font-semibold text-[var(--tp-ink)]">Active <span className="tp-tint-green ml-2 rounded px-1.5 py-0.5 text-xs">Plan active</span></p>
           <p className="text-xs text-[var(--tp-muted)]">Next payment 28 Feb 2027 · <Link href="/broker/agent" className="text-[var(--tp-accent)]">Receipt</Link></p>
         </div>
       </article>
       <article className="tp-card flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e3f0ff] text-[var(--tp-accent)]"><Bell size={18} /></span>
+        <span className="tp-tint-blue grid h-10 w-10 place-items-center rounded-xl"><Bell size={18} /></span>
         <div>
           <p className="font-semibold">No new announcements</p>
           <p className="text-xs text-[var(--tp-muted)]">Important product updates will appear here.</p>

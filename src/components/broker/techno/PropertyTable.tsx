@@ -274,7 +274,7 @@ function PropertyCard({ row }: { row: PropertyRow }) {
 
 function CardFact({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-[#f6f9fd] p-3">
+    <div className="tp-tint-neutral rounded-xl p-3">
       <dt className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--tp-muted)]">{icon}{label}</dt>
       <dd className="mt-1 text-sm font-semibold leading-5 text-[var(--tp-ink)]">{value}</dd>
     </div>

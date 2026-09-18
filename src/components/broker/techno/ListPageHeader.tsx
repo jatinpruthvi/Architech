@@ -74,7 +74,7 @@ export function ListPageHeader({
             <Filter size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tp-muted)]" />
             <select
               aria-label="Filter listings"
-              className="tp-input min-h-11 w-full appearance-none bg-white py-2.5 pl-9 pr-8 font-semibold lg:min-w-[180px]"
+              className="tp-input min-h-11 w-full appearance-none bg-[var(--tp-surface)] py-2.5 pl-9 pr-8 font-semibold lg:min-w-[180px]"
               value={activeFilter}
               onChange={(event) => applyFilter(event.target.value as ListingFilter)}
             >

@@ -12,7 +12,7 @@ export function InventoryEmptyState({
 }) {
   return (
     <div className="tp-empty tp-card text-center">
-      <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#e3f0ff] text-[var(--tp-accent)]">
+      <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl tp-tint-blue">
         <Search size={21} aria-hidden="true" />
       </span>
       <h2 className="mt-3 font-display text-lg font-bold text-[var(--tp-ink)]">{title}</h2>

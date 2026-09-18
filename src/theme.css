@@ -1304,6 +1304,13 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 .techno .tp-activity-card .count{font-family:var(--font-display);font-size:1.6rem;font-weight:700}
 .techno .tp-reveal-success{background:color-mix(in srgb, var(--tp-accent-2) 12%, var(--tp-surface));border:1px solid color-mix(in srgb, var(--tp-accent-2) 40%, var(--tp-border));border-radius:10px;padding:.6rem .8rem}
 
+/* Tinted chips/badges on token surfaces — component code uses these instead
+   of hardcoded pastel hexes so they follow the day/night toggle. */
+.techno .tp-tint-green{background:color-mix(in srgb, var(--tp-accent-2) 13%, var(--tp-surface));color:color-mix(in srgb, var(--tp-accent-2) 78%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-accent-2) 35%, var(--tp-border))}
+.techno .tp-tint-blue{background:color-mix(in srgb, var(--tp-accent) 12%, var(--tp-surface));color:color-mix(in srgb, var(--tp-accent) 85%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-accent) 32%, var(--tp-border))}
+.techno .tp-tint-amber{background:color-mix(in srgb, var(--tp-amber) 15%, var(--tp-surface));color:color-mix(in srgb, var(--tp-amber) 75%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-amber) 38%, var(--tp-border))}
+.techno .tp-tint-neutral{background:color-mix(in srgb, var(--tp-ink) 4%, var(--tp-surface));color:var(--tp-ink-soft);border-color:var(--tp-border)}
+
 /* ---------- Techno broker mobile workspace ----------
    The broker surface is a task app on phones: fixed thumb navigation, card-first
    inventory, and 44px actions. Desktop keeps the dense table workflow. */

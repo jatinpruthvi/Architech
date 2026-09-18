@@ -60,7 +60,7 @@ export function CallQueueList({ rows }: { rows: CallQueueRow[] }) {
           <span className="tp-chip tp-chip-green"><Zap size={13} aria-hidden="true" />{summary.pending.length} remaining</span>
         </div>
         <div
-          className="mt-3 h-2 overflow-hidden rounded-full bg-[#dce7f3]"
+          className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--tp-border)]"
           role="progressbar"
           aria-label="Daily call progress"
           aria-valuemin={0}
@@ -69,7 +69,7 @@ export function CallQueueList({ rows }: { rows: CallQueueRow[] }) {
         >
           <div className="h-full rounded-full bg-[var(--tp-accent-2)] transition-[width] motion-reduce:transition-none" style={{ width: `${summary.percent}%` }} />
         </div>
-        <p className="mt-2 min-h-5 text-xs font-semibold text-[#0e8a65]" role="status" aria-live="polite">
+        <p className="mt-2 min-h-5 text-xs font-semibold text-[var(--tp-accent-2)]" role="status" aria-live="polite">
           {queueMessage}
         </p>
       </section>
@@ -146,10 +146,10 @@ function CallQueueCard({
   completed?: boolean;
 }) {
   return (
-    <article className={`tp-card flex flex-col gap-3 md:flex-row md:items-start md:gap-4 ${completed ? "bg-[#f8fafc]" : ""}`}>
+    <article className={`tp-card flex flex-col gap-3 md:flex-row md:items-start md:gap-4 ${completed ? "tp-tint-neutral" : ""}`}>
       <div className="flex min-w-0 flex-1 items-start gap-3">
         {sequence ? (
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#e3f0ff] text-xs font-bold text-[var(--tp-accent)]" aria-label={`Queue position ${sequence}`}>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full tp-tint-blue text-xs font-bold" aria-label={`Queue position ${sequence}`}>
             {sequence}
           </span>
         ) : null}
@@ -165,7 +165,7 @@ function CallQueueCard({
           <p className="mt-1 text-sm leading-5 text-[var(--tp-ink-soft)]">{row.address || row.area || "Address not listed"}</p>
           <p className="mt-1 text-xs text-[var(--tp-muted)]">{[row.rentPriceRaw, row.keyInfo, row.availabilityRaw].filter(Boolean).join(" · ")}</p>
           {row.note?.text ? (
-            <p className="mt-2 rounded-lg bg-[#fff7e6] p-2 text-xs text-[#8a5b0b]">Note: {row.note.text}</p>
+            <p className="mt-2 rounded-lg tp-tint-amber rounded-lg p-2 text-xs">Note: {row.note.text}</p>
           ) : null}
         </div>
       </div>
