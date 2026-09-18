@@ -92,12 +92,14 @@ export function TechnoNavContent({
     <div className="flex min-h-full flex-col">
       <div className="mb-4 px-2">
         <div className="flex items-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--tp-accent)] font-display text-lg font-bold text-white">
-            T
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--tp-accent)] font-display text-lg font-bold text-[var(--cream)]">
+            A
           </span>
           <div>
-            <p className="font-display text-lg font-bold leading-tight text-[var(--tp-ink)]">Techno Property</p>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--tp-muted)]">Ahmedabad &amp; Gandhinagar</p>
+            <p className="font-display text-lg font-bold leading-tight text-[var(--tp-ink)]">
+              Architech<span className="text-[var(--tp-accent)]">.</span>
+            </p>
+            <p className="text-[10px] uppercase tracking-wider text-[var(--tp-muted)]">Partner workspace</p>
           </div>
         </div>
       </div>

@@ -70,7 +70,7 @@ export function TechnoTopbar({
 
   return (
     <>
-      <header role="banner" aria-label="Broker workspace header" className="sticky top-0 z-40 border-b border-[#6d5b44]/20 bg-[#5d4a36] text-white shadow-sm">
+      <header role="banner" aria-label="Broker workspace header" className="sticky top-0 z-40 border-b border-cream/15 bg-night text-cream shadow-sm">
         <div className="mx-auto flex min-h-16 max-w-[1400px] items-center gap-2 px-3 py-2 md:gap-4 md:px-8 md:py-3">
           <button
             type="button"
@@ -83,11 +83,11 @@ export function TechnoTopbar({
           </button>
 
           <Link href="/broker" className="flex min-w-0 shrink items-center gap-2" aria-label="Architech broker home">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-black text-lg font-black text-[#ffb74d] md:h-10 md:w-10 md:rounded-md md:text-xl">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brick text-lg font-black text-cream md:h-10 md:w-10 md:rounded-md md:text-xl">
               A
             </span>
             <span className="truncate text-lg font-black tracking-tight md:text-xl">
-              Architech<span className="text-[#ffb74d]">.</span>
+              Architech<span className="text-ember">.</span>
             </span>
           </Link>
 
@@ -96,7 +96,7 @@ export function TechnoTopbar({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded px-3 py-2 text-xs font-bold tracking-wide transition hover:bg-white/10 ${isActive(item.href) ? "bg-white/10 text-[#ffd79a]" : "text-white/85"}`}
+                className={`rounded px-3 py-2 text-xs font-bold tracking-wide transition hover:bg-white/10 ${isActive(item.href) ? "bg-white/10 text-gold" : "text-cream/85"}`}
               >
                 {item.label}
               </Link>
@@ -129,12 +129,12 @@ export function TechnoTopbar({
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <Link href="/broker/call-queue" className="tp-topbar-icon relative md:hidden" aria-label={`Call queue, ${freshCount} fresh leads`}>
               <Phone size={19} />
-              {freshCount > 0 ? <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-[#ff8a80] ring-2 ring-[#5d4a36]" /> : null}
+              {freshCount > 0 ? <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-[var(--tp-rose)] ring-2 ring-night" /> : null}
             </Link>
             <Link href="/broker/shortlisted" className="tp-topbar-icon hidden md:grid" title="Saved / Shortlist" aria-label="Saved properties">
               <Bookmark size={17} />
             </Link>
-            <span className="ml-1 hidden rounded-full bg-[#f29633] px-2 py-1 text-[11px] font-black text-white sm:inline">
+            <span className="ml-1 hidden rounded-full bg-brick px-2 py-1 text-[11px] font-black text-cream sm:inline">
               {userName.slice(0, 2).toUpperCase()}
             </span>
             <span className="ml-1 hidden text-xs font-bold uppercase tracking-wide text-white/90 xl:inline">NIVASA DEMO</span>
