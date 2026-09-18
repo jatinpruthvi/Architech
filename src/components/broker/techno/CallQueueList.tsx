@@ -1,10 +1,11 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { CheckCircle2, ChevronDown, Zap } from "lucide-react";
+import { CalendarClock, CheckCircle2, ChevronDown, Zap } from "lucide-react";
 import { CallOutcomePopover } from "./CallOutcomePopover";
 import { ContactRevealButton } from "./ContactRevealButton";
 import { applyLoggedOutcome, summarizeCallQueue, type LoggedOutcomes } from "./call-queue-state";
+import { callStateLabel, type CallState } from "@/lib/technoproperty/call-lifecycle";
 
 export interface CallQueueRow {
   id: string;
@@ -19,11 +20,14 @@ export interface CallQueueRow {
   ownerPhoneLast4: string | null;
   revealed: boolean;
   currentOutcome: string | null;
+  callState?: "new" | "retry" | "followup" | "scheduled" | "done";
+  followUpAt?: Date | string | null;
+  lastOutcomeAt?: Date | string | null;
   daysAgo: number | null;
   note: { text: string } | null;
 }
 
-export function CallQueueList({ rows }: { rows: CallQueueRow[] }) {
+export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow[]; scheduledCount?: number }) {
   const [loggedOutcomes, setLoggedOutcomes] = useState<LoggedOutcomes>({});
   const [showCompleted, setShowCompleted] = useState(false);
   const [queueMessage, setQueueMessage] = useState<string | null>(null);
@@ -57,7 +61,12 @@ export function CallQueueList({ rows }: { rows: CallQueueRow[] }) {
               {summary.completedCount} of {summary.total} calls logged
             </p>
           </div>
-          <span className="tp-chip tp-chip-green"><Zap size={13} aria-hidden="true" />{summary.pending.length} remaining</span>
+          <div className="flex items-center gap-2">
+            {scheduledCount > 0 ? (
+              <span className="tp-chip tp-chip-amber"><CalendarClock size={13} aria-hidden="true" />{scheduledCount} scheduled</span>
+            ) : null}
+            <span className="tp-chip tp-chip-green"><Zap size={13} aria-hidden="true" />{summary.pending.length} remaining</span>
+          </div>
         </div>
         <div
           className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--tp-border)]"
@@ -161,6 +170,7 @@ function CallQueueCard({
             ) : row.daysAgo !== null ? (
               <span className="tp-chip tp-chip-slate">{row.daysAgo}d old</span>
             ) : null}
+            <DueChip callState={(row.callState ?? null) as CallState | null} followUpAt={row.followUpAt ?? null} lastOutcomeAt={row.lastOutcomeAt ?? null} />
           </p>
           <p className="mt-1 text-sm leading-5 text-[var(--tp-ink-soft)]">{row.address || row.area || "Address not listed"}</p>
           <p className="mt-1 text-xs text-[var(--tp-muted)]">{[row.rentPriceRaw, row.keyInfo, row.availabilityRaw].filter(Boolean).join(" · ")}</p>
@@ -181,4 +191,19 @@ function CallQueueCard({
       </div>
     </article>
   );
+}
+
+function DueChip({
+  callState,
+  followUpAt,
+  lastOutcomeAt,
+}: {
+  callState: CallState | null;
+  followUpAt: Date | string | null;
+  lastOutcomeAt: Date | string | null;
+}) {
+  if (!callState || callState === "new" || callState === "done") return null;
+  const label = callStateLabel({ callState, followUpAt, lastOutcomeAt });
+  if (!label) return null;
+  return <span className={`tp-chip ${callState === "followup" ? "tp-chip-amber" : "tp-chip-slate"}`}>{label}</span>;
 }

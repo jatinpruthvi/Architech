@@ -16,13 +16,42 @@ describe("call queue progress", () => {
     expect(summary.percent).toBe(33);
   });
 
-  it("moves an owner to completed only after a saved outcome", () => {
+  it("keeps a no-answer as pending work (retry), not completed", () => {
     const outcomes = applyLoggedOutcome({}, "new-1", "no_answer");
+    const summary = summarizeCallQueue(rows, outcomes);
+    // A retry is still work: it stays pending (the card gains a
+    // "No answer · try again" chip and the server orders it after news).
+    expect(summary.pending.map((row) => row.id)).toEqual(["new-1", "new-2"]);
+    expect(summary.completed.map((row) => row.id)).toEqual(["done-1"]);
+    expect(summary.completedCount).toBe(1);
+    expect(summary.percent).toBe(33);
+  });
+
+  it("moves an owner to completed after a terminal outcome", () => {
+    const outcomes = applyLoggedOutcome({}, "new-1", "connected");
     const summary = summarizeCallQueue(rows, outcomes);
     expect(summary.pending.map((row) => row.id)).toEqual(["new-2"]);
     expect(summary.completed.map((row) => row.id)).toEqual(["new-1", "done-1"]);
     expect(summary.completedCount).toBe(2);
     expect(summary.percent).toBe(67);
+  });
+
+  it("moves a follow-up logged THIS session out of the pending split", () => {
+    const outcomes = applyLoggedOutcome({}, "new-1", "follow_up");
+    const summary = summarizeCallQueue(rows, outcomes);
+    expect(summary.pending.map((row) => row.id)).toEqual(["new-2"]);
+    expect(summary.completed).toContainEqual(expect.objectContaining({ id: "new-1" }));
+  });
+
+  it("keeps a server-side DUE follow-up pending (it is today's work)", () => {
+    const rowsWithDue = [
+      { id: "due-1", currentOutcome: "follow_up", callState: "followup" as const },
+      { id: "sched-1", currentOutcome: "follow_up", callState: "scheduled" as const },
+      { id: "new-1", currentOutcome: null },
+    ];
+    const summary = summarizeCallQueue(rowsWithDue, {});
+    expect(summary.pending.map((row) => row.id)).toEqual(["due-1", "new-1"]);
+    expect(summary.completed.map((row) => row.id)).toEqual(["sched-1"]);
   });
 
   it("handles an empty queue without dividing by zero", () => {

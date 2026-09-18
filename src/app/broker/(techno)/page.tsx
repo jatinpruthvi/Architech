@@ -65,7 +65,7 @@ export default async function TechnoHome() {
   const userId = session.user.id;
   const [{ value: kpis, degraded: kpisDegraded }, { value: queue, degraded: queueDegraded }] = await Promise.all([
     fetchOrEmpty("dashboard KPIs", () => getDashboardKpis(orgId), EMPTY_KPIS),
-    fetchOrEmpty("calling queue", () => getCallingQueue(orgId, userId, 5), [] as PropertyRow[]),
+    fetchOrEmpty("calling queue", () => getCallingQueue(orgId, userId, 5).then((r) => r.rows), [] as PropertyRow[]),
   ]);
   const dataDegraded = kpisDegraded || queueDegraded;
 
