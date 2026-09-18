@@ -1310,11 +1310,42 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 .techno .tp-tint-blue{background:color-mix(in srgb, var(--tp-accent) 12%, var(--tp-surface));color:color-mix(in srgb, var(--tp-accent) 85%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-accent) 32%, var(--tp-border))}
 .techno .tp-tint-amber{background:color-mix(in srgb, var(--tp-amber) 15%, var(--tp-surface));color:color-mix(in srgb, var(--tp-amber) 75%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-amber) 38%, var(--tp-border))}
 .techno .tp-tint-neutral{background:color-mix(in srgb, var(--tp-ink) 4%, var(--tp-surface));color:var(--tp-ink-soft);border-color:var(--tp-border)}
+.techno .tp-tint-rose{background:color-mix(in srgb, var(--tp-rose) 13%, var(--tp-surface));color:color-mix(in srgb, var(--tp-rose) 75%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-rose) 35%, var(--tp-border))}
+.techno .tp-tint-violet{background:color-mix(in srgb, var(--tp-violet) 12%, var(--tp-surface));color:color-mix(in srgb, var(--tp-violet) 75%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-violet) 32%, var(--tp-border))}
+.techno .tp-tint-slate{background:color-mix(in srgb, var(--tp-slate) 10%, var(--tp-surface));color:color-mix(in srgb, var(--tp-slate) 75%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-slate) 30%, var(--tp-border))}
+/* KPI numerals + solid active states keyed to the same tones (token-driven,
+   so they track the theme instead of carrying raw pastel hexes). */
+.techno .tp-tone-blue{color:color-mix(in srgb, var(--tp-accent) 88%, var(--tp-ink))}
+.techno .tp-tone-green{color:color-mix(in srgb, var(--tp-accent-2) 85%, var(--tp-ink))}
+.techno .tp-tone-amber{color:color-mix(in srgb, var(--tp-amber) 82%, var(--tp-ink))}
+.techno .tp-tone-rose{color:color-mix(in srgb, var(--tp-rose) 85%, var(--tp-ink))}
+.techno .tp-tone-violet{color:color-mix(in srgb, var(--tp-violet) 85%, var(--tp-ink))}
+.techno .tp-tone-slate{color:color-mix(in srgb, var(--tp-slate) 80%, var(--tp-ink))}
+.techno .tp-solid-blue{background:var(--tp-accent);color:var(--cream);outline:2px solid var(--tp-accent);outline-offset:1px}
+.techno .tp-solid-green{background:var(--tp-accent-2);color:var(--cream);outline:2px solid var(--tp-accent-2);outline-offset:1px}
+.techno .tp-solid-amber{background:var(--tp-amber);color:var(--cream);outline:2px solid var(--tp-amber);outline-offset:1px}
+.techno .tp-solid-rose{background:var(--tp-rose);color:var(--cream);outline:2px solid var(--tp-rose);outline-offset:1px}
+.techno .tp-solid-violet{background:var(--tp-violet);color:var(--cream);outline:2px solid var(--tp-violet);outline-offset:1px}
+.techno .tp-solid-slate{background:var(--tp-slate);color:var(--paper);outline:2px solid var(--tp-slate);outline-offset:1px}
 
 /* ---------- Techno broker mobile workspace ----------
    The broker surface is a task app on phones: fixed thumb navigation, card-first
    inventory, and 44px actions. Desktop keeps the dense table workflow. */
-.techno { overflow-x: clip; }
+/* The workspace always reads as the light drafting-sheet theme: while the
+   public site keeps its night-first default (<html class="dark">), the broker
+   shell pins the site tokens it consumes to their light values, so /broker
+   shows the white product theme the design system ships with. */
+.techno { overflow-x: clip; color-scheme: light; }
+.dark .techno {
+  --ink: #3a241a;
+  --paper: #f7efe0;
+  --card: #fdf7ec;
+  --brick: #c2410c;
+  --trust: #217a50;
+  --gold: #9c5b05;
+  --cream: #fff3e4;
+  --border: rgba(58, 36, 26, 0.14);
+}
 /* App-shell scroll: the page itself never scrolls, so there is exactly one
    header and the scrollbars start where the content begins — the sidebar menu
    scrolls between the pinned brand block and footer, and the workspace column

@@ -90,20 +90,6 @@ export function TechnoNavContent({
 
   return (
     <div className="flex min-h-full flex-col">
-      <div className="mb-4 px-2">
-        <div className="flex items-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--tp-accent)] font-display text-lg font-bold text-[var(--cream)]">
-            A
-          </span>
-          <div>
-            <p className="font-display text-lg font-bold leading-tight text-[var(--tp-ink)]">
-              Architech<span className="text-[var(--tp-accent)]">.</span>
-            </p>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--tp-muted)]">Partner workspace</p>
-          </div>
-        </div>
-      </div>
-
       <nav className="space-y-0.5" aria-label="Broker workspace">
         {main.map(({ key, label, icon: Icon, href }) => (
           <Link key={key} href={href} className="tp-sidebar-item" aria-current={isActive(href) ? "page" : undefined} onClick={onNavigate}>
