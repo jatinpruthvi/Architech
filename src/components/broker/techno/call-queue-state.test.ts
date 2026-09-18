@@ -64,3 +64,22 @@ describe("call queue progress", () => {
     });
   });
 });
+
+import { outcomeCounts } from "./call-queue-state";
+
+describe("outcomeCounts", () => {
+  it("buckets rows by live outcome", () => {
+    const rows = [
+      { id: "a", currentOutcome: null },
+      { id: "b", currentOutcome: "connected" },
+      { id: "c", currentOutcome: "no_answer" },
+      { id: "d", currentOutcome: "no_answer" },
+      { id: "e", currentOutcome: "follow_up" },
+      { id: "f", currentOutcome: "deal" },
+    ];
+    expect(outcomeCounts(rows, {})).toEqual({ new: 1, connected: 1, no_answer: 2, wrong_number: 0, follow_up: 1, deal: 1 });
+    // logged-this-session overrides count immediately
+    expect(outcomeCounts(rows, { a: "connected" }).connected).toBe(2);
+    expect(outcomeCounts(rows, { a: "connected" }).new).toBe(0);
+  });
+});

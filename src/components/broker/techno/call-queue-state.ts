@@ -39,3 +39,21 @@ export function summarizeCallQueue<T extends QueueRow>(rows: T[], outcomes: Logg
     percent: total === 0 ? 0 : Math.round((completedCount / total) * 100),
   };
 }
+
+/* Status board: how many calls sit in each outcome bucket right now.
+ * "new" = not dialed yet. Uses the same live view as the split: outcomes
+ * logged this session count immediately. */
+export type OutcomeFilter = "all" | "new" | "connected" | "no_answer" | "wrong_number" | "follow_up" | "deal";
+
+export type OutcomeCounts = Record<Exclude<OutcomeFilter, "all">, number>;
+
+export function outcomeCounts<T extends QueueRow>(rows: T[], outcomes: LoggedOutcomes): OutcomeCounts {
+  const counts: OutcomeCounts = { new: 0, connected: 0, no_answer: 0, wrong_number: 0, follow_up: 0, deal: 0 };
+  for (const row of rows) {
+    const outcome = outcomes[row.id] ?? row.currentOutcome ?? null;
+    if (outcome === null) counts.new += 1;
+    else if (outcome in counts) counts[outcome as keyof OutcomeCounts] += 1;
+    else counts.new += 1;
+  }
+  return counts;
+}
