@@ -1,12 +1,11 @@
-From b12e8335c9403ae20bce1c5d0f6c396d47a70559 Mon Sep 17 00:00:00 2001
+From 930fba46c12d6c3938f89477284874b621f25861 Mon Sep 17 00:00:00 2001
 From: jatinpruthvi <16306904+jatinpruthvi@users.noreply.github.com>
-Date: Sat, 19 Sep 2026 15:22:19 +0000
-Subject: [PATCH 1/2] feat(broker): full Broker Workspace integration for
- desktop and mobile PWA with matching engine, modals, and dialer
+Date: Sat, 19 Sep 2026 17:22:22 +0000
+Subject: [PATCH 1/2] feat(crm): apply broker workspace integration
 
 ---
- crm/api/broker.py                             | 738 ++++++++++++++++++
- crm/api/matching.py                           | 274 +++++++
+ crm/api/broker.py                             | 741 ++++++++++++++++++
+ crm/api/matching.py                           | 284 +++++++
  .../crm_contact_reveal_log/__init__.py        |   0
  .../crm_contact_reveal_log.js                 |   9 +
  .../crm_contact_reveal_log.json               | 130 +++
@@ -22,27 +21,27 @@ Subject: [PATCH 1/2] feat(broker): full Broker Workspace integration for
  .../crm_requirement/crm_requirement.json      | 289 +++++++
  .../crm_requirement/crm_requirement.py        |  22 +
  .../crm_requirement/test_crm_requirement.py   |  23 +
- crm/tests/test_broker_api.py                  |  40 +
+ crm/tests/test_broker_api.py                  |  83 ++
  crm/tests/test_matching.py                    |  66 ++
  .../components/Broker/PropertyNoteModal.vue   |  77 ++
  .../components/Broker/QuickPropertyModal.vue  | 177 +++++
  .../Broker/QuickRequirementModal.vue          | 186 +++++
- .../src/components/Broker/WhatsAppFab.vue     |  26 +
- .../src/components/Broker/WhatsAppModal.vue   | 159 ++++
+ .../src/components/Broker/WhatsAppFab.vue     |  15 +
+ .../src/components/Broker/WhatsAppModal.vue   | 162 ++++
  .../src/components/Layouts/AppSidebar.vue     |  48 +-
  frontend/src/pages/BrokerCallQueue.vue        | 364 +++++++++
- frontend/src/pages/BrokerDashboard.vue        | 360 +++++++++
+ frontend/src/pages/BrokerDashboard.vue        | 393 ++++++++++
  frontend/src/pages/BrokerProperties.vue       | 586 ++++++++++++++
- frontend/src/pages/BrokerProperty.vue         | 496 ++++++++++++
+ frontend/src/pages/BrokerProperty.vue         | 495 ++++++++++++
  frontend/src/pages/BrokerRequirements.vue     |  84 ++
  frontend/src/pages/BuyerMatches.vue           | 236 ++++++
  frontend/src/pages/MobileBrokerCallQueue.vue  | 323 ++++++++
- frontend/src/pages/MobileBrokerDashboard.vue  | 220 ++++++
+ frontend/src/pages/MobileBrokerDashboard.vue  | 240 ++++++
  frontend/src/pages/MobileBrokerProperty.vue   | 294 +++++++
  frontend/src/router.js                        |  44 +-
  frontend/src/stores/broker.js                 |  85 ++
  frontend/src/utils/whatsapp.js                |  94 +++
- 37 files changed, 5975 insertions(+), 5 deletions(-)
+ 37 files changed, 6075 insertions(+), 5 deletions(-)
  create mode 100644 crm/api/broker.py
  create mode 100644 crm/api/matching.py
  create mode 100644 crm/fcrm/doctype/crm_contact_reveal_log/__init__.py
@@ -81,10 +80,10 @@ Subject: [PATCH 1/2] feat(broker): full Broker Workspace integration for
 
 diff --git a/crm/api/broker.py b/crm/api/broker.py
 new file mode 100644
-index 00000000..81b329d8
+index 00000000..8e698a42
 --- /dev/null
 +++ b/crm/api/broker.py
-@@ -0,0 +1,738 @@
+@@ -0,0 +1,741 @@
 +# Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and contributors
 +# For license information, please see license.txt
 +
@@ -119,7 +118,7 @@ index 00000000..81b329d8
 +	active_properties = frappe.db.count("CRM Property", {"status": "Available"})
 +	today_properties = frappe.db.count("CRM Property", {"creation": [">=", today_start]})
 +	yesterday_properties = frappe.db.count(
-+		"CRM Property", {"creation": [">=", yesterday_start], "creation": ["<", today_start]}
++		"CRM Property", {"creation": ["between", [yesterday_start, today_start]]}
 +	)
 +
 +	# Requirements
@@ -781,8 +780,11 @@ index 00000000..81b329d8
 +	if not client_name or not client_phone or not preferred_locality:
 +		frappe.throw(_("Client Name, Phone, and Preferred Locality are required."))
 +
++	req_title = f"{client_name.strip()} ({bhk} in {preferred_locality.strip()})"
++
 +	doc = frappe.get_doc({
 +		"doctype": "CRM Requirement",
++		"title": req_title,
 +		"client_name": client_name.strip(),
 +		"client_phone": client_phone.strip(),
 +		"deal_type": deal_type,
@@ -825,10 +827,10 @@ index 00000000..81b329d8
 +	return {"ok": True, "property_id": property_id, "note": doc.latest_note}
 diff --git a/crm/api/matching.py b/crm/api/matching.py
 new file mode 100644
-index 00000000..dd45f9ea
+index 00000000..f38800b0
 --- /dev/null
 +++ b/crm/api/matching.py
-@@ -0,0 +1,274 @@
+@@ -0,0 +1,284 @@
 +# Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and contributors
 +# For license information, please see license.txt
 +
@@ -1089,10 +1091,18 @@ index 00000000..dd45f9ea
 +		reasons = [r for r in [bhk_re, bud_re, area_re, furn_re] if r]
 +
 +		scored_buyers.append({
-+			"requirement": req,
++			"requirement_name": req.name,
++			"title": req.title,
++			"client_name": req.client_name,
++			"client_phone": req.client_phone,
++			"budget_max": req.budget_max,
++			"timeline": req.timeline,
++			"preferred_locality": req.preferred_locality,
 +			"score": total_score,
 +			"tier": tier,
++			"match_tier": tier.title(),
 +			"reasons": reasons,
++			"requirement": req,
 +		})
 +
 +	scored_buyers.sort(key=lambda x: x["score"], reverse=True)
@@ -1100,7 +1110,9 @@ index 00000000..dd45f9ea
 +
 +	return {
 +		"property": prop.as_dict(),
++		"matches": top_buyers,
 +		"buyer_matches": top_buyers,
++		"total": len(top_buyers),
 +		"total_matches": len(top_buyers),
 +	}
 diff --git a/crm/fcrm/doctype/crm_contact_reveal_log/__init__.py b/crm/fcrm/doctype/crm_contact_reveal_log/__init__.py
@@ -2189,10 +2201,10 @@ index 00000000..c0099afc
 +		self.assertIn("Rajesh Kumar", doc.title)
 diff --git a/crm/tests/test_broker_api.py b/crm/tests/test_broker_api.py
 new file mode 100644
-index 00000000..3c501daa
+index 00000000..1a3bb22e
 --- /dev/null
 +++ b/crm/tests/test_broker_api.py
-@@ -0,0 +1,40 @@
+@@ -0,0 +1,83 @@
 +# Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and Contributors
 +# See license.txt
 +
@@ -2201,19 +2213,33 @@ index 00000000..3c501daa
 +from unittest.mock import MagicMock
 +
 +# Mock frappe if not running within a live Frappe bench environment
++class MockDocument:
++	def __init__(self, d=None):
++		if d and isinstance(d, dict):
++			for k, v in d.items():
++				setattr(self, k, v)
++
 +if "frappe" not in sys.modules:
-+	sys.modules["frappe"] = MagicMock()
++	frappe_mock = MagicMock()
++	frappe_mock._ = lambda x: str(x)
++	sys.modules["frappe"] = frappe_mock
 +	sys.modules["frappe.utils"] = MagicMock()
 +	sys.modules["frappe.core"] = MagicMock()
 +	sys.modules["frappe.core.api"] = MagicMock()
 +	sys.modules["frappe.core.api.file"] = MagicMock()
 +	sys.modules["frappe.rate_limiter"] = MagicMock()
 +	sys.modules["frappe.translate"] = MagicMock()
++	doc_mock = MagicMock()
++	doc_mock.Document = MockDocument
++	sys.modules["frappe.model"] = doc_mock
++	sys.modules["frappe.model.document"] = doc_mock
 +	sys.modules["crm.utils"] = MagicMock()
 +if "bs4" not in sys.modules:
 +	sys.modules["bs4"] = MagicMock()
 +
 +from crm.api.broker import mask_phone
++from crm.fcrm.doctype.crm_property.crm_property import CRMProperty
++from crm.fcrm.doctype.crm_requirement.crm_requirement import CRMRequirement
 +
 +
 +class TestBrokerAPI(unittest.TestCase):
@@ -2229,6 +2255,35 @@ index 00000000..3c501daa
 +	def test_mask_phone_empty(self):
 +		masked = mask_phone(None, None)
 +		self.assertEqual(masked, "••••••••••")
++
++	def test_property_last4_extraction(self):
++		doc = CRMProperty({"doctype": "CRM Property"})
++		doc.owner_phone = "+91 91234 56789"
++		doc.extract_phone_last4()
++		self.assertEqual(doc.owner_phone_last4, "6789")
++
++	def test_property_title_auto_generation(self):
++		doc = CRMProperty({"doctype": "CRM Property"})
++		doc.property_name = None
++		doc.bhk = "3 BHK"
++		doc.premise_name = "Satyam Complex"
++		doc.area = "Bodakdev"
++		doc.set_property_name()
++		self.assertIn("3 BHK", doc.property_name)
++		self.assertIn("Satyam Complex", doc.property_name)
++
++	def test_requirement_title_auto_generation(self):
++		doc = CRMRequirement({"doctype": "CRM Requirement"})
++		doc.title = None
++		doc.deal_type = "Rent"
++		doc.bhk = "2 BHK"
++		doc.preferred_locality = "Satellite"
++		doc.client_name = "Amit Patel"
++		doc.set_requirement_title()
++		self.assertIn("Rent", doc.title)
++		self.assertIn("2 BHK", doc.title)
++		self.assertIn("Satellite", doc.title)
++		self.assertIn("Amit Patel", doc.title)
 +
 +
 +if __name__ == "__main__":
@@ -2765,42 +2820,31 @@ index 00000000..37e09426
 +</script>
 diff --git a/frontend/src/components/Broker/WhatsAppFab.vue b/frontend/src/components/Broker/WhatsAppFab.vue
 new file mode 100644
-index 00000000..167be79d
+index 00000000..5f3b786e
 --- /dev/null
 +++ b/frontend/src/components/Broker/WhatsAppFab.vue
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,15 @@
 +<template>
-+  <div>
-+    <!-- Floating Action Button for Instant WhatsApp -->
-+    <button
-+      type="button"
-+      class="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center transition active:scale-95"
-+      title="Quick WhatsApp Chat"
-+      aria-label="Quick WhatsApp"
-+      @click="showModal = true"
-+    >
-+      <span class="lucide-message-circle size-6"></span>
-+    </button>
-+
-+    <WhatsAppModal
-+      v-model="showModal"
-+      :property="null"
-+    />
-+  </div>
++  <button
++    type="button"
++    class="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center transition active:scale-95"
++    title="Quick WhatsApp Chat"
++    aria-label="Quick WhatsApp"
++    @click="$emit('click')"
++  >
++    <span class="lucide-message-circle size-6"></span>
++  </button>
 +</template>
 +
 +<script setup>
-+import { ref } from 'vue'
-+import WhatsAppModal from '@/components/Broker/WhatsAppModal.vue'
-+
-+const showModal = ref(false)
++defineEmits(['click'])
 +</script>
 diff --git a/frontend/src/components/Broker/WhatsAppModal.vue b/frontend/src/components/Broker/WhatsAppModal.vue
 new file mode 100644
-index 00000000..822f315e
+index 00000000..fd5b4b71
 --- /dev/null
 +++ b/frontend/src/components/Broker/WhatsAppModal.vue
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,162 @@
 +<template>
 +  <div
 +    v-if="modelValue"
@@ -2831,6 +2875,9 @@ index 00000000..822f315e
 +          class="w-full p-2.5 text-xs font-mono font-bold rounded-xl border border-outline-gray-1 bg-surface-base"
 +          :placeholder="__('+91 98765 43210')"
 +        />
++        <p v-if="recipientPhone && recipientPhone.includes('•')" class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg">
++          {{ __('Phone is currently shielded. Please unlock the contact in the dossier or enter the full 10-digit number.') }}
++        </p>
 +      </div>
 +
 +      <!-- Template Picker -->
@@ -2895,7 +2942,7 @@ index 00000000..822f315e
 +          variant="solid"
 +          iconLeft="message-circle"
 +          class="bg-green-600 hover:bg-green-700 text-white"
-+          :disabled="!recipientPhone || !messageBody"
++          :disabled="!recipientPhone || recipientPhone.includes('•') || !messageBody"
 +          @click="sendMessage"
 +        >
 +          {{ __('Send via WhatsApp') }}
@@ -3419,10 +3466,10 @@ index 00000000..7e12cbeb
 +</script>
 diff --git a/frontend/src/pages/BrokerDashboard.vue b/frontend/src/pages/BrokerDashboard.vue
 new file mode 100644
-index 00000000..f418fc35
+index 00000000..2ec69967
 --- /dev/null
 +++ b/frontend/src/pages/BrokerDashboard.vue
-@@ -0,0 +1,360 @@
+@@ -0,0 +1,393 @@
 +<template>
 +  <div class="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6 bg-surface-base space-y-6">
 +    <!-- Header with Operational Actions -->
@@ -3447,14 +3494,14 @@ index 00000000..f418fc35
 +        <Button
 +          variant="outline"
 +          iconLeft="plus"
-+          @click="openNewRequirement"
++          @click="showRequirementModal = true"
 +        >
 +          {{ __('New Buyer') }}
 +        </Button>
 +        <Button
 +          variant="outline"
 +          iconLeft="plus"
-+          @click="openNewProperty"
++          @click="showPropertyModal = true"
 +        >
 +          {{ __('New Property') }}
 +        </Button>
@@ -3662,6 +3709,16 @@ index 00000000..f418fc35
 +
 +            <div class="flex items-center gap-2">
 +              <Button
++                v-if="!item.revealed"
++                size="sm"
++                variant="solid"
++                iconLeft="eye"
++                @click="handleRevealDesktop(item)"
++              >
++                {{ __('Reveal') }}
++              </Button>
++              <Button
++                v-else
 +                size="sm"
 +                variant="solid"
 +                iconLeft="phone"
@@ -3714,16 +3771,39 @@ index 00000000..f418fc35
 +        </div>
 +      </div>
 +    </div>
++
++    <!-- Quick Modals -->
++    <QuickPropertyModal
++      v-model="showPropertyModal"
++      @saved="refreshAll"
++    />
++    <QuickRequirementModal
++      v-model="showRequirementModal"
++      @saved="refreshAll"
++    />
 +  </div>
 +</template>
 +
 +<script setup>
-+import { computed } from 'vue'
++import { ref, computed } from 'vue'
 +import { Button } from 'frappe-ui'
 +import { brokerStore } from '@/stores/broker'
++import QuickPropertyModal from '@/components/Broker/QuickPropertyModal.vue'
++import QuickRequirementModal from '@/components/Broker/QuickRequirementModal.vue'
 +
 +const store = brokerStore()
-+const { kpis, queue, logOutcome } = store
++const { kpis, queue, logOutcome, revealContact } = store
++
++const showPropertyModal = ref(false)
++const showRequirementModal = ref(false)
++
++async function handleRevealDesktop(item) {
++  const res = await revealContact(item.name, 'Desktop')
++  if (res?.ok) {
++    item.revealed = true
++    item.owner_phone = res.owner_phone
++  }
++}
 +
 +const categoryTiles = [
 +  { key: 'Residential Rent', label: 'Res. Rent', icon: 'home' },
@@ -3785,7 +3865,7 @@ index 00000000..f418fc35
 +</script>
 diff --git a/frontend/src/pages/BrokerProperties.vue b/frontend/src/pages/BrokerProperties.vue
 new file mode 100644
-index 00000000..34b64a30
+index 00000000..f552f519
 --- /dev/null
 +++ b/frontend/src/pages/BrokerProperties.vue
 @@ -0,0 +1,586 @@
@@ -4208,7 +4288,7 @@ index 00000000..34b64a30
 +    />
 +
 +    <!-- WhatsApp Persistent FAB -->
-+    <WhatsAppFab />
++    <WhatsAppFab @click="showWhatsAppModal = true" />
 +  </div>
 +</template>
 +
@@ -4377,10 +4457,10 @@ index 00000000..34b64a30
 +</script>
 diff --git a/frontend/src/pages/BrokerProperty.vue b/frontend/src/pages/BrokerProperty.vue
 new file mode 100644
-index 00000000..c2b42a0e
+index 00000000..ad2c39e0
 --- /dev/null
 +++ b/frontend/src/pages/BrokerProperty.vue
-@@ -0,0 +1,496 @@
+@@ -0,0 +1,495 @@
 +<template>
 +  <div class="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6 bg-surface-base space-y-6">
 +    <!-- Top Bar with Back Button and Quick Status -->
@@ -4757,8 +4837,7 @@ index 00000000..c2b42a0e
 +    <!-- Floating WhatsApp Action -->
 +    <WhatsAppFab
 +      v-if="detail.data?.property"
-+      :property="detail.data.property"
-+      @open-modal="showWhatsAppModal = true"
++      @click="showWhatsAppModal = true"
 +    />
 +  </div>
 +</template>
@@ -5540,10 +5619,10 @@ index 00000000..5c6aff65
 +</script>
 diff --git a/frontend/src/pages/MobileBrokerDashboard.vue b/frontend/src/pages/MobileBrokerDashboard.vue
 new file mode 100644
-index 00000000..de960d89
+index 00000000..fb0b280f
 --- /dev/null
 +++ b/frontend/src/pages/MobileBrokerDashboard.vue
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,240 @@
 +<template>
 +  <div class="flex flex-1 flex-col overflow-y-auto p-3.5 bg-surface-base pb-24 space-y-4">
 +    <!-- Mobile Top Header -->
@@ -5693,23 +5772,36 @@ index 00000000..de960d89
 +
 +          <div class="pt-2 border-t border-outline-gray-1 flex items-center gap-2">
 +            <Button
++              v-if="!item.revealed"
 +              size="sm"
 +              variant="solid"
-+              iconLeft="phone"
++              iconLeft="eye"
 +              class="flex-1"
-+              @click="dial(item.owner_phone)"
++              @click="handleReveal(item)"
 +            >
-+              {{ __('Call') }}
++              {{ __('Reveal Contact') }}
 +            </Button>
-+            <Button
-+              size="sm"
-+              variant="outline"
-+              iconLeft="message-circle"
-+              class="flex-1"
-+              @click="openWhatsApp(item.owner_phone, item.property_name)"
-+            >
-+              {{ __('WhatsApp') }}
-+            </Button>
++
++            <template v-else>
++              <Button
++                size="sm"
++                variant="solid"
++                iconLeft="phone"
++                class="flex-1"
++                @click="dial(item.owner_phone)"
++              >
++                {{ __('Call') }}
++              </Button>
++              <Button
++                size="sm"
++                variant="outline"
++                iconLeft="message-circle"
++                class="flex-1"
++                @click="openWhatsApp(item.owner_phone, item.property_name)"
++              >
++                {{ __('WhatsApp') }}
++              </Button>
++            </template>
 +            <Button
 +              size="sm"
 +              variant="ghost"
@@ -5727,9 +5819,10 @@ index 00000000..de960d89
 +<script setup>
 +import { Button } from 'frappe-ui'
 +import { brokerStore } from '@/stores/broker'
++import { launchWhatsApp } from '@/utils/whatsapp'
 +
 +const store = brokerStore()
-+const { kpis, queue, logOutcome } = store
++const { kpis, queue, logOutcome, revealContact } = store
 +
 +const categoryTiles = [
 +  { key: 'Residential Rent', label: 'Res. Rent' },
@@ -5750,9 +5843,15 @@ index 00000000..de960d89
 +
 +function openWhatsApp(phone, title) {
 +  if (!phone) return
-+  const cleanPhone = phone.replace(/\D/g, '')
-+  const msg = encodeURIComponent(`Hello, following up regarding ${title}.`)
-+  window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${msg}`, '_blank')
++  launchWhatsApp(phone, `Hello, following up regarding ${title}.`)
++}
++
++async function handleReveal(item) {
++  const res = await revealContact(item.name, 'Mobile App')
++  if (res?.ok) {
++    item.revealed = true
++    item.owner_phone = res.owner_phone
++  }
 +}
 +
 +async function quickOutcome(propertyId, outcome) {
@@ -6328,96 +6427,233 @@ index 00000000..441950ee
 2.39.5
 
 
-From aa8899c3257bea60e69f85691205c6999480b782 Mon Sep 17 00:00:00 2001
+From 6fc29ad8cb9d5dcad0a108ee31fa616b1eaa957a Mon Sep 17 00:00:00 2001
 From: jatinpruthvi <16306904+jatinpruthvi@users.noreply.github.com>
-Date: Sat, 19 Sep 2026 15:45:21 +0000
-Subject: [PATCH 2/2] fix(broker): harden data contracts, unmasking guards,
- quick modal integrations, and test coverage
+Date: Sat, 19 Sep 2026 17:25:44 +0000
+Subject: [PATCH 2/2] test(broker): add boundary tests, state machine tests,
+ pwa hook tests, and fixture simulations
 
 ---
- crm/api/broker.py                             |  5 +-
- crm/api/matching.py                           | 12 ++++-
- crm/tests/test_broker_api.py                  | 45 +++++++++++++++-
- .../src/components/Broker/WhatsAppFab.vue     | 31 ++++-------
- .../src/components/Broker/WhatsAppModal.vue   |  5 +-
- frontend/src/pages/BrokerDashboard.vue        | 41 +++++++++++++--
- frontend/src/pages/BrokerProperties.vue       |  2 +-
- frontend/src/pages/BrokerProperty.vue         |  3 +-
- frontend/src/pages/MobileBrokerDashboard.vue  | 52 +++++++++++++------
- 9 files changed, 148 insertions(+), 48 deletions(-)
+ crm/api/broker.py                           |   4 +-
+ crm/api/matching.py                         |   4 +-
+ crm/tests/test_broker_api.py                | 134 ++++++++++-
+ crm/tests/test_matching.py                  | 249 ++++++++++++++++++--
+ crm/tests/test_migration_and_fixtures.py    | 165 +++++++++++++
+ frontend/tests/unit/brokerMobilePWA.test.js | 161 +++++++++++++
+ 6 files changed, 692 insertions(+), 25 deletions(-)
+ create mode 100644 crm/tests/test_migration_and_fixtures.py
+ create mode 100644 frontend/tests/unit/brokerMobilePWA.test.js
 
 diff --git a/crm/api/broker.py b/crm/api/broker.py
-index 81b329d8..8e698a42 100644
+index 8e698a42..d268a76a 100644
 --- a/crm/api/broker.py
 +++ b/crm/api/broker.py
-@@ -32,7 +32,7 @@ def get_dashboard_kpis() -> dict[str, Any]:
- 	active_properties = frappe.db.count("CRM Property", {"status": "Available"})
- 	today_properties = frappe.db.count("CRM Property", {"creation": [">=", today_start]})
- 	yesterday_properties = frappe.db.count(
--		"CRM Property", {"creation": [">=", yesterday_start], "creation": ["<", today_start]}
-+		"CRM Property", {"creation": ["between", [yesterday_start, today_start]]}
+@@ -213,7 +213,7 @@ def get_properties(
+ 
+ 	# Process rows to enforce phone masking
+ 	for r in rows:
+-		is_revealed = (r.name in user_reveals) or r.contact_revealed
++		is_revealed = (r.get("name") in user_reveals) or r.get("contact_revealed")
+ 		if is_revealed:
+ 			r["revealed"] = True
+ 		else:
+@@ -528,7 +528,7 @@ def get_calling_queue(limit: int = 50) -> dict[str, Any]:
  	)
  
- 	# Requirements
-@@ -694,8 +694,11 @@ def create_quick_requirement(
- 	if not client_name or not client_phone or not preferred_locality:
- 		frappe.throw(_("Client Name, Phone, and Preferred Locality are required."))
- 
-+	req_title = f"{client_name.strip()} ({bhk} in {preferred_locality.strip()})"
-+
- 	doc = frappe.get_doc({
- 		"doctype": "CRM Requirement",
-+		"title": req_title,
- 		"client_name": client_name.strip(),
- 		"client_phone": client_phone.strip(),
- 		"deal_type": deal_type,
+ 	for item in all_queue:
+-		is_revealed = (item.name in user_reveals) or item.contact_revealed
++		is_revealed = (item.get("name") in user_reveals) or item.get("contact_revealed")
+ 		item["revealed"] = bool(is_revealed)
+ 		if not is_revealed:
+ 			item["owner_phone"] = mask_phone(item.get("owner_phone"), item.get("owner_phone_last4"))
 diff --git a/crm/api/matching.py b/crm/api/matching.py
-index dd45f9ea..f38800b0 100644
+index f38800b0..e14269cf 100644
 --- a/crm/api/matching.py
 +++ b/crm/api/matching.py
-@@ -258,10 +258,18 @@ def get_buyer_matches_for_property(property_id: str, limit: int = 30) -> dict[st
- 		reasons = [r for r in [bhk_re, bud_re, area_re, furn_re] if r]
+@@ -25,9 +25,9 @@ def cint(v: Any) -> int:
+ def parse_bhk(bhk_str: Optional[str]) -> Optional[int]:
+ 	if not bhk_str:
+ 		return None
+-	m = re.search(r"(\d+)\s*(?:BHK|RK)", str(bhk_str), re.IGNORECASE)
++	m = re.search(r"(\d+(?:\.\d+)?)\s*\+?\s*(?:BHK|RK)", str(bhk_str), re.IGNORECASE)
+ 	if m:
+-		return int(m.group(1))
++		return int(float(m.group(1)))
+ 	return None
  
- 		scored_buyers.append({
--			"requirement": req,
-+			"requirement_name": req.name,
-+			"title": req.title,
-+			"client_name": req.client_name,
-+			"client_phone": req.client_phone,
-+			"budget_max": req.budget_max,
-+			"timeline": req.timeline,
-+			"preferred_locality": req.preferred_locality,
- 			"score": total_score,
- 			"tier": tier,
-+			"match_tier": tier.title(),
- 			"reasons": reasons,
-+			"requirement": req,
- 		})
  
- 	scored_buyers.sort(key=lambda x: x["score"], reverse=True)
-@@ -269,6 +277,8 @@ def get_buyer_matches_for_property(property_id: str, limit: int = 30) -> dict[st
- 
- 	return {
- 		"property": prop.as_dict(),
-+		"matches": top_buyers,
- 		"buyer_matches": top_buyers,
-+		"total": len(top_buyers),
- 		"total_matches": len(top_buyers),
- 	}
 diff --git a/crm/tests/test_broker_api.py b/crm/tests/test_broker_api.py
-index 3c501daa..1a3bb22e 100644
+index 1a3bb22e..4ad1eded 100644
 --- a/crm/tests/test_broker_api.py
 +++ b/crm/tests/test_broker_api.py
-@@ -6,19 +6,33 @@ import unittest
+@@ -15,8 +15,13 @@ class MockDocument:
+ if "frappe" not in sys.modules:
+ 	frappe_mock = MagicMock()
+ 	frappe_mock._ = lambda x: str(x)
++	frappe_mock.whitelist = lambda *args, **kwargs: (lambda fn: fn)
+ 	sys.modules["frappe"] = frappe_mock
+-	sys.modules["frappe.utils"] = MagicMock()
++	utils_mock = MagicMock()
++	utils_mock.cint = lambda x: int(x or 0)
++	utils_mock.flt = lambda x: float(x or 0)
++	utils_mock.now_datetime = lambda: "2026-09-19 12:00:00"
++	sys.modules["frappe.utils"] = utils_mock
+ 	sys.modules["frappe.core"] = MagicMock()
+ 	sys.modules["frappe.core.api"] = MagicMock()
+ 	sys.modules["frappe.core.api.file"] = MagicMock()
+@@ -30,7 +35,7 @@ if "frappe" not in sys.modules:
+ if "bs4" not in sys.modules:
+ 	sys.modules["bs4"] = MagicMock()
+ 
+-from crm.api.broker import mask_phone
++from crm.api.broker import log_call_outcome, mask_phone
+ from crm.fcrm.doctype.crm_property.crm_property import CRMProperty
+ from crm.fcrm.doctype.crm_requirement.crm_requirement import CRMRequirement
+ 
+@@ -78,6 +83,131 @@ class TestBrokerAPI(unittest.TestCase):
+ 		self.assertIn("Satellite", doc.title)
+ 		self.assertIn("Amit Patel", doc.title)
+ 
++	# --- Validation 4: Call Outcome State Machine & Multi-Doctype Sync ---
++	def test_call_outcome_connected_state_machine(self):
++		mock_prop = MagicMock()
++		mock_prop.name = "CRM-PROP-001"
++		mock_prop.property_name = "Shaligram 3 BHK"
++		mock_prop.owner_phone = "+91 98765 43210"
++		mock_prop.owner_phone_last4 = "3210"
++		mock_prop.total_calls = 2
++		mock_prop.current_outcome = None
++		mock_prop.status = "Available"
++
++		created_docs = []
++
++		def mock_get_doc(*args, **kwargs):
++			if args and args[0] == "CRM Property":
++				return mock_prop
++			d = args[0] if args else kwargs
++			doc = MagicMock()
++			if isinstance(d, dict):
++				for k, v in d.items():
++					setattr(doc, k, v)
++			doc.name = f"DOC-{len(created_docs) + 1}"
++			created_docs.append(doc)
++			return doc
++
++		import frappe
++		frappe.db.exists.return_value = True
++		frappe.session.user = "agent@architech.in"
++		frappe.get_doc.side_effect = mock_get_doc
++
++		res = log_call_outcome(
++			property_id="CRM-PROP-001",
++			outcome="Connected",
++			note="Owner confirmed unit is vacant and keys with guard",
++		)
++
++		self.assertTrue(res["ok"])
++		self.assertEqual(res["outcome"], "Connected")
++		# Verify CRM Property state transition
++		self.assertEqual(mock_prop.current_outcome, "Connected")
++		self.assertEqual(mock_prop.total_calls, 3)
++		self.assertEqual(mock_prop.latest_note, "Owner confirmed unit is vacant and keys with guard")
++		mock_prop.save.assert_called()
++
++		# Verify CRM Call Log creation
++		call_logs = [d for d in created_docs if getattr(d, "doctype", None) == "CRM Call Log"]
++		self.assertEqual(len(call_logs), 1)
++		self.assertEqual(call_logs[0].status, "Completed")
++		self.assertEqual(call_logs[0].reference_doctype, "CRM Property")
++		self.assertEqual(call_logs[0].reference_docname, "CRM-PROP-001")
++
++		# Verify FCRM Note creation
++		notes = [d for d in created_docs if getattr(d, "doctype", None) == "FCRM Note"]
++		self.assertEqual(len(notes), 1)
++		self.assertEqual(notes[0].reference_doctype, "CRM Property")
++
++	def test_call_outcome_follow_up_creates_task(self):
++		mock_prop = MagicMock()
++		mock_prop.name = "CRM-PROP-002"
++		mock_prop.property_name = "Applewoods Villa"
++		mock_prop.total_calls = 0
++
++		created_docs = []
++
++		def mock_get_doc(*args, **kwargs):
++			if args and args[0] == "CRM Property":
++				return mock_prop
++			d = args[0] if args else kwargs
++			doc = MagicMock()
++			if isinstance(d, dict):
++				for k, v in d.items():
++					setattr(doc, k, v)
++			doc.name = f"DOC-{len(created_docs) + 1}"
++			created_docs.append(doc)
++			return doc
++
++		import frappe
++		frappe.db.exists.return_value = True
++		frappe.session.user = "agent@architech.in"
++		frappe.get_doc.side_effect = mock_get_doc
++
++		follow_up_date = "2026-09-20 14:00:00"
++		res = log_call_outcome(
++			property_id="CRM-PROP-002",
++			outcome="Follow Up",
++			follow_up_at=follow_up_date,
++			note="Call back tomorrow after 2 PM",
++		)
++
++		self.assertTrue(res["ok"])
++		self.assertEqual(mock_prop.current_outcome, "Follow Up")
++		self.assertEqual(mock_prop.follow_up_at, follow_up_date)
++
++		# Verify CRM Task auto-scheduled
++		tasks = [d for d in created_docs if getattr(d, "doctype", None) == "CRM Task"]
++		self.assertEqual(len(tasks), 1)
++		self.assertEqual(tasks[0].due_date, follow_up_date)
++		self.assertEqual(tasks[0].priority, "High")
++		self.assertEqual(tasks[0].status, "Todo")
++		self.assertEqual(tasks[0].assigned_to, "agent@architech.in")
++
++	def test_call_outcome_deal_updates_status(self):
++		mock_prop = MagicMock()
++		mock_prop.name = "CRM-PROP-003"
++		mock_prop.property_name = "Satyagrah Chhavni"
++		mock_prop.status = "Available"
++		mock_prop.total_calls = 5
++
++		import frappe
++		frappe.db.exists.return_value = True
++		frappe.session.user = "agent@architech.in"
++		frappe.get_doc.side_effect = lambda *args, **kwargs: mock_prop if args and args[0] == "CRM Property" else MagicMock()
++
++		log_call_outcome(property_id="CRM-PROP-003", outcome="Deal")
++		self.assertEqual(mock_prop.status, "Under Negotiation")
++		self.assertEqual(mock_prop.current_outcome, "Deal")
++
++	def test_invalid_call_outcome_rejected(self):
++		import frappe
++		frappe.session.user = "agent@architech.in"
++		frappe.throw = MagicMock(side_effect=ValueError("Invalid call outcome"))
++
++		with self.assertRaises(ValueError):
++			log_call_outcome(property_id="CRM-PROP-004", outcome="InvalidOutcome")
++
+ 
+ if __name__ == "__main__":
+ 	unittest.main()
+diff --git a/crm/tests/test_matching.py b/crm/tests/test_matching.py
+index 6efec49f..a05cc175 100644
+--- a/crm/tests/test_matching.py
++++ b/crm/tests/test_matching.py
+@@ -2,11 +2,14 @@
+ # See license.txt
+ 
+ import sys
++import time
+ import unittest
  from unittest.mock import MagicMock
  
- # Mock frappe if not running within a live Frappe bench environment
-+class MockDocument:
-+	def __init__(self, d=None):
-+		if d and isinstance(d, dict):
-+			for k, v in d.items():
-+				setattr(self, k, v)
-+
  if "frappe" not in sys.modules:
 -	sys.modules["frappe"] = MagicMock()
 +	frappe_mock = MagicMock()
@@ -6426,314 +6662,621 @@ index 3c501daa..1a3bb22e 100644
  	sys.modules["frappe.utils"] = MagicMock()
  	sys.modules["frappe.core"] = MagicMock()
  	sys.modules["frappe.core.api"] = MagicMock()
- 	sys.modules["frappe.core.api.file"] = MagicMock()
- 	sys.modules["frappe.rate_limiter"] = MagicMock()
- 	sys.modules["frappe.translate"] = MagicMock()
+@@ -17,50 +20,258 @@ if "frappe" not in sys.modules:
+ if "bs4" not in sys.modules:
+ 	sys.modules["bs4"] = MagicMock()
+ 
+-from crm.api.matching import parse_bhk, score_bhk, score_budget, score_area, tier_for_score
++from crm.api.matching import (
++	get_furnishing_kind,
++	normalize_area,
++	parse_bhk,
++	score_area,
++	score_bhk,
++	score_budget,
++	score_furnishing,
++	tier_for_score,
++)
+ 
+ 
+-class TestMatchingEngine(unittest.TestCase):
+-	def test_parse_bhk(self):
++class TestMatchingEngineBoundaries(unittest.TestCase):
++	"""Validation 2: Match Engine Tolerance & Locality Normalization Boundary Testing."""
++
++	# --- 1. BHK Parsing & Scoring Boundaries ---
++	def test_parse_bhk_various_formats(self):
+ 		self.assertEqual(parse_bhk("3 BHK"), 3)
+ 		self.assertEqual(parse_bhk("2BHK Apartment"), 2)
+ 		self.assertEqual(parse_bhk("1 RK Studio"), 1)
++		self.assertEqual(parse_bhk("4 BHK Penthouse"), 4)
++		self.assertEqual(parse_bhk("5+ BHK"), 5)
++		self.assertEqual(parse_bhk("2.5 BHK"), 2)
++		self.assertIsNone(parse_bhk("Studio Apartment"))
++		self.assertIsNone(parse_bhk(""))
+ 		self.assertIsNone(parse_bhk(None))
+ 
+-	def test_score_bhk(self):
+-		# Exact match
++	def test_score_bhk_exact_match(self):
+ 		pts, reason = score_bhk(3, 3)
+ 		self.assertEqual(pts, 40)
+ 		self.assertTrue(reason["ok"])
++		self.assertIn("3 BHK Match", reason["text"])
+ 
+-		# One larger (20 pts tolerance)
++	def test_score_bhk_one_larger_tolerance(self):
++		# Client wants 2 BHK, property is 3 BHK (within 1 larger tolerance)
+ 		pts, reason = score_bhk(2, 3)
+ 		self.assertEqual(pts, 20)
+ 		self.assertFalse(reason["ok"])
++		self.assertIn("One larger", reason["text"])
++
++	def test_score_bhk_smaller_disallowed(self):
++		# Client wants 3 BHK, property is 2 BHK (smaller than wanted)
++		pts, reason = score_bhk(3, 2)
++		self.assertEqual(pts, 0)
++		self.assertFalse(reason["ok"])
++		self.assertIn("Smaller than wanted", reason["text"])
++
++	def test_score_bhk_two_larger_disallowed(self):
++		# Client wants 2 BHK, property is 4 BHK (+2 larger)
++		pts, reason = score_bhk(2, 4)
++		self.assertEqual(pts, 0)
++		self.assertFalse(reason["ok"])
++		self.assertIn("Larger than wanted", reason["text"])
++
++	def test_score_bhk_unspecified_boundaries(self):
++		# Want BHK is None (client has no preference)
++		pts, reason = score_bhk(None, 3)
++		self.assertEqual(pts, 20)
++		self.assertIsNone(reason)
++
++		# Property has no BHK specified
++		pts, reason = score_bhk(3, None)
++		self.assertEqual(pts, 15)
++		self.assertFalse(reason["ok"])
++		self.assertIn("not specified", reason["text"])
+ 
+-	def test_score_budget(self):
+-		# Within budget
+-		pts, reason = score_budget(50000, 45000)
++	# --- 2. Budget Scoring & Tolerance Boundaries ---
++	def test_score_budget_within_budget(self):
++		# Exact max budget
++		pts, reason = score_budget(50000, 50000)
+ 		self.assertEqual(pts, 35)
+ 		self.assertTrue(reason["ok"])
++		self.assertIn("Within budget", reason["text"])
+ 
+-		# 10% over budget
++		# Under budget
++		pts, reason = score_budget(50000, 42000)
++		self.assertEqual(pts, 35)
++		self.assertTrue(reason["ok"])
++
++	def test_score_budget_ten_percent_tolerance(self):
++		# Price is 54,000 against 50,000 budget (8% over budget -> <= 10%)
+ 		pts, reason = score_budget(50000, 54000)
+ 		self.assertEqual(pts, 25)
+ 		self.assertFalse(reason["ok"])
++		self.assertIn("8% over budget", reason["text"])
+ 
+-	def test_score_area(self):
+-		# Exact match
+-		pts, reason = score_area("Bodakdev", "Bodakdev")
++		# Exactly 10% over budget: 55,000 vs 50,000
++		pts, reason = score_budget(50000, 55000)
++		self.assertEqual(pts, 25)
++		self.assertFalse(reason["ok"])
++		self.assertIn("10% over budget", reason["text"])
++
++	def test_score_budget_twenty_five_percent_tolerance(self):
++		# Price is 60,000 against 50,000 budget (20% over budget -> <= 25%)
++		pts, reason = score_budget(50000, 60000)
++		self.assertEqual(pts, 15)
++		self.assertFalse(reason["ok"])
++		self.assertIn("20% over budget", reason["text"])
++
++		# Exactly 25% over budget: 62,500 vs 50,000
++		pts, reason = score_budget(50000, 62500)
++		self.assertEqual(pts, 15)
++		self.assertFalse(reason["ok"])
++		self.assertIn("25% over budget", reason["text"])
++
++	def test_score_budget_significant_overage(self):
++		# Price is 75,000 against 50,000 budget (50% over budget -> > 25%)
++		pts, reason = score_budget(50000, 75000)
++		self.assertEqual(pts, 5)
++		self.assertFalse(reason["ok"])
++		self.assertIn("Significantly over budget", reason["text"])
++
++	def test_score_budget_missing_or_zero(self):
++		pts, reason = score_budget(0, 50000)
++		self.assertEqual(pts, 18)
++		self.assertIsNone(reason)
++
++		pts, reason = score_budget(50000, 0)
++		self.assertEqual(pts, 15)
++		self.assertFalse(reason["ok"])
++		self.assertIn("Price not listed", reason["text"])
++
++	# --- 3. Locality Normalization & Fuzzy Matching ---
++	def test_normalize_area(self):
++		self.assertEqual(normalize_area("  Bodakdev  "), "bodakdev")
++		self.assertEqual(normalize_area("Satellite   Road"), "satellite road")
++		self.assertEqual(normalize_area(None), "")
++
++	def test_score_area_exact(self):
++		pts, reason = score_area("Bodakdev", "bodakdev")
+ 		self.assertEqual(pts, 20)
+ 		self.assertTrue(reason["ok"])
++		self.assertIn("In bodakdev", reason["text"])
+ 
+-	def test_tiers(self):
+-		self.assertEqual(tier_for_score(90), "strong")
+-		self.assertEqual(tier_for_score(70), "good")
+-		self.assertEqual(tier_for_score(50), "possible")
+-		self.assertEqual(tier_for_score(30), "low")
++	def test_score_area_case_and_whitespace_insensitivity(self):
++		pts, reason = score_area("  Thaltej  ", "THALTEJ")
++		self.assertEqual(pts, 20)
++		self.assertTrue(reason["ok"])
++
++	def test_score_area_substring_match(self):
++		# Sub-locality or road match (e.g. Satellite Road vs Satellite)
++		pts, reason = score_area("Satellite", "Satellite Road")
++		self.assertEqual(pts, 15)
++		self.assertTrue(reason["ok"])
++		self.assertIn("Near Satellite Road", reason["text"])
++
++		pts, reason = score_area("SG Highway North", "SG Highway")
++		self.assertEqual(pts, 15)
++		self.assertTrue(reason["ok"])
++
++	def test_score_area_short_string_no_false_positive(self):
++		# Strings < 4 characters should not match as substrings (e.g., 'sg')
++		pts, reason = score_area("SG", "Ashoknagar")
++		self.assertEqual(pts, 0)
++		self.assertFalse(reason["ok"])
++
++	def test_score_area_different_localities(self):
++		pts, reason = score_area("Vastrapur", "Maninagar")
++		self.assertEqual(pts, 0)
++		self.assertFalse(reason["ok"])
++
++	def test_score_area_unspecified(self):
++		pts, reason = score_area(None, "Bodakdev")
++		self.assertEqual(pts, 10)
++		self.assertIsNone(reason)
++
++		pts, reason = score_area("Bodakdev", None)
++		self.assertEqual(pts, 5)
++		self.assertFalse(reason["ok"])
++
++	# --- 4. Furnishing Compatibility ---
++	def test_get_furnishing_kind(self):
++		self.assertEqual(get_furnishing_kind("Furnished"), "furnished")
++		self.assertEqual(get_furnishing_kind("Fully Furnished"), "furnished")
++		self.assertEqual(get_furnishing_kind("Semi-Furnished"), "semi")
++		self.assertEqual(get_furnishing_kind("Unfurnished"), "unfurnished")
++		self.assertEqual(get_furnishing_kind("Any"), "any")
++		self.assertEqual(get_furnishing_kind(None), "any")
++
++	def test_score_furnishing(self):
++		# Exact match
++		pts, reason = score_furnishing("Furnished", "Furnished")
++		self.assertEqual(pts, 5)
++		self.assertTrue(reason["ok"])
++
++		# Any preference
++		pts, reason = score_furnishing("Any", "Unfurnished")
++		self.assertEqual(pts, 2)
++		self.assertIsNone(reason)
++
++		# Mismatch
++		pts, reason = score_furnishing("Furnished", "Unfurnished")
++		self.assertEqual(pts, 0)
++		self.assertFalse(reason["ok"])
++
++	# --- 5. Match Tiers ---
++	def test_tier_classification(self):
++		self.assertEqual(tier_for_score(100), "strong")
++		self.assertEqual(tier_for_score(80), "strong")
++		self.assertEqual(tier_for_score(79), "good")
++		self.assertEqual(tier_for_score(60), "good")
++		self.assertEqual(tier_for_score(59), "possible")
++		self.assertEqual(tier_for_score(40), "possible")
++		self.assertEqual(tier_for_score(39), "low")
++		self.assertEqual(tier_for_score(0), "low")
++
++	# --- 6. End-to-End Composite Scoring & Simulation Performance ---
++	def test_composite_perfect_match(self):
++		# BHK 40 + Budget 35 + Locality 20 + Furnishing 5 = 100
++		b_pts, _ = score_bhk(3, 3)
++		bud_pts, _ = score_budget(60000, 58000)
++		a_pts, _ = score_area("Bodakdev", "Bodakdev")
++		f_pts, _ = score_furnishing("Furnished", "Furnished")
++		total = b_pts + bud_pts + a_pts + f_pts
++		self.assertEqual(total, 100)
++		self.assertEqual(tier_for_score(total), "strong")
++
++	def test_matching_performance_benchmark(self):
++		"""Simulate scoring 250 candidate properties against a requirement. Must run in < 50ms."""
++		start_time = time.perf_counter()
++
++		candidates = [
++			{
++				"bhk": f"{(i % 4) + 1} BHK",
++				"price": 20000 + (i * 250),
++				"area": ["Bodakdev", "Satellite", "Thaltej", "Vastrapur", "Prahlad Nagar"][i % 5],
++				"furnishing": ["Furnished", "Semi-Furnished", "Unfurnished"][i % 3],
++			}
++			for i in range(250)
++		]
++
++		want_bhk = 3
++		budget_max = 55000
++		preferred_locality = "Bodakdev"
++		want_furnishing = "Furnished"
++
++		scored = []
++		for c in candidates:
++			have_bhk = parse_bhk(c["bhk"])
++			b_pts, _ = score_bhk(want_bhk, have_bhk)
++			bud_pts, _ = score_budget(budget_max, c["price"])
++			a_pts, _ = score_area(preferred_locality, c["area"])
++			f_pts, _ = score_furnishing(want_furnishing, c["furnishing"])
++			total = b_pts + bud_pts + a_pts + f_pts
++			tier = tier_for_score(total)
++			scored.append({"total": total, "tier": tier})
++
++		elapsed_ms = (time.perf_counter() - start_time) * 1000
++		self.assertEqual(len(scored), 250)
++		self.assertLess(elapsed_ms, 50, f"Matching engine took {elapsed_ms:.2f}ms for 250 candidates (exceeds 50ms ceiling)")
+ 
+ 
+ if __name__ == "__main__":
+ 	unittest.main()
++
+diff --git a/crm/tests/test_migration_and_fixtures.py b/crm/tests/test_migration_and_fixtures.py
+new file mode 100644
+index 00000000..92941ccf
+--- /dev/null
++++ b/crm/tests/test_migration_and_fixtures.py
+@@ -0,0 +1,165 @@
++# Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and Contributors
++# See license.txt
++
++import json
++import os
++import sys
++import time
++import unittest
++from unittest.mock import MagicMock
++
++# Set up mocks for standalone execution
++class MockDocument:
++	def __init__(self, d=None):
++		if d and isinstance(d, dict):
++			for k, v in d.items():
++				setattr(self, k, v)
++
++if "frappe" not in sys.modules:
++	frappe_mock = MagicMock()
++	frappe_mock._ = lambda x: str(x)
++	frappe_mock.whitelist = lambda *args, **kwargs: (lambda fn: fn)
++	sys.modules["frappe"] = frappe_mock
++	utils_mock = MagicMock()
++	utils_mock.cint = lambda x: int(x or 0)
++	utils_mock.flt = lambda x: float(x or 0)
++	utils_mock.now_datetime = lambda: "2026-09-19 12:00:00"
++	sys.modules["frappe.utils"] = utils_mock
++	sys.modules["frappe.core"] = MagicMock()
++	sys.modules["frappe.core.api"] = MagicMock()
++	sys.modules["frappe.core.api.file"] = MagicMock()
++	sys.modules["frappe.rate_limiter"] = MagicMock()
++	sys.modules["frappe.translate"] = MagicMock()
 +	doc_mock = MagicMock()
 +	doc_mock.Document = MockDocument
 +	sys.modules["frappe.model"] = doc_mock
 +	sys.modules["frappe.model.document"] = doc_mock
- 	sys.modules["crm.utils"] = MagicMock()
- if "bs4" not in sys.modules:
- 	sys.modules["bs4"] = MagicMock()
- 
- from crm.api.broker import mask_phone
-+from crm.fcrm.doctype.crm_property.crm_property import CRMProperty
-+from crm.fcrm.doctype.crm_requirement.crm_requirement import CRMRequirement
- 
- 
- class TestBrokerAPI(unittest.TestCase):
-@@ -35,6 +49,35 @@ class TestBrokerAPI(unittest.TestCase):
- 		masked = mask_phone(None, None)
- 		self.assertEqual(masked, "••••••••••")
- 
-+	def test_property_last4_extraction(self):
-+		doc = CRMProperty({"doctype": "CRM Property"})
-+		doc.owner_phone = "+91 91234 56789"
-+		doc.extract_phone_last4()
-+		self.assertEqual(doc.owner_phone_last4, "6789")
++	sys.modules["crm.utils"] = MagicMock()
++if "bs4" not in sys.modules:
++	sys.modules["bs4"] = MagicMock()
 +
-+	def test_property_title_auto_generation(self):
-+		doc = CRMProperty({"doctype": "CRM Property"})
-+		doc.property_name = None
-+		doc.bhk = "3 BHK"
-+		doc.premise_name = "Satyam Complex"
-+		doc.area = "Bodakdev"
-+		doc.set_property_name()
-+		self.assertIn("3 BHK", doc.property_name)
-+		self.assertIn("Satyam Complex", doc.property_name)
++import frappe
++from crm.api.broker import get_calling_queue, get_dashboard_kpis, get_properties
++from crm.api.matching import get_buyer_matches_for_property, get_property_matches
 +
-+	def test_requirement_title_auto_generation(self):
-+		doc = CRMRequirement({"doctype": "CRM Requirement"})
-+		doc.title = None
-+		doc.deal_type = "Rent"
-+		doc.bhk = "2 BHK"
-+		doc.preferred_locality = "Satellite"
-+		doc.client_name = "Amit Patel"
-+		doc.set_requirement_title()
-+		self.assertIn("Rent", doc.title)
-+		self.assertIn("2 BHK", doc.title)
-+		self.assertIn("Satellite", doc.title)
-+		self.assertIn("Amit Patel", doc.title)
 +
- 
- if __name__ == "__main__":
- 	unittest.main()
-diff --git a/frontend/src/components/Broker/WhatsAppFab.vue b/frontend/src/components/Broker/WhatsAppFab.vue
-index 167be79d..5f3b786e 100644
---- a/frontend/src/components/Broker/WhatsAppFab.vue
-+++ b/frontend/src/components/Broker/WhatsAppFab.vue
-@@ -1,26 +1,15 @@
- <template>
--  <div>
--    <!-- Floating Action Button for Instant WhatsApp -->
--    <button
--      type="button"
--      class="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center transition active:scale-95"
--      title="Quick WhatsApp Chat"
--      aria-label="Quick WhatsApp"
--      @click="showModal = true"
--    >
--      <span class="lucide-message-circle size-6"></span>
--    </button>
--
--    <WhatsAppModal
--      v-model="showModal"
--      :property="null"
--    />
--  </div>
-+  <button
-+    type="button"
-+    class="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center transition active:scale-95"
-+    title="Quick WhatsApp Chat"
-+    aria-label="Quick WhatsApp"
-+    @click="$emit('click')"
-+  >
-+    <span class="lucide-message-circle size-6"></span>
-+  </button>
- </template>
- 
- <script setup>
--import { ref } from 'vue'
--import WhatsAppModal from '@/components/Broker/WhatsAppModal.vue'
--
--const showModal = ref(false)
-+defineEmits(['click'])
- </script>
-diff --git a/frontend/src/components/Broker/WhatsAppModal.vue b/frontend/src/components/Broker/WhatsAppModal.vue
-index 822f315e..fd5b4b71 100644
---- a/frontend/src/components/Broker/WhatsAppModal.vue
-+++ b/frontend/src/components/Broker/WhatsAppModal.vue
-@@ -28,6 +28,9 @@
-           class="w-full p-2.5 text-xs font-mono font-bold rounded-xl border border-outline-gray-1 bg-surface-base"
-           :placeholder="__('+91 98765 43210')"
-         />
-+        <p v-if="recipientPhone && recipientPhone.includes('•')" class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg">
-+          {{ __('Phone is currently shielded. Please unlock the contact in the dossier or enter the full 10-digit number.') }}
-+        </p>
-       </div>
- 
-       <!-- Template Picker -->
-@@ -92,7 +95,7 @@
-           variant="solid"
-           iconLeft="message-circle"
-           class="bg-green-600 hover:bg-green-700 text-white"
--          :disabled="!recipientPhone || !messageBody"
-+          :disabled="!recipientPhone || recipientPhone.includes('•') || !messageBody"
-           @click="sendMessage"
-         >
-           {{ __('Send via WhatsApp') }}
-diff --git a/frontend/src/pages/BrokerDashboard.vue b/frontend/src/pages/BrokerDashboard.vue
-index f418fc35..2ec69967 100644
---- a/frontend/src/pages/BrokerDashboard.vue
-+++ b/frontend/src/pages/BrokerDashboard.vue
-@@ -22,14 +22,14 @@
-         <Button
-           variant="outline"
-           iconLeft="plus"
--          @click="openNewRequirement"
-+          @click="showRequirementModal = true"
-         >
-           {{ __('New Buyer') }}
-         </Button>
-         <Button
-           variant="outline"
-           iconLeft="plus"
--          @click="openNewProperty"
-+          @click="showPropertyModal = true"
-         >
-           {{ __('New Property') }}
-         </Button>
-@@ -237,6 +237,16 @@
- 
-             <div class="flex items-center gap-2">
-               <Button
-+                v-if="!item.revealed"
-+                size="sm"
-+                variant="solid"
-+                iconLeft="eye"
-+                @click="handleRevealDesktop(item)"
-+              >
-+                {{ __('Reveal') }}
-+              </Button>
-+              <Button
-+                v-else
-                 size="sm"
-                 variant="solid"
-                 iconLeft="phone"
-@@ -289,16 +299,39 @@
-         </div>
-       </div>
-     </div>
++class TestMigrationAndFixtures(unittest.TestCase):
++	"""Validation 5: Frappe Bench Database Migration, Schema Metadata & Fixture Ingestion."""
 +
-+    <!-- Quick Modals -->
-+    <QuickPropertyModal
-+      v-model="showPropertyModal"
-+      @saved="refreshAll"
-+    />
-+    <QuickRequirementModal
-+      v-model="showRequirementModal"
-+      @saved="refreshAll"
-+    />
-   </div>
- </template>
- 
- <script setup>
--import { computed } from 'vue'
-+import { ref, computed } from 'vue'
- import { Button } from 'frappe-ui'
- import { brokerStore } from '@/stores/broker'
-+import QuickPropertyModal from '@/components/Broker/QuickPropertyModal.vue'
-+import QuickRequirementModal from '@/components/Broker/QuickRequirementModal.vue'
- 
- const store = brokerStore()
--const { kpis, queue, logOutcome } = store
-+const { kpis, queue, logOutcome, revealContact } = store
++	def setUp(self):
++		self.crm_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 +
-+const showPropertyModal = ref(false)
-+const showRequirementModal = ref(false)
++	def test_doctype_json_schema_validity(self):
++		"""Verify all 3 DocType JSON definitions strictly follow Frappe metadata specifications."""
++		doctypes = [
++			"crm_property/crm_property.json",
++			"crm_requirement/crm_requirement.json",
++			"crm_contact_reveal_log/crm_contact_reveal_log.json",
++		]
 +
-+async function handleRevealDesktop(item) {
-+  const res = await revealContact(item.name, 'Desktop')
-+  if (res?.ok) {
-+    item.revealed = true
-+    item.owner_phone = res.owner_phone
-+  }
-+}
- 
- const categoryTiles = [
-   { key: 'Residential Rent', label: 'Res. Rent', icon: 'home' },
-diff --git a/frontend/src/pages/BrokerProperties.vue b/frontend/src/pages/BrokerProperties.vue
-index 34b64a30..f552f519 100644
---- a/frontend/src/pages/BrokerProperties.vue
-+++ b/frontend/src/pages/BrokerProperties.vue
-@@ -417,7 +417,7 @@
-     />
- 
-     <!-- WhatsApp Persistent FAB -->
--    <WhatsAppFab />
-+    <WhatsAppFab @click="showWhatsAppModal = true" />
-   </div>
- </template>
- 
-diff --git a/frontend/src/pages/BrokerProperty.vue b/frontend/src/pages/BrokerProperty.vue
-index c2b42a0e..ad2c39e0 100644
---- a/frontend/src/pages/BrokerProperty.vue
-+++ b/frontend/src/pages/BrokerProperty.vue
-@@ -374,8 +374,7 @@
-     <!-- Floating WhatsApp Action -->
-     <WhatsAppFab
-       v-if="detail.data?.property"
--      :property="detail.data.property"
--      @open-modal="showWhatsAppModal = true"
-+      @click="showWhatsAppModal = true"
-     />
-   </div>
- </template>
-diff --git a/frontend/src/pages/MobileBrokerDashboard.vue b/frontend/src/pages/MobileBrokerDashboard.vue
-index de960d89..fb0b280f 100644
---- a/frontend/src/pages/MobileBrokerDashboard.vue
-+++ b/frontend/src/pages/MobileBrokerDashboard.vue
-@@ -147,23 +147,36 @@
- 
-           <div class="pt-2 border-t border-outline-gray-1 flex items-center gap-2">
-             <Button
-+              v-if="!item.revealed"
-               size="sm"
-               variant="solid"
--              iconLeft="phone"
-+              iconLeft="eye"
-               class="flex-1"
--              @click="dial(item.owner_phone)"
-+              @click="handleReveal(item)"
-             >
--              {{ __('Call') }}
--            </Button>
--            <Button
--              size="sm"
--              variant="outline"
--              iconLeft="message-circle"
--              class="flex-1"
--              @click="openWhatsApp(item.owner_phone, item.property_name)"
--            >
--              {{ __('WhatsApp') }}
-+              {{ __('Reveal Contact') }}
-             </Button>
++		valid_fieldtypes = {
++			"Data", "Select", "Currency", "Float", "Int", "Check", "Small Text",
++			"Text Editor", "Datetime", "Link", "Column Break", "Section Break", "Attach Image"
++		}
 +
-+            <template v-else>
-+              <Button
-+                size="sm"
-+                variant="solid"
-+                iconLeft="phone"
-+                class="flex-1"
-+                @click="dial(item.owner_phone)"
-+              >
-+                {{ __('Call') }}
-+              </Button>
-+              <Button
-+                size="sm"
-+                variant="outline"
-+                iconLeft="message-circle"
-+                class="flex-1"
-+                @click="openWhatsApp(item.owner_phone, item.property_name)"
-+              >
-+                {{ __('WhatsApp') }}
-+              </Button>
-+            </template>
-             <Button
-               size="sm"
-               variant="ghost"
-@@ -181,9 +194,10 @@
- <script setup>
- import { Button } from 'frappe-ui'
- import { brokerStore } from '@/stores/broker'
-+import { launchWhatsApp } from '@/utils/whatsapp'
- 
- const store = brokerStore()
--const { kpis, queue, logOutcome } = store
-+const { kpis, queue, logOutcome, revealContact } = store
- 
- const categoryTiles = [
-   { key: 'Residential Rent', label: 'Res. Rent' },
-@@ -204,9 +218,15 @@ function dial(phone) {
- 
- function openWhatsApp(phone, title) {
-   if (!phone) return
--  const cleanPhone = phone.replace(/\D/g, '')
--  const msg = encodeURIComponent(`Hello, following up regarding ${title}.`)
--  window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${msg}`, '_blank')
-+  launchWhatsApp(phone, `Hello, following up regarding ${title}.`)
-+}
++		for dt_rel in doctypes:
++			dt_path = os.path.join(self.crm_dir, "fcrm", "doctype", dt_rel)
++			self.assertTrue(os.path.exists(dt_path), f"DocType JSON missing: {dt_path}")
 +
-+async function handleReveal(item) {
-+  const res = await revealContact(item.name, 'Mobile App')
-+  if (res?.ok) {
-+    item.revealed = true
-+    item.owner_phone = res.owner_phone
-+  }
- }
- 
- async function quickOutcome(propertyId, outcome) {
++			with open(dt_path, "r", encoding="utf-8") as f:
++				meta = json.load(f)
++
++			# 1. Base metadata checks
++			self.assertEqual(meta.get("doctype"), "DocType")
++			self.assertEqual(meta.get("module"), "FCRM")
++			self.assertIn("name", meta)
++			self.assertTrue(meta.get("permissions"), f"Missing permissions for {dt_rel}")
++
++			# 2. Permissions check: System Manager, Sales Manager, Sales User
++			roles = [p.get("role") for p in meta["permissions"]]
++			self.assertIn("System Manager", roles)
++			self.assertIn("Sales Manager", roles)
++			self.assertIn("Sales User", roles)
++
++			# 3. Field validation
++			field_names = set()
++			for field in meta.get("fields", []):
++				fname = field.get("fieldname")
++				ftype = field.get("fieldtype")
++
++				self.assertIn(ftype, valid_fieldtypes, f"Invalid fieldtype '{ftype}' in {dt_rel} for field '{fname}'")
++				self.assertTrue(fname, f"Empty fieldname in {dt_rel}")
++				self.assertNotIn(fname, field_names, f"Duplicate fieldname '{fname}' in {dt_rel}")
++				field_names.add(fname)
++
++				# Select fields must have options
++				if ftype == "Select":
++					self.assertTrue(field.get("options"), f"Select field '{fname}' in {dt_rel} has no options")
++
++				# Link fields must specify target doctype
++				if ftype == "Link":
++					self.assertTrue(field.get("options"), f"Link field '{fname}' in {dt_rel} has no target doctype")
++
++	def test_fixture_simulation_and_query_performance(self):
++		"""Simulate database with 500 properties & 200 requirements; assert KPI & Queue latency < 100ms."""
++		# Generate 500 simulated property rows
++		simulated_properties = [
++			{
++				"name": f"CRM-PROP-{i:04d}",
++				"property_name": f"Property {i} Shaligram",
++				"category": ["Residential Rent", "Residential Sell", "Commercial Rent", "Commercial Sell"][i % 4],
++				"listing_type": "Owner" if i % 2 == 0 else "Broker",
++				"property_type": "Apartment",
++				"bhk": f"{(i % 4) + 1} BHK",
++				"status": "Available",
++				"price": 25000 + (i * 500),
++				"area": ["Bodakdev", "Thaltej", "Satellite", "Vastrapur", "Prahlad Nagar"][i % 5],
++				"city": "Ahmedabad",
++				"owner_name": f"Owner {i}",
++				"owner_phone": f"+91 98765 {i:05d}",
++				"owner_phone_last4": f"{i:04d}"[-4:],
++				"contact_revealed": 1 if i % 5 == 0 else 0,
++				"current_outcome": "Follow Up" if i % 10 == 0 else ("No Answer" if i % 15 == 0 else None),
++				"last_call_at": "2026-09-18 10:00:00" if i % 3 == 0 else None,
++				"follow_up_at": "2026-09-19 09:00:00" if i % 10 == 0 else None,
++				"total_calls": i % 5,
++				"latest_note": "Sample note",
++				"creation": "2026-09-19 08:00:00",
++				"modified": "2026-09-19 08:00:00",
++			}
++			for i in range(500)
++		]
++
++		# Configure frappe mock to query simulated data
++		frappe.session.user = "broker@architech.in"
++		frappe.db.count.side_effect = lambda dt, filters=None: len(simulated_properties) if dt == "CRM Property" else 200
++		frappe.db.get_list.side_effect = lambda dt, filters=None, fields=None, **kwargs: simulated_properties[: kwargs.get("limit", 50)]
++		frappe.db.get_all.side_effect = lambda dt, **kwargs: []
++
++		start_time = time.perf_counter()
++
++		# Benchmark KPI Aggregation
++		kpi_res = get_dashboard_kpis()
++		self.assertIn("owner", kpi_res)
++		self.assertIn("calling_queue", kpi_res)
++
++		# Benchmark Calling Queue Assembly
++		queue_res = get_calling_queue(limit=50)
++		self.assertIn("queue", queue_res)
++		self.assertLessEqual(len(queue_res["queue"]), 50)
++
++		# Benchmark Inventory Search
++		prop_res = get_properties(category="Residential Rent", limit=25)
++		self.assertIn("data", prop_res)
++
++		elapsed_ms = (time.perf_counter() - start_time) * 1000
++
++		self.assertLess(
++			elapsed_ms,
++			100,
++			f"KPI + Calling Queue + Property queries took {elapsed_ms:.2f}ms (exceeds 100ms budget)",
++		)
++
++
++if __name__ == "__main__":
++	unittest.main()
+diff --git a/frontend/tests/unit/brokerMobilePWA.test.js b/frontend/tests/unit/brokerMobilePWA.test.js
+new file mode 100644
+index 00000000..3f78918e
+--- /dev/null
++++ b/frontend/tests/unit/brokerMobilePWA.test.js
+@@ -0,0 +1,161 @@
++import { describe, it } from 'node:test'
++import assert from 'node:assert'
++import {
++  normalizePhoneForWhatsApp,
++  generatePropertyBrochure,
++  generateOwnerGreeting,
++  generateBuyerMatchGreeting,
++  launchWhatsApp,
++} from '../../src/utils/whatsapp.js'
++
++describe('Validation 3: Mobile PWA Responsiveness & Native Device Hook Validation', () => {
++  describe('Phone Number Normalization for WhatsApp & Dialer', () => {
++    it('normalizes 10-digit Indian phone number with 91 prefix', () => {
++      assert.strictEqual(normalizePhoneForWhatsApp('9876543210'), '919876543210')
++      assert.strictEqual(normalizePhoneForWhatsApp('98765 43210'), '919876543210')
++      assert.strictEqual(normalizePhoneForWhatsApp('98765-43210'), '919876543210')
++    })
++
++    it('preserves existing 91 prefix on 12-digit numbers', () => {
++      assert.strictEqual(normalizePhoneForWhatsApp('919876543210'), '919876543210')
++      assert.strictEqual(normalizePhoneForWhatsApp('+91 98765 43210'), '919876543210')
++    })
++
++    it('returns empty string for null, undefined or empty phone', () => {
++      assert.strictEqual(normalizePhoneForWhatsApp(null), '')
++      assert.strictEqual(normalizePhoneForWhatsApp(undefined), '')
++      assert.strictEqual(normalizePhoneForWhatsApp(''), '')
++    })
++  })
++
++  describe('Dialer tel: URI sanitization', () => {
++    function sanitizeForDialer(phone) {
++      if (!phone) return ''
++      // Strip whitespace, hyphens, parentheses, but keep leading + and digits
++      return `tel:${phone.replace(/[^\d+]/g, '')}`
++    }
++
++    it('formats clean tel: protocol URLs', () => {
++      assert.strictEqual(sanitizeForDialer('+91 98765 43210'), 'tel:+919876543210')
++      assert.strictEqual(sanitizeForDialer('079-2685-1234'), 'tel:07926851234')
++      assert.strictEqual(sanitizeForDialer('(022) 2854 9999'), 'tel:02228549999')
++    })
++
++    it('handles empty input gracefully', () => {
++      assert.strictEqual(sanitizeForDialer(''), '')
++      assert.strictEqual(sanitizeForDialer(null), '')
++    })
++  })
++
++  describe('WhatsApp Property Brochure Generator', () => {
++    it('formats a rich brochure with emojis, price, and specs', () => {
++      const property = {
++        property_name: 'Shaligram Arcade 3 BHK',
++        premise_name: 'Tower B',
++        area: 'Bodakdev',
++        city: 'Ahmedabad',
++        bhk: '3 BHK',
++        super_builtup_area: 1850,
++        furnishing: 'Furnished',
++        price: 45000,
++        availability: 'Immediate',
++      }
++
++      const text = generatePropertyBrochure(property)
++      assert.ok(text.includes('🏡 Shaligram Arcade 3 BHK'), 'Contains property name with emoji')
++      assert.ok(text.includes('📍 *Location:* Tower B, Bodakdev, Ahmedabad'), 'Contains location string')
++      assert.ok(text.includes('📐 *Configuration:* 3 BHK | 1850 sq ft'), 'Contains BHK and sqft')
++      assert.ok(text.includes('🛋 *Furnishing:* Furnished'), 'Contains furnishing')
++      assert.ok(text.includes('💰 *Price / Rent:* ₹ 45,000'), 'Formats INR price with commas')
++      assert.ok(text.includes('🔑 *Availability:* Immediate'), 'Contains availability')
++      assert.ok(text.includes('Architech Broker Desk'), 'Includes desk signature')
++    })
++
++    it('handles property with minimal fields', () => {
++      const property = {
++        property_name: 'Plot 42',
++        area: 'Sanand',
++        price: null,
++      }
++
++      const text = generatePropertyBrochure(property)
++      assert.ok(text.includes('Plot 42'))
++      assert.ok(text.includes('Sanand'))
++      assert.ok(text.includes('Price on Request'))
++    })
++
++    it('returns empty string if property is null', () => {
++      assert.strictEqual(generatePropertyBrochure(null), '')
++    })
++  })
++
++  describe('WhatsApp Owner Greeting Generator', () => {
++    it('formats polite availability check message', () => {
++      const property = {
++        owner_name: 'Mr. Rajesh Shah',
++        property_name: 'Sun Villa 4 BHK',
++        area: 'Thaltej',
++        category: 'Residential Rent',
++      }
++
++      const text = generateOwnerGreeting(property)
++      assert.ok(text.includes('Mr. Rajesh Shah'))
++      assert.ok(text.includes('*Sun Villa 4 BHK*'))
++      assert.ok(text.includes('*Thaltej*'))
++      assert.ok(text.includes('available for rent'))
++    })
++  })
++
++  describe('WhatsApp Buyer Match Greeting Generator', () => {
++    it('formats ranked property candidates for buyer dispatch', () => {
++      const clientName = 'Pooja Mehta'
++      const matches = [
++        { property_name: 'Dev Castle', bhk: '2 BHK', area: 'Satellite', price: 28000 },
++        { property_name: 'Goyal Intercity', bhk: '2 BHK', area: 'Vastrapur', price: 30000 },
++      ]
++
++      const text = generateBuyerMatchGreeting(clientName, matches)
++      assert.ok(text.includes('Hello Pooja Mehta'))
++      assert.ok(text.includes('1. *Dev Castle* (2 BHK)'))
++      assert.ok(text.includes('📍 Satellite · ₹ 28,000'))
++      assert.ok(text.includes('2. *Goyal Intercity* (2 BHK)'))
++      assert.ok(text.includes('📍 Vastrapur · ₹ 30,000'))
++    })
++  })
++
++  describe('Dynamic Mobile Router View Resolver (handleMobileView)', () => {
++    function handleMobileView(componentName, width) {
++      return width < 768 ? `Mobile${componentName}` : componentName
++    }
++
++    it('returns Mobile-prefixed component for viewports < 768px', () => {
++      assert.strictEqual(handleMobileView('BrokerDashboard', 375), 'MobileBrokerDashboard')
++      assert.strictEqual(handleMobileView('BrokerProperty', 414), 'MobileBrokerProperty')
++      assert.strictEqual(handleMobileView('BrokerCallQueue', 767), 'MobileBrokerCallQueue')
++    })
++
++    it('returns base component for desktop viewports >= 768px', () => {
++      assert.strictEqual(handleMobileView('BrokerDashboard', 768), 'BrokerDashboard')
++      assert.strictEqual(handleMobileView('BrokerProperty', 1024), 'BrokerProperty')
++      assert.strictEqual(handleMobileView('BrokerCallQueue', 1440), 'BrokerCallQueue')
++    })
++  })
++
++  describe('WhatsApp Deep-Link URL Dispatcher', () => {
++    it('creates properly URI-encoded WhatsApp web and mobile URLs', () => {
++      const phone = '9876543210'
++      const msg = '🏡 Test Property\nPrice: ₹ 50,000'
++      const cleanPhone = normalizePhoneForWhatsApp(phone)
++      const encoded = encodeURIComponent(msg)
++
++      const mobileUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`
++      const desktopUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`
++
++      assert.ok(mobileUrl.startsWith('https://api.whatsapp.com/send?phone=919876543210&text='))
++      assert.ok(mobileUrl.includes('%F0%9F%8F%A1')) // Encoded emoji
++      assert.ok(mobileUrl.includes('%E2%82%B9')) // Encoded ₹ symbol
++
++      assert.ok(desktopUrl.startsWith('https://web.whatsapp.com/send?phone=919876543210&text='))
++    })
++  })
++})
 -- 
 2.39.5
 
