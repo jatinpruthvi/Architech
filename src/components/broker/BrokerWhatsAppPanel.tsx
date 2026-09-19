@@ -83,7 +83,7 @@ export function BrokerWhatsAppPanel() {
   const loadSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/broker/whatsapp", { cache: "no-store" });
+      const response = await fetch("/api/broker/whatsapp/", { cache: "no-store" });
       const payload = await response.json() as SafeSettings & SafeResponse;
       if (!response.ok) throw new Error(errorText(payload, "WhatsApp settings are unavailable."));
       setSettings(payload);
@@ -104,7 +104,7 @@ export function BrokerWhatsAppPanel() {
 
   const readQr = useCallback(async () => {
     try {
-      const response = await fetch("/api/broker/whatsapp/qr", { cache: "no-store" });
+      const response = await fetch("/api/broker/whatsapp/qr/", { cache: "no-store" });
       const payload = await response.json() as SafeResponse;
       if (!response.ok) throw new Error(errorText(payload, "The QR could not be loaded."));
       const state = typeof payload.state === "string" ? payload.state : "";
@@ -124,7 +124,7 @@ export function BrokerWhatsAppPanel() {
 
   const readStatus = useCallback(async () => {
     try {
-      const response = await fetch("/api/broker/whatsapp/status", { cache: "no-store" });
+      const response = await fetch("/api/broker/whatsapp/status/", { cache: "no-store" });
       const payload = await response.json() as SafeResponse;
       if (!response.ok) return;
       const normalized = accountStatus(payload.status);
@@ -157,7 +157,7 @@ export function BrokerWhatsAppPanel() {
     setBusy("connect");
     setMessage("");
     try {
-      const response = await fetch("/api/broker/whatsapp/connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ companyOwnedAcknowledged: true }) });
+      const response = await fetch("/api/broker/whatsapp/connect/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ companyOwnedAcknowledged: true }) });
       const payload = await response.json() as SafeResponse;
       if (!response.ok) throw new Error(errorText(payload, "The company-owned WhatsApp number could not be connected."));
       setQrOpen(true);
@@ -177,7 +177,7 @@ export function BrokerWhatsAppPanel() {
     setBusy("template");
     setMessage("");
     try {
-      const response = await fetch("/api/broker/whatsapp/template", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: templateDraft }) });
+      const response = await fetch("/api/broker/whatsapp/template/", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: templateDraft }) });
       const payload = await response.json() as SafeResponse;
       if (!response.ok) throw new Error(errorText(payload, "The acknowledgement template could not be saved."));
       if (payload.template) setSettings((current) => current ? { ...current, template: payload.template! } : current);

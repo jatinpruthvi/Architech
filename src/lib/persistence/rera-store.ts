@@ -116,7 +116,7 @@ export async function refreshStaleReraRecordsForServer(limit = 10) {
     if (nextStatus === null) return;
     /* BUG-R4-004: guard the WRITE half too, not only the provider call above.
        An unguarded throw here escaped both the loop and the cron route
-       (`/api/internal/scheduled/rera-refresh` does not catch either), aborting
+       (`/api/internal/scheduled/rera-refresh/` does not catch either), aborting
        the whole batch and returning an unhandled 500. The worse consequence is
        that this sweep is `where STALE orderBy updatedAt asc take limit`: a row
        whose write throws is never updated, so it stays at the HEAD of every

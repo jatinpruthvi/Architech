@@ -18,7 +18,7 @@ export default function TechnoError({ error, reset }: { error: Error & { digest?
        contract as the root boundary. */
     try {
       if (typeof window !== "undefined") {
-        void fetch("/api/observability/errors", {
+        void fetch("/api/observability/errors/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

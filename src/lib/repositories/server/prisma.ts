@@ -22,6 +22,7 @@ import {
   type PublicAgentOrganization,
 } from "@/lib/agent/directory";
 import { isPrismaDataSource } from "@/lib/repositories/source";
+import { orderFeaturedFirst } from "@/lib/repositories/featured-order";
 
 export type PrismaModelDelegate = {
   findMany(args?: unknown): Promise<unknown[]>;
@@ -222,17 +223,16 @@ export async function getListingsForServer(
 }
 
 /** Featured-first selection, same contract as the fixture getFeaturedListings:
-    featured homes lead, the rest fill to the limit. */
+    featured homes lead, the rest fill to the limit. The ordering rule is
+    shared (`orderFeaturedFirst`) so the two adapters cannot drift — callers
+    that already hold the pool (the home page) order it directly instead of
+    asking for the same rows a second time. */
 export async function getFeaturedListingsForServer(
   limit = 8,
   citySlug?: string
 ) {
   const pool = await getListingsForServer({ citySlug });
-  const featured = pool.filter(property => property.featured);
-  return [...featured, ...pool.filter(property => !property.featured)].slice(
-    0,
-    limit
-  );
+  return orderFeaturedFirst(pool, limit);
 }
 
 /* ---- public agent directory ------------------------------------------------ */

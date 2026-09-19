@@ -62,7 +62,7 @@ export default function BrokerLeadDetail({ leadId }: { leadId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch(`/api/broker/leads/${encodeURIComponent(leadId)}`, { cache: "no-store" });
+      const response = await fetch(`/api/broker/leads/${encodeURIComponent(leadId)}/`, { cache: "no-store" });
       if (response.status === 404) {
         setLoadError(404);
         return;
@@ -104,7 +104,7 @@ export default function BrokerLeadDetail({ leadId }: { leadId: string }) {
     if (revealed || revealing) return; // the anchor's own href handles the dial
     setRevealing(true);
     try {
-      const response = await fetch(`/api/broker/leads/${encodeURIComponent(leadId)}/reveal`, { method: "POST" });
+      const response = await fetch(`/api/broker/leads/${encodeURIComponent(leadId)}/reveal/`, { method: "POST" });
       const payload = (await response.json()) as { ok: boolean; telLink?: string; waMeLink?: string; errors?: string[] };
       if (!payload.ok || !payload.telLink) {
         /* Never a dead button: the server's reason copy is the copy. */
@@ -127,7 +127,7 @@ export default function BrokerLeadDetail({ leadId }: { leadId: string }) {
   async function onLogged(logged: { outcome: CallOutcome; stageAfter: LeadStage; nextActionAt: string | null; lostReason: string | null; note: string | null }) {
     setSheetOpen(false);
     setSheetAutoOpened(false);
-    const response = await fetch(`/api/broker/leads/${encodeURIComponent(leadId)}/calls`, {
+    const response = await fetch(`/api/broker/leads/${encodeURIComponent(leadId)}/calls/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ outcome: logged.outcome, nextActionAt: logged.nextActionAt, lostReason: logged.lostReason ?? undefined, note: logged.note ?? undefined }),

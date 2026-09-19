@@ -686,9 +686,13 @@ export interface BuyerLeadInput {
   notes: string | null;
 }
 
-/* Largest buyer budget we store: ₹10 crore covers any realistic deal and
-   keeps the BigInt well inside PostgreSQL's numeric range. */
-const MAX_INR = 1_000_000_000;
+/* Largest buyer budget we store: ₹10 crore (1 crore = 10^7, so 100_000_000)
+   covers any realistic deal and keeps the BigInt well inside PostgreSQL's
+   numeric range. BUG-R5-001: this read 1_000_000_000 — ₹100 crore, ten times
+   the ceiling the form copy and this comment promise — so budgets past the
+   documented range were stored anyway. The API payload check mirrors this
+   bound; keep the two in step (see buyer-leads/route.ts). */
+const MAX_INR = 100_000_000;
 /* ARCH-17 bound: a broker's book of active buyer leads stays well under
    200; newest-200 is the working set, not a truncation. */
 const BUYER_LEAD_LIST_CAP = 200;
@@ -988,34 +992,39 @@ export async function getCallingQueue(
       take: 1,
     },
   };
-  const windowRows = await db.technoProperty.findMany({
-    where: {
-      orgId,
-      active: true,
-      sourceStatus: TechnoSourceStatus.ACTIVE,
-      ownerPhoneCipher: { not: null },
-      datePosted: { gte: since },
-    },
-    orderBy: [{ datePosted: "desc" }],
-    take: 200,
-    include: includeQueueRelations,
-  });
-  /* Promised follow-ups on older listings: the 2-day freshness window above
-     would let a follow-up evaporate the moment its property ages out — but the
-     lifecycle contract is that a promised callback resurfaces on its day,
-     regardless of listing age. Pull in properties the broker has a follow_up
-     event on; callStateFor still derives the TRUE state from each property's
-     LATEST event, so one since closed (terminal outcome) or re-opened as a
-     simple retry drops out of this extra set below. */
-  const followUpEvents = await db.technoContactEvent.findMany({
-    where: { orgId, brokerUserId: userId, outcome: FOLLOW_UP_OUTCOME },
-    orderBy: { createdAt: "desc" },
-    /* ARCH-17 bound: newest first; the per-property Set dedup means older
-       duplicates never matter, and a follow-up logged beyond the broker's
-       1,000 most recent follow-ups is stale history, not today's promise. */
-    take: 1000,
-    select: { propertyId: true },
-  });
+  /* These two reads are independent (one is bounded by freshness, the other is
+     the broker's recent follow-up log), so they go out together instead of
+     serialising a second round trip behind the first. */
+  const [windowRows, followUpEvents] = await Promise.all([
+    db.technoProperty.findMany({
+      where: {
+        orgId,
+        active: true,
+        sourceStatus: TechnoSourceStatus.ACTIVE,
+        ownerPhoneCipher: { not: null },
+        datePosted: { gte: since },
+      },
+      orderBy: [{ datePosted: "desc" }],
+      take: 200,
+      include: includeQueueRelations,
+    }),
+    /* Promised follow-ups on older listings: the 2-day freshness window above
+       would let a follow-up evaporate the moment its property ages out — but
+       the lifecycle contract is that a promised callback resurfaces on its day,
+       regardless of listing age. Pull in properties the broker has a follow_up
+       event on; callStateFor still derives the TRUE state from each property's
+       LATEST event, so one since closed (terminal outcome) or re-opened as a
+       simple retry drops out of this extra set below. */
+    db.technoContactEvent.findMany({
+      where: { orgId, brokerUserId: userId, outcome: FOLLOW_UP_OUTCOME },
+      orderBy: { createdAt: "desc" },
+      /* ARCH-17 bound: newest first; the per-property Set dedup means older
+         duplicates never matter, and a follow-up logged beyond the broker's
+         1,000 most recent follow-ups is stale history, not today's promise. */
+      take: 1000,
+      select: { propertyId: true },
+    }),
+  ]);
   const followUpPropertyIds = [...new Set(followUpEvents.map((e) => e.propertyId).filter((id): id is string => !!id))];
   let agedFollowUpRows: typeof windowRows = [];
   if (followUpPropertyIds.length > 0) {

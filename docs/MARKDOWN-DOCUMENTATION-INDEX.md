@@ -2,7 +2,7 @@
 
 > This index lists the project’s Markdown documentation as GitHub links. Start with the source-of-truth documents, then use the specialist sections for implementation and historical context. For a task-based map of the whole repository, read [AGENTS.md](../AGENTS.md).
 
-Generated from the repository Markdown tree (220 files, digest 288153d93224).
+Generated from the repository Markdown tree (221 files, digest 7aad3f6c6c4c).
 
 ## Recommended Reading Order
 
@@ -46,6 +46,7 @@ Generated from the repository Markdown tree (220 files, digest 288153d93224).
 - [Bug Hunt Report 2026 09 06 Round3](../docs/ai/bug-hunt-report-2026-09-06-round3.md)
 - [Bug Hunt Report 2026 09 06 Round4](../docs/ai/bug-hunt-report-2026-09-06-round4.md)
 - [Bug Hunt Report 2026 09 06](../docs/ai/bug-hunt-report-2026-09-06.md)
+- [Bug Hunt Report 2026 09 19](../docs/ai/bug-hunt-report-2026-09-19.md)
 - [Bug Hunting Prompt Architech](../docs/ai/bug-hunting-prompt-architech.md)
 - [Bug Hunting Prompts](../docs/ai/bug-hunting-prompts.md)
 - [Perf Bug Hunt 2026 09 06](../docs/ai/perf-bug-hunt-2026-09-06.md)

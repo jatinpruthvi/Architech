@@ -41,7 +41,7 @@ export function BuyerLeadCard({ lead, riseIndex }: { lead: BuyerLeadView; riseIn
     if (deleting) return;
     if (!window.confirm(`Delete ${lead.name}'s buyer lead? This cannot be undone.`)) return;
     setDeleting(true);
-    const res = await fetch(`/api/broker/technoproperty/buyer-leads/${lead.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/broker/technoproperty/buyer-leads/${lead.id}/`, { method: "DELETE" });
     if (res.ok) {
       router.refresh();
     } else {

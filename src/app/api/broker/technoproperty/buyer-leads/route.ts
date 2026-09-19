@@ -42,7 +42,9 @@ export function parseLeadBody(body: unknown): BuyerLeadInput | { error: string }
   let budgetValue: number | null = null;
   if (v.budgetValue != null && v.budgetValue !== "") {
     const n = Number(v.budgetValue);
-    if (!Number.isFinite(n) || n <= 0 || n > 1_000_000_000) return { error: "INVALID_BUDGET" };
+    /* ₹10 crore, the documented ceiling and the same bound the repository
+       enforces (MAX_INR in @/lib/technoproperty/repository — BUG-R5-001). */
+    if (!Number.isFinite(n) || n <= 0 || n > 100_000_000) return { error: "INVALID_BUDGET" };
     budgetValue = n;
   }
   const strOrNull = (x: unknown, max: number) =>

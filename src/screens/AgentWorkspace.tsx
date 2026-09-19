@@ -121,7 +121,7 @@ function useBrokerDeskLeads(): { state: "loading" | "ready" | "unavailable"; lea
   const [value, setValue] = useState<{ state: "loading" | "ready" | "unavailable"; leads: LeadRecord[] }>({ state: "loading", leads: [] });
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/broker/leads", { cache: "no-store" })
+    fetch("/api/broker/leads/", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) throw new Error(`leads ${response.status}`);
         const payload = (await response.json()) as { leads?: LeadRecord[] };
@@ -328,8 +328,8 @@ function MyListings({ drafts, onChanged }: { drafts: ListingDraft[]; onChanged?:
     setFeedback(null);
     try {
       const response = action === "delete"
-        ? await fetch(`/api/broker/listings/${encodeURIComponent(draft.id)}`, { method: "DELETE" })
-        : await fetch(`/api/broker/listings/${encodeURIComponent(draft.id)}`, { method: "POST", headers: { "x-draft-action": action } });
+        ? await fetch(`/api/broker/listings/${encodeURIComponent(draft.id)}/`, { method: "DELETE" })
+        : await fetch(`/api/broker/listings/${encodeURIComponent(draft.id)}/`, { method: "POST", headers: { "x-draft-action": action } });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "The server refused the action.");
       setFeedback(action === "delete" ? `Draft ${draft.id} deleted.` : `Draft ${draft.id} ${action === "archive" ? "archived" : "restored"}.`);
@@ -367,7 +367,7 @@ function Profile() { return <><LedgerIntro label="Trust register" detail="IDENTI
 export default function AgentWorkspace({ section = "dashboard" }: { section?: AgentSection }) {
   useTitle(`Agent workspace · ${section}`);
   const [drafts, setDrafts] = useState<ListingDraft[]>([]);
-  const loadDrafts = useCallback(async () => { try { const response = await fetch("/api/broker/listings", { cache: "no-store" }); const payload = await response.json(); setDrafts(Array.isArray(payload.drafts) ? payload.drafts : []); } catch { setDrafts([]); } }, []);
+  const loadDrafts = useCallback(async () => { try { const response = await fetch("/api/broker/listings/", { cache: "no-store" }); const payload = await response.json(); setDrafts(Array.isArray(payload.drafts) ? payload.drafts : []); } catch { setDrafts([]); } }, []);
   useEffect(() => { void loadDrafts(); }, [loadDrafts]);
   const { state: leadsState, leads } = useBrokerDeskLeads();
   const body = useMemo(() => {

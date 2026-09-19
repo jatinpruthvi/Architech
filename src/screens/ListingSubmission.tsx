@@ -1,6 +1,6 @@
 "use client";
 /* Broker listing-draft submission form.
-   Captures the fields enforced by the `/api/broker/listings` contract, POSTs a
+   Captures the fields enforced by the `/api/broker/listings/` contract, POSTs a
    draft, then lets the broker submit it for review (source trail + media-rights
    gate). Validation and status feedback are shown inline; the moderation queue
    reads the same persisted drafts. */
@@ -71,7 +71,7 @@ export default function ListingSubmission() {
     setListerTypeTouched(true); /* the loaded draft's attribution wins over the sign-up seed */
     void (async () => {
       try {
-        const response = await fetch("/api/broker/listings", { cache: "no-store" });
+        const response = await fetch("/api/broker/listings/", { cache: "no-store" });
         const payload = await response.json();
         const drafts: Array<ListingDraftInput & { id: string; status: string }> = Array.isArray(payload.drafts) ? payload.drafts : [];
         const existing = drafts.find((item) => item.id === editingId);
@@ -177,7 +177,7 @@ export default function ListingSubmission() {
     setMediaSubmitting(true);
     setErrors([]);
     try {
-      const signResponse = await fetch("/api/media/uploads/sign", {
+      const signResponse = await fetch("/api/media/uploads/sign/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -196,12 +196,12 @@ export default function ListingSubmission() {
       if (hasRealStorage) {
         const transferResponse = await fetch(upload.uploadUrl, { method: "PUT", headers: upload.requiredHeaders, body: mediaFile });
         if (!transferResponse.ok) throw new Error(`Storage upload failed (${transferResponse.status}).`);
-        const completeResponse = await fetch(`/api/media/uploads/${encodeURIComponent(upload.id)}/complete`, { method: "POST" });
+        const completeResponse = await fetch(`/api/media/uploads/${encodeURIComponent(upload.id)}/complete/`, { method: "POST" });
         const completePayload = await completeResponse.json();
         if (!completeResponse.ok || !completePayload.ok) throw new Error(completePayload.errors?.join(" ") ?? "Could not complete the media packet.");
         upload = completePayload.upload as SignedMediaUpload;
       }
-      const attachResponse = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/media`, {
+      const attachResponse = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/media/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaId: upload.id, action: "attach" }),
@@ -223,7 +223,7 @@ export default function ListingSubmission() {
     if (!draftId || !mediaUpload || mediaSubmitting) return;
     setMediaSubmitting(true);
     try {
-      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/media`, {
+      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/media/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaId: mediaUpload.id, action: "detach" }),
@@ -244,7 +244,7 @@ export default function ListingSubmission() {
     setSubmitting(true);
     setErrors([]);
     try {
-      const response = await fetch("/api/broker/listings", {
+      const response = await fetch("/api/broker/listings/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
@@ -271,7 +271,7 @@ export default function ListingSubmission() {
     setSubmitting(true);
     setErrors([]);
     try {
-      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}`, {
+      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
@@ -292,7 +292,7 @@ export default function ListingSubmission() {
     if (!draftId || submitting) return;
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/submit`, { method: "POST" });
+      const response = await fetch(`/api/broker/listings/${encodeURIComponent(draftId)}/submit/`, { method: "POST" });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.errors?.join(" ") ?? "Could not submit for review.");
       setSubmitted(true);

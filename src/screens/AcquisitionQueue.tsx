@@ -70,7 +70,7 @@ export default function AcquisitionQueue() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/admin/acquisition", { cache: "no-store" });
+      const response = await fetch("/api/admin/acquisition/", { cache: "no-store" });
       const body = await response.json();
       if (!response.ok || !body.ok) {
         setError(body?.errors?.[0] ?? "The acquisition queue could not be loaded.");

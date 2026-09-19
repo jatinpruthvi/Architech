@@ -31,7 +31,7 @@ export default function ModerationQueue() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/moderation/listings", { cache: "no-store" });
+      const response = await fetch("/api/admin/moderation/listings/", { cache: "no-store" });
       const payload = await response.json();
       setDrafts(Array.isArray(payload.drafts) ? payload.drafts : []);
     } finally {
@@ -49,7 +49,7 @@ export default function ModerationQueue() {
       toast("A reason is required.", { description: "Explain the change requested or rejection." });
       return;
     }
-    const response = await fetch(`/api/admin/moderation/listings/${encodeURIComponent(draftId)}`, {
+    const response = await fetch(`/api/admin/moderation/listings/${encodeURIComponent(draftId)}/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ decision, reason: reason || "Facts verified against source." }),

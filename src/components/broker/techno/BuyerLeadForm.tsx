@@ -84,7 +84,7 @@ export function BuyerLeadForm({
     };
     try {
       const res = await fetch(
-        initial ? `/api/broker/technoproperty/buyer-leads/${initial.id}` : "/api/broker/technoproperty/buyer-leads",
+        initial ? `/api/broker/technoproperty/buyer-leads/${initial.id}/` : "/api/broker/technoproperty/buyer-leads/",
         {
           method: initial ? "PUT" : "POST",
           headers: { "content-type": "application/json" },

@@ -3,7 +3,7 @@
  *
  * One place the whole UI asks "who is signed in?", so the header, the login
  * page and any protected surface cannot drift apart. It reads the SAME
- * `/api/auth/session` contract the server guards use, so the client never
+ * `/api/auth/session/` contract the server guards use, so the client never
  * derives authorisation of its own — it only reflects what the server already
  * decided. Client state here is a convenience for rendering; every actual
  * permission check still happens server-side in `authorizeRequest`.

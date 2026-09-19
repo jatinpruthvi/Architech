@@ -22,9 +22,22 @@ const state = vi.hoisted(() => ({
   buyerLeadSeq: 1,
   countWhenSince: 3,
   propertyFindManyCalls: 0,
+  /** PERF-R5-001 probe: the queue's reads, in the order they start and end. */
+  queryLog: [] as string[],
+  queryDelayMs: 0,
 }));
 
-vi.mock("@/lib/technoproperty/prisma", () => ({
+vi.mock("@/lib/technoproperty/prisma", () => {
+  /* PERF-R5-001 probe. Every queue-phase read records a start/end pair; with
+     `state.queryDelayMs` set, a read that finishes before the next one starts
+     proves the two were serialised. `propertyFindManyCalls` stays the plain
+     call counter the other tests read. */
+  const probe = async (label: string) => {
+    state.queryLog.push(`start:${label}`);
+    if (state.queryDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, state.queryDelayMs));
+    state.queryLog.push(`end:${label}`);
+  };
+  return {
   technoDb: () => ({
     technoProperty: {
       count: async (args?: { where?: any }) =>
@@ -34,6 +47,7 @@ vi.mock("@/lib/technoproperty/prisma", () => ({
       findMany: async (args?: { where?: any }) => {
         state.propertyFindManyCalls += 1;
         const where = args?.where ?? {};
+        await probe(where.id?.in ? "property:aged" : where.datePosted?.gte ? "property:window" : "property:other");
         if (where.id?.in) return state.props.filter((p) => where.id.in.includes(p.id));
         if (where.datePosted?.gte) return state.props.filter((p) => p.datePosted >= where.datePosted.gte);
         // Match-candidate pull (and any rented-filtered list): stale flags and
@@ -117,6 +131,7 @@ vi.mock("@/lib/technoproperty/prisma", () => ({
     technoContactEvent: {
       findMany: async (args?: { where?: any }) => {
         const where = args?.where ?? {};
+        await probe(where.outcome === "follow_up" ? "contact:followups" : "contact:recent");
         return state.events.filter(
           (e) =>
             (!where.outcome || e.outcome === where.outcome) &&
@@ -130,7 +145,8 @@ vi.mock("@/lib/technoproperty/prisma", () => ({
     technoNote: { findMany: async () => state.notes },
     technoShortlist: { count: async () => 2 },
   }),
-}));
+  };
+});
 
 import {
   buildOwnerWhere,
@@ -213,6 +229,8 @@ beforeEach(() => {
   state.buyerLeadSeq = 1;
   state.countWhenSince = 3;
   state.propertyFindManyCalls = 0;
+  state.queryLog = [];
+  state.queryDelayMs = 0;
 });
 
 describe("buildOwnerWhere", () => {
@@ -331,6 +349,46 @@ describe("getCallingQueue follow-up window", () => {
     const ids = rows.map((r) => r.id);
     expect(ids).toContain("W");
     expect(ids).not.toContain("R");
+  });
+});
+
+describe("PERF-R5-001: the queue's independent reads overlap", () => {
+  /* PERF-R5-001: the freshness window and the follow-up log are independent
+     reads, so the follow-up read must START before the window read lands.
+     Probe (see the technoDb mock): each read records start/end, and with
+     `state.queryDelayMs` set, a serialised pair shows start→end→start. */
+  it("starts the follow-up-log read before the freshness window resolves", async () => {
+    state.queryDelayMs = 20;
+    state.props = [prop({ id: "W", datePosted: daysAgo(1) })];
+    state.events = [{ ...event({ outcome: "follow_up" }), propertyId: "W" }];
+
+    await getCallingQueue("org-1", "user-1", 50);
+
+    const log = state.queryLog;
+    const windowEnd = log.indexOf("end:property:window");
+    const followStart = log.indexOf("start:contact:followups");
+    expect(windowEnd, `window read never completed: ${log.join(",")}`).toBeGreaterThan(-1);
+    expect(followStart, `follow-up read never ran: ${log.join(",")}`).toBeGreaterThan(-1);
+    expect(
+      followStart,
+      `the follow-up read waited for the window read (serially): ${log.join(",")}`,
+    ).toBeLessThan(windowEnd);
+  });
+
+  /* The aged-listing pull genuinely depends on the follow-up ids, so it must
+     still start only after that read finishes — this test fails if a future
+     edit over-parallelises the queue. */
+  it("still sequences the aged-listing pull after the follow-up ids arrive", async () => {
+    state.queryDelayMs = 20;
+    state.props = [prop({ id: "A", datePosted: daysAgo(5), contactEvents: [] })];
+    state.events = [{ ...event({ outcome: "follow_up", followUpAt: new Date(Date.now() + DAY) }), propertyId: "A" }];
+
+    await getCallingQueue("org-1", "user-1", 50);
+
+    const log = state.queryLog;
+    expect(log).toContain("start:contact:followups");
+    expect(log).toContain("start:property:aged");
+    expect(log.indexOf("end:contact:followups")).toBeLessThan(log.indexOf("start:property:aged"));
   });
 });
 
@@ -472,6 +530,22 @@ describe("buyer leads", () => {
     await expect(createBuyerLead("org-1", "user-1", leadInput({ budgetValue: -5 }))).rejects.toThrow("INVALID_BUDGET");
     await expect(createBuyerLead("org-1", "user-1", leadInput({ budgetValue: 2_000_000_000 }))).rejects.toThrow("INVALID_BUDGET");
     expect(state.buyerLeads).toHaveLength(0);
+  });
+
+  /* BUG-R5-001: the documented ceiling is ₹10 crore, and ₹1 crore = 10^7, so
+     the top of the range is 100_000_000. The constant read 1_000_000_000
+     (₹100 crore) — ten times the promise the form copy, this file's comment
+     and the feature's PR all state — so a broker could store a budget the UI
+     itself calls impossible. Both boundaries are pinned here. */
+  it("BUG-R5-001: rejects a budget past the documented ₹10 crore ceiling", async () => {
+    await expect(createBuyerLead("org-1", "user-1", leadInput({ budgetValue: 100_000_001 }))).rejects.toThrow("INVALID_BUDGET");
+    await expect(createBuyerLead("org-1", "user-1", leadInput({ budgetValue: 1_000_000_000 }))).rejects.toThrow("INVALID_BUDGET");
+    expect(state.buyerLeads).toHaveLength(0);
+  });
+
+  it("BUG-R5-001: accepts the exact ₹10 crore ceiling", async () => {
+    await createBuyerLead("org-1", "user-1", leadInput({ budgetValue: 100_000_000 }));
+    expect(state.buyerLeads[0].budgetValue).toBe(100_000_000n);
   });
 
   it("accepts +91 / 0-prefixed phone shapes", async () => {

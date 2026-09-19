@@ -50,7 +50,7 @@ function LeadDialog({ propertyId, propertyTitle, open, onOpenChange }: { propert
     retryIdempotencyKey.current ??= crypto.randomUUID?.() ?? `${propertyId}-${Date.now()}`;
     try {
       const whatsappOptInText = t.listing.whatsappOptInText;
-      const response = await fetch("/api/leads", {
+      const response = await fetch("/api/leads/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -152,7 +152,7 @@ export default function ListingPage({
   useEffect(() => {
     if (!sessionKey) return;
     try { window.sessionStorage.setItem("architech.session", sessionKey); } catch { /* private mode */ }
-    void fetch(`/api/listings/${encodeURIComponent(property.id)}/stats`, {
+    void fetch(`/api/listings/${encodeURIComponent(property.id)}/stats/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ metric: "views", sessionKey }),
@@ -170,7 +170,7 @@ export default function ListingPage({
 
   const onSave = () => {
     const nowSaved = toggle(property.id);
-    void fetch(`/api/listings/${encodeURIComponent(property.id)}/stats`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ metric: "saves" }) }).catch(() => undefined);
+    void fetch(`/api/listings/${encodeURIComponent(property.id)}/stats/`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ metric: "saves" }) }).catch(() => undefined);
     toast(nowSaved ? t.listing.savedToast : t.listing.removedToast, { description: nowSaved ? `${property.title} · ${property.price}` : undefined });
   };
 

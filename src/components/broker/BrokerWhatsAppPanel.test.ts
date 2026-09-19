@@ -8,11 +8,13 @@ const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "Broke
 describe("BrokerWhatsAppPanel UI contract", () => {
   it("uses only Architech routes and exposes the focused connection/template/status experience", () => {
     expect(source).toContain("export function BrokerWhatsAppPanel");
-    expect(source).toContain('fetch("/api/broker/whatsapp"');
-    expect(source).toContain('fetch("/api/broker/whatsapp/connect"');
-    expect(source).toContain('fetch("/api/broker/whatsapp/qr"');
-    expect(source).toContain('fetch("/api/broker/whatsapp/status"');
-    expect(source).toContain('fetch("/api/broker/whatsapp/template"');
+    /* Slashed form is the canonical one under `trailingSlash: true` — the bare
+       path 308-redirects (PERF-R5-004), so the panel would pay a hop per call. */
+    expect(source).toContain('fetch("/api/broker/whatsapp/"');
+    expect(source).toContain('fetch("/api/broker/whatsapp/connect/"');
+    expect(source).toContain('fetch("/api/broker/whatsapp/qr/"');
+    expect(source).toContain('fetch("/api/broker/whatsapp/status/"');
+    expect(source).toContain('fetch("/api/broker/whatsapp/template/"');
   });
 
   it("keeps company ownership and Linked devices instructions explicit", () => {
