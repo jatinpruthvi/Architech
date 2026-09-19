@@ -41,7 +41,7 @@ export default function BrokerLeadInbox() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/broker/leads", { cache: "no-store" });
+      const response = await fetch("/api/broker/leads/", { cache: "no-store" });
       const payload = await response.json();
       setLeads(Array.isArray(payload.leads) ? payload.leads : []);
     } finally {
@@ -51,11 +51,11 @@ export default function BrokerLeadInbox() {
 
   useEffect(() => {
     void load();
-    fetch("/api/broker/leads/metrics", { cache: "no-store" }).then((response) => response.json()).then((payload) => { if (payload.ok) setMetrics(payload.metrics); }).catch(() => undefined);
+    fetch("/api/broker/leads/metrics/", { cache: "no-store" }).then((response) => response.json()).then((payload) => { if (payload.ok) setMetrics(payload.metrics); }).catch(() => undefined);
   }, [load]);
 
   const advance = async (id: string, status: ReplyAction) => {
-    const response = await fetch(`/api/broker/leads/${encodeURIComponent(id)}/reply`, {
+    const response = await fetch(`/api/broker/leads/${encodeURIComponent(id)}/reply/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -70,7 +70,7 @@ export default function BrokerLeadInbox() {
   };
 
   const removeLead = async (id: string, mode: "consent" | "delete") => {
-    const response = await fetch(`/api/broker/leads/${encodeURIComponent(id)}?mode=${mode}`, { method: "DELETE" });
+    const response = await fetch(`/api/broker/leads/${encodeURIComponent(id)}/?mode=${mode}`, { method: "DELETE" });
     const payload = await response.json();
     if (!response.ok || !payload.ok) {
       toast(payload.errors?.join(" ") ?? "Could not remove the lead.", { description: "Please try again." });

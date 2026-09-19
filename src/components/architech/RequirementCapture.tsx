@@ -148,7 +148,7 @@ export default function RequirementCapture({ compact = false }: Props) {
     setStatus("submitting");
     setErrors([]);
     try {
-      const response = await fetch("/api/requirements", {
+      const response = await fetch("/api/requirements/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         /* No client-built idempotency key. The old one interpolated the raw

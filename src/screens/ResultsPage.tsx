@@ -318,9 +318,16 @@ export default function ResultsPage({
 
  const [trending, setTrending] = useState<SearchSuggestion[]>(popularSearches);
  useEffect(() => {
-   const scope = citySlug !== "all" ? `?city=${encodeURIComponent(citySlug)}` : "";
    const controller = new AbortController();
-   void fetch(`/api/search/suggest/${scope}`, { signal: controller.signal })
+   /* Canonical URL built explicitly (PERF-R5-004): the slash belongs to the
+      path, so it can never be appended after a query that lives inside an
+      interpolation — the previous `${scope}` form made that mistake possible
+      the moment the path gained its canonical trailing slash. */
+   const suggestUrl =
+     citySlug !== "all"
+       ? `/api/search/suggest/?city=${encodeURIComponent(citySlug)}`
+       : "/api/search/suggest/";
+   void fetch(suggestUrl, { signal: controller.signal })
      .then((response) => (response.ok ? response.json() as Promise<{ suggestions?: SearchSuggestion[] }> : Promise.reject(response.status)))
      .then((payload) => {
        if (Array.isArray(payload.suggestions) && payload.suggestions.length) setTrending(payload.suggestions.slice(0, 4));
@@ -333,7 +340,7 @@ export default function ResultsPage({
  if (savingSearch) return;
  setSavingSearch(true);
  try {
- const response = await fetch("/api/saved-searches", {
+ const response = await fetch("/api/saved-searches/", {
  method: "POST",
  headers: { "Content-Type": "application/json" },
  body: JSON.stringify({ query, filters: filterTokens, sort, notify: true }),

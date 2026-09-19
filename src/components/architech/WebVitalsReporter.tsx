@@ -32,10 +32,10 @@ export default function WebVitalsReporter() {
 
     const body = JSON.stringify(payload);
     if (navigator.sendBeacon) {
-      navigator.sendBeacon("/api/observability/web-vitals", new Blob([body], { type: "application/json" }));
+      navigator.sendBeacon("/api/observability/web-vitals/", new Blob([body], { type: "application/json" }));
       return;
     }
-    void fetch("/api/observability/web-vitals", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true });
+    void fetch("/api/observability/web-vitals/", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true });
   });
   return null;
 }

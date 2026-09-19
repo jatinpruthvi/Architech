@@ -66,7 +66,7 @@ export default function PlanAdmin() {
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/plans", { cache: "no-store" });
+      const response = await fetch("/api/admin/plans/", { cache: "no-store" });
       if (response.status === 503) {
         setFixtureMode(true);
         return;
@@ -95,7 +95,7 @@ export default function PlanAdmin() {
     setSigningIn(true);
     setSignInError(null);
     try {
-      const response = await fetch("/api/auth/super/sign-in", {
+      const response = await fetch("/api/auth/super/sign-in/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
@@ -117,7 +117,7 @@ export default function PlanAdmin() {
     setFinding(true);
     setSaveError(null);
     try {
-      const response = await fetch(`/api/admin/plans?lookup=${encodeURIComponent(email.trim())}`, { cache: "no-store" });
+      const response = await fetch(`/api/admin/plans/?lookup=${encodeURIComponent(email.trim())}`, { cache: "no-store" });
       if (!response.ok) {
         setLookup({ found: false });
         return;
@@ -142,7 +142,7 @@ export default function PlanAdmin() {
     setSaving(true);
     setSaveError(null);
     try {
-      const response = await fetch("/api/admin/plans", {
+      const response = await fetch("/api/admin/plans/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -173,7 +173,7 @@ export default function PlanAdmin() {
     setCreating(true);
     setCreateError(null);
     try {
-      const response = await fetch("/api/admin/plans/definitions", {
+      const response = await fetch("/api/admin/plans/definitions/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newPlan.trim() }),

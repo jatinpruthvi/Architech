@@ -11,7 +11,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     // Report the error to the observability endpoint (redacted, non-blocking).
     try {
       if (typeof window !== "undefined") {
-        void fetch("/api/observability/errors", {
+        void fetch("/api/observability/errors/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

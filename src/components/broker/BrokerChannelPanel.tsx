@@ -83,7 +83,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
          `cache: "no-store"`: the endpoint answers `private, max-age=15,
          stale-while-revalidate=30`, so a tab switch within the TTL serves
          from the browser instead of re-hitting the API. */
-      const response = await fetch("/api/broker/channel/dashboard");
+      const response = await fetch("/api/broker/channel/dashboard/");
       const payload = await response.json();
       setDashboard(payload?.dashboard ?? null);
       setRequests(Array.isArray(payload?.requests) ? payload.requests : []);
@@ -132,12 +132,12 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
     let body: Record<string, unknown> = selectedType === "SUPPLY" ? { type: "SUPPLY", sourceListingId, intent: String(form.get("intent") || "BUY"), cityId: "listing", propertyType: "listing", detailSummary: String(form.get("detailSummary") || "") } : {};
     try {
       if (selectedType === "DEMAND") {
-        const requirementResponse = await fetch("/api/broker/channel/requirements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ intent: String(form.get("intent") || "BUY").toLowerCase(), citySlug: String(form.get("cityId") || "ahmedabad"), category: "residential", subtype: String(form.get("propertyType") || "APARTMENT"), propertyType: String(form.get("propertyType") || "APARTMENT"), localitySlugs: [String(form.get("localitySlug") || "").trim()].filter(Boolean), role: "buyer", name: String(form.get("buyerName") || "Broker buyer"), phone: String(form.get("buyerPhone") || ""), consentText: "Buyer consent recorded by broker for Architech requirement and broker-channel matching.", bhkMin: Number(form.get("bhkMin") || 0) || null, bhkMax: Number(form.get("bhkMax") || 0) || null, areaMinSqft: Number(form.get("areaMinSqft") || 0), areaMaxSqft: Number(form.get("areaMaxSqft") || 0), budgetMinInr: Number(form.get("budgetMinInr") || 0), budgetMaxInr: Number(form.get("budgetMaxInr") || 0) }) });
+        const requirementResponse = await fetch("/api/broker/channel/requirements/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ intent: String(form.get("intent") || "BUY").toLowerCase(), citySlug: String(form.get("cityId") || "ahmedabad"), category: "residential", subtype: String(form.get("propertyType") || "APARTMENT"), propertyType: String(form.get("propertyType") || "APARTMENT"), localitySlugs: [String(form.get("localitySlug") || "").trim()].filter(Boolean), role: "buyer", name: String(form.get("buyerName") || "Broker buyer"), phone: String(form.get("buyerPhone") || ""), consentText: "Buyer consent recorded by broker for Architech requirement and broker-channel matching.", bhkMin: Number(form.get("bhkMin") || 0) || null, bhkMax: Number(form.get("bhkMax") || 0) || null, areaMinSqft: Number(form.get("areaMinSqft") || 0), areaMaxSqft: Number(form.get("areaMaxSqft") || 0), budgetMinInr: Number(form.get("budgetMinInr") || 0), budgetMaxInr: Number(form.get("budgetMaxInr") || 0) }) });
         const requirementPayload = await requirementResponse.json().catch(() => ({}));
         if (!requirementResponse.ok || !requirementPayload.ok) { setFormMessage(requirementPayload.errors?.[0] ?? "Could not save buyer requirement."); return; }
         body = { type: "DEMAND", sourceRequirementId: requirementPayload.requirement.id, cityId: "requirement", intent: String(form.get("intent") || "BUY"), propertyType: "requirement", detailSummary: String(form.get("detailSummary") || "") };
       }
-      const response = await fetch("/api/broker/channel/requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const response = await fetch("/api/broker/channel/requests/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const payload = await response.json().catch(() => ({}));
       setFormMessage(response.ok ? (selectedType === "SUPPLY" ? "Listing-backed supply request saved. Publish it to run matching." : "Requirement-backed demand saved. Publish it to run matching.") : (payload.errors?.[0] ?? "Could not save channel draft."));
       if (response.ok) { formElement.reset(); await loadChannel(); }
@@ -149,7 +149,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
   const publishRequest = useCallback(async (id: string) => {
     setActiveAction(`publish-${id}`);
     try {
-      const response = await fetch(`/api/broker/channel/requests/${encodeURIComponent(id)}/publish`, { method: "POST" });
+      const response = await fetch(`/api/broker/channel/requests/${encodeURIComponent(id)}/publish/`, { method: "POST" });
       const payload = await response.json().catch(() => ({}));
       setFormMessage(response.ok ? `Published. ${payload.matches?.length ?? 0} top matches found.` : (payload.errors?.[0] ?? "Could not publish request."));
       await loadChannel();
@@ -162,7 +162,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
   const decideMatch = useCallback(async (id: string, action: "accept" | "reject") => {
     setActiveAction(`${action}-${id}`);
     try {
-      const response = await fetch(`/api/broker/channel/matches/${encodeURIComponent(id)}/${action}`, { method: "POST" });
+      const response = await fetch(`/api/broker/channel/matches/${encodeURIComponent(id)}/${action}/`, { method: "POST" });
       const payload = await response.json().catch(() => ({}));
       setFormMessage(response.ok ? `Match ${action}ed.` : (payload.errors?.[0] ?? `Could not ${action} match.`));
       await loadChannel();
@@ -175,7 +175,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
   const dealAction = useCallback(async (id: string, action: "confirm" | "close" | "cancel") => {
     setActiveAction(`${action}-${id}`);
     try {
-      const response = await fetch(`/api/broker/channel/deals/${encodeURIComponent(id)}/${action}`, { method: "POST" });
+      const response = await fetch(`/api/broker/channel/deals/${encodeURIComponent(id)}/${action}/`, { method: "POST" });
       const payload = await response.json().catch(() => ({}));
       setFormMessage(response.ok ? `Deal ${action} saved.` : (payload.errors?.[0] ?? `Could not ${action} deal.`));
       await loadChannel();
@@ -192,7 +192,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
     }
     setActiveAction(`split-${deal.id}`);
     try {
-      const response = await fetch(`/api/broker/channel/deals/${encodeURIComponent(deal.id)}/split`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ totalCommissionInr: Number(draft.totalCommissionInr || 0), demandBrokerShareInr: Number(draft.demandBrokerShareInr || 0), supplyBrokerShareInr: Number(draft.supplyBrokerShareInr || 0), closeMode: draft.closeMode }) });
+      const response = await fetch(`/api/broker/channel/deals/${encodeURIComponent(deal.id)}/split/`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ totalCommissionInr: Number(draft.totalCommissionInr || 0), demandBrokerShareInr: Number(draft.demandBrokerShareInr || 0), supplyBrokerShareInr: Number(draft.supplyBrokerShareInr || 0), closeMode: draft.closeMode }) });
       const payload = await response.json().catch(() => ({}));
       setFormMessage(response.ok ? "Commission split saved." : (payload.errors?.[0] ?? "Could not save split."));
       await loadChannel();
@@ -204,7 +204,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
   const markRead = useCallback(async (id: string) => {
     setActiveAction(`read-${id}`);
     try {
-      await fetch(`/api/broker/channel/notifications/${encodeURIComponent(id)}/read`, { method: "POST" });
+      await fetch(`/api/broker/channel/notifications/${encodeURIComponent(id)}/read/`, { method: "POST" });
       await loadChannel();
     } finally {
       setActiveAction(null);
@@ -215,7 +215,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
     const unread = notifications.filter((item) => !item.readAt);
     setActiveAction("read-all");
     try {
-      await Promise.all(unread.map((item) => fetch(`/api/broker/channel/notifications/${encodeURIComponent(item.id)}/read`, { method: "POST" })));
+      await Promise.all(unread.map((item) => fetch(`/api/broker/channel/notifications/${encodeURIComponent(item.id)}/read/`, { method: "POST" })));
       setFormMessage(`Marked ${unread.length} notifications read.`);
       await loadChannel();
     } finally {
@@ -226,7 +226,7 @@ export function BrokerChannelPanel({ drafts }: { drafts: ListingDraft[] }) {
   const runMaintenance = useCallback(async (action: "expire" | "sync") => {
     setActiveAction(action);
     try {
-      const path = action === "expire" ? "/api/broker/channel/maintenance/expire" : "/api/broker/channel/erpnext/sync";
+      const path = action === "expire" ? "/api/broker/channel/maintenance/expire/" : "/api/broker/channel/erpnext/sync/";
       const response = await fetch(path, { method: "POST" });
       const payload = await response.json().catch(() => ({}));
       setFormMessage(response.ok ? (action === "expire" ? `Expired ${payload.expired ?? 0} requests.` : `ERPNext sync processed ${payload.processed ?? 0} writes.`) : (payload.errors?.[0] ?? "Maintenance action failed."));

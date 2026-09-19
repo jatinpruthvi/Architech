@@ -126,8 +126,8 @@ export default function BrokerChannel() {
     try {
       const [requestsResponse, matchesResponse] = await Promise.all([
         /* Cost-audit P1.1: honour the endpoints' private 15 s cache TTL. */
-        fetch("/api/broker/channel/requests"),
-        fetch("/api/broker/channel/matches"),
+        fetch("/api/broker/channel/requests/"),
+        fetch("/api/broker/channel/matches/"),
       ]);
       const requestsPayload = await requestsResponse.json();
       const matchesPayload = await matchesResponse.json();
@@ -144,7 +144,7 @@ export default function BrokerChannel() {
   const publish = async (body: Record<string, unknown>) => {
     setSubmitting(true);
     try {
-      const response = await fetch("/api/broker/channel/requests", {
+      const response = await fetch("/api/broker/channel/requests/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -169,7 +169,7 @@ export default function BrokerChannel() {
   };
 
   const respond = async (matchId: string, action: "accept" | "reject") => {
-    const response = await fetch(`/api/broker/channel/matches/${encodeURIComponent(matchId)}/respond`, {
+    const response = await fetch(`/api/broker/channel/matches/${encodeURIComponent(matchId)}/respond/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
@@ -191,7 +191,7 @@ export default function BrokerChannel() {
   };
 
   const closeRequest = async (id: string) => {
-    const response = await fetch(`/api/broker/channel/requests/${encodeURIComponent(id)}/close`, { method: "POST" });
+    const response = await fetch(`/api/broker/channel/requests/${encodeURIComponent(id)}/close/`, { method: "POST" });
     const payload = await response.json();
     if (!response.ok || !payload.ok) {
       toast(payload.errors?.[0] ?? "Could not withdraw.");

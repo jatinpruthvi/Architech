@@ -1,6 +1,6 @@
 "use client";
 /* Debounced, abortable search-suggestions hook (P1-SEARCH-002 frontend).
-   Fetches `/api/search/suggest` with a short debounce, aborts in-flight requests
+   Fetches `/api/search/suggest/` with a short debounce, aborts in-flight requests
    and stale results, and never resolves a request after the component unmounts.
    Server-backed, so suggestions stay consistent with the canonical alias module
    rather than a client-side reimplementation. */

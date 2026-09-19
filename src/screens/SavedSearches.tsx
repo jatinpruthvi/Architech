@@ -19,7 +19,7 @@ export default function SavedSearches() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/saved-searches", { cache: "no-store" });
+      const response = await fetch("/api/saved-searches/", { cache: "no-store" });
       const payload = await response.json();
       setSearches(Array.isArray(payload.savedSearches) ? payload.savedSearches : []);
     } finally {
@@ -32,7 +32,7 @@ export default function SavedSearches() {
   }, [load]);
 
   const remove = async (id: string) => {
-    const response = await fetch(`/api/saved-searches/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const response = await fetch(`/api/saved-searches/${encodeURIComponent(id)}/`, { method: "DELETE" });
     const payload = await response.json();
     if (!response.ok || !payload.ok) {
       toast("Could not delete this saved search.", { description: "Please try again." });
