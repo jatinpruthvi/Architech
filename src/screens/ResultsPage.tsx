@@ -602,12 +602,13 @@ export default function ResultsPage({
       <p className="mb-5 border border-ink/15 bg-paper px-4 py-3 stamp ink-2">{t.search.truncatedNotice}</p>
     )}
  <div className={`grid gap-6 ${mapMode ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-1 xl:grid-cols-2"}`} aria-busy={loading}>
- {/* Grouped so a card removed by a filter animates its SURVIVORS into their new
-    slots. `layout="position"`, not `layout`: the latter also scales x/y, and a
-    card with a 1.5-crop image inside it visibly squishes while it travels.
-    Position morphing composes with the image aspect reservation and with
-    `.architech-reveal`, because the transform motion writes land on THIS wrapper
-    while the CSS animation lives on the Reveal element inside it. */}
+ {/* Cards are keyed on the listing id, so filtering re-orders survivors instead
+    of remounting them, and this wrapper stays transform-free — the entrance
+    animation is the CSS `.architech-reveal` on the <Reveal> element inside it,
+    and a transform here would fight both that and the card's aspect
+    reservation. No animation library is involved on this page:
+    design-token-discipline.test.ts pins that, and Reveal's PERF-R5-006 note
+    records what the library cost when it was. */}
  {loading ? (
  Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
  ) : (
