@@ -109,7 +109,9 @@ export function BrokerPropertyTable({
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex min-h-11 items-center gap-2">
           <select aria-label="Entries per page" className="tp-input min-h-11 !px-2 !py-1 !text-sm" defaultValue={perPage} onChange={(event) => { window.location.href = qs(1, Number(event.target.value)); }}>
-            {[25, 50, 100, 250, 500].map((n) => <option key={n} value={n}>{n}</option>)}
+            {/* 100 is the cap enforced by the repository — offering more here
+                made the selection silently revert on the next load. */}
+            {[25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
           <span>per page</span>
         </label>

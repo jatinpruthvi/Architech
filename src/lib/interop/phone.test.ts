@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromWhatsAppJid, maskE164, normalizeIndianPhone, telLink, toE164OrThrow, toWhatsAppJid, waMeLink } from "./phone";
+import { buildWaMessage, fromWhatsAppJid, maskE164, normalizeIndianPhone, telLink, toE164OrThrow, toWhatsAppJid, waMeLink } from "./phone";
 
 const e164 = (raw: string) => {
   const result = normalizeIndianPhone(raw);
@@ -104,5 +104,19 @@ describe("WhatsApp JID for Evolution API", () => {
   it("keeps JID and E.164 as distinct formats", () => {
     const e164 = "+919876543210";
     expect(toWhatsAppJid(e164)).not.toBe(e164);
+  });
+});
+
+describe("buildWaMessage", () => {
+  it("names the property so the owner recognises it on a cold chat", () => {
+    expect(buildWaMessage("2BHK, Thaltej, ₹18,000")).toBe(
+      "Hi, I'm your Architech broker partner calling about your 2BHK, Thaltej, ₹18,000 listed with us.",
+    );
+  });
+
+  it("falls back to the generic greeting without context", () => {
+    expect(buildWaMessage(null)).toBe("Hi, regarding your property on Architech…");
+    expect(buildWaMessage("   ")).toBe("Hi, regarding your property on Architech…");
+    expect(buildWaMessage(undefined)).toBe("Hi, regarding your property on Architech…");
   });
 });

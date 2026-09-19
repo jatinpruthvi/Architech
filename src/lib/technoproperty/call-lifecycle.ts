@@ -74,7 +74,12 @@ export function compareQueueRows(a: QueueRowLike, b: QueueRowLike): number {
   return time(a.followUpAt) - time(b.followUpAt);
 }
 
-/** Short human label for the state chip on a queue card. */
+/** Short human label for the state chip on a queue card.
+ *
+ * Time-aware on purpose: brokers promise *minutes*, not days ("call me at
+ * 5:30"). Once the promised moment has passed the chip says overdue by the
+ * smallest honest unit (m → h → d); a promise later today shows its time; a
+ * tomorrow promise shows "tomorrow 5:30 PM". */
 export function callStateLabel(
   row: { callState: CallState; followUpAt: Date | string | null; lastOutcomeAt: Date | string | null },
   now: Date = new Date(),
@@ -85,17 +90,33 @@ export function callStateLabel(
     case "followup": {
       if (!row.followUpAt) return "Follow up · due";
       const due = time(row.followUpAt);
-      const day = 86_400_000;
-      const overdueDays = Math.floor((endOfDay(now).getTime() - due) / day);
-      if (overdueDays >= 1) return `Follow up · overdue ${overdueDays}d`;
-      return "Follow up · due today";
+      if (due < now.getTime()) {
+        const minsOver = Math.floor((now.getTime() - due) / 60_000);
+        if (minsOver < 60) return `Follow up · overdue ${minsOver}m`;
+        const hrsOver = Math.floor(minsOver / 60);
+        if (hrsOver < 24) return `Follow up · overdue ${hrsOver}h`;
+        return `Follow up · overdue ${Math.floor(hrsOver / 24)}d`;
+      }
+      // Due later today (the state only exists while due ≤ end of today).
+      return `Follow up · due ${formatCallTime(new Date(due))}`;
     }
     case "scheduled": {
       if (!row.followUpAt) return "Follow up · scheduled";
-      const days = Math.round((time(row.followUpAt) - now.getTime()) / 86_400_000);
-      return days <= 1 ? "Follow up · tomorrow" : `Follow up · in ${days} days`;
+      const due = time(row.followUpAt);
+      const days = Math.round((due - now.getTime()) / 86_400_000);
+      if (days <= 1) return `Follow up · tomorrow ${formatCallTime(new Date(due))}`;
+      return `Follow up · in ${days} days`;
     }
     default:
       return null;
   }
+}
+
+/** "5:30 PM" from a Date, using local wall-clock time (getters only, so SSR
+ *  and hydration agree for the same timestamp in the same runtime). */
+export function formatCallTime(d: Date): string {
+  const h24 = d.getHours();
+  const h = h24 % 12 === 0 ? 12 : h24 % 12;
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m} ${h24 >= 12 ? "PM" : "AM"}`;
 }

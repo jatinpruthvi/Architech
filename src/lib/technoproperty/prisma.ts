@@ -11,6 +11,7 @@ type TechnoDelegateKey =
   | "technoNote"
   | "technoShortlist"
   | "technoSavedSearch"
+  | "technoBuyerLead"
   | "technoCrawlRun";
 
 export type TechnoPrisma = ReturnType<typeof getPrismaClient> & Pick<PrismaClient, TechnoDelegateKey>;

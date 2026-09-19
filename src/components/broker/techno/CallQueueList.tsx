@@ -1,10 +1,17 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { CalendarClock, CheckCircle2, ChevronDown, Zap } from "lucide-react";
 import { CallOutcomePopover } from "./CallOutcomePopover";
 import { ContactRevealButton } from "./ContactRevealButton";
-import { applyLoggedOutcome, outcomeCounts, summarizeCallQueue, type LoggedOutcomes, type OutcomeFilter } from "./call-queue-state";
+import {
+  applyLoggedOutcome,
+  nextPendingId,
+  outcomeCounts,
+  summarizeCallQueue,
+  type LoggedOutcomes,
+  type OutcomeFilter,
+} from "./call-queue-state";
 import { callStateLabel, type CallState } from "@/lib/technoproperty/call-lifecycle";
 
 export interface CallQueueRow {
@@ -33,6 +40,7 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
   const [queueMessage, setQueueMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<OutcomeFilter>("all");
   const [showScheduled, setShowScheduled] = useState(false);
+  const [advanceTarget, setAdvanceTarget] = useState<string | null>(null);
   const scheduledId = useId();
   const completedId = useId();
   const nextHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -50,10 +58,35 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
   const activeLabel = STATUS_CHIPS.find((chip) => chip.key === statusFilter)?.label ?? null;
 
   function handleLogged(propertyId: string, outcome: string, advance: boolean) {
+    // Compute the hand-off against the outcomes BEFORE this log (see
+    // nextPendingId) so the row hands off to whoever was after it.
+    const nextId = advance ? nextPendingId(rows, loggedOutcomes, propertyId) : null;
     setLoggedOutcomes((current) => applyLoggedOutcome(current, propertyId, outcome));
-    setQueueMessage(advance ? "Outcome saved. Continue with the next owner." : "Updated outcome saved.");
-    if (advance) requestAnimationFrame(() => nextHeadingRef.current?.focus());
+    setQueueMessage(
+      advance ? (nextId ? "Outcome saved. Next owner is ready below." : "Outcome saved. That was the last one.") : "Updated outcome saved.",
+    );
+    if (advance) {
+      if (nextId) {
+        setAdvanceTarget(nextId);
+      } else {
+        requestAnimationFrame(() => nextHeadingRef.current?.focus());
+      }
+    }
   }
+
+  // Scroll the next card into view and move focus to it so keyboard and
+  // screen-reader users land on the next owner, not a dead heading.
+  useEffect(() => {
+    if (!advanceTarget) return;
+    const el = document.getElementById(`tp-queue-card-${advanceTarget}`);
+    if (el) {
+      // Respect the OS setting: jump instead of a 300ms+ smooth scroll.
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+      el.focus({ preventScroll: true });
+    }
+    setAdvanceTarget(null);
+  }, [advanceTarget]);
 
   if (summary.total === 0) {
     return (
@@ -90,7 +123,8 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
           aria-valuemax={100}
           aria-valuenow={summary.percent}
         >
-          <div className="h-full rounded-full bg-[var(--tp-accent-2)] transition-[width] motion-reduce:transition-none" style={{ width: `${summary.percent}%` }} />
+          {/* scaleX (not width) so the fill animates on the compositor */}
+          <div className="tp-progress-fill h-full rounded-full bg-[var(--tp-accent-2)]" style={{ transform: `scaleX(${summary.percent / 100})` }} />
         </div>
         <p className="mt-2 min-h-5 text-xs font-semibold text-[var(--tp-accent-2)]" role="status" aria-live="polite">
           {queueMessage}
@@ -137,6 +171,7 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
                 sequence={statusFilter === "all" ? index + 1 : undefined}
                 outcome={loggedOutcomes[row.id] ?? row.currentOutcome}
                 onLogged={(outcome) => handleLogged(row.id, outcome, true)}
+                stagger={index}
               />
             ))}
           </div>
@@ -164,12 +199,13 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
           </button>
           {showScheduled ? (
             <div id={scheduledId} className="mt-2 space-y-2">
-              {summary.scheduled.map((row) => (
+              {summary.scheduled.map((row, index) => (
                 <CallQueueCard
                   key={row.id}
                   row={row}
                   outcome={loggedOutcomes[row.id] ?? row.currentOutcome}
                   onLogged={(outcome) => handleLogged(row.id, outcome, false)}
+                  stagger={index}
                 />
               ))}
             </div>
@@ -191,13 +227,14 @@ export function CallQueueList({ rows, scheduledCount = 0 }: { rows: CallQueueRow
           </button>
           {showCompleted ? (
             <div id={completedId} className="mt-2 space-y-2">
-              {completedView.map((row) => (
+              {completedView.map((row, index) => (
                 <CallQueueCard
                   key={row.id}
                   row={row}
                   outcome={loggedOutcomes[row.id] ?? row.currentOutcome}
                   onLogged={(outcome) => handleLogged(row.id, outcome, false)}
                   completed
+                  stagger={index}
                 />
               ))}
             </div>
@@ -214,15 +251,24 @@ function CallQueueCard({
   outcome,
   onLogged,
   completed = false,
+  stagger,
 }: {
   row: CallQueueRow;
   sequence?: number;
   outcome: string | null;
   onLogged: (outcome: string) => void;
   completed?: boolean;
+  /** Position in the visible list — drives the 40ms entrance stagger (capped). */
+  stagger?: number;
 }) {
+  const riseStyle = stagger === undefined ? undefined : ({ "--tp-i": Math.min(stagger, 11) } as CSSProperties);
   return (
-    <article className={`tp-card flex flex-col gap-3 md:flex-row md:items-start md:gap-4 ${completed ? "tp-tint-neutral" : ""}`}>
+    <article
+      id={`tp-queue-card-${row.id}`}
+      tabIndex={-1}
+      className={`tp-card tp-rise flex flex-col gap-3 md:flex-row md:items-start md:gap-4 focus:outline-none focus:ring-2 focus:ring-[var(--tp-accent-2)] ${completed ? "tp-tint-neutral" : ""}`}
+      style={riseStyle}
+    >
       <div className="flex min-w-0 flex-1 items-start gap-3">
         {sequence ? (
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full tp-tint-blue text-xs font-bold" aria-label={`Queue position ${sequence}`}>
@@ -253,11 +299,19 @@ function CallQueueCard({
           initialPhone={row.ownerPhone}
           initialPhoneLast4={row.ownerPhoneLast4}
           initialRevealed={row.revealed}
+          waContext={waContextFor(row.keyInfo, row.area || row.premiseName, row.rentPriceRaw)}
         />
         <CallOutcomePopover propertyId={row.id} initialOutcome={outcome} onLogged={onLogged} />
       </div>
     </article>
   );
+}
+
+/** "2BHK, Thaltej, ₹35,000" — the owner recognises the property on a cold
+ *  WhatsApp chat. null keeps the generic greeting for bare rows. */
+function waContextFor(config: string | null, place: string | null, price: string | null): string | null {
+  const parts = [config, place, price].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 
 function DueChip({

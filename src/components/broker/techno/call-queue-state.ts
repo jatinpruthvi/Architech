@@ -20,23 +20,25 @@ export function applyLoggedOutcome(
  * complete the row, a follow-up moves to scheduled until its date arrives
  * (the next full reload re-buckets it via callState). "Calls logged" on the
  * progress card counts completed + scheduled — both mean a call was made. */
+export function isRowScheduled(row: QueueRow, outcomes: LoggedOutcomes): boolean {
+  const logged = outcomes[row.id];
+  if (logged) return logged === "follow_up";
+  if (row.callState) return row.callState === "scheduled";
+  return (row.currentOutcome ?? null) === "follow_up" && !TERMINAL_OUTCOMES.has(row.currentOutcome ?? "");
+}
+
+export function isRowCompleted(row: QueueRow, outcomes: LoggedOutcomes): boolean {
+  const logged = outcomes[row.id];
+  if (logged) return TERMINAL_OUTCOMES.has(logged);
+  if (row.callState) return row.callState === "done";
+  const outcome = row.currentOutcome ?? null;
+  return outcome !== null && TERMINAL_OUTCOMES.has(outcome);
+}
+
 export function summarizeCallQueue<T extends QueueRow>(rows: T[], outcomes: LoggedOutcomes) {
-  const isScheduled = (row: T) => {
-    const logged = outcomes[row.id];
-    if (logged) return logged === "follow_up";
-    if (row.callState) return row.callState === "scheduled";
-    return (row.currentOutcome ?? null) === "follow_up" && !TERMINAL_OUTCOMES.has(row.currentOutcome ?? "");
-  };
-  const isCompleted = (row: T) => {
-    const logged = outcomes[row.id];
-    if (logged) return TERMINAL_OUTCOMES.has(logged);
-    if (row.callState) return row.callState === "done";
-    const outcome = row.currentOutcome ?? null;
-    return outcome !== null && TERMINAL_OUTCOMES.has(outcome);
-  };
-  const pending = rows.filter((row) => !isScheduled(row) && !isCompleted(row));
-  const scheduled = rows.filter(isScheduled);
-  const completed = rows.filter(isCompleted);
+  const pending = rows.filter((row) => !isRowScheduled(row, outcomes) && !isRowCompleted(row, outcomes));
+  const scheduled = rows.filter((row) => isRowScheduled(row, outcomes));
+  const completed = rows.filter((row) => isRowCompleted(row, outcomes));
   const total = rows.length;
   const loggedCount = scheduled.length + completed.length;
   return {
@@ -47,6 +49,20 @@ export function summarizeCallQueue<T extends QueueRow>(rows: T[], outcomes: Logg
     total,
     percent: total === 0 ? 0 : Math.round((loggedCount / total) * 100),
   };
+}
+
+/* Auto-advance target: the card that sits next in the broker's dialing line
+ * after `currentId`, in the SAME order the pending section renders (rows
+ * arrive pre-sorted from the server; session outcomes don't reorder them).
+ * Computed against the OUTCOMES BEFORE this log, so a row that just left the
+ * line (terminal outcome) hands off to whoever was after it, and a row that
+ * stays (no_answer) hands off to its successor. null = nothing left. */
+export function nextPendingId<T extends QueueRow>(rows: T[], outcomesBefore: LoggedOutcomes, currentId: string): string | null {
+  const pending = rows.filter((row) => !isRowScheduled(row, outcomesBefore) && !isRowCompleted(row, outcomesBefore));
+  const idx = pending.findIndex((row) => row.id === currentId);
+  if (idx === -1) return null;
+  const next = pending[idx + 1];
+  return next ? next.id : null;
 }
 
 /* Status board: how many calls sit in each outcome bucket right now.

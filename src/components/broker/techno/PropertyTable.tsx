@@ -191,7 +191,7 @@ export function PropertyTable({
                             ) : null}
                           </span>
                         </td>
-                        <td><ContactRevealButton propertyId={r.id} initialName={r.ownerName} initialPhone={r.ownerPhone} initialPhoneLast4={r.ownerPhoneLast4} /></td>
+                        <td><ContactRevealButton propertyId={r.id} initialName={r.ownerName} initialPhone={r.ownerPhone} initialPhoneLast4={r.ownerPhoneLast4} waContext={waContextFor(r.keyInfo, r.area, r.rentPriceRaw)} /></td>
                         <td>
                           <AddressCell address={r.address} />
                           {r.isPremium ? <span className="ml-2 tp-chip tp-chip-amber">Premium</span> : null}
@@ -259,6 +259,7 @@ function PropertyCard({ row }: { row: PropertyRow }) {
           initialName={row.ownerName}
           initialPhone={row.ownerPhone}
           initialPhoneLast4={row.ownerPhoneLast4}
+          waContext={waContextFor(row.keyInfo, row.area, row.rentPriceRaw)}
         />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -270,6 +271,11 @@ function PropertyCard({ row }: { row: PropertyRow }) {
       </div>
     </article>
   );
+}
+
+function waContextFor(config: string | null, place: string | null, price: string | null): string | null {
+  const parts = [config, place, price].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 
 function CardFact({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {

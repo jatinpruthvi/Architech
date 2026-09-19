@@ -73,7 +73,54 @@ describe("call queue progress", () => {
   });
 });
 
-import { outcomeCounts } from "./call-queue-state";
+import { nextPendingId, outcomeCounts } from "./call-queue-state";
+
+describe("nextPendingId", () => {
+  it("hands off to the next owner in the rendered line", () => {
+    const line = [
+      { id: "a", currentOutcome: null },
+      { id: "b", currentOutcome: null },
+      { id: "c", currentOutcome: null },
+    ];
+    expect(nextPendingId(line, {}, "a")).toBe("b");
+    expect(nextPendingId(line, {}, "c")).toBeNull();
+  });
+
+  it("skips rows that already completed or went to scheduled", () => {
+    const line = [
+      { id: "a", currentOutcome: null },
+      { id: "b", currentOutcome: "connected" },
+      { id: "c", currentOutcome: "follow_up", callState: "scheduled" as const },
+      { id: "d", currentOutcome: null },
+    ];
+    expect(nextPendingId(line, {}, "a")).toBe("d");
+  });
+
+  it("a row that just left the line (terminal) hands off to its successor", () => {
+    const line = [
+      { id: "a", currentOutcome: null },
+      { id: "b", currentOutcome: null },
+    ];
+    // Logged "connected" on "a" — computed against the outcomes BEFORE the log.
+    expect(nextPendingId(line, {}, "a")).toBe("b");
+    // ...and after the log, "a" is gone; the successor of "b" is nothing.
+    expect(nextPendingId(line, { a: "connected" }, "b")).toBeNull();
+  });
+
+  it("a no-answer row STAYS in line and hands off to its successor", () => {
+    const line = [
+      { id: "a", currentOutcome: "no_answer" },
+      { id: "b", currentOutcome: null },
+    ];
+    expect(nextPendingId(line, { a: "no_answer" }, "a")).toBe("b");
+  });
+
+  it("returns null for a row that is not (or no longer) pending", () => {
+    const line = [{ id: "a", currentOutcome: "connected" }];
+    expect(nextPendingId(line, {}, "a")).toBeNull();
+    expect(nextPendingId(line, {}, "ghost")).toBeNull();
+  });
+});
 
 describe("outcomeCounts", () => {
   it("buckets rows by live outcome", () => {

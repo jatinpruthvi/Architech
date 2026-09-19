@@ -111,7 +111,7 @@ export default function RequirementTable({
                     <td className="text-sm">{r.availabilityRaw || "3 BHK"}</td>
                     <td className="text-sm">{r.area || r.premiseName || "—"}</td>
                     <td className="whitespace-nowrap font-semibold">{r.rentPriceRaw || "—"}</td>
-                    <td><ContactRevealButton propertyId={r.id} initialName={r.ownerName} initialPhone={r.ownerPhone} initialPhoneLast4={r.ownerPhoneLast4} /></td>
+                    <td><ContactRevealButton propertyId={r.id} initialName={r.ownerName} initialPhone={r.ownerPhone} initialPhoneLast4={r.ownerPhoneLast4} waContext={waContextFor(r.availabilityRaw, r.area || r.premiseName, r.rentPriceRaw)} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -123,6 +123,11 @@ export default function RequirementTable({
       }
     />
   );
+}
+
+function waContextFor(detail: string | null, place: string | null, budget: string | null): string | null {
+  const parts = [detail, place, budget].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 
 function RequirementCard({ row }: { row: RequirementRow }) {
@@ -143,7 +148,7 @@ function RequirementCard({ row }: { row: RequirementRow }) {
       </div>
       {row.address ? <p className="mt-3 text-sm leading-5 text-[var(--tp-muted)]">{row.address}</p> : null}
       <div className="mt-4 border-t border-[var(--tp-border)] pt-4">
-        <ContactRevealButton propertyId={row.id} initialName={row.ownerName} initialPhone={row.ownerPhone} initialPhoneLast4={row.ownerPhoneLast4} />
+        <ContactRevealButton propertyId={row.id} initialName={row.ownerName} initialPhone={row.ownerPhone} initialPhoneLast4={row.ownerPhoneLast4} waContext={waContextFor(row.availabilityRaw, row.area || row.premiseName, row.rentPriceRaw)} />
       </div>
     </article>
   );

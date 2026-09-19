@@ -21,12 +21,14 @@ import {
   Phone,
   Search,
   Settings as SettingsIcon,
+  Users,
   UsersRound,
 } from "lucide-react";
 
 type NavKey =
   | "dashboard"
   | "search"
+  | "buyers"
   | "shortlisted"
   | "premium"
   | "activities"
@@ -35,6 +37,7 @@ type NavKey =
 const main: { key: NavKey; label: string; icon: typeof Home; href: string }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/broker" },
   { key: "search", label: "Search", icon: Search, href: "/broker/search" },
+  { key: "buyers", label: "Buyers", icon: Users, href: "/broker/buyers" },
 ];
 const tail: { key: NavKey; label: string; icon: typeof Home; href: string }[] = [
   { key: "shortlisted", label: "Shortlisted", icon: Bookmark, href: "/broker/shortlisted" },
