@@ -1909,6 +1909,16 @@ model TechnoProperty {
   @@index([orgId, active, sourceShortlisted])
   @@index([orgId, ownerPhoneLast4])
   @@index([rowHash])
+  // Query-shaped indexes (202609190002). The three lines above all lead with
+  // `active`, but the owner-side lists (buildOwnerWhere in
+  // src/lib/technoproperty/repository.ts) never constrain it — so there the
+  // old keys degrade to an orgId prefix and cannot supply ORDER BY datePosted.
+  // Each index below mirrors a specific emitted predicate + ordering; see the
+  // migration for the query-by-query justification.
+  @@index([orgId, active, firstSeenAt]) // dashboard "added" counts/groupBys; countMatchesSince (<=20 per activities load)
+  @@index([orgId, active, sourceStatus, datePosted]) // queue window; activeOwner/freshUnrevealed counts; layout badge
+  @@index([orgId, category, datePosted]) // paginated owner/broker/match lists ordered by datePosted
+  @@index([orgId, isPremium, datePosted]) // Premium tab
 }
 
 model TechnoBrokerListing {
@@ -1972,6 +1982,8 @@ model TechnoContactEvent {
   @@index([orgId, createdAt])
   @@index([brokerUserId, createdAt])
   @@index([propertyId, createdAt])
+  @@index([orgId, brokerUserId, createdAt]) // recent reveals (take 8) + call-queue follow-up log (take 1000)
+
 }
 
 model TechnoNote {
