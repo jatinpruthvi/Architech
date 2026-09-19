@@ -61,9 +61,15 @@ export default async function Page({ params }: { params: Promise<{ city: string;
   // schema must describe what the page actually publishes.
   /* Server-mode reads: with ARCHITECH_DATA_SOURCE=prisma these come from the
      database, so a locality page can never name a listing dossier that 404s.
-     In fixture mode the adapter returns the same fixtures the static path did. */
-  const localHomes = await getListingsByLocalityForServer(locality.slug, city.slug);
-  const cityHomes = await getListingsForServer({ citySlug: city.slug });
+     In fixture mode the adapter returns the same fixtures the static path did.
+     The locality read and the city read are independent queries (the locality
+     one is a narrower WHERE over the same table, not a subset of the city
+     result — the city read is row-capped, so deriving one from the other would
+     silently drop listings on a large city), so they run concurrently. */
+  const [localHomes, cityHomes] = await Promise.all([
+    getListingsByLocalityForServer(locality.slug, city.slug),
+    getListingsForServer({ citySlug: city.slug }),
+  ]);
   const listings = localHomes.filter((listing) => isIndexable(listing.lifecycle ?? "ACTIVE"));
 
   /* FAQ built from this locality's own facts, and rendered below from the same

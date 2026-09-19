@@ -2,6 +2,7 @@
    Fixture-backed for the prototype; shaped so server routes and client views can
    later move to Prisma/database data without importing fixture arrays directly. */
 import { properties, type Property } from "@/lib/properties";
+import { orderFeaturedFirst } from "./featured-order";
 
 export type { Property };
 
@@ -26,11 +27,12 @@ export function getListingsByCity(citySlug: string): Property[] {
 
 /** A small, stable showcase set for the home page.
     Featured listings first, then registry order — never the whole national
-    inventory, which would bloat the document and the client payload. */
+    inventory, which would bloat the document and the client payload.
+    The ordering rule itself lives in `orderFeaturedFirst` (shared with the
+    Prisma adapter and the home page). */
 export function getFeaturedListings(limit = 8, citySlug?: string): Property[] {
   const pool = citySlug ? getListingsByCity(citySlug) : getListings();
-  const featured = pool.filter((property) => property.featured);
-  return [...featured, ...pool.filter((property) => !property.featured)].slice(0, limit);
+  return orderFeaturedFirst(pool, limit);
 }
 
 /** Related homes prefer the same city so a Mumbai dossier never suggests Jaipur. */

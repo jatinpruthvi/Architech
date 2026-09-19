@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import Home from "@/screens/Home";
 import { getCities, getLocalities } from "@/lib/repositories";
-import {
-  getFeaturedListingsForServer,
-  getListingsForServer,
-} from "@/lib/repositories/server/prisma";
+import { getListingsForServer } from "@/lib/repositories/server/prisma";
+import { orderFeaturedFirst } from "@/lib/repositories/featured-order";
 import { exampleQuery, popularQueries } from "@/lib/search/suggest";
 import { formatBudget } from "@/lib/search/parse-query";
 import { homeUrl } from "@/lib/seo/urls";
@@ -47,16 +45,28 @@ function heroPresets(listings: Property[]) {
 export default async function Page() {
   /* Server-mode reads: prisma when ARCHITECH_DATA_SOURCE=prisma (the public
      site then publishes exactly the inventory the database holds), fixture
-     adapter otherwise — identical output for the CI/demo build. */
-  const allListings = await getListingsForServer({});
+     adapter otherwise — identical output for the CI/demo build.
+
+     The two reads are independent (different scopes, different caps), so they
+     go out together: this page used to await one after the other, and each
+     read is a full inventory query with its relation includes. */
+  const [allListings, showcaseListings] = await Promise.all([
+    getListingsForServer({}),
+    getListingsForServer({
+      citySlugs: showcaseCities,
+      limit: showcaseCities.length * 100,
+    }),
+  ]);
+  /* Featured is derived from the pool already in hand (PERF-R5-001): the old
+     `await getFeaturedListingsForServer(6)` re-issued this exact nationwide
+     read — same where clause, same ceiling, same order — just to pick six of
+     the rows it had already fetched. The ordering rule is unchanged and shared
+     with both adapters (`orderFeaturedFirst`). */
+  const featuredListings = orderFeaturedFirst(allListings, 6);
   const showcaseListingsByCity = new Map<string, Property[]>();
   for (const citySlug of showcaseCities) {
     showcaseListingsByCity.set(citySlug, []);
   }
-  const showcaseListings = await getListingsForServer({
-    citySlugs: showcaseCities,
-    limit: showcaseCities.length * 100,
-  });
   for (const listing of showcaseListings) {
     if (showcaseListingsByCity.has(listing.citySlug)) {
       showcaseListingsByCity.get(listing.citySlug)!.push(listing);
@@ -73,7 +83,7 @@ export default async function Page() {
   }));
   return (
     <Home
-      featured={await getFeaturedListingsForServer(6)}
+      featured={featuredListings}
       listingCount={allListings.length}
       localityCount={getLocalities().length}
       cityCount={cities.length}
