@@ -1,8 +1,8 @@
 From b12e8335c9403ae20bce1c5d0f6c396d47a70559 Mon Sep 17 00:00:00 2001
 From: jatinpruthvi <16306904+jatinpruthvi@users.noreply.github.com>
 Date: Sat, 19 Sep 2026 15:22:19 +0000
-Subject: [PATCH] feat(broker): full Broker Workspace integration for desktop
- and mobile PWA with matching engine, modals, and dialer
+Subject: [PATCH 1/2] feat(broker): full Broker Workspace integration for
+ desktop and mobile PWA with matching engine, modals, and dialer
 
 ---
  crm/api/broker.py                             | 738 ++++++++++++++++++
@@ -6324,6 +6324,416 @@ index 00000000..441950ee
 +    window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`, '_blank')
 +  }
 +}
+-- 
+2.39.5
+
+
+From aa8899c3257bea60e69f85691205c6999480b782 Mon Sep 17 00:00:00 2001
+From: jatinpruthvi <16306904+jatinpruthvi@users.noreply.github.com>
+Date: Sat, 19 Sep 2026 15:45:21 +0000
+Subject: [PATCH 2/2] fix(broker): harden data contracts, unmasking guards,
+ quick modal integrations, and test coverage
+
+---
+ crm/api/broker.py                             |  5 +-
+ crm/api/matching.py                           | 12 ++++-
+ crm/tests/test_broker_api.py                  | 45 +++++++++++++++-
+ .../src/components/Broker/WhatsAppFab.vue     | 31 ++++-------
+ .../src/components/Broker/WhatsAppModal.vue   |  5 +-
+ frontend/src/pages/BrokerDashboard.vue        | 41 +++++++++++++--
+ frontend/src/pages/BrokerProperties.vue       |  2 +-
+ frontend/src/pages/BrokerProperty.vue         |  3 +-
+ frontend/src/pages/MobileBrokerDashboard.vue  | 52 +++++++++++++------
+ 9 files changed, 148 insertions(+), 48 deletions(-)
+
+diff --git a/crm/api/broker.py b/crm/api/broker.py
+index 81b329d8..8e698a42 100644
+--- a/crm/api/broker.py
++++ b/crm/api/broker.py
+@@ -32,7 +32,7 @@ def get_dashboard_kpis() -> dict[str, Any]:
+ 	active_properties = frappe.db.count("CRM Property", {"status": "Available"})
+ 	today_properties = frappe.db.count("CRM Property", {"creation": [">=", today_start]})
+ 	yesterday_properties = frappe.db.count(
+-		"CRM Property", {"creation": [">=", yesterday_start], "creation": ["<", today_start]}
++		"CRM Property", {"creation": ["between", [yesterday_start, today_start]]}
+ 	)
+ 
+ 	# Requirements
+@@ -694,8 +694,11 @@ def create_quick_requirement(
+ 	if not client_name or not client_phone or not preferred_locality:
+ 		frappe.throw(_("Client Name, Phone, and Preferred Locality are required."))
+ 
++	req_title = f"{client_name.strip()} ({bhk} in {preferred_locality.strip()})"
++
+ 	doc = frappe.get_doc({
+ 		"doctype": "CRM Requirement",
++		"title": req_title,
+ 		"client_name": client_name.strip(),
+ 		"client_phone": client_phone.strip(),
+ 		"deal_type": deal_type,
+diff --git a/crm/api/matching.py b/crm/api/matching.py
+index dd45f9ea..f38800b0 100644
+--- a/crm/api/matching.py
++++ b/crm/api/matching.py
+@@ -258,10 +258,18 @@ def get_buyer_matches_for_property(property_id: str, limit: int = 30) -> dict[st
+ 		reasons = [r for r in [bhk_re, bud_re, area_re, furn_re] if r]
+ 
+ 		scored_buyers.append({
+-			"requirement": req,
++			"requirement_name": req.name,
++			"title": req.title,
++			"client_name": req.client_name,
++			"client_phone": req.client_phone,
++			"budget_max": req.budget_max,
++			"timeline": req.timeline,
++			"preferred_locality": req.preferred_locality,
+ 			"score": total_score,
+ 			"tier": tier,
++			"match_tier": tier.title(),
+ 			"reasons": reasons,
++			"requirement": req,
+ 		})
+ 
+ 	scored_buyers.sort(key=lambda x: x["score"], reverse=True)
+@@ -269,6 +277,8 @@ def get_buyer_matches_for_property(property_id: str, limit: int = 30) -> dict[st
+ 
+ 	return {
+ 		"property": prop.as_dict(),
++		"matches": top_buyers,
+ 		"buyer_matches": top_buyers,
++		"total": len(top_buyers),
+ 		"total_matches": len(top_buyers),
+ 	}
+diff --git a/crm/tests/test_broker_api.py b/crm/tests/test_broker_api.py
+index 3c501daa..1a3bb22e 100644
+--- a/crm/tests/test_broker_api.py
++++ b/crm/tests/test_broker_api.py
+@@ -6,19 +6,33 @@ import unittest
+ from unittest.mock import MagicMock
+ 
+ # Mock frappe if not running within a live Frappe bench environment
++class MockDocument:
++	def __init__(self, d=None):
++		if d and isinstance(d, dict):
++			for k, v in d.items():
++				setattr(self, k, v)
++
+ if "frappe" not in sys.modules:
+-	sys.modules["frappe"] = MagicMock()
++	frappe_mock = MagicMock()
++	frappe_mock._ = lambda x: str(x)
++	sys.modules["frappe"] = frappe_mock
+ 	sys.modules["frappe.utils"] = MagicMock()
+ 	sys.modules["frappe.core"] = MagicMock()
+ 	sys.modules["frappe.core.api"] = MagicMock()
+ 	sys.modules["frappe.core.api.file"] = MagicMock()
+ 	sys.modules["frappe.rate_limiter"] = MagicMock()
+ 	sys.modules["frappe.translate"] = MagicMock()
++	doc_mock = MagicMock()
++	doc_mock.Document = MockDocument
++	sys.modules["frappe.model"] = doc_mock
++	sys.modules["frappe.model.document"] = doc_mock
+ 	sys.modules["crm.utils"] = MagicMock()
+ if "bs4" not in sys.modules:
+ 	sys.modules["bs4"] = MagicMock()
+ 
+ from crm.api.broker import mask_phone
++from crm.fcrm.doctype.crm_property.crm_property import CRMProperty
++from crm.fcrm.doctype.crm_requirement.crm_requirement import CRMRequirement
+ 
+ 
+ class TestBrokerAPI(unittest.TestCase):
+@@ -35,6 +49,35 @@ class TestBrokerAPI(unittest.TestCase):
+ 		masked = mask_phone(None, None)
+ 		self.assertEqual(masked, "••••••••••")
+ 
++	def test_property_last4_extraction(self):
++		doc = CRMProperty({"doctype": "CRM Property"})
++		doc.owner_phone = "+91 91234 56789"
++		doc.extract_phone_last4()
++		self.assertEqual(doc.owner_phone_last4, "6789")
++
++	def test_property_title_auto_generation(self):
++		doc = CRMProperty({"doctype": "CRM Property"})
++		doc.property_name = None
++		doc.bhk = "3 BHK"
++		doc.premise_name = "Satyam Complex"
++		doc.area = "Bodakdev"
++		doc.set_property_name()
++		self.assertIn("3 BHK", doc.property_name)
++		self.assertIn("Satyam Complex", doc.property_name)
++
++	def test_requirement_title_auto_generation(self):
++		doc = CRMRequirement({"doctype": "CRM Requirement"})
++		doc.title = None
++		doc.deal_type = "Rent"
++		doc.bhk = "2 BHK"
++		doc.preferred_locality = "Satellite"
++		doc.client_name = "Amit Patel"
++		doc.set_requirement_title()
++		self.assertIn("Rent", doc.title)
++		self.assertIn("2 BHK", doc.title)
++		self.assertIn("Satellite", doc.title)
++		self.assertIn("Amit Patel", doc.title)
++
+ 
+ if __name__ == "__main__":
+ 	unittest.main()
+diff --git a/frontend/src/components/Broker/WhatsAppFab.vue b/frontend/src/components/Broker/WhatsAppFab.vue
+index 167be79d..5f3b786e 100644
+--- a/frontend/src/components/Broker/WhatsAppFab.vue
++++ b/frontend/src/components/Broker/WhatsAppFab.vue
+@@ -1,26 +1,15 @@
+ <template>
+-  <div>
+-    <!-- Floating Action Button for Instant WhatsApp -->
+-    <button
+-      type="button"
+-      class="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center transition active:scale-95"
+-      title="Quick WhatsApp Chat"
+-      aria-label="Quick WhatsApp"
+-      @click="showModal = true"
+-    >
+-      <span class="lucide-message-circle size-6"></span>
+-    </button>
+-
+-    <WhatsAppModal
+-      v-model="showModal"
+-      :property="null"
+-    />
+-  </div>
++  <button
++    type="button"
++    class="fixed bottom-6 right-6 z-40 size-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center transition active:scale-95"
++    title="Quick WhatsApp Chat"
++    aria-label="Quick WhatsApp"
++    @click="$emit('click')"
++  >
++    <span class="lucide-message-circle size-6"></span>
++  </button>
+ </template>
+ 
+ <script setup>
+-import { ref } from 'vue'
+-import WhatsAppModal from '@/components/Broker/WhatsAppModal.vue'
+-
+-const showModal = ref(false)
++defineEmits(['click'])
+ </script>
+diff --git a/frontend/src/components/Broker/WhatsAppModal.vue b/frontend/src/components/Broker/WhatsAppModal.vue
+index 822f315e..fd5b4b71 100644
+--- a/frontend/src/components/Broker/WhatsAppModal.vue
++++ b/frontend/src/components/Broker/WhatsAppModal.vue
+@@ -28,6 +28,9 @@
+           class="w-full p-2.5 text-xs font-mono font-bold rounded-xl border border-outline-gray-1 bg-surface-base"
+           :placeholder="__('+91 98765 43210')"
+         />
++        <p v-if="recipientPhone && recipientPhone.includes('•')" class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg">
++          {{ __('Phone is currently shielded. Please unlock the contact in the dossier or enter the full 10-digit number.') }}
++        </p>
+       </div>
+ 
+       <!-- Template Picker -->
+@@ -92,7 +95,7 @@
+           variant="solid"
+           iconLeft="message-circle"
+           class="bg-green-600 hover:bg-green-700 text-white"
+-          :disabled="!recipientPhone || !messageBody"
++          :disabled="!recipientPhone || recipientPhone.includes('•') || !messageBody"
+           @click="sendMessage"
+         >
+           {{ __('Send via WhatsApp') }}
+diff --git a/frontend/src/pages/BrokerDashboard.vue b/frontend/src/pages/BrokerDashboard.vue
+index f418fc35..2ec69967 100644
+--- a/frontend/src/pages/BrokerDashboard.vue
++++ b/frontend/src/pages/BrokerDashboard.vue
+@@ -22,14 +22,14 @@
+         <Button
+           variant="outline"
+           iconLeft="plus"
+-          @click="openNewRequirement"
++          @click="showRequirementModal = true"
+         >
+           {{ __('New Buyer') }}
+         </Button>
+         <Button
+           variant="outline"
+           iconLeft="plus"
+-          @click="openNewProperty"
++          @click="showPropertyModal = true"
+         >
+           {{ __('New Property') }}
+         </Button>
+@@ -237,6 +237,16 @@
+ 
+             <div class="flex items-center gap-2">
+               <Button
++                v-if="!item.revealed"
++                size="sm"
++                variant="solid"
++                iconLeft="eye"
++                @click="handleRevealDesktop(item)"
++              >
++                {{ __('Reveal') }}
++              </Button>
++              <Button
++                v-else
+                 size="sm"
+                 variant="solid"
+                 iconLeft="phone"
+@@ -289,16 +299,39 @@
+         </div>
+       </div>
+     </div>
++
++    <!-- Quick Modals -->
++    <QuickPropertyModal
++      v-model="showPropertyModal"
++      @saved="refreshAll"
++    />
++    <QuickRequirementModal
++      v-model="showRequirementModal"
++      @saved="refreshAll"
++    />
+   </div>
+ </template>
+ 
+ <script setup>
+-import { computed } from 'vue'
++import { ref, computed } from 'vue'
+ import { Button } from 'frappe-ui'
+ import { brokerStore } from '@/stores/broker'
++import QuickPropertyModal from '@/components/Broker/QuickPropertyModal.vue'
++import QuickRequirementModal from '@/components/Broker/QuickRequirementModal.vue'
+ 
+ const store = brokerStore()
+-const { kpis, queue, logOutcome } = store
++const { kpis, queue, logOutcome, revealContact } = store
++
++const showPropertyModal = ref(false)
++const showRequirementModal = ref(false)
++
++async function handleRevealDesktop(item) {
++  const res = await revealContact(item.name, 'Desktop')
++  if (res?.ok) {
++    item.revealed = true
++    item.owner_phone = res.owner_phone
++  }
++}
+ 
+ const categoryTiles = [
+   { key: 'Residential Rent', label: 'Res. Rent', icon: 'home' },
+diff --git a/frontend/src/pages/BrokerProperties.vue b/frontend/src/pages/BrokerProperties.vue
+index 34b64a30..f552f519 100644
+--- a/frontend/src/pages/BrokerProperties.vue
++++ b/frontend/src/pages/BrokerProperties.vue
+@@ -417,7 +417,7 @@
+     />
+ 
+     <!-- WhatsApp Persistent FAB -->
+-    <WhatsAppFab />
++    <WhatsAppFab @click="showWhatsAppModal = true" />
+   </div>
+ </template>
+ 
+diff --git a/frontend/src/pages/BrokerProperty.vue b/frontend/src/pages/BrokerProperty.vue
+index c2b42a0e..ad2c39e0 100644
+--- a/frontend/src/pages/BrokerProperty.vue
++++ b/frontend/src/pages/BrokerProperty.vue
+@@ -374,8 +374,7 @@
+     <!-- Floating WhatsApp Action -->
+     <WhatsAppFab
+       v-if="detail.data?.property"
+-      :property="detail.data.property"
+-      @open-modal="showWhatsAppModal = true"
++      @click="showWhatsAppModal = true"
+     />
+   </div>
+ </template>
+diff --git a/frontend/src/pages/MobileBrokerDashboard.vue b/frontend/src/pages/MobileBrokerDashboard.vue
+index de960d89..fb0b280f 100644
+--- a/frontend/src/pages/MobileBrokerDashboard.vue
++++ b/frontend/src/pages/MobileBrokerDashboard.vue
+@@ -147,23 +147,36 @@
+ 
+           <div class="pt-2 border-t border-outline-gray-1 flex items-center gap-2">
+             <Button
++              v-if="!item.revealed"
+               size="sm"
+               variant="solid"
+-              iconLeft="phone"
++              iconLeft="eye"
+               class="flex-1"
+-              @click="dial(item.owner_phone)"
++              @click="handleReveal(item)"
+             >
+-              {{ __('Call') }}
+-            </Button>
+-            <Button
+-              size="sm"
+-              variant="outline"
+-              iconLeft="message-circle"
+-              class="flex-1"
+-              @click="openWhatsApp(item.owner_phone, item.property_name)"
+-            >
+-              {{ __('WhatsApp') }}
++              {{ __('Reveal Contact') }}
+             </Button>
++
++            <template v-else>
++              <Button
++                size="sm"
++                variant="solid"
++                iconLeft="phone"
++                class="flex-1"
++                @click="dial(item.owner_phone)"
++              >
++                {{ __('Call') }}
++              </Button>
++              <Button
++                size="sm"
++                variant="outline"
++                iconLeft="message-circle"
++                class="flex-1"
++                @click="openWhatsApp(item.owner_phone, item.property_name)"
++              >
++                {{ __('WhatsApp') }}
++              </Button>
++            </template>
+             <Button
+               size="sm"
+               variant="ghost"
+@@ -181,9 +194,10 @@
+ <script setup>
+ import { Button } from 'frappe-ui'
+ import { brokerStore } from '@/stores/broker'
++import { launchWhatsApp } from '@/utils/whatsapp'
+ 
+ const store = brokerStore()
+-const { kpis, queue, logOutcome } = store
++const { kpis, queue, logOutcome, revealContact } = store
+ 
+ const categoryTiles = [
+   { key: 'Residential Rent', label: 'Res. Rent' },
+@@ -204,9 +218,15 @@ function dial(phone) {
+ 
+ function openWhatsApp(phone, title) {
+   if (!phone) return
+-  const cleanPhone = phone.replace(/\D/g, '')
+-  const msg = encodeURIComponent(`Hello, following up regarding ${title}.`)
+-  window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${msg}`, '_blank')
++  launchWhatsApp(phone, `Hello, following up regarding ${title}.`)
++}
++
++async function handleReveal(item) {
++  const res = await revealContact(item.name, 'Mobile App')
++  if (res?.ok) {
++    item.revealed = true
++    item.owner_phone = res.owner_phone
++  }
+ }
+ 
+ async function quickOutcome(propertyId, outcome) {
 -- 
 2.39.5
 
