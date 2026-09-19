@@ -121,6 +121,19 @@ const nextConfig: NextConfig = {
         unoptimized: true,
         formats: ["image/avif", "image/webp"],
       },
+  async rewrites() {
+    return [
+      { source: "/crm/call-queue/", destination: "/broker/call-queue/" },
+      { source: "/crm/properties/", destination: "/broker/owners/" },
+      { source: "/crm/properties/:category/", destination: "/broker/owners/:category/" },
+      { source: "/crm/requirements/", destination: "/broker/requirements/" },
+      { source: "/crm/requirements/:category/", destination: "/broker/requirements/:category/" },
+      { source: "/crm/matches/", destination: "/broker/buyers/" },
+      { source: "/crm/leads/", destination: "/broker/leads/" },
+      { source: "/crm/dashboard/", destination: "/broker/" },
+      { source: "/crm/agent/", destination: "/broker/agent/" },
+    ];
+  },
   async headers() {
     const rules = [
       { source: "/:path*", headers: securityHeaders },

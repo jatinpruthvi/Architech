@@ -29,6 +29,7 @@ import { normalizeTechnoPathname } from "@/lib/technoproperty/routes";
 import { CountBadge, TechnoNavContent } from "./TechnoSidebar";
 
 const NAV = [
+  { label: "CRM HUB", href: "/crm" },
   { label: "EXPLORE CITIES", href: "/locations" },
   { label: "FIND RENT", href: "/broker/search" },
   { label: "FIND A HOME", href: "/broker/owners/ResidentialSell" },

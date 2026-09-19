@@ -14,6 +14,7 @@ import {
   ExternalLink,
   HelpCircle,
   Home,
+  Layers,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -27,6 +28,7 @@ import {
 
 type NavKey =
   | "dashboard"
+  | "crm"
   | "search"
   | "buyers"
   | "shortlisted"
@@ -36,6 +38,7 @@ type NavKey =
 
 const main: { key: NavKey; label: string; icon: typeof Home; href: string }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/broker" },
+  { key: "crm", label: "CRM Operations", icon: Layers, href: "/crm" },
   { key: "search", label: "Search", icon: Search, href: "/broker/search" },
   { key: "buyers", label: "Buyers", icon: Users, href: "/broker/buyers" },
 ];

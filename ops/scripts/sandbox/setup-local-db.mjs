@@ -580,6 +580,18 @@ function seedDatabase() {
     }
   );
   if (r.status !== 0) fail("seed failed");
+
+  log("initializing Frappe CRM tables & inventory ...");
+  const r2 = spawnSync(
+    process.execPath,
+    [path.join(repoRoot, "ops", "scripts", "init-crm-db.mjs")],
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+      env: { ...process.env, DATABASE_URL },
+    }
+  );
+  if (r2.status !== 0) fail("crm database initialization failed");
 }
 
 // --------------------------------------------------------------------------
