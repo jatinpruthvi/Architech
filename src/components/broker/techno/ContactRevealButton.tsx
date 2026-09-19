@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Phone, MessageCircle, Loader2 } from "lucide-react";
-import { normalizeIndianPhone, waMeLink } from "@/lib/interop/phone";
+import { buildWaMessage, normalizeIndianPhone, waMeLink } from "@/lib/interop/phone";
 
 export function ContactRevealButton({
   propertyId,
@@ -11,6 +11,7 @@ export function ContactRevealButton({
   initialName,
   initialPhone,
   initialPhoneLast4,
+  waContext,
   onRevealed,
 }: {
   propertyId?: string;
@@ -20,6 +21,9 @@ export function ContactRevealButton({
   initialName?: string | null;
   initialPhone?: string | null;
   initialPhoneLast4?: string | null;
+  /** "2BHK, Thaltej, ₹18,000" — rides in the WhatsApp pre-fill so the owner
+   *  knows which property before replying to an unknown number. */
+  waContext?: string | null;
   onRevealed?: () => void;
 }) {
   const [state, setState] = useState<{
@@ -72,6 +76,12 @@ export function ContactRevealButton({
   // continue to require an explicit click — the tradeoff is an audit trail per
   // reveal rather than silently logging every page view.
 
+  if (state.error === "PHONE_PENDING") {
+    /* The property exists but the crawler hasn't fetched its phone yet.
+       Retrying can never succeed, so no button — just an honest state. */
+    return <span className="tp-contact-pill" aria-disabled="true">Phone not available yet</span>;
+  }
+
   if (state.error) {
     return (
       <button type="button" className="tp-contact-pill" onClick={reveal}>Retry contact</button>
@@ -95,7 +105,7 @@ export function ContactRevealButton({
 
   const normalizedPhone = normalizeIndianPhone(state.phone);
   const whatsappHref = normalizedPhone.ok
-    ? `${waMeLink(normalizedPhone.e164)}?text=${encodeURIComponent("Hi, regarding your property on Architech…")}`
+    ? `${waMeLink(normalizedPhone.e164)}?text=${encodeURIComponent(buildWaMessage(waContext))}`
     : null;
 
   return (

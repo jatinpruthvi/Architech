@@ -31,32 +31,40 @@ export async function POST(request: Request) {
         ? TechnoRevealChannel.REVEAL_ONLY
         : TechnoRevealChannel.CLICK_TO_DIAL;
 
-  const db = technoDb();
-  if (listingType === TechnoListingType.OWNER && body.propertyId) {
-    const prop = await db.technoProperty.findFirst({
-      where: { id: body.propertyId, orgId },
-    });
-    if (!prop) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
-    if (!prop.ownerPhoneCipher) {
-      return NextResponse.json({ ok: false, error: "PHONE_PENDING" });
-    }
-    let phone = "";
-    try {
-      phone = decryptContact(prop.ownerPhoneCipher as Uint8Array);
-    } catch {
-      return NextResponse.json({ ok: false, error: "DECRYPT_FAILED" }, { status: 500 });
-    }
-    await db.technoContactEvent.create({
-      data: {
-        brokerUserId,
-        orgId,
-        listingType,
-        propertyId: prop.id,
-        phoneLast4: prop.ownerPhoneLast4,
-        channel,
-      },
-    });
-    return NextResponse.json({ ok: true, ownerName: prop.ownerName, phone });
+  /* V1: only owner-listing phones are crawled/decrypted. Broker-listing
+     reveal is not wired yet — say so explicitly instead of a bare 400. */
+  if (listingType === TechnoListingType.BROKER) {
+    return NextResponse.json({ ok: false, error: "BROKER_REVEAL_NOT_WIRED" }, { status: 501 });
   }
-  return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
+  if (!body.propertyId) {
+    return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
+  }
+
+  const db = technoDb();
+  const prop = await db.technoProperty.findFirst({
+    where: { id: body.propertyId, orgId },
+  });
+  if (!prop) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+  if (!prop.ownerPhoneCipher) {
+    /* 422, not 200: the property exists but has no phone to reveal —
+       retrying can never succeed, so the client shows a non-retry state. */
+    return NextResponse.json({ ok: false, error: "PHONE_PENDING" }, { status: 422 });
+  }
+  let phone = "";
+  try {
+    phone = decryptContact(prop.ownerPhoneCipher as Uint8Array);
+  } catch {
+    return NextResponse.json({ ok: false, error: "DECRYPT_FAILED" }, { status: 500 });
+  }
+  await db.technoContactEvent.create({
+    data: {
+      brokerUserId,
+      orgId,
+      listingType,
+      propertyId: prop.id,
+      phoneLast4: prop.ownerPhoneLast4,
+      channel,
+    },
+  });
+  return NextResponse.json({ ok: true, ownerName: prop.ownerName, phone });
 }

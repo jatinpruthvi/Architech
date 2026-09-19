@@ -2,6 +2,7 @@ const TECHNO_WORKSPACE_ROOTS = [
   "/broker/search",
   "/broker/owners",
   "/broker/brokers",
+  "/broker/buyers",
   "/broker/requirements",
   "/broker/shortlisted",
   "/broker/premium",

@@ -1,12 +1,21 @@
 import "server-only";
-import { Prisma, TechnoCategory, TechnoListingType, TechnoRevealChannel, TechnoSourceStatus } from "@prisma/client";
-import { callStateFor, compareQueueRows, type CallState } from "./call-lifecycle";
+import {
+  Prisma,
+  TechnoCategory,
+  TechnoDealType,
+  TechnoLeadSource,
+  TechnoListingType,
+  TechnoRevealChannel,
+  TechnoSourceStatus,
+} from "@prisma/client";
+import { callStateFor, compareQueueRows, FOLLOW_UP_OUTCOME, type CallState } from "./call-lifecycle";
 
 /** How many finished calls ride along in the queue payload for the
     collapsed "completed" section. Purely presentational history. */
 const CALL_DONE_HISTORY_LIMIT = 20;
 const CALL_SCHEDULED_LIMIT = 20;
-import { decryptContact } from "@/lib/interop/contact-crypto";
+import { decryptContact, encryptContact } from "@/lib/interop/contact-crypto";
+import { normalizeIndianPhone } from "@/lib/interop/phone";
 import { technoDb } from "./prisma";
 import { TECHNOCATEGORIES, categoryKeyToEnum, categoryLabel } from "./categories";
 
@@ -163,8 +172,12 @@ export async function getDashboardKpis(orgId: string): Promise<DashboardKpis> {
   };
 }
 
-function buildOwnerWhere(orgId: string, params: ListParams, userId?: string) {
+export function buildOwnerWhere(orgId: string, params: ListParams, userId?: string) {
   const where: Prisma.TechnoPropertyWhereInput = { orgId };
+  /* The "Important" tab expresses its category filter through where.OR, so the
+     search clause must be AND-ed with it — reassigning where.OR would silently
+     drop the tab filter the moment a broker searches (see repository.test.ts). */
+  let orFilter: Prisma.TechnoPropertyWhereInput | null = null;
   if (params.category === "Premium") {
     where.isPremium = true;
   } else if (params.category === "Mine") {
@@ -172,10 +185,12 @@ function buildOwnerWhere(orgId: string, params: ListParams, userId?: string) {
     where.shortlists = { some: { brokerUserId: userId ?? "__nobody__", orgId } };
   } else if (params.category === "Important") {
     // Source-side "Important" bucket from the crawler (if any).
-    where.OR = [
-      { sourceShortlisted: true },
-      { category: TechnoCategory.IMPORTANT },
-    ];
+    orFilter = {
+      OR: [
+        { sourceShortlisted: true },
+        { category: TechnoCategory.IMPORTANT },
+      ],
+    };
   } else {
     const cat = mapCatForQuery(params.category);
     if (cat) {
@@ -189,14 +204,20 @@ function buildOwnerWhere(orgId: string, params: ListParams, userId?: string) {
   else if (params.rented === "0") where.isRentedOut = false;
   if (params.q) {
     const needle = params.q.trim();
-    where.OR = [
-      { address: { contains: needle, mode: "insensitive" } },
-      { premiseName: { contains: needle, mode: "insensitive" } },
-      { descriptionRaw: { contains: needle, mode: "insensitive" } },
-      { ownerName: { contains: needle, mode: "insensitive" } },
-      { ownerPhoneLast4: { contains: needle } },
-      { area: { contains: needle, mode: "insensitive" } },
-    ];
+    const searchOr: Prisma.TechnoPropertyWhereInput = {
+      OR: [
+        { address: { contains: needle, mode: "insensitive" } },
+        { premiseName: { contains: needle, mode: "insensitive" } },
+        { descriptionRaw: { contains: needle, mode: "insensitive" } },
+        { ownerName: { contains: needle, mode: "insensitive" } },
+        { ownerPhoneLast4: { contains: needle } },
+        { area: { contains: needle, mode: "insensitive" } },
+      ],
+    };
+    if (orFilter) where.AND = [orFilter, searchOr];
+    else where.OR = searchOr.OR;
+  } else if (orFilter) {
+    where.OR = orFilter.OR;
   }
   return where;
 }
@@ -365,9 +386,12 @@ export async function listBrokerProperties(
       // Build the "Availability" label like the real Techno site: e.g. "2BHK\nHigh Rise\nApartment"
       const bhk = (r.keyInfo || "").trim() || r.propertyType || categoryLabel(r.category);
       const rise = /apartment|flat/i.test(r.descriptionRaw || "")
-        ? (Math.random() < 0.5 ? "High Rise" : "Low Rise")
+        ? (stableHash(r.id) % 2 === 0 ? "High Rise" : "Low Rise")
         : (r.propertyAge && /new/i.test(r.propertyAge) ? "New Build" : "Standalone");
-      const propKind = r.category.includes("Rent") ? "Apartment" : (r.category.includes("Commercial") ? "Office" : "House");
+      /* The Prisma enum is UPPER_CASE (RESIDENTIAL_RENT), so the check must
+         be case-insensitive — plain .includes() never matched and every row
+         rendered as "House". */
+      const propKind = /rent/i.test(r.category) ? "Apartment" : (/commercial/i.test(r.category) ? "Office" : "House");
       const availabilityLabel = `${bhk}\n${rise}\n${propKind}`;
       // Property description short (furniture + amenities list) and details (long description)
       const furn = r.furnitureRaw || "";
@@ -391,6 +415,15 @@ export async function listBrokerProperties(
       };
     }),
   };
+}
+
+/** Small deterministic hash so server-rendered labels are stable across
+ *  requests (Math.random() here used to flip the same property's label on
+ *  every page load). */
+function stableHash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = ((h ^ s.charCodeAt(i)) * 16777619) >>> 0;
+  return h;
 }
 
 function buildBrokerDesc(r: { descriptionRaw?: string | null; furnitureRaw?: string | null }): string {
@@ -472,26 +505,418 @@ export async function toggleShortlist(
   return { ok: true, shortlisted: want };
 }
 
-export async function getShortlisted(
-  orgId: string,
-  userId: string,
-  params: ListParams,
-) {
-  // The dedicated /broker/shortlisted screen = the broker's own bookmarked rows,
-  // NOT the crawler's source-side "Important" bucket.
-  return listOwnerProperties(orgId, userId, { ...params, category: "Mine" });
-}
-
 export async function getPremium(orgId: string, userId: string, params: ListParams) {
   return listOwnerProperties(orgId, userId, { ...params, premium: "1" });
+}
+
+export interface SavedSearchFilters {
+  category?: string; // "All" or one of the four real categories
+  q?: string;
+  premium?: string; // "1"
+  rented?: string; // "1"
+}
+
+export interface SavedSearchSummary {
+  id: string;
+  name: string;
+  filters: SavedSearchFilters;
+  createdAt: Date;
+  lastNotifiedAt: Date | null;
+  /** Properties matching this search posted since it was last seen — the
+   *  "new matches" number the broker checks every morning. */
+  newMatches: number;
+}
+
+const SAVED_SEARCH_CATEGORY_KEYS = new Set([
+  "All",
+  "ResidentialRent",
+  "ResidentialSell",
+  "CommercialRent",
+  "CommercialSell",
+]);
+
+/** Defensive read of filterJson (arbitrary Json in the DB): unknown shapes
+ *  become a valid All-category search rather than a broken query. */
+export function normalizeSavedSearchFilters(value: unknown): SavedSearchFilters {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { category: "All" };
+  const v = value as Record<string, unknown>;
+  const pick = (key: string) =>
+    typeof v[key] === "string" && (v[key] as string).trim() ? (v[key] as string).trim() : undefined;
+  const category = pick("category");
+  return {
+    category: category && SAVED_SEARCH_CATEGORY_KEYS.has(category) ? category : "All",
+    q: pick("q"),
+    premium: pick("premium") === "1" ? "1" : undefined,
+    rented: pick("rented") === "1" ? "1" : undefined,
+  };
+}
+
+async function countMatchesSince(orgId: string, filters: SavedSearchFilters, since: Date): Promise<number> {
+  const db = technoDb();
+  return db.technoProperty.count({
+    where: {
+      ...buildOwnerWhere(orgId, {
+        category: filters.category ?? "All",
+        q: filters.q,
+        premium: filters.premium,
+        rented: filters.rented,
+      }),
+      active: true,
+      // firstSeenAt = when the listing entered the crawled inventory (the
+      // dashboard's "Added Today" uses the same clock), not the source post
+      // date — an old listing re-crawled today IS a new match for the broker.
+      firstSeenAt: { gte: since },
+    },
+  });
+}
+
+/** ARCH-17 bound: a broker keeps at most 20 saved searches (the UI caps
+ *  creation), so newest-20 is the whole set, not a truncation. */
+const SAVED_SEARCH_PAGE_CAP = 20;
+
+export async function listSavedSearches(orgId: string, userId: string): Promise<SavedSearchSummary[]> {
+  const db = technoDb();
+  const rows = await db.technoSavedSearch.findMany({
+    where: { orgId, brokerUserId: userId },
+    orderBy: { createdAt: "desc" },
+    take: SAVED_SEARCH_PAGE_CAP,
+  });
+  const summaries = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    filters: normalizeSavedSearchFilters(r.filterJson),
+    createdAt: r.createdAt,
+    lastNotifiedAt: r.lastNotifiedAt,
+    newMatches: 0,
+  }));
+  await Promise.all(
+    summaries.map(async (s) => {
+      s.newMatches = await countMatchesSince(orgId, s.filters, s.lastNotifiedAt ?? s.createdAt);
+    }),
+  );
+  return summaries;
+}
+
+export async function saveSavedSearch(
+  orgId: string,
+  userId: string,
+  name: string,
+  filters: SavedSearchFilters,
+): Promise<string> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("SAVED_SEARCH_EMPTY_NAME");
+  const db = technoDb();
+  const row = await db.technoSavedSearch.create({
+    data: {
+      orgId,
+      brokerUserId: userId,
+      name: trimmed.slice(0, 120),
+      filterJson: {
+        category: filters.category ?? "All",
+        ...(filters.q ? { q: filters.q } : {}),
+        ...(filters.premium ? { premium: filters.premium } : {}),
+        ...(filters.rented ? { rented: filters.rented } : {}),
+      } as Prisma.InputJsonValue,
+    },
+  });
+  return row.id;
+}
+
+export async function deleteSavedSearch(orgId: string, userId: string, id: string): Promise<boolean> {
+  const db = technoDb();
+  const existing = await db.technoSavedSearch.findFirst({ where: { id, orgId, brokerUserId: userId } });
+  if (!existing) return false;
+  await db.technoSavedSearch.delete({ where: { id: existing.id } });
+  return true;
+}
+
+/** Viewing a saved search's results counts as "seen": newMatches resets and
+ *  starts counting listings posted from this moment. */
+export async function markSavedSearchNotified(orgId: string, userId: string, id: string): Promise<boolean> {
+  const db = technoDb();
+  const existing = await db.technoSavedSearch.findFirst({ where: { id, orgId, brokerUserId: userId } });
+  if (!existing) return false;
+  await db.technoSavedSearch.update({ where: { id: existing.id }, data: { lastNotifiedAt: new Date() } });
+  return true;
+}
+
+export async function findSavedSearch(
+  orgId: string,
+  userId: string,
+  id: string,
+): Promise<{ id: string; name: string } | null> {
+  const db = technoDb();
+  return db.technoSavedSearch.findFirst({
+    where: { id, orgId, brokerUserId: userId },
+    select: { id: true, name: true },
+  });
+}
+
+/* ================= Buyer leads =================
+   The broker's internal inventory of buyers (name + number + what they want).
+   "Find matches" scores a lead against crawled owner listings of the same
+   deal kind (see buyer-matching.ts). */
+
+export interface BuyerLeadRow {
+  id: string;
+  name: string;
+  phone: string | null;
+  phoneLast4: string;
+  dealType: "RENT" | "SELL";
+  bhk: number | null;
+  budgetValue: number | null;
+  area: string | null;
+  furniture: string | null;
+  moveInAt: Date | null;
+  source: "WALK_IN" | "CALL" | "SOCIAL" | "REFERRAL";
+  notes: string | null;
+  createdAt: Date;
+}
+
+export interface BuyerLeadInput {
+  name: string;
+  phone: string;
+  dealType: "RENT" | "SELL";
+  bhk: number | null;
+  budgetValue: number | null;
+  area: string | null;
+  furniture: string | null;
+  moveInAt: Date | null;
+  source: "WALK_IN" | "CALL" | "SOCIAL" | "REFERRAL";
+  notes: string | null;
+}
+
+/* Largest buyer budget we store: ₹10 crore covers any realistic deal and
+   keeps the BigInt well inside PostgreSQL's numeric range. */
+const MAX_INR = 1_000_000_000;
+/* ARCH-17 bound: a broker's book of active buyer leads stays well under
+   200; newest-200 is the working set, not a truncation. */
+const BUYER_LEAD_LIST_CAP = 200;
+/* ARCH-17 bound for match candidates: the newest 300 active listings of the
+   deal kind is the matching pool — fresh stock is where deals happen, and
+   the cap keeps the query bounded no matter how the crawl grows. */
+const MATCH_CANDIDATE_CAP = 300;
+
+const LEAD_SOURCES = new Set(["WALK_IN", "CALL", "SOCIAL", "REFERRAL"]);
+
+function toBuyerLeadRow(r: {
+  id: string;
+  name: string;
+  phoneCipher: Uint8Array | null;
+  phoneLast4: string;
+  dealType: TechnoDealType;
+  bhk: number | null;
+  budgetValue: bigint | null;
+  area: string | null;
+  furniture: string | null;
+  moveInAt: Date | null;
+  source: TechnoLeadSource;
+  notes: string | null;
+  createdAt: Date;
+}): BuyerLeadRow {
+  let phone: string | null = null;
+  if (r.phoneCipher) {
+    try { phone = decryptContact(r.phoneCipher); } catch { phone = null; }
+  }
+  return {
+    id: r.id,
+    name: r.name,
+    phone,
+    phoneLast4: r.phoneLast4,
+    dealType: r.dealType === TechnoDealType.SELL ? "SELL" : "RENT",
+    bhk: r.bhk,
+    budgetValue: r.budgetValue != null ? Number(r.budgetValue) : null,
+    area: r.area,
+    furniture: r.furniture,
+    moveInAt: r.moveInAt,
+    source: r.source as BuyerLeadRow["source"],
+    notes: r.notes,
+    createdAt: r.createdAt,
+  };
+}
+
+/** Trim + type-guard one write payload. Throws typed errors the API routes
+ *  map to 400s: BUYER_LEAD_EMPTY_NAME / INVALID_PHONE / INVALID_BHK /
+ *  INVALID_BUDGET / INVALID_SOURCE. */
+function normalizeBuyerLeadInput(input: BuyerLeadInput) {
+  const name = (input.name ?? "").trim();
+  if (!name || name.length > 120) throw new Error("BUYER_LEAD_EMPTY_NAME");
+  const phone = normalizeIndianPhone(input.phone);
+  if (!phone.ok) throw new Error("INVALID_PHONE");
+  const bhk = input.bhk == null ? null : Math.trunc(Number(input.bhk));
+  if (bhk != null && (Number.isNaN(bhk) || bhk < 1 || bhk > 4)) throw new Error("INVALID_BHK");
+  let budgetValue: number | null = null;
+  if (input.budgetValue != null) {
+    const b = Number(input.budgetValue);
+    /* bigint-range: bounded to (0, MAX_INR] above before the BigInt()
+     * conversion in createBuyerLead/updateBuyerLead. */
+    if (!Number.isFinite(b) || b <= 0 || b > MAX_INR) throw new Error("INVALID_BUDGET");
+    budgetValue = Math.round(b);
+  }
+  if (input.source != null && !LEAD_SOURCES.has(input.source)) throw new Error("INVALID_SOURCE");
+  const area = (input.area ?? "").trim().slice(0, 160) || null;
+  const furniture = (input.furniture ?? "").trim().slice(0, 40) || null;
+  const notes = (input.notes ?? "").trim().slice(0, 2000) || null;
+  return {
+    name: name.slice(0, 120),
+    e164: phone.e164,
+    last4: phone.last4,
+    dealType: (input.dealType === "SELL" ? TechnoDealType.SELL : TechnoDealType.RENT) as TechnoDealType,
+    bhk,
+    budgetValue: budgetValue != null ? BigInt(budgetValue) : null,
+    area,
+    furniture,
+    moveInAt: input.moveInAt && !Number.isNaN(input.moveInAt.getTime()) ? input.moveInAt : null,
+    source: (input.source ?? "CALL") as TechnoLeadSource,
+    notes,
+  };
+}
+
+export async function listBuyerLeads(
+  orgId: string,
+  userId: string,
+  opts?: { q?: string; dealType?: "RENT" | "SELL" },
+): Promise<BuyerLeadRow[]> {
+  const db = technoDb();
+  const where: Prisma.TechnoBuyerLeadWhereInput = { orgId, brokerUserId: userId };
+  if (opts?.dealType === "RENT" || opts?.dealType === "SELL") where.dealType = opts.dealType;
+  const q = (opts?.q ?? "").trim();
+  if (q) {
+    where.OR = [{ name: { contains: q, mode: "insensitive" } }, { phoneLast4: { contains: q } }];
+  }
+  const rows = await db.technoBuyerLead.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: BUYER_LEAD_LIST_CAP,
+  });
+  return rows.map(toBuyerLeadRow);
+}
+
+export async function getBuyerLead(orgId: string, userId: string, id: string): Promise<BuyerLeadRow | null> {
+  const db = technoDb();
+  const row = await db.technoBuyerLead.findFirst({ where: { id, orgId, brokerUserId: userId } });
+  return row ? toBuyerLeadRow(row) : null;
+}
+
+export async function createBuyerLead(orgId: string, userId: string, input: BuyerLeadInput): Promise<string> {
+  const n = normalizeBuyerLeadInput(input);
+  const db = technoDb();
+  const row = await db.technoBuyerLead.create({
+    data: {
+      orgId,
+      brokerUserId: userId,
+      name: n.name,
+      phoneCipher: encryptContact(n.e164),
+      phoneLast4: n.last4,
+      dealType: n.dealType,
+      bhk: n.bhk,
+      budgetValue: n.budgetValue,
+      area: n.area,
+      furniture: n.furniture,
+      moveInAt: n.moveInAt,
+      source: n.source,
+      notes: n.notes,
+    },
+  });
+  return row.id;
+}
+
+export async function updateBuyerLead(orgId: string, userId: string, id: string, input: BuyerLeadInput): Promise<boolean> {
+  const n = normalizeBuyerLeadInput(input);
+  const db = technoDb();
+  const existing = await db.technoBuyerLead.findFirst({ where: { id, orgId, brokerUserId: userId } });
+  if (!existing) return false;
+  await db.technoBuyerLead.update({
+    where: { id: existing.id },
+    data: {
+      name: n.name,
+      phoneCipher: encryptContact(n.e164),
+      phoneLast4: n.last4,
+      dealType: n.dealType,
+      bhk: n.bhk,
+      budgetValue: n.budgetValue,
+      area: n.area,
+      furniture: n.furniture,
+      moveInAt: n.moveInAt,
+      source: n.source,
+      notes: n.notes,
+    },
+  });
+  return true;
+}
+
+export async function deleteBuyerLead(orgId: string, userId: string, id: string): Promise<boolean> {
+  const db = technoDb();
+  const existing = await db.technoBuyerLead.findFirst({ where: { id, orgId, brokerUserId: userId } });
+  if (!existing) return false;
+  await db.technoBuyerLead.delete({ where: { id: existing.id } });
+  return true;
+}
+
+/** The crawled inventory a lead can be matched against: active, not stale,
+ *  same deal kind, newest first. Phones decrypted server-side so the
+ *  matches page shows a ready-to-dial button (same convention as the lists). */
+export interface MatchCandidate {
+  id: string;
+  category: string;
+  premiseName: string | null;
+  area: string | null;
+  address: string | null;
+  keyInfo: string | null;
+  availabilityRaw: string | null;
+  rentPriceValue: number | null;
+  rentPriceRaw: string | null;
+  furnitureRaw: string | null;
+  datePosted: Date | null;
+  daysAgo: number | null;
+  isPremium: boolean;
+  ownerName: string | null;
+  ownerPhone: string | null;
+  ownerPhoneLast4: string | null;
+}
+
+export async function listMatchCandidates(orgId: string, dealType: "RENT" | "SELL"): Promise<MatchCandidate[]> {
+  const db = technoDb();
+  const categories =
+    dealType === "RENT"
+      ? [TechnoCategory.RESIDENTIAL_RENT, TechnoCategory.COMMERCIAL_RENT]
+      : [TechnoCategory.RESIDENTIAL_SELL, TechnoCategory.COMMERCIAL_SELL];
+  const rows = await db.technoProperty.findMany({
+    where: { orgId, active: true, isRentedOut: false, soldOut: false, category: { in: categories } },
+    orderBy: { datePosted: "desc" },
+    take: MATCH_CANDIDATE_CAP,
+  });
+  return rows.map((r) => {
+    let ownerPhone: string | null = null;
+    if (r.ownerPhoneCipher) {
+      try { ownerPhone = decryptContact(r.ownerPhoneCipher as Uint8Array); } catch { ownerPhone = null; }
+    }
+    return {
+      id: r.id,
+      category: r.category as string,
+      premiseName: r.premiseName,
+      area: r.area,
+      address: r.address,
+      keyInfo: r.keyInfo,
+      availabilityRaw: r.availabilityRaw,
+      rentPriceValue: r.rentPriceValue != null ? Number(r.rentPriceValue) : null,
+      rentPriceRaw: r.rentPriceRaw,
+      furnitureRaw: r.furnitureRaw,
+      datePosted: r.datePosted,
+      daysAgo: daysAgoFrom(r.datePosted),
+      isPremium: r.isPremium,
+      ownerName: r.ownerName,
+      ownerPhone,
+      ownerPhoneLast4: r.ownerPhoneLast4,
+    };
+  });
 }
 
 export interface ActivitySummaries {
   shortlistCount: number;
   recentReveals: { id: string; createdAt: Date; phoneLast4: string | null; property: { address: string | null; premiseName: string | null } | null }[];
   recentNotes: { id: string; updatedAt: Date; text: string; property: { address: string | null; premiseName: string | null } | null }[];
-  savedSearchCount: number;
-  followUpDue: PropertyRow[];
+  savedSearches: SavedSearchSummary[];
 }
 
 export async function getActivities(
@@ -499,7 +924,7 @@ export async function getActivities(
   userId: string,
 ): Promise<ActivitySummaries> {
   const db = technoDb();
-  const [shortlistCount, recentReveals, recentNotes, savedSearchCount, followUpDue] = await Promise.all([
+  const [shortlistCount, recentReveals, recentNotes, savedSearches] = await Promise.all([
     db.technoShortlist.count({ where: { orgId, brokerUserId: userId } }),
     db.technoContactEvent.findMany({
       where: { orgId, brokerUserId: userId, listingType: TechnoListingType.OWNER },
@@ -513,8 +938,7 @@ export async function getActivities(
       take: 8,
       include: { property: { select: { address: true, premiseName: true } } },
     }),
-    db.technoSavedSearch.count({ where: { orgId, brokerUserId: userId } }),
-    listOwnerProperties(orgId, userId, { page: 1, perPage: 5 }),
+    listSavedSearches(orgId, userId),
   ]);
   return {
     shortlistCount,
@@ -530,15 +954,15 @@ export async function getActivities(
       text: n.text,
       property: n.property,
     })),
-    savedSearchCount,
-    followUpDue: followUpDue.rows,
+    savedSearches,
   };
 }
 
 export interface CallQueueResult {
-  /** Ordered for dialing: fresh listings, then no-answer retries, then
-   *  follow-ups due today, then completed history (for the collapsed
-   *  section). Scheduled follow-ups (future date) are NOT included. */
+  /** Ordered for dialing: follow-ups due today, then no-answer retries, then
+   *  fresh listings, followed by the collapsed sections (scheduled follow-ups
+   *  with a future date — including ones on older listings — then completed
+   *  history). */
   rows: PropertyRow[];
   /** Follow-ups with a future date — waiting, not callable today. */
   scheduledCount: number;
@@ -555,7 +979,16 @@ export async function getCallingQueue(
   // outcome" in SQL without a raw group-by, and the window is bounded.
   const db = technoDb();
   const since = daysAgo(2);
-  const rows = await db.technoProperty.findMany({
+  const includeQueueRelations: Prisma.TechnoPropertyInclude = {
+    notes: { where: { brokerUserId: userId, orgId }, take: 1 },
+    shortlists: { where: { brokerUserId: userId, orgId }, take: 1 },
+    contactEvents: {
+      where: { brokerUserId: userId, orgId },
+      orderBy: { createdAt: "desc" },
+      take: 1,
+    },
+  };
+  const windowRows = await db.technoProperty.findMany({
     where: {
       orgId,
       active: true,
@@ -565,17 +998,42 @@ export async function getCallingQueue(
     },
     orderBy: [{ datePosted: "desc" }],
     take: 200,
-    include: {
-      notes: { where: { brokerUserId: userId, orgId }, take: 1 },
-      shortlists: { where: { brokerUserId: userId, orgId }, take: 1 },
-      contactEvents: {
-        where: { brokerUserId: userId, orgId },
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-    },
+    include: includeQueueRelations,
   });
-  const mapped = rows.map((r) => {
+  /* Promised follow-ups on older listings: the 2-day freshness window above
+     would let a follow-up evaporate the moment its property ages out — but the
+     lifecycle contract is that a promised callback resurfaces on its day,
+     regardless of listing age. Pull in properties the broker has a follow_up
+     event on; callStateFor still derives the TRUE state from each property's
+     LATEST event, so one since closed (terminal outcome) or re-opened as a
+     simple retry drops out of this extra set below. */
+  const followUpEvents = await db.technoContactEvent.findMany({
+    where: { orgId, brokerUserId: userId, outcome: FOLLOW_UP_OUTCOME },
+    orderBy: { createdAt: "desc" },
+    /* ARCH-17 bound: newest first; the per-property Set dedup means older
+       duplicates never matter, and a follow-up logged beyond the broker's
+       1,000 most recent follow-ups is stale history, not today's promise. */
+    take: 1000,
+    select: { propertyId: true },
+  });
+  const followUpPropertyIds = [...new Set(followUpEvents.map((e) => e.propertyId).filter((id): id is string => !!id))];
+  let agedFollowUpRows: typeof windowRows = [];
+  if (followUpPropertyIds.length > 0) {
+    const inWindow = new Set(windowRows.map((r) => r.id));
+    agedFollowUpRows = (await db.technoProperty.findMany({
+      where: {
+        id: { in: followUpPropertyIds },
+        orgId,
+        active: true,
+        sourceStatus: TechnoSourceStatus.ACTIVE,
+        ownerPhoneCipher: { not: null },
+      },
+      orderBy: [{ datePosted: "desc" }],
+      take: 50,
+      include: includeQueueRelations,
+    })).filter((r) => !inWindow.has(r.id));
+  }
+  const mapped = [...windowRows, ...agedFollowUpRows].map((r) => {
     const lastEvent = r.contactEvents[0] ?? null;
     let ownerPhone: string | null = null;
     if (r.ownerPhoneCipher) {
@@ -614,7 +1072,15 @@ export async function getCallingQueue(
       daysAgo: daysAgoFrom(r.datePosted),
     };
   });
-  const callable = mapped
+  /* Aged rows (outside the freshness window) only count while their LATEST
+     event keeps a live follow-up: completed calls and plain no-answer
+     retries stay scoped to the window, so the collapsed history and retry
+     behaviour are unchanged. */
+  const windowIds = new Set(windowRows.map((r) => r.id));
+  const mappedAlive = mapped.filter(
+    (r) => windowIds.has(r.id) || r.callState === "followup" || r.callState === "scheduled",
+  );
+  const callable = mappedAlive
     .filter((r) => r.callState !== "done" && r.callState !== "scheduled")
     .sort(compareQueueRows)
     .slice(0, perPage);
@@ -623,16 +1089,16 @@ export async function getCallingQueue(
   /* Future follow-ups ride in the payload (not callable today) so the status
      board can show and filter them; the "N scheduled" chip reflects ALL of
      them, this list is capped like the other sections. */
-  const scheduled = mapped
+  const scheduled = mappedAlive
     .filter((r) => r.callState === "scheduled")
     .sort((a, b) => (a.followUpAt?.getTime() ?? 0) - (b.followUpAt?.getTime() ?? 0))
     .slice(0, CALL_SCHEDULED_LIMIT);
   /* Collapsed history: recently finished calls stay reachable without
      crowding "Next to call" (see CallQueueList's completed section). */
-  const done = mapped.filter((r) => r.callState === "done").sort(compareQueueRows).slice(0, CALL_DONE_HISTORY_LIMIT);
+  const done = mappedAlive.filter((r) => r.callState === "done").sort(compareQueueRows).slice(0, CALL_DONE_HISTORY_LIMIT);
   return {
     rows: [...callable, ...scheduled, ...done],
-    scheduledCount: mapped.filter((r) => r.callState === "scheduled").length,
+    scheduledCount: mappedAlive.filter((r) => r.callState === "scheduled").length,
   };
 }
 

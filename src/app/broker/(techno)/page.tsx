@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { CountCard } from "@/components/broker/techno/CountCard";
 import {
@@ -44,6 +45,10 @@ const EMPTY_KPIS: DashboardKpis = {
   requirements: { today: 0, last15: 0, total: 0, byCategory: [] },
   freshUnrevealed: 0,
 };
+
+/* Stagger index for the `.tp-rise` entrance (theme.css) — capped at 11 so a
+   long list never cascades past ~440ms. */
+const riseStyle = (index: number): CSSProperties => ({ "--tp-i": Math.min(index, 11) }) as CSSProperties;
 
 let loggedDbUnavailable = false;
 
@@ -98,34 +103,41 @@ export default async function TechnoHome() {
           <LayoutGrid size={20} /> Owner Properties Data
         </h2>
         <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
-          <CountCard
-            big
-            icon={Home}
-            tone="blue"
-            value={kpis.owner.active}
-            label="Active Owner Properties"
-            subtitle="Ready inventory"
-          />
-          <CountCard
-            icon={Plus}
-            tone="green"
-            value={kpis.owner.today}
-            label="Added Today"
-            subtitle="Fresh owner entries"
-          />
-          <CountCard
-            icon={Minus}
-            tone="amber"
-            value={kpis.owner.yesterday}
-            label="Added Yesterday"
-            subtitle="Previous day flow"
-          />
+          {/* Wrapper carries col-span (grid item) so tp-rise can animate it */}
+          <div className="tp-rise col-span-2 md:col-span-2" style={riseStyle(0)}>
+            <CountCard
+              big
+              icon={Home}
+              tone="blue"
+              value={kpis.owner.active}
+              label="Active Owner Properties"
+              subtitle="Ready inventory"
+            />
+          </div>
+          <div className="tp-rise" style={riseStyle(1)}>
+            <CountCard
+              icon={Plus}
+              tone="green"
+              value={kpis.owner.today}
+              label="Added Today"
+              subtitle="Fresh owner entries"
+            />
+          </div>
+          <div className="tp-rise" style={riseStyle(2)}>
+            <CountCard
+              icon={Minus}
+              tone="amber"
+              value={kpis.owner.yesterday}
+              label="Added Yesterday"
+              subtitle="Previous day flow"
+            />
+          </div>
         </div>
 
         <h3 className="tp-section-title mt-8 text-lg">Properties Status</h3>
         <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
-          {kpis.byCategory.map((c) => (
-            <Link key={c.key} href={`/broker/owners/${c.key}`}>
+          {kpis.byCategory.map((c, index) => (
+            <Link key={c.key} href={`/broker/owners/${c.key}`} className="tp-rise" style={riseStyle(index)}>
               <CountCard
                 icon={c.key.includes("Rent") ? Home : Building2}
                 tone={toneForCat(c.key)}
@@ -135,13 +147,15 @@ export default async function TechnoHome() {
               />
             </Link>
           ))}
-          <CountCard
-            icon={LayoutGrid}
-            tone="slate"
-            value={kpis.owner.active}
-            label="Total Properties"
-            subtitle="Active"
-          />
+          <div className="tp-rise" style={riseStyle(kpis.byCategory.length)}>
+            <CountCard
+              icon={LayoutGrid}
+              tone="slate"
+              value={kpis.owner.active}
+              label="Total Properties"
+              subtitle="Active"
+            />
+          </div>
         </div>
 
         <h3 className="tp-section-title mt-8 text-lg">Owner Properties Updates</h3>
@@ -155,7 +169,7 @@ export default async function TechnoHome() {
       <section>
         <h2 className="tp-section-title">
           <UsersRound size={20} /> Broker Properties &amp; Requirements Data{" "}
-          <span className="live">Live broker counts</span>
+          <span className="live">Estimated until broker crawler is wired</span>
         </h2>
 
         <div className="mt-4 tp-card">
@@ -163,7 +177,7 @@ export default async function TechnoHome() {
           <h3 className="mt-2 font-display text-lg font-bold text-[var(--tp-ink)]">
             Property Counts
           </h3>
-          <p className="tp-kpi-sub mt-1">Live broker property counts</p>
+          <p className="tp-kpi-sub mt-1">Estimated from owner inventory until the broker-properties crawler is wired</p>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <CountCard icon={Plus} tone="green" value={kpis.broker.today} label="Today's Properties" subtitle="Fresh" />
             <CountCard icon={Calendar} tone="amber" value={kpis.broker.last15} label="Last 15 Days' Properties" subtitle="Recent flow" />
@@ -177,7 +191,7 @@ export default async function TechnoHome() {
           <h3 className="mt-2 font-display text-lg font-bold text-[var(--tp-ink)]">
             Requirement Counts
           </h3>
-          <p className="tp-kpi-sub mt-1">Live broker requirement counts</p>
+          <p className="tp-kpi-sub mt-1">Estimated from owner inventory until the requirement crawler is wired</p>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <CountCard icon={Plus} tone="green" value={kpis.requirements.today} label="Today's Requirements" subtitle="Fresh" />
             <CountCard icon={Calendar} tone="amber" value={kpis.requirements.last15} label="Last 15 Days' Requirements" subtitle="Recent flow" />

@@ -1842,6 +1842,22 @@ enum TechnoRevealChannel {
   REVEAL_ONLY
 }
 
+/* Buyer-side deal: a buyer lead is someone looking to rent or buy — matched
+   against the crawled owner listings of the same kind. */
+enum TechnoDealType {
+  RENT
+  SELL
+}
+
+/* Where a buyer lead came in — display metadata for the broker, not a
+   scoring input. */
+enum TechnoLeadSource {
+  WALK_IN
+  CALL
+  SOCIAL
+  REFERRAL
+}
+
 model TechnoProperty {
   id                String   @id @default(cuid())
   externalId        String   // crawler property UUID (unique per org)
@@ -1995,6 +2011,31 @@ model TechnoSavedSearch {
   lastNotifiedAt DateTime?
 
   @@index([orgId, brokerUserId])
+}
+
+/* A buyer lead the broker works internally: name + number + what they are
+   looking for. The "Find matches" flow scores these against crawled owner
+   listings (same deal kind). Phone is encrypted at rest like every other
+   contact in the workspace; phoneLast4 powers list search. */
+model TechnoBuyerLead {
+  id           String           @id @default(cuid())
+  orgId        String
+  brokerUserId String
+  name         String           @db.VarChar(120)
+  phoneCipher  Bytes
+  phoneLast4   String           @db.VarChar(4)
+  dealType     TechnoDealType
+  bhk          Int?
+  budgetValue  BigInt?
+  area         String?          @db.VarChar(160)
+  furniture    String?          @db.VarChar(40)
+  moveInAt     DateTime?
+  source       TechnoLeadSource @default(CALL)
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([orgId, brokerUserId, createdAt])
 }
 
 model TechnoCrawlRun {

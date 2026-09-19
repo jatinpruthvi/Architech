@@ -13,6 +13,8 @@ describe("isTechnoWorkspacePath", () => {
     "/broker/search",
     "/broker/owners/ResidentialRent",
     "/broker/brokers/CommercialSell",
+    "/broker/buyers",
+    "/broker/buyers/lead-1/matches",
     "/broker/requirements/ResidentialSell",
     "/broker/shortlisted",
     "/broker/premium",

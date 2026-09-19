@@ -4,6 +4,7 @@ import {
   callStateLabel,
   compareQueueRows,
   endOfDay,
+  formatCallTime,
   type CallState,
 } from "./call-lifecycle";
 
@@ -77,20 +78,38 @@ describe("compareQueueRows", () => {
 });
 
 describe("callStateLabel", () => {
-  it("labels retries and due follow-ups", () => {
+  it("labels retries and undated due follow-ups", () => {
     expect(callStateLabel({ callState: "retry", followUpAt: null, lastOutcomeAt: null }, NOW)).toBe("No answer · try again");
+    expect(callStateLabel({ callState: "followup", followUpAt: null, lastOutcomeAt: null }, NOW)).toBe("Follow up · due");
+  });
+
+  it("is overdue once the promised MINUTE has passed, in the smallest honest unit", () => {
+    // Promised 10:00, it is 10:30 → overdue 30m.
+    expect(
+      callStateLabel({ callState: "followup", followUpAt: new Date("2026-09-18T10:00:00Z"), lastOutcomeAt: null }, new Date("2026-09-18T10:30:00Z")),
+    ).toBe("Follow up · overdue 30m");
+    // Promised 08:00, it is 10:00 → overdue 2h.
     expect(
       callStateLabel({ callState: "followup", followUpAt: new Date("2026-09-18T08:00:00Z"), lastOutcomeAt: null }, NOW),
-    ).toBe("Follow up · due today");
+    ).toBe("Follow up · overdue 2h");
+    // Promised 3 days 2h ago → still reported in whole days.
     expect(
       callStateLabel({ callState: "followup", followUpAt: new Date("2026-09-15T08:00:00Z"), lastOutcomeAt: null }, NOW),
     ).toBe("Follow up · overdue 3d");
   });
 
-  it("labels scheduled follow-ups by distance", () => {
+  it("shows the promised time for a follow-up due later today", () => {
+    const due = new Date("2026-09-18T12:30:00Z");
     expect(
-      callStateLabel({ callState: "scheduled", followUpAt: new Date("2026-09-19T09:00:00Z"), lastOutcomeAt: null }, NOW),
-    ).toBe("Follow up · tomorrow");
+      callStateLabel({ callState: "followup", followUpAt: due, lastOutcomeAt: null }, NOW),
+    ).toBe(`Follow up · due ${formatCallTime(due)}`);
+  });
+
+  it("labels scheduled follow-ups by distance, with the promised time tomorrow", () => {
+    const tomorrow = new Date("2026-09-19T09:00:00Z");
+    expect(
+      callStateLabel({ callState: "scheduled", followUpAt: tomorrow, lastOutcomeAt: null }, NOW),
+    ).toBe(`Follow up · tomorrow ${formatCallTime(tomorrow)}`);
     expect(
       callStateLabel({ callState: "scheduled", followUpAt: new Date("2026-09-25T09:00:00Z"), lastOutcomeAt: null }, NOW),
     ).toBe("Follow up · in 7 days");
@@ -99,6 +118,17 @@ describe("callStateLabel", () => {
   it("no label for new and done (chips already cover them)", () => {
     expect(callStateLabel({ callState: "new", followUpAt: null, lastOutcomeAt: null }, NOW)).toBeNull();
     expect(callStateLabel({ callState: "done", followUpAt: null, lastOutcomeAt: null }, NOW)).toBeNull();
+  });
+});
+
+describe("formatCallTime", () => {
+  it("formats local wall-clock time in 12h notation", () => {
+    const d = new Date(2026, 8, 18, 17, 5, 0); // local 5:05 PM
+    expect(formatCallTime(d)).toBe("5:05 PM");
+    const noon = new Date(2026, 8, 18, 12, 0, 0);
+    expect(formatCallTime(noon)).toBe("12:00 PM");
+    const midnight = new Date(2026, 8, 18, 0, 30, 0);
+    expect(formatCallTime(midnight)).toBe("12:30 AM");
   });
 });
 

@@ -1220,6 +1220,15 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
   --tp-violet: #8b5cf6;
   --tp-slate: color-mix(in srgb, var(--ink) 45%, var(--paper));
   --tp-grad: linear-gradient(135deg, color-mix(in srgb, var(--tp-accent) 10%, var(--tp-bg)) 0%, color-mix(in srgb, var(--tp-accent-2) 8%, var(--tp-bg)) 55%, rgba(0,0,0,0) 100%);
+  /* Motion: one easing family, three durations, transform/opacity only.
+     The press transform is a token so prefers-reduced-motion can zero it
+     out without touching every :active rule. */
+  --tp-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --tp-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --tp-dur-fast: 140ms;
+  --tp-dur-base: 200ms;
+  --tp-dur-slow: 280ms;
+  --tp-press: scale(0.97);
   background: var(--tp-bg);
   color: var(--tp-ink);
   font-family: var(--font-sans);
@@ -1251,7 +1260,7 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 .techno .tp-table tr:hover td{background:color-mix(in srgb, var(--tp-accent) 4%, var(--tp-surface))}
 .techno .tp-date-fresh{background:color-mix(in srgb, var(--tp-accent-2) 14%, var(--tp-surface));color:color-mix(in srgb, var(--tp-accent-2) 75%, var(--tp-ink));font-weight:700;text-align:center;border-radius:8px;padding:.25rem .45rem;display:inline-block}
 .techno .tp-date{text-align:center}
-.techno .tp-btn{display:inline-flex;align-items:center;gap:.4rem;border-radius:10px;padding:.48rem .9rem;font-weight:600;font-size:.82rem;cursor:pointer;border:0;transition:all .15s}
+.techno .tp-btn{display:inline-flex;align-items:center;gap:.4rem;border-radius:10px;padding:.48rem .9rem;font-weight:600;font-size:.82rem;cursor:pointer;border:0}
 .techno .tp-btn-primary{background:var(--tp-accent);color:var(--cream)}
 .techno .tp-btn-primary:hover{background:color-mix(in srgb, var(--tp-accent) 82%, var(--tp-ink))}
 .techno .tp-btn-ghost{border:1px solid var(--tp-border);color:var(--tp-ink-soft);background:var(--tp-surface)}
@@ -1271,10 +1280,15 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 .techno .tp-action-btn.bookmark:hover{background:color-mix(in srgb, var(--tp-slate) 18%, var(--tp-surface));color:color-mix(in srgb, var(--tp-slate) 80%, var(--tp-ink));border-color:color-mix(in srgb, var(--tp-slate) 45%, var(--tp-border))}
 .techno .tp-action-btn.bookmark.active{background:color-mix(in srgb, var(--tp-amber) 16%, var(--tp-surface));border-color:var(--tp-amber);color:color-mix(in srgb, var(--tp-amber) 72%, var(--tp-ink))}
 /* WhatsApp floating action button */
-.techno .tp-fab-whatsapp{position:fixed;right:24px;bottom:24px;z-index:40;width:56px;height:56px;display:grid;place-items:center;border-radius:50%;background:#25d366;color:#fff;box-shadow:0 8px 20px rgba(37,211,102,.45);border:0;cursor:pointer;transition:transform .15s,box-shadow .15s}
-.techno .tp-fab-whatsapp:hover{transform:scale(1.08);box-shadow:0 12px 28px rgba(37,211,102,.55)}
+.techno .tp-fab-whatsapp{position:fixed;right:24px;bottom:24px;z-index:40;width:56px;height:56px;display:grid;place-items:center;border-radius:50%;background:#25d366;color:#fff;box-shadow:0 8px 20px rgba(37,211,102,.45);border:0;cursor:pointer;transition:transform var(--tp-dur-fast) var(--tp-ease-out),box-shadow var(--tp-dur-base) var(--tp-ease-out)}
+/* Hover lift only for real pointers — touch devices never "rest" on hover,
+   so the :active press below is the tap feedback there instead. */
+@media (hover: hover) and (pointer: fine) {
+  .techno .tp-fab-whatsapp:hover{transform:scale(1.08);box-shadow:0 12px 28px rgba(37,211,102,.55)}
+}
+.techno .tp-fab-whatsapp:active{transform:var(--tp-press)}
 /* Contact Details pill on owner rows */
-.techno .tp-contact-pill{display:inline-flex;align-items:center;gap:.4rem;border-radius:12px;border:1.5px solid color-mix(in srgb, var(--tp-accent) 38%, var(--tp-border));background:color-mix(in srgb, var(--tp-accent) 8%, var(--tp-surface));color:color-mix(in srgb, var(--tp-accent) 80%, var(--tp-ink));font-weight:700;font-size:.82rem;padding:.45rem .9rem;cursor:pointer;transition:all .15s}
+.techno .tp-contact-pill{display:inline-flex;align-items:center;gap:.4rem;border-radius:12px;border:1.5px solid color-mix(in srgb, var(--tp-accent) 38%, var(--tp-border));background:color-mix(in srgb, var(--tp-accent) 8%, var(--tp-surface));color:color-mix(in srgb, var(--tp-accent) 80%, var(--tp-ink));font-weight:700;font-size:.82rem;padding:.45rem .9rem;cursor:pointer}
 .techno .tp-contact-pill:hover{background:color-mix(in srgb, var(--tp-accent) 14%, var(--tp-surface));border-color:color-mix(in srgb, var(--tp-accent) 55%, var(--tp-border))}
 .techno .tp-contact-pill.revealed{background:color-mix(in srgb, var(--tp-accent-2) 12%, var(--tp-surface));border-color:color-mix(in srgb, var(--tp-accent-2) 45%, var(--tp-border));color:color-mix(in srgb, var(--tp-accent-2) 75%, var(--tp-ink))}
 .techno .tp-search{display:flex;align-items:center;gap:.5rem;border:1px solid var(--tp-border);background:var(--tp-surface);border-radius:999px;padding:.48rem .9rem;font-size:.9rem;box-shadow:0 1px 2px rgba(15,40,70,.04)}
@@ -1327,6 +1341,91 @@ button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 .techno .tp-solid-rose{background:var(--tp-rose);color:var(--cream);outline:2px solid var(--tp-rose);outline-offset:1px}
 .techno .tp-solid-violet{background:var(--tp-violet);color:var(--cream);outline:2px solid var(--tp-violet);outline-offset:1px}
 .techno .tp-solid-slate{background:var(--tp-slate);color:var(--paper);outline:2px solid var(--tp-slate);outline-offset:1px}
+
+/* ---- Motion (scoped to .techno): press feedback, entrances, reduced motion.
+   Framework: transform/opacity only, 140–280ms, two shared easings.
+   High-frequency state (status-chip toggles, j/k/c focus moves) stays
+   instant — those fire many times a minute and motion would smear them. */
+/* Exact-property transitions replace the old `transition: all .15s` so hover
+   never touches layout (no width/height/top/bottom in the list). */
+.techno .tp-btn,
+.techno .tp-contact-pill,
+.techno .tp-action-btn,
+.techno .tp-page-btn,
+.techno .tp-tab,
+.techno .tp-sidebar-item,
+.techno .tp-mobile-nav-item,
+.techno .tp-mobile-action,
+.techno .tp-view-option,
+.techno .tp-completed-toggle,
+.techno .tp-search-choice,
+.techno .tp-area-chip,
+.techno .tp-active-filter,
+.techno .tp-topbar-icon,
+.techno .tp-icon-touch,
+.techno .tp-search-submit,
+.techno button.tp-chip {
+  transition:
+    transform var(--tp-dur-fast) var(--tp-ease-out),
+    background-color var(--tp-dur-base) var(--tp-ease-out),
+    border-color var(--tp-dur-base) var(--tp-ease-out),
+    color var(--tp-dur-base) var(--tp-ease-out),
+    box-shadow var(--tp-dur-base) var(--tp-ease-out);
+}
+/* Press feedback on every pressable: 3% dip, 140ms, ease-out. */
+.techno .tp-btn:active,
+.techno .tp-contact-pill:active,
+.techno .tp-action-btn:active,
+.techno .tp-page-btn:active,
+.techno .tp-tab:active,
+.techno .tp-sidebar-item:active,
+.techno .tp-mobile-nav-item:active,
+.techno .tp-mobile-action:active,
+.techno .tp-view-option:active,
+.techno .tp-completed-toggle:active,
+.techno .tp-search-choice:active,
+.techno .tp-area-chip:active,
+.techno .tp-active-filter:active,
+.techno .tp-topbar-icon:active,
+.techno .tp-icon-touch:active,
+.techno .tp-search-submit:active,
+.techno button.tp-chip:active {
+  transform: var(--tp-press);
+}
+/* Card/list entrance: fade + 8px rise, 280ms ease-out. --tp-i (set inline,
+   capped at 11) staggers a grid/list in 40ms steps (max 440ms cascade).
+   fill-mode is `backwards` (not `both`): after the animation the transform
+   is gone, so the wrapper never becomes a containing block for the
+   viewport-fixed dialogs (NoteEditor) rendered inside tables/cards. */
+@keyframes tp-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.techno .tp-rise {
+  animation: tp-rise var(--tp-dur-slow) var(--tp-ease-out) backwards;
+  animation-delay: calc(var(--tp-i, 0) * 40ms);
+}
+/* Call-queue progress: scaleX instead of width so the fill animates on the
+   compositor (no per-frame layout). origin left = fills forward. */
+.techno .tp-progress-fill {
+  transform-origin: 0 50%;
+  transition: transform 300ms var(--tp-ease-in-out);
+}
+/* Kill the 300ms tap delay + double-tap-to-zoom on touch targets. */
+.techno button,
+.techno a,
+.techno select {
+  touch-action: manipulation;
+}
+/* Reduced motion: entrances and every scale transform go away; colour and
+   opacity feedback stays, so state changes remain visible. */
+@media (prefers-reduced-motion: reduce) {
+  .techno { --tp-press: none; }
+  .techno .tp-rise { animation: none; }
+  .techno .tp-progress-fill { transition: none; }
+  .techno .tp-fab-whatsapp { transition: none; }
+  .techno .tp-fab-whatsapp:hover { transform: none; }
+}
 
 /* ---------- Techno broker mobile workspace ----------
    The broker surface is a task app on phones: fixed thumb navigation, card-first

@@ -32,7 +32,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: false, error: "INVALID_FOLLOW_UP" }, { status: 400 });
       }
     } else {
+      // Tomorrow 9:30 local — the same default the picker uses, so an
+      // omitted date lands on a sane morning, not 24h-from-now-millis.
       followUpAt = new Date(Date.now() + 86_400_000);
+      followUpAt.setHours(9, 30, 0, 0);
     }
   }
   const db = technoDb();

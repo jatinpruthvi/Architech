@@ -140,6 +140,15 @@ export function toWhatsAppJid(e164: string): string {
   return `${digits}${WHATSAPP_JID_SUFFIX}`;
 }
 
+/** Pre-filled text for a broker → owner WhatsApp message. On a cold
+ *  "unknown number" chat the owner must recognise WHICH property before
+ *  replying, so the context (config · area · price) rides in the first line. */
+export function buildWaMessage(context: string | null | undefined): string {
+  const trimmed = context?.trim();
+  if (!trimmed) return "Hi, regarding your property on Architech…";
+  return `Hi, I'm your Architech broker partner calling about your ${trimmed} listed with us.`;
+}
+
 /** Recover E.164 from a JID on an inbound Evolution event. */
 export function fromWhatsAppJid(jid: string): PhoneNormalizationResult {
   const [user] = jid.split("@");
