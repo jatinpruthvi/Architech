@@ -31,7 +31,10 @@ The performance finding is a **read-serialisation class**, not a single mistake:
 | `pnpm check` (tsc) | clean | clean |
 | `pnpm lint` (ESLint) | 0 errors | 0 errors |
 | `pnpm verify` (13-gate wrapper) | 13/13 | 13/13 |
-| CI (`verify` workflow on PR #132) | — | **pass** (4m11s, run `35425225705`) |
+| `pnpm test:perf` (build + bundle/HTML budgets) | — | **passed** (total static JS 2290.1 KiB, cap 2293.8 KiB — see W7) |
+| CI (`verify` job on PR #132) | — | **pass** — all 34 steps green, including *Production build*, *Performance budget*, *Crawl simulation*, *End-to-end flows*, *Accessibility smoke tests* (run `35426723446`) |
+
+The CI result is the stronger evidence of the two: it is the repo's own harness, on `d1d18fe`, with the database seeded and a real Postgres — i.e. the same pipeline a reviewer would re-run. (GitHub's log-download host is blocked from this sandbox, so the *numbers* below are from the local run of the same gate; the *pass/fail* is CI's.)
 
 ---
 
@@ -123,7 +126,11 @@ The performance finding is a **read-serialisation class**, not a single mistake:
   start:property:aged,    end:property:aged
   ```
   — i.e. the follow-up read waited for the window read (index 2 vs 1 → assertion failed). Post-fix the log interleaves (`start:window, start:followups, end:window, end:followups, …`) and the test passes. A second test pins the *opposite* direction — the aged pull must still start only after the follow-up ids resolve — so a future edit cannot over-parallelise a dependent read.
-- **Honest limit of the evidence:** there is no live Postgres in this sandbox, so the gain is proven as *round trips eliminated/overlapped* (deterministic, tested) rather than as measured wall-clock milliseconds. The fixture-mode parity tests prove the same data comes back; the two server pages have no render harness here, so their concurrency is pinned by a source-level guard (`server-page-read-parallel.test.ts`) rather than by a rendered assertion.
+- **Honest limit of the evidence:** there is no live Postgres in this sandbox, so the gain is proven as *round trips eliminated/overlapped* (deterministic, tested) rather than as measured wall-clock milliseconds. What the harness *does* prove on this commit, run to completion:
+  - `pnpm test:perf` (production build + the repo's bundle/HTML budget gate) — **passed**; the four HTML pages touched by this change are inside their caps (`/` 117.3 KiB of 125 KiB, `/buy/ahmedabad/paldi/` 100.9 KiB) and total static JS is 2290.1 KiB against a 2293.8 KiB cap.
+  - CI on `d1d18fe` — *Production build*, *Performance budget*, *No-JavaScript SEO smoke tests*, *Crawl simulation*, *End-to-end flows*, *Accessibility smoke tests* and *Visual & Devanagari layout smoke* all green.
+  - The server-side change adds **zero client bytes** as measured, not as assumed: `orderFeaturedFirst` (the only new module) appears in **no** `.next/static/chunks/**` file, while a control string from a genuinely client-side module (`waMeLink`) resolves in three. The helper is therefore unreachable from every client entry point — consistent with it being imported only by server components and the server adapters.
+  - The two server pages have no render harness here, so their concurrency is pinned by a source-level guard (`server-page-read-parallel.test.ts`) rather than by a rendered assertion.
 - **Fix (technical only):** `Promise.all` at all three sites; the home page derives its featured strip from the pool in hand via a new pure helper. The featured-first ordering rule — previously **three copies** (fixture adapter, Prisma adapter, home page) — now lives once in `orderFeaturedFirst` (`src/lib/repositories/featured-order.ts`), with parity tests asserting all three callers still produce the identical order.
 - **Audit trail:** commit `709a036`. Tests: `repository.test.ts` → *"PERF-R5-001: the queue's independent reads overlap"* and *"…still sequences the aged-listing pull after the follow-up ids arrive"*; new `featured-order.test.ts` (5 tests: the rule, purity, fixture/Prisma parity, and "derives exactly what the removed duplicate read returned"); new `server-page-read-parallel.test.ts` (4 source-guard tests). **2 red → 2 green** on the queue probe; the parity and guard tests were green by construction and exist to stop the win from silently regressing.
 
@@ -139,6 +146,7 @@ The performance finding is a **read-serialisation class**, not a single mistake:
 | **W4** | **`channel-store.ts` write paths** await their reads sequentially throughout (`createRequest`, `closeRequest`, deal transitions). | `src/lib/persistence/channel-store.ts:325-403, 562-641` | These are transaction-ordered writes where the second statement legitimately depends on the first. **Not a defect; explicitly out of scope.** |
 | **W5** | **Dashboard KPI redundancy.** `getDashboardKpis` issues 8 queries; `todayOwner`/`ydayOwner` are sums of the two `groupBy` results it already fetches, so two counts are derivable. | `repository.ts:63-160` | Would need the test mocks to encode derived values, re-pinning KPI tests on a different data path for a 2-statement saving on a cached dashboard. **Skipped — churn exceeds the win.** |
 | **W6** | **`onListingPublished` reads are independent** (`getListingByIdForServer` then `savedSearch.findMany`). | `src/lib/saved-search/alerts-runtime.ts:78-95` | Background notification path with no user-facing latency; the surrounding scan is already a documented watchlist item (SQL-PERF-17). Leave until that scan is revisited. |
+| **W7** | **Total static-JS budget is effectively exhausted: 2290.1 KiB measured against a 2293.8 KiB cap — 3.7 KiB (0.16%) of headroom.** The next client-side feature of any size fails `pnpm test:perf` before it can ship. Measured locally on `d1d18fe` with the repo's own gate; the 41.5 KiB growth above the 18 Sep re-baseline reading (2248.6 KiB) predates this branch, whose commits are server-only, test-only and docs (`orderFeaturedFirst` appears in no client chunk — §4). | `ops/config/performance/budgets.json` description; `.next/static/chunks` (79 chunks, 2290.1 KiB total; largest 229.2 KiB) | **Deliberately not touched.** `budgets.json` states the ratchet rule explicitly: the cap "moves only with a measured before/after in the why", so re-baselining is an owner decision with a recorded justification, not a drive-by edit — and certainly not one to make *in the same commit as an unrelated fix*. Recommended handling for the owner: either (a) re-baseline with a measured before/after on the next feature that needs room, or (b) commission a bundle-attribution pass. A first pass here (top-20 chunk signature scan for a duplicated library) found no obvious duplication — react appears in two framework/entry chunks, `lucide-react` in one; the large unnamed chunks are route code, i.e. this is feature weight, not an easy trim. That deeper attribution is exactly the class of work this round was told to skip when complex, so it is recorded rather than attempted. |
 
 ---
 
@@ -154,6 +162,8 @@ The performance finding is a **read-serialisation class**, not a single mistake:
 **3. Do not undo a cap to save a query.** W2's rejected optimisation is the one that *looks* best: one query instead of two. The cap that makes the search path bounded is precisely what makes the derivation lossy. The in-code comment now says so at the call site; this is the same reasoning that produced `MAX_UNSCOPED_LISTING_ROWS` in the first place.
 
 **Monitoring:** the call queue's read overlap is now pinned by a test rather than a metric, so no new Sentry signal is warranted. If a real deployment later wants the page-level numbers, the existing RUM reporter (`WebVitalsReporter`) already covers the home page, and the locality pages are covered by the sitemap/crawl checks — the natural place to watch for a regression is the prerender/crawl timing, not a new counter.
+
+**The one number worth watching is the budget itself (W7).** At 0.16% headroom, `pnpm test:perf` will stop being a *regression* gate and start being a *feature* gate: it will fail on the next legitimate client-side addition. That is a useful failure, but only if the owner has decided in advance whether the answer is "trim" or "re-baseline with a measured why" — deciding it in the moment, under a red CI, is how a budget becomes a formality.
 
 ---
 
