@@ -474,6 +474,22 @@ describe("buyer leads", () => {
     expect(state.buyerLeads).toHaveLength(0);
   });
 
+  /* BUG-R5-001: the documented ceiling is ₹10 crore, and ₹1 crore = 10^7, so
+     the top of the range is 100_000_000. The constant read 1_000_000_000
+     (₹100 crore) — ten times the promise the form copy, this file's comment
+     and the feature's PR all state — so a broker could store a budget the UI
+     itself calls impossible. Both boundaries are pinned here. */
+  it("BUG-R5-001: rejects a budget past the documented ₹10 crore ceiling", async () => {
+    await expect(createBuyerLead("org-1", "user-1", leadInput({ budgetValue: 100_000_001 }))).rejects.toThrow("INVALID_BUDGET");
+    await expect(createBuyerLead("org-1", "user-1", leadInput({ budgetValue: 1_000_000_000 }))).rejects.toThrow("INVALID_BUDGET");
+    expect(state.buyerLeads).toHaveLength(0);
+  });
+
+  it("BUG-R5-001: accepts the exact ₹10 crore ceiling", async () => {
+    await createBuyerLead("org-1", "user-1", leadInput({ budgetValue: 100_000_000 }));
+    expect(state.buyerLeads[0].budgetValue).toBe(100_000_000n);
+  });
+
   it("accepts +91 / 0-prefixed phone shapes", async () => {
     await createBuyerLead("org-1", "user-1", leadInput({ phone: "+91 98765 43210" }));
     await createBuyerLead("org-1", "user-1", leadInput({ phone: "09876543210", name: "Second" }));

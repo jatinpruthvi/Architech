@@ -686,9 +686,13 @@ export interface BuyerLeadInput {
   notes: string | null;
 }
 
-/* Largest buyer budget we store: ₹10 crore covers any realistic deal and
-   keeps the BigInt well inside PostgreSQL's numeric range. */
-const MAX_INR = 1_000_000_000;
+/* Largest buyer budget we store: ₹10 crore (1 crore = 10^7, so 100_000_000)
+   covers any realistic deal and keeps the BigInt well inside PostgreSQL's
+   numeric range. BUG-R5-001: this read 1_000_000_000 — ₹100 crore, ten times
+   the ceiling the form copy and this comment promise — so budgets past the
+   documented range were stored anyway. The API payload check mirrors this
+   bound; keep the two in step (see buyer-leads/route.ts). */
+const MAX_INR = 100_000_000;
 /* ARCH-17 bound: a broker's book of active buyer leads stays well under
    200; newest-200 is the working set, not a truncation. */
 const BUYER_LEAD_LIST_CAP = 200;
