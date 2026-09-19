@@ -16,14 +16,14 @@
 | P1 High | 0 | — |
 | P2 Medium | 1 | 1 |
 | P3 Low | 0 | — |
-| Performance class (PERF) | 1 | 1 |
-| Watchlist (not confirmed) | 6 | 0 |
+| Performance class (PERF) | 2 | 2 |
+| Watchlist (not confirmed) | 7 | 0 |
 
-**One confirmed correctness bug and one performance finding, both fixed behind tests written first, with every gate green.**
+**One confirmed correctness bug and two performance findings, all fixed behind tests written first, with every gate green.**
 
 The correctness bug is a **unit-conversion slip in a stated contract**: the buyer-lead budget ceiling was written as `1_000_000_000` (₹100 crore) while the repository comment, the form's own error copy and the feature's PR description all promise **₹10 crore** (1 crore = 10⁷, i.e. `100_000_000`). The API's payload validator carried the same ten-times-off literal, so the two agreed with each other and disagreed with every statement of intent. The interesting part is *why it survived*: the existing tests probed the far side of the boundary (`2_000_000_000` rejected, `25_000` accepted) and never pinned the stated ceiling, so a 10× error sat in the gap between "clearly too big" and "normal".
 
-The performance finding is a **read-serialisation class**, not a single mistake: three sites awaited queries that do not depend on each other, and one of them re-issued a query the page had just made. Two of the three are server components where the waste is a full extra database round trip on the hottest public page. Everything fixed is a *technical* change — same rows, same order, same caps — and the two candidates that would have changed semantics are recorded as rejected, with the reason, in §5.
+The first performance finding is a **read-serialisation class**, not a single mistake: three sites awaited queries that do not depend on each other, and one of them re-issued a query the page had just made. Two of the three are server components where the waste is a full extra database round trip on the hottest public page. The second came from measuring rather than reading: running the repo's own bundle-budget gate showed the total-static-JS budget with 3.7 KiB of headroom, which made the client bundle the next thing worth auditing — four `"use client"` boundaries that nothing needed were shipping **16.7 KiB** to real routes, and removing them (no behaviour change) handed that space back. Everything fixed is a *technical* change — same rows, same order, same caps, same rendered output — and every candidate that would have changed semantics or needed deep attribution is recorded as rejected, with the reason, in §5.
 
 | Gate | Baseline (base `5d01979`) | After (`709a036`) |
 |---|---|---|
@@ -31,7 +31,7 @@ The performance finding is a **read-serialisation class**, not a single mistake:
 | `pnpm check` (tsc) | clean | clean |
 | `pnpm lint` (ESLint) | 0 errors | 0 errors |
 | `pnpm verify` (13-gate wrapper) | 13/13 | 13/13 |
-| `pnpm test:perf` (build + bundle/HTML budgets) | — | **passed** (total static JS 2290.1 KiB, cap 2293.8 KiB — see W7) |
+| `pnpm test:perf` (build + bundle/HTML budgets) | — | **passed** — total static JS 2290.1 KiB at the start of this round, **2273.4 KiB after PERF-R5-002**, cap 2293.8 KiB (see W7) |
 | CI (`verify` job on PR #132) | — | **pass** — all 34 steps green, including *Production build*, *Performance budget*, *Crawl simulation*, *End-to-end flows*, *Accessibility smoke tests* (run `35426723446`) |
 
 The CI result is the stronger evidence of the two: it is the repo's own harness, on `d1d18fe`, with the database seeded and a real Postgres — i.e. the same pipeline a reviewer would re-run. (GitHub's log-download host is blocked from this sandbox, so the *numbers* below are from the local run of the same gate; the *pass/fail* is CI's.)
@@ -105,6 +105,7 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 | PERF-ID | Class | Sites (pre-fix) | Component | Status |
 |---|---|---|---|---|
 | **PERF-R5-001** | Independent reads serialised; one read duplicated | `src/app/page.tsx` · `src/app/buy/[city]/[locality]/page.tsx` · `src/lib/technoproperty/repository.ts` (`getCallingQueue`) | Home page · locality SEO pages · call queue | **Fixed** `709a036` |
+| **PERF-R5-002** | Client boundary with no client reason (first-load JS) | `src/components/broker/techno/RequirementTable.tsx` · `…/WhatsAppFab.tsx` · `src/screens/DeveloperIndexPage.tsx` · `src/screens/RequirementsPage.tsx` | `/broker/requirements/[category]` · `/developers` · `/requirements` · every `/broker` route | **Fixed this round** |
 
 ### PERF-R5-001 — P2-class · three sites awaiting queries that do not depend on each other
 
@@ -134,6 +135,26 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 - **Fix (technical only):** `Promise.all` at all three sites; the home page derives its featured strip from the pool in hand via a new pure helper. The featured-first ordering rule — previously **three copies** (fixture adapter, Prisma adapter, home page) — now lives once in `orderFeaturedFirst` (`src/lib/repositories/featured-order.ts`), with parity tests asserting all three callers still produce the identical order.
 - **Audit trail:** commit `709a036`. Tests: `repository.test.ts` → *"PERF-R5-001: the queue's independent reads overlap"* and *"…still sequences the aged-listing pull after the follow-up ids arrive"*; new `featured-order.test.ts` (5 tests: the rule, purity, fixture/Prisma parity, and "derives exactly what the removed duplicate read returned"); new `server-page-read-parallel.test.ts` (4 source-guard tests). **2 red → 2 green** on the queue probe; the parity and guard tests were green by construction and exist to stop the win from silently regressing.
 
+### PERF-R5-002 — first-load JS · four `"use client"` boundaries nothing needed
+
+- **Method:** after PERF-R5-001, the *measured* state of the JS budget (W7: 3.7 KiB of headroom) turned the client bundle into the next thing worth reading. Every `"use client"` file in `src/` (100 of them) was scanned for the things that actually require a client boundary — hook calls, event handlers, browser APIs, `fetch` — and cross-checked against its importers. Ten had no reason; four are imported **only** by Server Components, which is the set where removing the directive genuinely drops bytes (the other six are reached from client trees — `ActionButton`, `Reveal`, `tooltip`, `sonner` — or are unreferenced files, which cost nothing).
+- **Current behaviour (pre-fix):** `RequirementTable` (a table of links and server-rendered children), `WhatsAppFab` (a static anchor), and the `DeveloperIndexPage` / `RequirementsPage` screens (static markup wrapping the genuinely client `ResponsiveDataView`, `Reveal` and `RequirementCapture`) each carried a `"use client"` directive that changed nothing about behaviour and shipped their markup and icon imports to every visitor of those routes.
+- **Root cause:** a directive that is *safe* is easy to leave in place — it never fails a test, never shows up in a screenshot, and only costs bytes. Three of the four are files whose interactive parts were already correctly split into child client components, so the parent's directive was pure residue from that split.
+- **Fix (technical only):** the directive removed from those four files, each with a header note stating why it is a Server Component and that re-adding the directive means re-measuring. No behaviour changes: the client children still receive the same props as server-rendered nodes, which is the pattern the files already used.
+- **Measured before/after** (`node ops/scripts/performance/budget.mjs`, identical harness either side, same machine):
+
+  | Route | before | after | Δ raw | Δ gzip |
+  |---|---|---|---|---|
+  | `/broker/requirements/[category]` | 714.4 KiB | 705.8 KiB | **−8.6** | −2.4 |
+  | `/developers` | 764.4 KiB | 759.3 KiB | **−5.1** | −2.1 |
+  | `/requirements` | 800.2 KiB | 796.4 KiB | **−3.8** | −1.6 |
+  | every `/broker` route (shared layout) | e.g. `/broker` 701.0 | 700.7 | −0.3…−0.6 | −0.2 |
+  | **total static JS** | **2290.1 KiB** | **2273.4 KiB** | **−16.7** | — |
+
+  Budget headroom on the total-static-JS cap therefore moves from **3.7 KiB (0.16%) to 20.4 KiB (0.89%)** — see the W7 update below.
+- **Regression guard:** `src/lib/server-client-boundary.test.ts` pins the four files as Server Components *and* pins the reason (no hook / handler / browser API; comments stripped so the files' own prose cannot fake a positive), with a positive control on a real client component (`ResponsiveDataView`). Mutation-checked: re-adding `"use client"` to `WhatsAppFab.tsx` fails the guard with the re-measure message.
+- **Not the whole class:** the remaining six no-reason files were left alone deliberately — they are reached from client trees (removing the directive there would either fail to build, because a client component cannot import a server component, or silently change the boundary contract) or unreferenced. Re-scanning this class is cheap and worth repeating after large UI work; the scanner is 30 lines and the rule ("boundary ⇒ reason") is now executable.
+
 ---
 
 ## 5. Watchlist (speculation and deliberate non-fixes — NO fix applied)
@@ -146,7 +167,7 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 | **W4** | **`channel-store.ts` write paths** await their reads sequentially throughout (`createRequest`, `closeRequest`, deal transitions). | `src/lib/persistence/channel-store.ts:325-403, 562-641` | These are transaction-ordered writes where the second statement legitimately depends on the first. **Not a defect; explicitly out of scope.** |
 | **W5** | **Dashboard KPI redundancy.** `getDashboardKpis` issues 8 queries; `todayOwner`/`ydayOwner` are sums of the two `groupBy` results it already fetches, so two counts are derivable. | `repository.ts:63-160` | Would need the test mocks to encode derived values, re-pinning KPI tests on a different data path for a 2-statement saving on a cached dashboard. **Skipped — churn exceeds the win.** |
 | **W6** | **`onListingPublished` reads are independent** (`getListingByIdForServer` then `savedSearch.findMany`). | `src/lib/saved-search/alerts-runtime.ts:78-95` | Background notification path with no user-facing latency; the surrounding scan is already a documented watchlist item (SQL-PERF-17). Leave until that scan is revisited. |
-| **W7** | **Total static-JS budget is effectively exhausted: 2290.1 KiB measured against a 2293.8 KiB cap — 3.7 KiB (0.16%) of headroom.** The next client-side feature of any size fails `pnpm test:perf` before it can ship. Measured locally on `d1d18fe` with the repo's own gate; the 41.5 KiB growth above the 18 Sep re-baseline reading (2248.6 KiB) predates this branch, whose commits are server-only, test-only and docs (`orderFeaturedFirst` appears in no client chunk — §4). | `ops/config/performance/budgets.json` description; `.next/static/chunks` (79 chunks, 2290.1 KiB total; largest 229.2 KiB) | **Deliberately not touched.** `budgets.json` states the ratchet rule explicitly: the cap "moves only with a measured before/after in the why", so re-baselining is an owner decision with a recorded justification, not a drive-by edit — and certainly not one to make *in the same commit as an unrelated fix*. Recommended handling for the owner: either (a) re-baseline with a measured before/after on the next feature that needs room, or (b) commission a bundle-attribution pass. A first pass here (top-20 chunk signature scan for a duplicated library) found no obvious duplication — react appears in two framework/entry chunks, `lucide-react` in one; the large unnamed chunks are route code, i.e. this is feature weight, not an easy trim. That deeper attribution is exactly the class of work this round was told to skip when complex, so it is recorded rather than attempted. |
+| **W7 — partially relieved by PERF-R5-002** | **Total static-JS budget was effectively exhausted: 2290.1 KiB measured against a 2293.8 KiB cap (3.7 KiB / 0.16% headroom); after PERF-R5-002 it is 2273.4 KiB against the same cap — 20.4 KiB / 0.89%.** Still tight, still the number to watch, but no longer one small component away from a red build. The 41.5 KiB growth above the 18 Sep re-baseline reading (2248.6 KiB) predates this branch, whose earlier commits are server-only, test-only and docs (`orderFeaturedFirst` appears in no client chunk — §4); ~16.7 KiB of it has now been handed back. | `ops/config/performance/budgets.json` description; `.next/static/chunks` (79 chunks; largest 229.2 KiB) | **Cap deliberately not touched.** `budgets.json` states the ratchet rule explicitly: the cap "moves only with a measured before/after in the why", so re-baselining is an owner decision with a recorded justification, not a drive-by edit — and certainly not one to make inside an unrelated fix. With 20.4 KiB back, the owner has room to decide calmly rather than under a red CI. A first pass at attribution (top-20 chunk signature scan for a duplicated library) found no obvious duplication — react appears in two framework/entry chunks, `lucide-react` in one; the large unnamed chunks are route code, i.e. feature weight, not an easy trim. That deeper attribution remains the class of work this round was told to skip when complex, so it stays recorded rather than attempted. |
 
 ---
 
@@ -173,5 +194,6 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 |---|---|---|---|---|
 | BUG-R5-001 | `repository.test.ts` — *"BUG-R5-001: rejects a budget past the documented ₹10 crore ceiling"*, *"…accepts the exact ₹10 crore ceiling"*; **new** `buyer-leads/route.test.ts` — the same boundary via `parseLeadBody` | **2 failed**: `expected resolved value "bl-1"` (row created) and `expected { budgetValue: 100000001, … } to deeply equal { error: "INVALID_BUDGET" }` | `318a714` | 2 green |
 | PERF-R5-001 | `repository.test.ts` — *"PERF-R5-001: the queue's independent reads overlap"* (probe: `start:`/`end:` log + delay), plus the no-regression pin *"…still sequences the aged-listing pull after the follow-up ids arrive"*; **new** `featured-order.test.ts` (5); **new** `server-page-read-parallel.test.ts` (4) | **1 failed**: `the follow-up read waited for the window read (serially): start:property:window,end:property:window,start:contact:followups,…` | `709a036` | 1 + 11 green (10 green by construction as parity/guard pins) |
+| PERF-R5-002 | **new** `server-client-boundary.test.ts` (9) — boundary absent *and* no hook/handler/browser API, positive control on a real client component; mutation-checked (re-adding the directive fails it) | No unit red state: this is a *byte* defect, proven by the budget harness instead — total static JS 2290.1 → 2273.4 KiB (−16.7), route deltas −8.6 / −5.1 / −3.8 / −0.3…−0.6 KiB | this round | 9 green + budget green |
 
 Both commits are on `arena/01a0b817-architech` and in **PR #132**, whose `verify` CI job passed (run `35425225705`). Every commit message names its ID, and both guard tests are named after theirs, so `grep -rn "BUG-R5-001\|PERF-R5-001" src` enumerates the regression surface.

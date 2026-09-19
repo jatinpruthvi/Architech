@@ -1,4 +1,9 @@
-"use client";
+/* Server Component (PERF-R5-002): DeveloperIndexPage — static directory markup; renders the client Reveal as children.
+   Every interactive control inside is its own client component, so this file
+   needs no client boundary of its own — one here re-ships this markup (and its
+   icon imports) in the route's first-load JS for no behaviour. No hooks, event
+   handlers, browser APIs or time-dependent render output (verified; pinned by
+   server-client-boundary.test.ts). Re-measure before adding `"use client"` back. */
 /* India-wide developer index: evidence-led directory, not paid ranking. */
 import Link from "next/link";
 import { ArrowUpRight, Check, MapPinned } from "lucide-react";
