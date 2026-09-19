@@ -16,10 +16,10 @@
 | P1 High | 0 | — |
 | P2 Medium | 1 | 1 |
 | P3 Low | 0 | — |
-| Performance class (PERF) | 2 | 2 |
+| Performance class (PERF) | 3 | 3 |
 | Watchlist (not confirmed) | 7 | 0 |
 
-**One confirmed correctness bug and two performance findings, all fixed behind tests written first, with every gate green.**
+**One confirmed correctness bug and three performance findings, all fixed behind tests written first, with every gate green.**
 
 The correctness bug is a **unit-conversion slip in a stated contract**: the buyer-lead budget ceiling was written as `1_000_000_000` (₹100 crore) while the repository comment, the form's own error copy and the feature's PR description all promise **₹10 crore** (1 crore = 10⁷, i.e. `100_000_000`). The API's payload validator carried the same ten-times-off literal, so the two agreed with each other and disagreed with every statement of intent. The interesting part is *why it survived*: the existing tests probed the far side of the boundary (`2_000_000_000` rejected, `25_000` accepted) and never pinned the stated ceiling, so a 10× error sat in the gap between "clearly too big" and "normal".
 
@@ -106,6 +106,7 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 |---|---|---|---|---|
 | **PERF-R5-001** | Independent reads serialised; one read duplicated | `src/app/page.tsx` · `src/app/buy/[city]/[locality]/page.tsx` · `src/lib/technoproperty/repository.ts` (`getCallingQueue`) | Home page · locality SEO pages · call queue | **Fixed** `709a036` |
 | **PERF-R5-002** | Client boundary with no client reason (first-load JS) | `src/components/broker/techno/RequirementTable.tsx` · `…/WhatsAppFab.tsx` · `src/screens/DeveloperIndexPage.tsx` · `src/screens/RequirementsPage.tsx` | `/broker/requirements/[category]` · `/developers` · `/requirements` · every `/broker` route | **Fixed this round** |
+| **PERF-R5-003** | Same request resolves the session twice (duplicate auth work) | `src/lib/technoproperty/session.ts` | Every `/broker/*` navigation (layout + page) | **Fixed this round** |
 
 ### PERF-R5-001 — P2-class · three sites awaiting queries that do not depend on each other
 
@@ -155,6 +156,17 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 - **Regression guard:** `src/lib/server-client-boundary.test.ts` pins the four files as Server Components *and* pins the reason (no hook / handler / browser API; comments stripped so the files' own prose cannot fake a positive), with a positive control on a real client component (`ResponsiveDataView`). Mutation-checked: re-adding `"use client"` to `WhatsAppFab.tsx` fails the guard with the re-measure message.
 - **Not the whole class:** the remaining six no-reason files were left alone deliberately — they are reached from client trees (removing the directive there would either fail to build, because a client component cannot import a server component, or silently change the boundary contract) or unreferenced. Re-scanning this class is cheap and worth repeating after large UI work; the scanner is 30 lines and the rule ("boundary ⇒ reason") is now executable.
 
+### PERF-R5-003 — one navigation, two session resolutions
+
+- **Method:** the bundle lead ran out (MapLibre is already vendored *and* lazy-loaded, and both barrel-heavy packages are already in `optimizePackageImports`), so the next question was per-request work. Reading the `(techno)` route tree answers it directly: the **layout** resolves the session for its navigation chrome, and **every page below it** resolves it again for its own data — `activities`, `brokers/[category]`, `buyers`, `buyers/[id]/matches`, `call-queue`, `premium`, `requirements/[category]`, `shortlisted`, the workspace home, plus `owners/OwnersList` (which, being a separate Server Component, resolves it a third time on the owners route).
+- **Current behaviour (pre-fix):** each `getTechnoSession()` / `requireTechnoSession()` call built its own synthetic `Request` and called `getSessionContractForRequest`, whose live path resolves the cookie → token → Better Auth claims → organization. So one `/broker/*` navigation in live mode paid for **two** of those resolutions, and three on the owners route, for data that cannot differ within the request.
+- **Expected behaviour:** one resolution per request, shared by every caller.
+- **Root cause:** the same shape as the read-serialisation finding, one level up — each server component is written to be self-sufficient about auth (it asks for a session and cannot assume its parent did), which is the right *security* instinct and the wrong *cost* model, because nothing deduped the repeated resolution.
+- **Fix (technical only, and the house pattern):** `getTechnoSession` is wrapped in React's `cache()` — per-request memoisation — exactly as this repo already did for the listing page's `P0.5` finding ("`generateMetadata` and the page both resolved the same listing, so every request ran the DB lookup twice"). The reader takes no arguments and reads the request-scoped cookie jar itself, so the request is the only cache key: no cross-request sharing is possible. `requireTechnoSession` is unchanged and delegates, so its two error contracts (`TECHNO_NO_SESSION`, `TECHNO_NO_ORG`) and every call site are untouched.
+- **Evidence and its honest limit:** the sandbox runs in fixture/demo auth mode, where resolution is cookie-only, so there is **no wall-clock number to measure** — the evidence is the code-level multiplicity (2–3 resolutions → 1) plus the build and budget staying green (it is a server-side change: total static JS unchanged at 2273.4 KiB). Because React's `cache` only dedupes inside a render scope and there is no RSC renderer in this suite, the memo is pinned *structurally* (a source assertion that the reader stays wrapped, carrying the cost of removing it) rather than by a call count that would pass for the wrong reason — the same trade-off the P0.5 fix made in prose.
+- **Bonus, unrelated to perf:** this file — the auth gate for the entire broker workspace — had **no test file at all**. It now has six behavioural tests pinning what the wrapper must not have changed: the returned session, `null` when nobody is signed in, that the request cookie header and `/broker` URL are actually forwarded to the auth layer, and both `requireTechnoSession` error contracts. The source pin is mutation-checked (unwrapping `cache()` fails it).
+- **Audit trail:** this round, `src/lib/technoproperty/session.test.ts` (7 tests: 6 behavioural + 1 structural pin).
+
 ---
 
 ## 5. Watchlist (speculation and deliberate non-fixes — NO fix applied)
@@ -182,6 +194,8 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 
 **3. Do not undo a cap to save a query.** W2's rejected optimisation is the one that *looks* best: one query instead of two. The cap that makes the search path bounded is precisely what makes the derivation lossy. The in-code comment now says so at the call site; this is the same reasoning that produced `MAX_UNSCOPED_LISTING_ROWS` in the first place.
 
+**4. The third pattern: per-component self-sufficiency in auth.** PERF-R5-003 is not a coding error — asking for the session at each component boundary is the *safe* instinct, and it is how the security model reads. What was missing was the per-request memo that makes self-sufficiency free. The repo already had the pattern (`cache()` on the listing page, P0.5); the finding is that it had been applied where the duplication was *visible in one file* (two functions in `page.tsx`) and not where it spreads across a layout and its children. **Recommended check:** for every `cookies()`/`headers()` reader under `src/lib`, ask "how many times can this be called in one navigation?" — the ones answering "more than once" want `cache()`. The techno session was the only such reader today (verified: `await cookies()` appears in exactly one module), which is also why this is a three-line fix rather than a sweep.
+
 **Monitoring:** the call queue's read overlap is now pinned by a test rather than a metric, so no new Sentry signal is warranted. If a real deployment later wants the page-level numbers, the existing RUM reporter (`WebVitalsReporter`) already covers the home page, and the locality pages are covered by the sitemap/crawl checks — the natural place to watch for a regression is the prerender/crawl timing, not a new counter.
 
 **The one number worth watching is the budget itself (W7).** At 0.16% headroom, `pnpm test:perf` will stop being a *regression* gate and start being a *feature* gate: it will fail on the next legitimate client-side addition. That is a useful failure, but only if the owner has decided in advance whether the answer is "trim" or "re-baseline with a measured why" — deciding it in the moment, under a red CI, is how a budget becomes a formality.
@@ -194,6 +208,7 @@ The CI result is the stronger evidence of the two: it is the repo's own harness,
 |---|---|---|---|---|
 | BUG-R5-001 | `repository.test.ts` — *"BUG-R5-001: rejects a budget past the documented ₹10 crore ceiling"*, *"…accepts the exact ₹10 crore ceiling"*; **new** `buyer-leads/route.test.ts` — the same boundary via `parseLeadBody` | **2 failed**: `expected resolved value "bl-1"` (row created) and `expected { budgetValue: 100000001, … } to deeply equal { error: "INVALID_BUDGET" }` | `318a714` | 2 green |
 | PERF-R5-001 | `repository.test.ts` — *"PERF-R5-001: the queue's independent reads overlap"* (probe: `start:`/`end:` log + delay), plus the no-regression pin *"…still sequences the aged-listing pull after the follow-up ids arrive"*; **new** `featured-order.test.ts` (5); **new** `server-page-read-parallel.test.ts` (4) | **1 failed**: `the follow-up read waited for the window read (serially): start:property:window,end:property:window,start:contact:followups,…` | `709a036` | 1 + 11 green (10 green by construction as parity/guard pins) |
+| PERF-R5-003 | **new** `session.test.ts` (7: 6 behavioural — including cookie forwarding and both error contracts — plus a mutation-checked source pin for the memo) | No wall-clock red state available in fixture auth mode; the defect is the code-level multiplicity (2–3 resolutions per navigation → 1), and the pin fails if the memo is dropped | this round | 7 green + build/budget green (client bytes unchanged) |
 | PERF-R5-002 | **new** `server-client-boundary.test.ts` (9) — boundary absent *and* no hook/handler/browser API, positive control on a real client component; mutation-checked (re-adding the directive fails it) | No unit red state: this is a *byte* defect, proven by the budget harness instead — total static JS 2290.1 → 2273.4 KiB (−16.7), route deltas −8.6 / −5.1 / −3.8 / −0.3…−0.6 KiB | this round | 9 green + budget green |
 
 Both commits are on `arena/01a0b817-architech` and in **PR #132**, whose `verify` CI job passed (run `35425225705`). Every commit message names its ID, and both guard tests are named after theirs, so `grep -rn "BUG-R5-001\|PERF-R5-001" src` enumerates the regression surface.
